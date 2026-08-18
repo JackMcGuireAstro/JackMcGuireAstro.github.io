@@ -1,126 +1,329 @@
-<!DOCTYPE HTML>
-<!--
-	Stellar by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
--->
-<html>
-	<head>
-		<!-- Google tag (gtag.js) -->
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jack McGuire | Astrophysics and Astronomical Software</title>
+<meta name="description" content="Jack McGuire is a Ph.D. student in physics, astronomy concentration, at the University of Wyoming. He studies binary mass transfer, chemically peculiar stars and low-mass stellar properties, and develops the Cowboy Transient Alert System.">
+<link rel="canonical" href="https://jackmcguireastro.github.io/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Jack McGuire | Astrophysics and Astronomical Software">
+<meta property="og:description" content="Ph.D. student in physics and astronomy at the University of Wyoming. Binary mass transfer, chemically peculiar stars, stellar interferometry, and transient-alert software.">
+<meta property="og:url" content="https://jackmcguireastro.github.io/">
+<meta property="og:image" content="https://jackmcguireastro.github.io/images/jack.jpg">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="assets/css/site.css">
+<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-XN307TT07G');
 </script>
-		<title>Jack McGuire Astronomy</title>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="assets/css/main.css" />
-		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
-		<style>
-			@font-face {
-				font-family: 'ITC Blackadder';
-				src: local('Blackadder ITC'), local('ITC Blackadder');
-				font-style: normal;
-			}
+</head>
+<body>
 
-			body {
-				background: url("images/galaxy.jpg") no-repeat center center fixed;
-				background-size: cover;
-				font-family: 'Minion Pro', serif;
-			}
+<a class="skip-link" href="#main">Skip to main content</a>
 
-			h1.logo-text {
-				font-family: 'ITC Blackadder', cursive;
-				font-size: 3rem;
-				color: white;
-				text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-				margin-top: 1rem;
-			}
+<header class="site-header">
+  <div class="wrap wrap--wide site-header__inner">
+    <a class="brand" href="index.html">Jack McGuire</a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">
+      <span class="nav-toggle__bars" aria-hidden="true"><span></span></span>
+      <span class="nav-toggle__label">Menu</span>
+    </button>
+    <nav class="nav" id="primary-nav" aria-label="Primary">
+      <ul class="nav__list">
+        <li><a class="nav__link" href="index.html" aria-current="page">Home</a></li>
+        <li><a class="nav__link" href="ctas.html">CTAS</a></li>
+        <li><a class="nav__link" href="research.html">Research</a></li>
+        <li><a class="nav__link" href="publications.html">Publications &amp; Presentations</a></li>
+        <li><a class="nav__link" href="personal.html">About</a></li>
+        <li><a class="nav__link nav__link--cv" href="cv.pdf" target="_blank" rel="noopener">CV<span class="sr-only"> (PDF, opens in a new tab)</span></a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
 
-			img.headshot {
-				width: 80px;
-				border-radius: 50%;
-				margin-top: 1rem;
-				border: 2px solid rgb(242, 237, 237);
-			}
-		</style>
-	</head>
-	<body class="is-preload">
+<main id="main">
 
-		<!-- Wrapper -->
-			<div id="wrapper">
+  <!-- ============================================================== hero -->
+  <section class="hero">
+    <div class="hero__sky" aria-hidden="true"></div>
+    <div class="wrap hero__inner">
+      <div>
+        <h1>Jack McGuire</h1>
+        <p class="hero__role">Ph.D. Student in Physics, Astronomy Concentration &middot; University of Wyoming</p>
+        <p class="hero__statement">I study how interactions between stars leave observable signatures &mdash; in surface
+          chemistry, in orbital architecture, and in the fundamental properties we can measure directly. Alongside
+          that, I build astronomical software for organizing and evaluating transient events.</p>
+        <ul class="actions">
+          <li><a class="btn btn--primary" href="ctas.html">Explore CTAS</a></li>
+          <li><a class="btn" href="research.html">Research</a></li>
+          <li><a class="btn" href="cv.pdf" target="_blank" rel="noopener">View CV<span class="sr-only"> (PDF, opens in a new tab)</span></a></li>
+          <li><a class="btn" href="mailto:jackmcg7@live.com">Email me</a></li>
+        </ul>
+      </div>
+      <img class="hero__portrait" src="images/jack.jpg" width="534" height="787"
+           alt="Portrait of Jack McGuire.">
+    </div>
+  </section>
 
-				<!-- Header -->
-					<header id="header" class="alt">
-						<img src="IMG_2671.jpeg" alt="Jack McGuire" class="headshot" />
-						<h1 class="logo-text">John P. "Jack" McGuire</h1>
-						<p>Undergraduate Researcher at Georgia State University.</p>
-					</header>
+  <!-- ===================================================== featured: CTAS -->
+  <section class="section" aria-labelledby="ctas-feature-title">
+    <div class="wrap wrap--wide">
+      <div class="feature">
+        <div class="feature__inner">
+          <div>
+            <p class="eyebrow">Featured project</p>
+            <h2 id="ctas-feature-title">Cowboy Transient Alert System</h2>
+            <p class="feature__acronym">CTAS</p>
+            <div class="feature__badges">
+              <span class="chip chip--experimental">Active development</span>
+              <span class="chip chip--planned">Runs locally &middot; not publicly deployed</span>
+            </div>
+            <p>CTAS is a rights-aware system for reconciling supernova and multimessenger alerts with public
+              follow-up evidence. It ingests public alerts from survey and community services, screens them
+              against data-rights rules, adds catalog and host context, and keeps candidates, analyses and
+              follow-up drafts in one reproducible research record.</p>
+            <p>I am designing and developing it as an astronomy software project &mdash; the scientific workflow,
+              the data model, and the researcher-facing dashboard. It is deliberately review-oriented: it does not
+              command telescopes, submit observations, or publish classifications.</p>
+            <ul class="actions">
+              <li><a class="btn btn--primary" href="ctas.html">How CTAS works</a></li>
+            </ul>
+          </div>
 
-				<!-- Nav -->
-					<nav id="nav">
-						<ul>
-							<li><a href="personal.html">Get to Know Me</a></li>
-							<li><a href="research.html">Research Projects </a></li>
-							<li><a href="cv-3.pdf">Check out my CV</a></li>
-						</ul>
-					</nav>
+          <!-- Restrained night-sky / alert-network motif. Decorative. -->
+          <svg class="ctas-mark" viewBox="0 0 420 260" role="img"
+               aria-label="Stylised diagram: several alert sources converging into a single record, under a night sky.">
+            <defs>
+              <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#101b29"/>
+                <stop offset="100%" stop-color="#0a0f16"/>
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="420" height="260" rx="12" fill="url(#skyGrad)"/>
+            <!-- stars -->
+            <g fill="#cfd8e6">
+              <circle cx="38"  cy="34"  r="1.5" opacity=".75"/>
+              <circle cx="96"  cy="20"  r="1"   opacity=".5"/>
+              <circle cx="150" cy="42"  r="1.2" opacity=".6"/>
+              <circle cx="214" cy="26"  r="1"   opacity=".45"/>
+              <circle cx="278" cy="46"  r="1.6" opacity=".7"/>
+              <circle cx="336" cy="24"  r="1"   opacity=".5"/>
+              <circle cx="386" cy="52"  r="1.3" opacity=".6"/>
+              <circle cx="60"  cy="74"  r="1"   opacity=".4"/>
+              <circle cx="248" cy="76"  r="1"   opacity=".4"/>
+            </g>
+            <!-- converging alert paths -->
+            <g stroke="#8ab4dd" stroke-width="1.1" fill="none" opacity=".65">
+              <path d="M56 118 C 120 118, 150 150, 208 150"/>
+              <path d="M56 150 C 120 150, 150 150, 208 150"/>
+              <path d="M56 182 C 120 182, 150 150, 208 150"/>
+            </g>
+            <!-- source nodes -->
+            <g>
+              <circle cx="52" cy="118" r="6.5" fill="#0a0f16" stroke="#8ab4dd" stroke-width="1.6"/>
+              <circle cx="52" cy="150" r="6.5" fill="#0a0f16" stroke="#8ab4dd" stroke-width="1.6"/>
+              <circle cx="52" cy="182" r="6.5" fill="#0a0f16" stroke="#8ab4dd" stroke-width="1.6"/>
+            </g>
+            <!-- central record -->
+            <rect x="208" y="128" width="128" height="44" rx="8" fill="rgba(215,180,92,.10)"
+                  stroke="#d7b45c" stroke-width="1.5"/>
+            <text x="272" y="155" text-anchor="middle" fill="#d7b45c"
+                  font-family="ui-monospace, Menlo, monospace" font-size="13" letter-spacing="4">CTAS</text>
+            <!-- horizon -->
+            <path d="M0 226 C 90 214, 150 232, 230 224 C 310 216, 370 230, 420 222 L420 260 L0 260 Z"
+                  fill="#070b11" opacity=".95"/>
+            <path d="M0 226 C 90 214, 150 232, 230 224 C 310 216, 370 230, 420 222"
+                  fill="none" stroke="#d7b45c" stroke-width="1" opacity=".35"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
 
-				<!-- Main -->
-					<div id="main">
+  <!-- =================================================== research themes -->
+  <section class="section" aria-labelledby="directions-title">
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow">Research directions</p>
+        <h2 id="directions-title">What I work on</h2>
+        <p>Four threads, connected by a single question: what happens to a star when it does not evolve alone,
+          and what can we still measure about it afterwards?</p>
+      </div>
 
-						<!-- Introduction -->
-							<section id="intro" class="main">
-								<div class="spotlight">
-									<div class="content">
-										<header class="major">
-											<h2>About Me</h2>
-										</header>
-										<p>I’m an undergraduate physics major and current astrophysics researcher at Georgia State University, studying barium dwarfs and white dwarf companions using GAIA data, high-res spectroscopy, and interferometry. I am currently working with Dr. Russel White and CHARA data to understand 40 Eri binary evolution and its potential s-process enrichment.</p>
-										<p>Additional work with Dr. Xiaochun He includes assembling cosmic muon detectors in a world-wide system to monitor long term space weather. My work this fall involves performing statistical analysis on the effects of tidal forces on cosmic muon flux.</p>
-										<p>In addition to my research, I’m passionate about science communication and space exploration. I enjoy playing bass guitar and cooking for fun.</p>
-										<p>Feel free to explore my site to learn more about my research projects, and interests. If you’d like to get in touch, please visit the contact section below.</p>
-										<ul class="actions">
-											<li><a href="cv-3.pdf" class="button" target="_blank">View my CV</a></li>
-										</ul>
-									</div>
-									<span class="image"><img src="IMG_2879.jpeg" alt="" /></span>
-								</div>
-							</section>
+      <div class="grid grid--2">
+        <a class="card" href="research.html#barium-dwarfs">
+          <p class="card__meta">Thread 01</p>
+          <h3>Chemical Records of Binary Mass Transfer</h3>
+          <p>Barium dwarfs, chemically peculiar stars, s-process enrichment, and the chemical legacy left behind
+            when an AGB companion sheds its envelope onto a main-sequence star.</p>
+          <p class="card__more">Barium dwarfs &amp; post-AGB transfer &rarr;</p>
+        </a>
 
+        <a class="card" href="research.html#gj166c">
+          <p class="card__meta">Thread 02</p>
+          <h3>White Dwarfs and Post-Interaction Binaries</h3>
+          <p>White-dwarf&ndash;main-sequence binaries, orbital separation constraints, hidden compact companions,
+            and the search for the missing cool barium dwarfs.</p>
+          <p class="card__more">GJ 166 C and 40 Eridani &rarr;</p>
+        </a>
 
-					</div>
+        <a class="card" href="research.html#chara">
+          <p class="card__meta">Thread 03</p>
+          <h3>Fundamental Properties of Low-Mass Stars</h3>
+          <p>CHARA Array interferometry, angular diameters measured directly, nearby M-dwarf binaries, and the
+            long-standing radius-inflation problem.</p>
+          <p class="card__more">CHARA interferometry &rarr;</p>
+        </a>
 
-				<!-- Footer -->
-					<footer id="footer">
-						<section>
-							<h2>Contact Info</h2>
-							<dl class="alt">
-								<dt>Email</dt>
-								<dd><a href="mailto:jackmcg7@live.com">jackmcg7@live.com</a></dd>
-							</dl>
-							<ul class="icons">
-								<!-- <li><a href="#" class="icon brands fa-github alt"><span class="label">GitHub</span></a></li>
-								<li><a href="#" class="icon brands fa-twitter alt"><span class="label">Twitter</span></a></li> -->
-							</ul>
-						</section>
-						<p class="copyright">&copy; Jack McGuire. Based on a design from <a href="https://html5up.net">HTML5 UP</a>.</p>
-					</footer>
+        <a class="card" href="ctas.html">
+          <p class="card__meta">Thread 04</p>
+          <h3>Astronomical Data and Time-Domain Systems</h3>
+          <p>The Cowboy Transient Alert System, catalog cross-matching, provenance-preserving data pipelines, and
+            scientific software for transient astronomy.</p>
+          <p class="card__more">Go to the CTAS page &rarr;</p>
+        </a>
+      </div>
+    </div>
+  </section>
 
-			</div>
+  <!-- ====================================================== selected work -->
+  <section class="section section--edge" aria-labelledby="selected-title">
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow">Selected work</p>
+        <h2 id="selected-title">A few things worth reading</h2>
+      </div>
 
-		<!-- Scripts -->
-			<script src="assets/js/jquery.min.js"></script>
-			<script src="assets/js/jquery.scrollex.min.js"></script>
-			<script src="assets/js/jquery.scrolly.min.js"></script>
-			<script src="assets/js/browser.min.js"></script>
-			<script src="assets/js/breakpoints.min.js"></script>
-			<script src="assets/js/util.js"></script>
-			<script src="assets/js/main.js"></script>
+      <ul class="pub-list">
+        <li class="pub">
+          <p class="pub__title">Broad-band Monitoring of 797 Montana</p>
+          <p class="pub__cite">Bentz, M. C.; Alahakone, R.; Azoulay, L.; Burns-Kaurin, E.; Chaturvedi, A. S.;
+            Davis, M.; Kimani-Stewart, K.; Markham, M.; <span class="me">McGuire, J. P.</span>; McMullan, E.;
+            Patel, M.; Binu Raj, M.; Sankey, D.; Wilson, A. A.-L.; Zdanky, K. (2025).
+            <em>Minor Planet Bulletin</em>, 52(3), 207&ndash;208.</p>
+          <p class="pub__note">Refereed publication. A four-night campaign at Hard Labor Creek Observatory gave a
+            rotation period of 4.545 &plusmn; 0.001 hr for this main-belt asteroid.</p>
+        </li>
 
-	</body>
+        <li class="pub">
+          <p class="pub__title">Where Are the K &amp; M Barium Dwarfs?</p>
+          <p class="pub__cite"><span class="me">McGuire, J. P.</span>, et al.</p>
+          <p class="pub__note">Manuscript in preparation; planned submission to an American Astronomical Society
+            journal in Fall 2026.</p>
+        </li>
+
+        <li class="pub">
+          <p class="pub__title">Finding Barium Dwarfs Among Established White-Dwarf Systems</p>
+          <p class="pub__cite">Poster &middot; Society of Physics Students Research Conference, April 23, 2026, and
+            the Georgia State Undergraduate Research Conference, April 6, 2026.</p>
+          <p class="pub__note">Spectroscopic abundance-ratio measurements for five candidate barium dwarfs.</p>
+        </li>
+
+        <li class="pub">
+          <p class="pub__title">AGB Post-Mass-Transfer Spectroscopic Ratios as White-Dwarf Tracers</p>
+          <p class="pub__cite">Poster &middot; Georgia Regional Astronomy Meeting, Emory University,
+            November 7&ndash;8, 2025.</p>
+          <p class="pub__note">Using surface chemistry to trace otherwise hidden white-dwarf companions.</p>
+        </li>
+      </ul>
+
+      <ul class="actions">
+        <li><a class="btn" href="publications.html">View all publications and presentations</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ====================================================== recent update -->
+  <section class="section section--edge" aria-labelledby="updates-title">
+    <div class="wrap">
+      <div class="section__head">
+        <p class="eyebrow">Recent updates</p>
+        <h2 id="updates-title">What&rsquo;s new</h2>
+      </div>
+
+      <ul class="updates">
+        <li>
+          <span class="when">August 2026</span>
+          <p>Began Ph.D. studies in physics, astronomy concentration, at the University of Wyoming, and started
+            work as a graduate teaching assistant.</p>
+        </li>
+        <li>
+          <span class="when">Aug&ndash;Oct 2026</span>
+          <p>Selected for Hello SciCom&rsquo;s Comedy Camp for Science, an eight-week program on communicating
+            technical research through humor and storytelling.</p>
+        </li>
+        <li>
+          <span class="when">June 2026</span>
+          <p>Became an American Physical Society Advocacy Champion.</p>
+        </li>
+        <li>
+          <span class="when">May 2026</span>
+          <p>Graduated from Georgia State University with a B.S. in Physics.</p>
+        </li>
+        <li>
+          <span class="when">April 2026</span>
+          <p>Presented the barium-dwarf poster at the Society of Physics Students Research Conference and the
+            Georgia State Undergraduate Research Conference.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- =========================================================== personal -->
+  <section class="section section--edge" aria-labelledby="personal-title">
+    <div class="wrap">
+      <div class="about-grid">
+        <div>
+          <p class="eyebrow">Away from the telescope</p>
+          <h2 id="personal-title">The rest of it</h2>
+          <p>I play guitar, cook more ambitiously than is strictly reasonable, and travel whenever the calendar
+            allows it. I care a lot about science communication &mdash; explaining why any of this matters is part
+            of the job, not a side quest. And there is a dog named Buckeye who believes she is a person.</p>
+          <ul class="actions">
+            <li><a class="btn" href="personal.html">More about me</a></li>
+          </ul>
+        </div>
+        <figure class="photo-figure">
+          <img src="assets/images/personal/buckeye.webp" width="900" height="1600" loading="lazy"
+               alt="A collage of photographs of Buckeye, a curly-haired black dog, at home and outdoors.">
+          <figcaption>Buckeye, who is unimpressed by deadlines.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap wrap--wide">
+    <div class="site-footer__inner">
+      <div>
+        <h2>Contact</h2>
+        <p><a href="mailto:jackmcg7@live.com">jackmcg7@live.com</a></p>
+        <p>Department of Physics &amp; Astronomy<br>University of Wyoming, Laramie, Wyoming</p>
+      </div>
+      <nav aria-label="Footer">
+        <h2>Site</h2>
+        <ul class="footer-nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="ctas.html">CTAS</a></li>
+          <li><a href="research.html">Research</a></li>
+          <li><a href="publications.html">Publications &amp; Presentations</a></li>
+          <li><a href="personal.html">About</a></li>
+          <li><a href="cv.pdf" target="_blank" rel="noopener">CV (PDF)</a></li>
+        </ul>
+      </nav>
+    </div>
+    <p class="colophon">&copy; 2026 Jack McGuire. Static site; retains assets from the
+      <a href="https://html5up.net">HTML5 UP</a> Stellar template.</p>
+  </div>
+</footer>
+
+<script src="assets/js/site.js"></script>
+</body>
 </html>
