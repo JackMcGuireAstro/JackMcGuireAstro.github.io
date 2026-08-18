@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "pipeline_status": "degraded",
+  "last_successful_update": "2026-08-18T20:36:24Z",
+  "last_attempt": "2026-08-18T20:36:21Z",
+  "candidate_count": 0,
+  "cadence": "approximately every 30 minutes",
+  "runtime_seconds": 2.8,
+  "sources": [
+    {
+      "source": "fink-lsst",
+      "label": "Fink / Rubin LSST public broker",
+      "state": "unavailable",
+      "detail": "ProxyError: 403 Forbidden"
+    },
+    {
+      "source": "tns-astronotes",
+      "label": "TNS AstroNotes (released public notes)",
+      "state": "unavailable",
+      "detail": "ProxyError: 403 Forbidden"
+    },
+    {
+      "source": "tns-public-objects",
+      "label": "TNS public object deltas",
+      "state": "disabled",
+      "detail": "not configured \u2014 requires TNS_BOT_ID, TNS_BOT_NAME, TNS_API_KEY",
+      "note": "Requires TNS bot credentials."
+    },
+    {
+      "source": "gcn",
+      "label": "NASA GCN public Kafka stream",
+      "state": "disabled",
+      "detail": "not configured \u2014 requires GCN_CLIENT_ID, GCN_CLIENT_SECRET",
+      "note": "Requires NASA GCN Kafka client credentials."
+    }
+  ]
+}

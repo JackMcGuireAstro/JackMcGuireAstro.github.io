@@ -1,0 +1,176 @@
+/* ==========================================================================
+   CTAS application styles — layered on top of assets/css/site.css.
+   Only what the live interface needs; everything else is inherited.
+   ========================================================================== */
+
+/* ------------------------------------------------------------ status panel */
+.ctas-status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 1.75rem;
+}
+.ctas-status__cell { background: var(--surface); padding: 1rem 1.15rem; }
+.ctas-status__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 0.4rem;
+}
+.ctas-status__value {
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.35;
+}
+.ctas-status__sub { font-size: 0.8rem; color: var(--ink-3); margin: 0.2rem 0 0; }
+
+/* live/degraded dot — always paired with text, never colour alone */
+.dot {
+  display: inline-block;
+  width: 0.55rem; height: 0.55rem;
+  border-radius: 50%;
+  margin-right: 0.45rem;
+  vertical-align: 0.05em;
+  background: var(--ink-3);
+}
+.dot--ok       { background: var(--green); }
+.dot--degraded { background: var(--gold); }
+.dot--error    { background: #d98a8a; }
+
+/* ------------------------------------------------------------- source list */
+.ctas-sources { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
+.ctas-sources li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.75rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  margin: 0;
+  font-size: 0.9rem;
+}
+.ctas-sources__name { font-weight: 600; color: var(--ink); }
+.ctas-sources__detail { color: var(--ink-3); font-size: 0.85rem; }
+
+/* ------------------------------------------------------------------ toolbar */
+.ctas-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 1.15rem;
+}
+.field { display: flex; flex-direction: column; gap: 0.3rem; }
+.field label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.field input, .field select {
+  font: inherit;
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  min-height: 42px;
+  min-width: 11rem;
+}
+.field input::placeholder { color: var(--ink-3); }
+.ctas-count { margin-left: auto; font-size: 0.88rem; color: var(--ink-3); padding-bottom: 0.65rem; }
+
+/* -------------------------------------------------------------------- table */
+.ctas-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow-x: auto;                 /* the table alone scrolls, not the page */
+  background: var(--surface);
+}
+table.ctas-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 720px; }
+.ctas-table caption { text-align: left; padding: 0.85rem 1rem; color: var(--ink-3); font-size: 0.85rem; }
+.ctas-table th, .ctas-table td {
+  text-align: left;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.ctas-table thead th {
+  position: sticky; top: 0;
+  background: var(--surface-2);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.ctas-table tbody tr:last-child td { border-bottom: 0; }
+.ctas-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+.ctas-table td.num { font-family: var(--font-mono); font-size: 0.85rem; white-space: nowrap; }
+.ctas-table .name { font-weight: 650; color: var(--ink); }
+
+/* sortable column headers are real buttons */
+.ctas-table th button {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font: inherit;
+  color: inherit;
+}
+.ctas-table th button:hover { color: var(--gold); }
+.ctas-table th button::after { content: "\2195"; opacity: 0.35; font-size: 0.9em; }
+.ctas-table th[aria-sort="ascending"]  button::after { content: "\2191"; opacity: 1; color: var(--gold); }
+.ctas-table th[aria-sort="descending"] button::after { content: "\2193"; opacity: 1; color: var(--gold); }
+
+/* ------------------------------------------------------------- empty/error */
+.ctas-empty {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: clamp(1.75rem, 4vw, 3rem);
+  text-align: center;
+  color: var(--ink-2);
+}
+.ctas-empty h3 { margin-bottom: 0.5rem; }
+.ctas-empty p { margin: 0 auto; max-width: 52ch; }
+.ctas-empty--error { border-style: solid; border-left: 3px solid #d98a8a; text-align: left; }
+
+.ctas-loading { color: var(--ink-3); font-size: 0.92rem; padding: 1.5rem 0; }
+
+/* pill for classification */
+.pill {
+  display: inline-block;
+  font-size: 0.78rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.ctas-table .links a { font-size: 0.82rem; margin-right: 0.6rem; white-space: nowrap; }
+
+@media (max-width: 620px) {
+  .ctas-toolbar { flex-direction: column; align-items: stretch; }
+  .field input, .field select { min-width: 0; width: 100%; }
+  .ctas-count { margin-left: 0; padding-bottom: 0; }
+}
+
+/* `display:flex` above would otherwise defeat the [hidden] attribute. */
+.ctas-toolbar[hidden] { display: none; }
