@@ -1,5 +1,5 @@
 /* ==========================================================================
-   jackmcguireastro.github.io — shared behaviour
+   jackmcguireastro.github.io, shared behaviour
    Only job: the mobile navigation toggle. Everything else is CSS/HTML, so
    the site remains fully usable with JavaScript disabled.
    ========================================================================== */

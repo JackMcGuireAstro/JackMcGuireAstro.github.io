@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-sync_ctas.py — mirror the CTAS project's real state onto this website.
+sync_ctas.py, mirror the CTAS project's real state onto this website.
 
 The CTAS page (ctas.html) makes factual claims about the Cowboy Transient
 Alert System: its version, how many test modules it has, which capabilities
@@ -8,8 +8,8 @@ are implemented versus planned. Those facts drift every time CTAS changes.
 This script re-reads them straight from the CTAS source tree and:
 
   1. writes the extracted facts to assets/data/ctas-status.json;
-  2. updates the small auto-maintained values inside ctas.html — the ones
-     marked with data-ctas="..." attributes — in place;
+  2. updates the small auto-maintained values inside ctas.html, the ones
+     marked with data-ctas="..." attributes, in place;
   3. tells you, loudly, when the CTAS capability documentation has changed
      since the last sync, so the hand-written prose on the page can be
      reviewed by a human instead of being silently regenerated wrong.
@@ -197,7 +197,7 @@ def main() -> int:
         except (OSError, ValueError):
             previous = {}
 
-    print(f"CTAS {facts['version']} — {facts['test_module_count']} test modules, "
+    print(f"CTAS {facts['version']}, {facts['test_module_count']} test modules, "
           f"{facts['connector_count']} connectors, {facts['module_count']} modules")
     if facts["honest_grade"]:
         print(f"  project self-assessment: {facts['honest_grade'][:150]}…")
@@ -217,7 +217,7 @@ def main() -> int:
         for s in sorted(old_sections - new_sections):
             print(f"        - removed section: {s}")
     elif not old_hash:
-        print("\n  (first sync — recording a baseline of the capability documentation)")
+        print("\n  (first sync, recording a baseline of the capability documentation)")
 
     if args.check:
         print("\n--check: nothing written.")

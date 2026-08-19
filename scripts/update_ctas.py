@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-update_ctas.py — run CTAS headlessly and export sanitized public data.
+update_ctas.py, run CTAS headlessly and export sanitized public data.
 
 This is the bridge between the private CTAS processing code and the public
 GitHub Pages site. It runs inside a GitHub Actions job, calls CTAS's own
@@ -8,7 +8,7 @@ single-pass connector logic, and writes a small allowlisted JSON payload that
 the browser-side CTAS interface reads.
 
 It reuses the real CTAS implementation. It does not reimplement ingestion,
-rights screening, normalization or scoring — it calls
+rights screening, normalization or scoring, it calls
 ``connector.poll_once()``, which is exactly what CTAS's own long-running
 worker calls on each cycle, then drains CTAS's durable queue and reads the
 result through CTAS's own QueryService.
@@ -34,7 +34,9 @@ import os
 import sys
 import tempfile
 import traceback
-from datetime import UTC, datetime
+from datetime import datetime, timezone
+
+UTC = timezone.utc  # datetime.UTC is 3.11+; this works on 3.9+
 from pathlib import Path
 from typing import Any
 
@@ -210,7 +212,7 @@ async def run_ctas(args: argparse.Namespace) -> tuple[list[dict[str, Any]], list
         if missing:
             statuses.append({
                 "source": spec["key"], "label": spec["label"], "state": "disabled",
-                "detail": f"not configured — requires {', '.join(missing)}",
+                "detail": f"not configured, requires {', '.join(missing)}",
                 "note": spec["note"],
             })
             continue
@@ -225,7 +227,7 @@ async def run_ctas(args: argparse.Namespace) -> tuple[list[dict[str, Any]], list
             continue
 
         try:
-            # poll_once() is CTAS's own single-pass cycle — the same call its
+            # poll_once() is CTAS's own single-pass cycle, the same call its
             # long-running worker makes. No logic is duplicated here.
             result = await asyncio.wait_for(connector.poll_once(), timeout=args.source_timeout)
             detail = ""

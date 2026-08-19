@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-export_ctas_snapshot.py — publish a sanitized snapshot of the REAL CTAS database.
+export_ctas_snapshot.py, publish a sanitized snapshot of the REAL CTAS database.
 
 The scheduled GitHub Actions job starts from an empty database each run, so it
 can only ever see a short lookback window. The accumulated science lives in the
@@ -9,7 +9,7 @@ public JSON schema the website already consumes, so the public page shows what
 CTAS actually knows rather than what one fresh fetch happened to catch.
 
 The database is opened STRICTLY READ-ONLY (SQLite `mode=ro`). Nothing is
-written to it, no schema is created, and CTAS does not need to be installed —
+written to it, no schema is created, and CTAS does not need to be installed -
 only the standard library is used, so it runs on a stock macOS python3 while
 CTAS itself is running.
 

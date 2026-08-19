@@ -10,7 +10,12 @@
   "use strict";
 
   var DATA_DIR = "ctas/data/";
-  var state = { candidates: [], status: null, sortKey: "ctas_score", sortDir: -1, q: "", cls: "", msg: "" };
+
+  // 2,000+ rows is too many DOM nodes to paint at once; render a window and
+  // let the reader ask for more. Search and sort always span the full set.
+  var PAGE = 150;
+  var state = { candidates: [], status: null, sortKey: "ctas_score", sortDir: -1,
+               q: "", cls: "", msg: "", stat: "", shown: PAGE };
 
   var el = {
     status:   document.getElementById("ctas-status"),
@@ -20,7 +25,8 @@
     count:    document.getElementById("ctas-count"),
     q:        document.getElementById("ctas-q"),
     cls:      document.getElementById("ctas-class"),
-    msg:      document.getElementById("ctas-messenger")
+    msg:      document.getElementById("ctas-messenger"),
+    stat:     document.getElementById("ctas-statusfilter")
   };
   if (!el.results) return;
 
@@ -84,8 +90,8 @@
                  : pipeline === "degraded" ? "dot--degraded"
                  : pipeline === "idle" ? "" : "dot--error";
     var label = pipeline === "ok" ? "Operating normally"
-              : pipeline === "degraded" ? "Degraded — showing last good data"
-              : pipeline === "idle" ? "Idle — no candidates" : "Unknown";
+              : pipeline === "degraded" ? "Degraded, showing last good data"
+              : pipeline === "idle" ? "Idle, no candidates" : "Unknown";
 
     el.status.innerHTML =
       cell("Pipeline status",
@@ -126,6 +132,7 @@
     return state.candidates.filter(function (c) {
       if (state.cls && text(c.classification) !== state.cls) return false;
       if (state.msg && text(c.primary_messenger) !== state.msg) return false;
+      if (state.stat && text(c.status) !== state.stat) return false;
       if (!q) return true;
       return (text(c.name) + " " + text(c.classification) + " " +
               text(c.event_type) + " " + text(c.primary_messenger)).toLowerCase().indexOf(q) !== -1;
@@ -140,21 +147,25 @@
 
   var COLUMNS = [
     { key: "name",            label: "Object" },
+    { key: "status",          label: "Status" },
     { key: "classification",  label: "Classification" },
     { key: "ctas_score",      label: "CTAS score", num: true },
     { key: "discovery_time",  label: "Discovered" },
     { key: "discovery_magnitude", label: "Mag", num: true },
+    { key: "redshift",        label: "z", num: true },
+    { key: "discovery_survey", label: "Survey" },
     { key: "ra_deg",          label: "Position (RA / Dec)" },
-    { key: "observation_count", label: "Obs", num: true },
     { key: "links",           label: "Catalogues", nosort: true }
   ];
+
 
   // ---------------------------------------------------------------- render
   function renderTable() {
     var rows = visible();
+    var shownN = Math.min(state.shown, rows.length);
     el.count.textContent = rows.length === state.candidates.length
-      ? rows.length + " candidate" + (rows.length === 1 ? "" : "s")
-      : rows.length + " of " + state.candidates.length + " shown";
+      ? "showing " + shownN + " of " + rows.length + " candidates"
+      : "showing " + shownN + " of " + rows.length + " matching (" + state.candidates.length + " total)";
 
     if (!state.candidates.length) {
       el.results.innerHTML =
@@ -178,7 +189,8 @@
       return '<th scope="col" aria-sort="' + sorted + '">' + inner + "</th>";
     }).join("");
 
-    var body = rows.map(function (c) {
+    var window_ = rows.slice(0, state.shown);
+    var body = window_.map(function (c) {
       var links = (c.links || []).map(function (l) {
         return l.url
           ? '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label) + "</a>"
@@ -186,14 +198,16 @@
       }).join("");
       return "<tr>" +
         '<td class="name">' + esc(c.name) + "</td>" +
+        "<td>" + (c.status ? '<span class="pill">' + esc(c.status) + "</span>" : "") + "</td>" +
         "<td>" + (c.classification
                   ? '<span class="pill">' + esc(c.classification) + "</span>"
                   : '<span class="ctas-sources__detail">unclassified</span>') + "</td>" +
         '<td class="num">' + esc(num(c.ctas_score, 1)) + "</td>" +
         "<td>" + esc(c.discovery_time ? absolute(c.discovery_time) : "") + "</td>" +
         '<td class="num">' + esc(num(c.discovery_magnitude, 2)) + "</td>" +
+        '<td class="num">' + esc(num(c.redshift, 4)) + "</td>" +
+        "<td>" + esc(text(c.discovery_survey)) + "</td>" +
         '<td class="num">' + esc(sexagesimal(c.ra_deg, c.dec_deg)) + "</td>" +
-        '<td class="num">' + esc(text(c.observation_count)) + "</td>" +
         '<td class="links">' + links + "</td>" +
       "</tr>";
     }).join("");
@@ -201,7 +215,15 @@
     el.results.innerHTML =
       '<div class="ctas-table-wrap"><table class="ctas-table">' +
       "<caption>Public CTAS candidates, highest score first. Positions are J2000.</caption>" +
-      "<thead><tr>" + head + "</tr></thead><tbody>" + body + "</tbody></table></div>";
+      "<thead><tr>" + head + "</tr></thead><tbody>" + body + "</tbody></table></div>" +
+      (rows.length > state.shown
+        ? '<p style="margin-top:1rem;text-align:center;">' +
+          '<button type="button" class="btn btn--small" id="ctas-more">Show ' +
+          Math.min(PAGE, rows.length - state.shown) + ' more</button></p>'
+        : "");
+
+    var more = document.getElementById("ctas-more");
+    if (more) more.addEventListener("click", function () { state.shown += PAGE; renderTable(); });
 
     Array.prototype.forEach.call(el.results.querySelectorAll("[data-sort]"), function (btn) {
       btn.addEventListener("click", function () {
@@ -225,6 +247,7 @@
     }
     fill(el.cls, "classification", "All classifications");
     fill(el.msg, "primary_messenger", "All messengers");
+    fill(el.stat, "status", "All statuses");
   }
 
   function showError(message) {
@@ -268,7 +291,8 @@
       : "Unknown error.");
   });
 
-  if (el.q)   el.q.addEventListener("input",  function () { state.q = el.q.value; renderTable(); });
-  if (el.cls) el.cls.addEventListener("change", function () { state.cls = el.cls.value; renderTable(); });
-  if (el.msg) el.msg.addEventListener("change", function () { state.msg = el.msg.value; renderTable(); });
+  if (el.q)   el.q.addEventListener("input",  function () { state.q = el.q.value; state.shown = PAGE; renderTable(); });
+  if (el.cls) el.cls.addEventListener("change", function () { state.cls = el.cls.value; state.shown = PAGE; renderTable(); });
+  if (el.msg) el.msg.addEventListener("change", function () { state.msg = el.msg.value; state.shown = PAGE; renderTable(); });
+  if (el.stat) el.stat.addEventListener("change", function () { state.stat = el.stat.value; state.shown = PAGE; renderTable(); });
 })();
