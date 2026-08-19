@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>io.github.jackmcguireastro.ctas-mirror</string>
+
+    <!-- Mirror the local CTAS database onto the public site. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>REPLACE_WITH_HOME/Documents/GitHub/JackMcGuireAstro.github.io/scripts/publish_ctas.sh</string>
+    </array>
+
+    <!-- Event driven, not scheduled. launchd runs the job when these paths
+         change. There is no polling interval: a change to the database is
+         what triggers a publish. The script itself exits without committing
+         when the exported data turns out to be identical. -->
+    <key>WatchPaths</key>
+    <array>
+        <string>REPLACE_WITH_HOME/.codex/.chatgpt-projects/g-p-6a5d91be2e688191b7333527fcd488b3/data</string>
+        <string>REPLACE_WITH_HOME/.codex/.chatgpt-projects/g-p-6a5d91be2e688191b7333527fcd488b3/data/soc.db</string>
+        <string>REPLACE_WITH_HOME/.codex/.chatgpt-projects/g-p-6a5d91be2e688191b7333527fcd488b3/data/soc.db-wal</string>
+    </array>
+
+    <!-- Publish once when the agent is loaded, so the site is current
+         immediately rather than waiting for the next database write. -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- launchd will not relaunch the job more often than this. CTAS writes
+         to the database continuously, so without a floor the watcher would
+         fire every few seconds. The script applies its own longer floor
+         between actual commits (CTAS_MIN_INTERVAL). -->
+    <key>ThrottleInterval</key>
+    <integer>120</integer>
+
+    <key>WorkingDirectory</key>
+    <string>REPLACE_WITH_HOME/Documents/GitHub/JackMcGuireAstro.github.io</string>
+
+    <key>StandardOutPath</key>
+    <string>REPLACE_WITH_HOME/Library/Logs/ctas-mirror/launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>REPLACE_WITH_HOME/Library/Logs/ctas-mirror/launchd.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>GIT_TERMINAL_PROMPT</key>
+        <string>0</string>
+        <!-- Minimum seconds between published commits. Lower it for a faster
+             mirror and more commits; raise it for fewer. -->
+        <key>CTAS_MIN_INTERVAL</key>
+        <string>900</string>
+    </dict>
+
+    <key>KeepAlive</key>
+    <false/>
+    <key>ProcessType</key>
+    <string>Background</string>
+    <key>LowPriorityIO</key>
+    <true/>
+    <key>Nice</key>
+    <integer>5</integer>
+</dict>
+</plist>
