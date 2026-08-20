@@ -1,14 +1,15 @@
 <!DOCTYPE html>
+
 <html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CTAS | Cowboy Transient Alert System | Jack McGuire</title>
-<meta name="description" content="The Cowboy Transient Alert System (CTAS) is a rights-aware transient-alert system by Jack McGuire. Live public candidate list, refreshed approximately every 2 minutes.">
+<meta name="description" content="The Cowboy Transient Alert System (CTAS), built by Jack McGuire, brings public transient alerts and follow-up reports together while enforcing data-rights rules. Candidate data refreshes about every 2 minutes.">
 <link rel="canonical" href="https://jackmcguireastro.github.io/ctas.html">
 <meta property="og:type" content="website">
 <meta property="og:title" content="CTAS | Cowboy Transient Alert System">
-<meta property="og:description" content="A rights-aware transient-alert system reconciling supernova and multimessenger alerts with public follow-up evidence. Updated approximately every 2 minutes.">
+<meta property="og:description" content="CTAS brings public supernova and multimessenger alerts together with released follow-up reports while enforcing data-rights rules. Updated about every 2 minutes.">
 <meta property="og:url" content="https://jackmcguireastro.github.io/ctas.html">
 <meta property="og:image" content="https://jackmcguireastro.github.io/assets/images/ctas/ctas-card.png">
 <meta name="twitter:card" content="summary">
@@ -50,15 +51,16 @@
 <main id="main">
 
   <!-- ============================================================== hero -->
+
   <section class="hero">
     <div class="hero__sky" aria-hidden="true"></div>
     <div class="wrap hero__inner" style="grid-template-columns: 1fr;">
       <div>
         <p class="eyebrow">Cowboy Transient Alert System</p>
         <h1>CTAS</h1>
-        <p class="hero__statement">A rights-aware system that reconciles supernova and multimessenger alerts
-          with public follow-up evidence, so a researcher can see in one place what was reported, what is
-          already known about that patch of sky, and what is worth doing next.</p>
+        <p class="hero__statement">CTAS brings public supernova and multimessenger alerts together
+          with follow-up reports and information already known about the same area of sky. It gives a researcher
+          one place to check what was reported, what others have found, and whether the event deserves a closer look.</p>
         <div class="feature__badges" style="margin-top:1.4rem;">
           <span class="chip chip--experimental">Active development</span>
           <span class="chip chip--planned">Version <span data-ctas="version">1.2.0</span></span>
@@ -68,13 +70,14 @@
   </section>
 
   <!-- ====================================================== LIVE INTERFACE -->
+
   <section class="section" aria-labelledby="live-title">
     <div class="wrap wrap--wide">
       <div class="section__head">
         <p class="eyebrow">Live</p>
         <h2 id="live-title">Current public candidates</h2>
-        <p>Produced by a scheduled CTAS run and published as static data. Only rights-cleared, public-safe
-          fields are included.</p>
+        <p>A scheduled CTAS run produces this list, which is then published as static data. It includes only
+          public fields that have passed the system’s data-rights checks.</p>
       </div>
 
       <div class="ctas-status" id="ctas-status"></div>
@@ -101,39 +104,41 @@
 
       <div id="ctas-results"></div>
 
-      <h3 style="margin-top:2.5rem;font-size:1.05rem;">Alert sources this run</h3>
+      <h3 style="margin-top:2.5rem;font-size:1.05rem;">Alert sources used in this run</h3>
       <ul class="ctas-sources" id="ctas-sources"></ul>
       <p class="colophon" style="border:0;padding-top:1rem;">
-        Credential-free public sources are enabled. Sources needing authenticated
-        credentials report as <em>disabled</em> until those credentials are configured.
+        Public sources that do not require a login are enabled. Sources that need an account or API key
+        remain <em>disabled</em> until the required credentials are added.
       </p>
     </div>
+
   </section>
 
   <!-- ======================================================= what it is -->
+
   <section class="section section--edge" aria-labelledby="what-title">
     <div class="wrap">
       <div class="about-grid">
         <div>
           <p class="eyebrow">What it is</p>
-          <h2 id="what-title">A research operations system, not an observatory pipeline</h2>
-          <p>CTAS ingests public alert and follow-up records, screens every record against explicit
-            data-rights rules before its content is stored, normalizes it into a common event model, and keeps
-            an immutable provenance envelope with checksums for everything it retains. On top of that it runs
-            gated local analyses such as light-curve fits, host association, spectrum checks and observability
-            windows, then surfaces the result for a human to judge.</p>
-          <p>Its own internal assessment is deliberately conservative: a <em>certification-ready research
-            operations system</em>, not a certified production service and not an autonomous discovery machine.
-            I design and develop it: the scientific workflow, data model, rights rules, analysis layers and
-            interface.</p>
+          <h2 id="what-title">A research tool, not an automated observatory</h2>
+          <p>CTAS collects public alerts and follow-up records. Before it stores any scientific content,
+            it checks the record against a set of data-rights rules. Accepted records are converted to a
+            common format, and CTAS keeps the original source information and a checksum for each one. It can
+            then run local analyses such as light-curve fits, host-galaxy matching, spectrum checks and
+            observability calculations. A researcher reviews the results.</p>
+          <p>CTAS is still research software under active development. It is being built toward eventual
+            production use, but it is not a certified service and it does not make or publish discovery claims
+            on its own. I design and develop its scientific workflow, data model, data-rights rules, analysis
+            tools and interface.</p>
         </div>
         <div>
           <div class="note">
-            <p><strong>What CTAS deliberately does not do.</strong></p>
-            <p style="margin-bottom:0;">It does not command telescopes, submit observations, publish
-              classifications, or treat holding a credential as permission to retain data. Outbound email and
-              webhook delivery is off by default; every such message stays a draft until a runtime switch, an
-              enabled policy, an exact destination and per-item authorization all exist.</p>
+            <p><strong>What CTAS does not do.</strong></p>
+            <p style="margin-bottom:0;">It does not control telescopes, submit observing requests, or publish
+              classifications. Access to a source does not automatically mean its data can be stored. Email and
+              webhook delivery are disabled by default, and each message remains a draft unless delivery is
+              enabled, the policy allows it, the destination is specified and that item has been approved.</p>
           </div>
         </div>
       </div>
@@ -146,12 +151,13 @@
      ====================================================================== -->
 
   <!-- ========================================================== workflow -->
+
   <section class="section section--edge" aria-labelledby="flow-title">
     <div class="wrap">
       <div class="section__head">
         <p class="eyebrow">Workflow</p>
         <h2 id="flow-title">How a record moves through CTAS</h2>
-        <p>Each stage carries its real maturity. Nothing on the roadmap is drawn as finished.</p>
+        <p>Each stage shows its current status. Planned work is not presented as finished.</p>
       </div>
 
       <ul class="legend">
@@ -164,62 +170,70 @@
       <ol class="flow">
         <li class="flow__stage" data-state="implemented">
           <div class="flow__top"><h3>Intake</h3><span class="chip chip--done">Implemented</span></div>
-          <p>Connectors pull public transient reports, released community notes, circular streams and archival
-            records, each reporting its own configured, unavailable or rights-blocked state.</p>
+          <p>Connectors collect public transient reports, released community notes, circulars and archival
+            records. Each connector also reports whether it is configured, unavailable or blocked by
+            data-rights restrictions.</p>
         </li>
         <li class="flow__stage" data-state="implemented">
           <div class="flow__top"><h3>Rights screening and normalization</h3><span class="chip chip--done">Implemented</span></div>
-          <p>A record must carry an accepted rights label before its scientific content enters storage, caches,
-            responses or metrics. Unknown, proprietary, embargoed or restricted records are refused up front.</p>
+          <p>CTAS stores scientific content only after a record receives an accepted rights label. Records
+            marked unknown, proprietary, embargoed or restricted are rejected before they can enter storage,
+            caches, responses or metrics.</p>
         </li>
         <li class="flow__stage" data-state="implemented">
           <div class="flow__top"><h3>Context and triage</h3><span class="chip chip--done">Implemented, review-only</span></div>
-          <p>Events are enriched with catalog and host-galaxy context and enter a persistent review queue.
-            Nothing is promoted to an operational event without a substantive human note.</p>
+          <p>CTAS adds catalog and host-galaxy information, then places each event in a review queue that
+            remains available between runs. A researcher must leave a meaningful review note before the
+            event can move into follow-up planning.</p>
         </li>
         <li class="flow__stage" data-state="validating">
           <div class="flow__top"><h3>Classification and analysis</h3><span class="chip chip--validating">Validating</span></div>
-          <p>Modality-aware immutable assessments, including explicit conflicting-evidence and
-            insufficient-data states, plus light-curve and spectrum analysis as versioned machine evidence,
-            not calibrated posteriors.</p>
+          <p>CTAS records a separate assessment for each kind of evidence and keeps every version. It can
+            state when the evidence conflicts or when there is not enough data. Light-curve and spectrum
+            results are stored as machine-generated evidence, not treated as calibrated probability estimates.</p>
         </li>
         <li class="flow__stage" data-state="implemented">
           <div class="flow__top"><h3>Follow-up drafting and public export</h3><span class="chip chip--done">Implemented, delivery gated</span></div>
-          <p>Observability planning, durable notification policies and an outbox, plus the sanitized public
-            export that feeds this page. Plans are immutable, reproducible and explicitly non-submittable.</p>
+          <p>CTAS calculates observability, applies saved notification rules, prepares messages in an outbox
+            and creates the sanitized public export used on this page. Follow-up plans are saved with the
+            information needed to reproduce them. CTAS cannot submit those plans to an observatory.</p>
         </li>
         <li class="flow__stage" data-state="planned">
           <div class="flow__top"><h3>Certified production operation</h3><span class="chip chip--planned">Planned</span></div>
-          <p>A calibrated survey image feed, high-availability storage, externally witnessed
-            disaster-recovery and load evidence, and an on-call policy all remain open gates.</p>
+          <p>Before CTAS could run as a certified production service, it would still need a calibrated survey
+            image feed, high-availability storage, independently reviewed disaster-recovery and load tests,
+            and a formal on-call policy.</p>
         </li>
       </ol>
     </div>
+
   </section>
 
   <!-- ========================================================= technical -->
+
   <section class="section section--edge" aria-labelledby="tech-title">
     <div class="wrap">
       <div class="section__head">
         <p class="eyebrow">Under the hood</p>
-        <h2 id="tech-title">Technical shape</h2>
+        <h2 id="tech-title">How it is built</h2>
       </div>
       <div class="spec">
         <dl>
           <div class="spec__row"><dt>Languages</dt>
-            <dd>Python 3.11+ for the service and analysis layers; TypeScript for the operations dashboard.</dd></div>
+            <dd>Python 3.11+ for the service and scientific analysis; TypeScript for the operations dashboard.</dd></div>
           <div class="spec__row"><dt>Service</dt>
             <dd>FastAPI with asynchronous SQLAlchemy, Pydantic models, a durable work queue and Alembic migrations.</dd></div>
           <div class="spec__row"><dt>Storage</dt>
-            <dd>PostgreSQL for the deployment topology; SQLite in WAL mode for single-machine development.</dd></div>
+            <dd>PostgreSQL for deployed systems; SQLite in WAL mode for development on one machine.</dd></div>
           <div class="spec__row"><dt>Scientific stack</dt>
-            <dd>Astropy and astropy-healpix, NumPy and SciPy. FITS images, HEALPix sky maps, Avro alerts and
-              two-column ASCII spectra, all checksummed.</dd></div>
+            <dd>Astropy and astropy-healpix, NumPy and SciPy. CTAS reads FITS images, HEALPix sky maps, Avro
+              alerts and two-column ASCII spectra, and records a checksum for every retained file.</dd></div>
           <div class="spec__row"><dt>Tests</dt>
-            <dd><span data-ctas="tests">108</span> test modules under pytest with coverage, Ruff and mypy.</dd></div>
+            <dd>The test suite contains <span data-ctas="tests">108</span> pytest modules, with coverage reporting,
+              Ruff linting and mypy type checking.</dd></div>
           <div class="spec__row"><dt>Public refresh</dt>
-            <dd>A scheduled GitHub Actions job runs CTAS, exports the sanitized dataset above, and republishes
-              this site. No credentials or internal records reach the browser.</dd></div>
+            <dd>A scheduled GitHub Actions job runs CTAS, creates the sanitized dataset shown above and
+              republishes this site. Credentials and internal records are not included in the public files.</dd></div>
         </dl>
       </div>
     </div>
@@ -227,7 +241,7 @@
 
   <div class="wrap">
     <p class="colophon" style="border:0;margin:0;padding-top:1.25rem;">
-      Project status above mirrors the CTAS source and was last checked on
+      The project status shown above comes from the CTAS source code and was last checked on
       <span data-ctas="synced">18 August 2026</span>.
     </p>
   </div>
@@ -235,14 +249,16 @@
 <!-- CTAS:SYNC:END -->
 
   <!-- ============================================================= links -->
+
   <section class="section section--edge" aria-labelledby="links-title">
     <div class="wrap">
       <div class="section__head">
         <p class="eyebrow">Availability</p>
-        <h2 id="links-title">Seeing more of it</h2>
+        <h2 id="links-title">More about CTAS</h2>
       </div>
-      <p class="lede">The processing code is developed in a private repository, so there is no public source
-        link yet. The data on this page is the public face of it. Public documentation is in preparation.</p>
+      <p class="lede">The processing code is currently kept in a private repository, so there is no public
+        source link yet. This page shows the project’s public data and current status. I am still preparing
+        the public documentation.</p>
       <ul class="actions">
         <li><a class="btn btn--primary" href="mailto:jackmcg7@live.com?subject=CTAS">Ask me about CTAS</a></li>
         <li><a class="btn" href="research.html">Related research</a></li>
@@ -272,12 +288,14 @@
         </ul>
       </nav>
     </div>
-    <p class="colophon">&copy; 2026 Jack McGuire. Static site; retains assets from the
+    <p class="colophon">&copy; 2026 Jack McGuire. This is a static site built with assets from the
       <a href="https://html5up.net">HTML5 UP</a> Stellar template.</p>
   </div>
 </footer>
 
 <script src="assets/js/site.js"></script>
+
 <script src="ctas/app.js"></script>
+
 </body>
 </html>
