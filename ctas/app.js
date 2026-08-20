@@ -147,14 +147,13 @@
 
   var COLUMNS = [
     { key: "name",            label: "Object" },
-    { key: "status",          label: "Status" },
     { key: "classification",  label: "Classification" },
     { key: "ctas_score",      label: "CTAS score", num: true },
+    { key: "ra_deg",          label: "Position (RA / Dec)" },
     { key: "discovery_time",  label: "Discovered" },
     { key: "discovery_magnitude", label: "Mag", num: true },
     { key: "redshift",        label: "z", num: true },
     { key: "discovery_survey", label: "Survey" },
-    { key: "ra_deg",          label: "Position (RA / Dec)" },
     { key: "links",           label: "Catalogues", nosort: true }
   ];
 
@@ -198,16 +197,15 @@
       }).join("");
       return "<tr>" +
         '<td class="name">' + esc(c.name) + "</td>" +
-        "<td>" + (c.status ? '<span class="pill">' + esc(c.status) + "</span>" : "") + "</td>" +
         "<td>" + (c.classification
                   ? '<span class="pill">' + esc(c.classification) + "</span>"
                   : '<span class="ctas-sources__detail">unclassified</span>') + "</td>" +
         '<td class="num">' + esc(num(c.ctas_score, 1)) + "</td>" +
+        '<td class="num">' + esc(sexagesimal(c.ra_deg, c.dec_deg)) + "</td>" +
         "<td>" + esc(c.discovery_time ? absolute(c.discovery_time) : "") + "</td>" +
         '<td class="num">' + esc(num(c.discovery_magnitude, 2)) + "</td>" +
         '<td class="num">' + esc(num(c.redshift, 4)) + "</td>" +
         "<td>" + esc(text(c.discovery_survey)) + "</td>" +
-        '<td class="num">' + esc(sexagesimal(c.ra_deg, c.dec_deg)) + "</td>" +
         '<td class="links">' + links + "</td>" +
       "</tr>";
     }).join("");
