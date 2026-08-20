@@ -104,13 +104,28 @@ if [ -n "$STAGED_OTHER" ]; then
 fi
 
 git add -- ctas/data || die "git add failed"
-git commit -q -m "CTAS data: $COUNT candidates ($(date -u '+%Y-%m-%d %H:%M UTC'))" \
+
+# If the last commit is one of ours and has not reached origin yet, amend it
+# instead of stacking a new commit every cycle. A run of failing pushes then
+# leaves ONE pending commit carrying the newest data, not dozens of stale ones.
+AMEND=""
+if git log -1 --pretty=%s 2>/dev/null | grep -q '^CTAS data: ' \
+   && ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+  AMEND="--amend"
+  say "previous CTAS commit is still unpushed; amending it rather than stacking"
+fi
+
+git commit -q $AMEND -m "CTAS data: $COUNT candidates ($(date -u '+%Y-%m-%d %H:%M UTC'))" \
   || die "git commit failed"
 SHA=$(git rev-parse --short HEAD)
 
-if git push -q origin "$BRANCH" 2>>"$LOG"; then
+PUSH_ERR=$(git push origin "$BRANCH" 2>&1)
+if [ $? -eq 0 ]; then
   date +%s >"$STAMP"
   say "published $SHA  ($COUNT candidates)"
 else
-  die "push failed; commit $SHA stays local, nothing forced"
+  printf '%s\n' "$PUSH_ERR" >>"$LOG"
+  say "push failed; commit $SHA stays local, nothing forced"
+  say "git said: $(printf '%s' "$PUSH_ERR" | tr '\n' ' ' | cut -c1-300)"
+  exit 1
 fi

@@ -50,6 +50,13 @@
         <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
         <key>GIT_TERMINAL_PROMPT</key>
         <string>0</string>
+        <!-- launchd jobs get no ssh-agent, so tell ssh to use the key on disk
+             directly and never try to ask a human anything. The key's
+             passphrase, if it has one, comes from the login keychain. -->
+        <key>GIT_SSH_COMMAND</key>
+        <string>ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i REPLACE_WITH_HOME/.ssh/id_ed25519</string>
+        <key>HOME</key>
+        <string>REPLACE_WITH_HOME</string>
         <!-- Minimum seconds between published commits. Lower it for a faster
              mirror and more commits; raise it for fewer. -->
         <key>CTAS_MIN_INTERVAL</key>

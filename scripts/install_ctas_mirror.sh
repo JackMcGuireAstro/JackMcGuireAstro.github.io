@@ -46,12 +46,21 @@ command -v python3 >/dev/null && ok "python3         $(python3 -V 2>&1)" || { ba
 # the credential in the keychain, which a launchd job can read.
 echo
 echo "Checking that an unattended push will work"
-if GIT_TERMINAL_PROMPT=0 git -C "$SITE" ls-remote origin -h refs/heads/main >/dev/null 2>&1; then
-  ok "GitHub credentials are available without a prompt"
+# ls-remote is NOT a valid test: on a public repo it succeeds anonymously and
+# tells you nothing about whether you can PUSH. Test the push path itself.
+PUSHTEST=$(cd "$SITE" && GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="ssh -o BatchMode=yes" \
+           git push --dry-run origin main 2>&1)
+if [ $? -eq 0 ]; then
+  ok "an unattended push works"
+  case "$(git -C "$SITE" remote get-url origin)" in
+    git@*|ssh://*) ok "remote uses SSH (no token to expire)" ;;
+    *) info "remote uses HTTPS; it works now but the token will expire someday" ;;
+  esac
 else
-  bad "git cannot reach GitHub without asking for a credential"
-  info "Do one manual push from GitHub Desktop first so the credential is"
-  info "stored in your keychain, then run this installer again."
+  bad "an unattended push does NOT work, so the agent could never publish"
+  printf '%s\n' "$PUSHTEST" | sed 's/^/        /'
+  info ""
+  info "Fix it with:  bash $SITE/scripts/setup_ssh_push.sh"
   exit 1
 fi
 
