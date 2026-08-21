@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sqlite3
 import sys
 from datetime import datetime, timezone
@@ -71,6 +72,8 @@ PUBLIC_LINKS = {
     "gcn":                ("GCN", None),
 }
 
+TNS_OBJECT = re.compile(r"^(?:AT|SN)?(\d{4}[a-z]+)$", re.IGNORECASE)
+
 # Merged records are audit rows pointing at a surviving parent, not separate
 # astronomical events. CTAS's own query layer hides them; so do we.
 EXCLUDED_STATUS = {"merged"}
@@ -107,6 +110,37 @@ def clean(value: Any) -> Any:
     return value
 
 
+def tns_object_id(value: str) -> str | None:
+    """Return the path identifier used by public TNS object pages."""
+
+    match = TNS_OBJECT.fullmatch(value.strip())
+    return match.group(1) if match else None
+
+
+def rows_by_event(
+    cur: sqlite3.Cursor,
+    event_ids: list[str],
+    statement: str,
+) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    chunk_size = 400
+    for index in range(0, len(event_ids), chunk_size):
+        chunk = event_ids[index:index + chunk_size]
+        placeholders = ",".join("?" * len(chunk))
+        for row in cur.execute(statement.format(ids=placeholders), chunk):
+            event_id = str(row["event_id"])
+            item = {
+                key: clean(row[key])
+                for key in row.keys()
+                if key != "event_id" and clean(row[key]) is not None
+            }
+            for key in ("observed_at", "asserted_at", "published_at"):
+                if key in item:
+                    item[key] = iso(item[key])
+            grouped.setdefault(event_id, []).append(item)
+    return grouped
+
+
 def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     uri = f"file:{db_path}?mode=ro"
     con = sqlite3.connect(uri, uri=True, timeout=15)
@@ -134,6 +168,77 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             chunk,
         ):
             alias_map.setdefault(a["event_id"], []).append(a)
+
+    classifications = rows_by_event(
+        cur,
+        ids,
+        """
+        SELECT event_id, provider, classification, subtype, probability, method,
+               asserted_at, citation_url
+        FROM classification_assertions
+        WHERE event_id IN ({ids})
+          AND data_rights IN ('public', 'open')
+          AND COALESCE(superseded, 0) = 0
+          AND COALESCE(retracted, 0) = 0
+        ORDER BY event_id, asserted_at DESC, id
+        """,
+    )
+    observations = rows_by_event(
+        cur,
+        ids,
+        """
+        SELECT event_id, provider, observed_at, detection, telescope, observatory,
+               instrument, pipeline, band, magnitude_system, magnitude,
+               magnitude_error, flux, flux_error, flux_unit, limiting_magnitude,
+               exposure_seconds, signal_to_noise, calibration, photometry_method,
+               summary, source_url
+        FROM observations
+        WHERE event_id IN ({ids})
+          AND data_rights IN ('public', 'open')
+          AND COALESCE(superseded, 0) = 0
+        ORDER BY event_id, observed_at DESC, id
+        """,
+    )
+    signals = rows_by_event(
+        cur,
+        ids,
+        """
+        SELECT event_id, provider, provider_signal_id, observed_at, messenger, role,
+               instrument, detection, alert_type, significance_sigma,
+               false_alarm_rate_hz, sky_area_50_sq_deg, sky_area_90_sq_deg,
+               distance_mpc, distance_std_mpc, measurement, summary, source_url,
+               skymap_url
+        FROM messenger_signals
+        WHERE event_id IN ({ids})
+          AND data_rights IN ('public', 'open')
+          AND COALESCE(simulation, 0) = 0
+        ORDER BY event_id, observed_at DESC, id
+        """,
+    )
+    publications = rows_by_event(
+        cur,
+        ids,
+        """
+        WITH latest_revision AS (
+          SELECT pr.*,
+                 ROW_NUMBER() OVER (
+                   PARTITION BY pr.publication_id
+                   ORDER BY pr.retrieved_at DESC, pr.id DESC
+                 ) AS revision_rank
+          FROM publication_revisions pr
+        )
+        SELECT pel.event_id, p.provider, p.provider_publication_id,
+               p.publication_type, p.canonical_url, p.published_at,
+               lr.title, lr.authors_text, lr.abstract
+        FROM publication_event_links pel
+        JOIN publications p ON p.id = pel.publication_id
+        JOIN latest_revision lr
+          ON lr.publication_id = p.id AND lr.revision_rank = 1
+        WHERE pel.event_id IN ({ids})
+          AND p.data_rights IN ('public', 'open')
+        ORDER BY pel.event_id, p.published_at DESC, p.id
+        """,
+    )
 
     counts = {"total_real_events": cur.execute(
         "SELECT COUNT(*) FROM events WHERE COALESCE(simulation,0)=0").fetchone()[0]}
@@ -170,7 +275,9 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             label, template = PUBLIC_LINKS[provider]
             entry = {"label": label, "designation": str(ext)}
             if template:
-                entry["url"] = template.format(id=str(ext))
+                linked_id = tns_object_id(str(ext)) if provider == "tns" else str(ext)
+                if linked_id:
+                    entry["url"] = template.format(id=linked_id)
             links.append(entry)
         if links:
             # de-duplicate on (label, designation)
@@ -181,6 +288,15 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
                     seen.add(k)
                     uniq.append(l)
             rec["links"] = uniq[:6]
+
+        follow_up = {
+            "classifications": classifications.get(r["id"], []),
+            "observations": observations.get(r["id"], []),
+            "messenger_signals": signals.get(r["id"], []),
+            "publications": publications.get(r["id"], []),
+        }
+        if any(follow_up.values()):
+            rec["follow_up"] = follow_up
 
         out.append(rec)
 

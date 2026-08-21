@@ -121,6 +121,45 @@ table.ctas-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; mi
 .ctas-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
 .ctas-table td.num { font-family: var(--font-mono); font-size: 0.85rem; white-space: nowrap; }
 .ctas-table .name { font-weight: 650; color: var(--ink); }
+.ctas-candidate {
+  all: unset;
+  cursor: pointer;
+  display: grid;
+  gap: 0.15rem;
+  color: var(--ink);
+}
+.ctas-candidate:hover span, .ctas-candidate:focus-visible span { color: var(--gold); }
+.ctas-candidate:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+.ctas-candidate small { color: var(--ink-3); font-size: 0.7rem; font-weight: 500; }
+.ctas-detail-row[hidden] { display: none; }
+.ctas-detail-row > td { padding: 0 !important; background: var(--surface-2); }
+.ctas-detail { padding: clamp(1.1rem, 2.5vw, 2rem); }
+.ctas-detail__intro { display: flex; justify-content: space-between; gap: 1.5rem; align-items: start; }
+.ctas-detail__intro h3 { margin: 0.15rem 0 0.5rem; }
+.ctas-detail__intro p { margin-bottom: 0; }
+.ctas-detail__score {
+  min-width: 11rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: right;
+}
+.ctas-detail__score span, .ctas-detail__score small { display: block; color: var(--ink-3); font-size: 0.72rem; }
+.ctas-detail__score strong { display: block; color: var(--gold); font: 700 1.8rem/1.2 var(--font-mono); }
+.ctas-detail__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.65rem; margin: 1.25rem 0; }
+.ctas-detail__facts div { padding: 0.65rem 0.75rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+.ctas-detail__facts dt { color: var(--ink-3); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.ctas-detail__facts dd { margin: 0.15rem 0 0; color: var(--ink); }
+.ctas-detail__catalogues { margin: 0 0 1.25rem; }
+.ctas-detail__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr)); gap: 1rem; }
+.ctas-detail__section { padding: 0.9rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.ctas-detail__section h4 { margin: 0 0 0.65rem; font-size: 0.92rem; }
+.ctas-detail__section ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
+.ctas-detail__section li { margin: 0; padding-top: 0.7rem; border-top: 1px solid var(--border); font-size: 0.83rem; }
+.ctas-detail__section li:first-child { padding-top: 0; border-top: 0; }
+.ctas-detail__section li strong, .ctas-detail__section li span { display: block; }
+.ctas-detail__section li span { color: var(--ink-3); margin: 0.15rem 0; }
+.ctas-detail__section li p { margin: 0.3rem 0; color: var(--ink-2); }
 
 /* sortable column headers are real buttons */
 .ctas-table th button {
@@ -170,6 +209,8 @@ table.ctas-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; mi
   .ctas-toolbar { flex-direction: column; align-items: stretch; }
   .field input, .field select { min-width: 0; width: 100%; }
   .ctas-count { margin-left: 0; padding-bottom: 0; }
+  .ctas-detail__intro { display: block; }
+  .ctas-detail__score { text-align: left; margin-top: 1rem; }
 }
 
 /* `display:flex` above would otherwise defeat the [hidden] attribute. */

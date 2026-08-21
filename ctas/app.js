@@ -82,6 +82,91 @@
            " " + sign + p(dd) + ":" + p(dm) + ":" + ds.toFixed(0);
   }
 
+  function link(url, label) {
+    return url
+      ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(label) + '</a>'
+      : '';
+  }
+
+  function fact(label, value) {
+    if (value === null || value === undefined || value === "") return "";
+    return '<div><dt>' + esc(label) + '</dt><dd>' + esc(value) + '</dd></div>';
+  }
+
+  function detailList(title, rows, render) {
+    if (!Array.isArray(rows) || !rows.length) return "";
+    return '<section class="ctas-detail__section"><h4>' + esc(title) + '</h4><ul>' +
+      rows.map(render).join("") + '</ul></section>';
+  }
+
+  function renderDetails(c) {
+    var follow = c.follow_up || {};
+    var counts = [
+      ["classification", follow.classifications],
+      ["observation", follow.observations],
+      ["messenger notice", follow.messenger_signals],
+      ["public report", follow.publications]
+    ].filter(function (item) { return Array.isArray(item[1]) && item[1].length; })
+      .map(function (item) {
+        return item[1].length + " " + item[0] + (item[1].length === 1 ? "" : "s");
+      });
+    var rationale = counts.length
+      ? "CTAS has retained " + counts.join(", ") + " for review."
+      : "CTAS has a public event record, but no additional public follow-up rows are retained yet.";
+
+    var context = '<dl class="ctas-detail__facts">' +
+      fact("Coordinates", sexagesimal(c.ra_deg, c.dec_deg)) +
+      fact("Coordinate uncertainty", c.coordinate_error_arcsec === undefined ? "" : num(c.coordinate_error_arcsec, 2) + " arcsec") +
+      fact("First detection", c.first_detection_time ? absolute(c.first_detection_time) : "") +
+      fact("Host", c.host_name) +
+      fact("Host redshift", num(c.host_redshift, 5)) +
+      fact("Transient redshift", num(c.redshift, 5)) +
+      fact("Distance", c.distance_mpc === undefined ? "" : num(c.distance_mpc, 2) + " Mpc") +
+      fact("Last CTAS update", c.updated_at ? absolute(c.updated_at) : "") +
+      '</dl>';
+
+    var classifications = detailList("Public classifications", follow.classifications, function (row) {
+      var probability = row.probability === undefined ? "" : " · " + num(100 * row.probability, 1) + "%";
+      return '<li><strong>' + esc(row.classification || "Unclassified") + '</strong>' +
+        (row.subtype ? ' · ' + esc(row.subtype) : '') + probability +
+        '<span>' + esc(row.provider || "") + (row.method ? ' · ' + esc(row.method) : '') +
+        (row.asserted_at ? ' · ' + esc(absolute(row.asserted_at)) : '') + '</span>' +
+        link(row.citation_url, "Open classification source") + '</li>';
+    });
+    var observations = detailList("Photometry and observations", follow.observations, function (row) {
+      var measurement = row.magnitude !== undefined
+        ? num(row.magnitude, 3) + (row.magnitude_error !== undefined ? " ± " + num(row.magnitude_error, 3) : "") + " mag"
+        : row.limiting_magnitude !== undefined ? "limit " + num(row.limiting_magnitude, 3) + " mag"
+        : row.flux !== undefined ? num(row.flux, 4) + " " + text(row.flux_unit) : "recorded observation";
+      return '<li><strong>' + esc(measurement) + '</strong>' +
+        '<span>' + esc([row.band, row.instrument || row.telescope, row.provider, row.observed_at ? absolute(row.observed_at) : ""].filter(Boolean).join(" · ")) + '</span>' +
+        (row.summary ? '<p>' + esc(row.summary) + '</p>' : '') +
+        link(row.source_url, "Open observation source") + '</li>';
+    });
+    var signals = detailList("Messenger notices", follow.messenger_signals, function (row) {
+      return '<li><strong>' + esc([row.messenger, row.alert_type || row.role].filter(Boolean).join(" · ")) + '</strong>' +
+        '<span>' + esc([row.instrument, row.provider, row.observed_at ? absolute(row.observed_at) : ""].filter(Boolean).join(" · ")) + '</span>' +
+        (row.summary || row.measurement ? '<p>' + esc(row.summary || row.measurement) + '</p>' : '') +
+        link(row.source_url, "Open notice") + (row.source_url && row.skymap_url ? " · " : "") +
+        link(row.skymap_url, "Open sky map") + '</li>';
+    });
+    var publications = detailList("Circulars and public follow-up reports", follow.publications, function (row) {
+      return '<li><strong>' + esc(row.title || row.publication_type || "Public report") + '</strong>' +
+        '<span>' + esc([row.authors_text, row.provider, row.published_at ? absolute(row.published_at) : ""].filter(Boolean).join(" · ")) + '</span>' +
+        (row.abstract ? '<p>' + esc(row.abstract) + '</p>' : '') +
+        link(row.canonical_url, "Read the full report") + '</li>';
+    });
+    var catalogueLinks = (c.links || []).filter(function (row) { return row.url; }).map(function (row) {
+      return link(row.url, row.label === "TNS" ? "Open TNS record" : row.label);
+    }).join(" · ");
+
+    return '<div class="ctas-detail"><div class="ctas-detail__intro"><div><p class="eyebrow">Follow-up record</p>' +
+      '<h3>' + esc(c.name) + '</h3><p>' + esc(rationale) + '</p></div>' +
+      '<p class="ctas-detail__score"><span>CTAS review score</span><strong>' + esc(num(c.ctas_score, 1) || "—") + '</strong><small>Ordering aid, not a calibrated scientific probability.</small></p></div>' +
+      context + (catalogueLinks ? '<p class="ctas-detail__catalogues">' + catalogueLinks + '</p>' : '') +
+      '<div class="ctas-detail__grid">' + classifications + signals + observations + publications + '</div></div>';
+  }
+
   // ----------------------------------------------------------------- status
   function renderStatus() {
     var st = state.status || {};
@@ -189,14 +274,15 @@
     }).join("");
 
     var window_ = rows.slice(0, state.shown);
-    var body = window_.map(function (c) {
+    var body = window_.map(function (c, index) {
+      var detailId = "ctas-detail-" + index;
       var links = (c.links || []).map(function (l) {
         return l.url
           ? '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label) + "</a>"
           : '<span class="ctas-sources__detail">' + esc(l.designation) + "</span>";
       }).join("");
-      return "<tr>" +
-        '<td class="name">' + esc(c.name) + "</td>" +
+      return '<tr class="ctas-candidate-row">' +
+        '<td class="name"><button type="button" class="ctas-candidate" data-detail="' + detailId + '" aria-expanded="false" aria-controls="' + detailId + '"><span>' + esc(c.name) + '</span><small>Show follow-up</small></button></td>' +
         "<td>" + (c.classification
                   ? '<span class="pill">' + esc(c.classification) + "</span>"
                   : '<span class="ctas-sources__detail">unclassified</span>') + "</td>" +
@@ -207,7 +293,7 @@
         '<td class="num">' + esc(num(c.redshift, 4)) + "</td>" +
         "<td>" + esc(text(c.discovery_survey)) + "</td>" +
         '<td class="links">' + links + "</td>" +
-      "</tr>";
+      '</tr><tr class="ctas-detail-row" id="' + detailId + '" hidden><td colspan="9">' + renderDetails(c) + '</td></tr>';
     }).join("");
 
     el.results.innerHTML =
@@ -229,6 +315,16 @@
         if (state.sortKey === k) { state.sortDir = -state.sortDir; }
         else { state.sortKey = k; state.sortDir = (k === "name" ? 1 : -1); }
         renderTable();
+      });
+    });
+    Array.prototype.forEach.call(el.results.querySelectorAll("[data-detail]"), function (btn) {
+      btn.addEventListener("click", function () {
+        var detail = document.getElementById(btn.getAttribute("data-detail"));
+        var opening = detail.hidden;
+        detail.hidden = !opening;
+        btn.setAttribute("aria-expanded", opening ? "true" : "false");
+        var label = btn.querySelector("small");
+        if (label) label.textContent = opening ? "Hide follow-up" : "Show follow-up";
       });
     });
   }
