@@ -1,11 +1,53 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-21T18:52:08Z",
+  "generated_at": "2026-08-21T18:54:11Z",
   "origin": "local-snapshot",
   "cadence": "about every 2 minutes",
-  "candidate_count": 2507,
+  "candidate_count": 2508,
   "degraded": false,
   "candidates": [
+    {
+      "name": "KONUS-WIND-20260820T160051904",
+      "discovery_time": "2026-08-20T16:00:51Z",
+      "discovery_survey": "Konus-Wind",
+      "discovery_instrument": "Konus",
+      "status": "candidate",
+      "classification": "Unclassified",
+      "ctas_score": 73.05,
+      "event_type": "high-energy-count-rate-trigger",
+      "primary_messenger": "gamma-ray",
+      "updated_at": "2026-08-21T18:52:30Z",
+      "links": [
+        {
+          "label": "GCN",
+          "designation": "KONUS-WIND-20260820T160051904"
+        },
+        {
+          "label": "GCN",
+          "designation": "Konus-Wind trigger 20260820T160051904"
+        }
+      ],
+      "follow_up": {
+        "classifications": [],
+        "observations": [],
+        "messenger_signals": [
+          {
+            "provider": "gcn",
+            "provider_signal_id": "KONUS-WIND-20260820T160051904:854",
+            "observed_at": "2026-08-20T16:00:51Z",
+            "messenger": "gamma-ray",
+            "role": "trigger",
+            "instrument": "Konus-Wind",
+            "detection": 1,
+            "alert_type": "KONUS_Lightcurve",
+            "measurement": "Count-rate increase in 50-200 keV; trigger flags 0x201; no source position",
+            "summary": "Public Konus-Wind count-rate lightcurve trigger from delayed ground processing. Konus documents GRBs, other high-energy transients, non-astrophysical triggers, and occasional duplicate downlinks; this notice is not by itself a confirmed GRB, optical counterpart, localization, or common multimessenger source.",
+            "source_url": "https://gcn.nasa.gov/missions/konus"
+          }
+        ],
+        "publications": []
+      }
+    },
     {
       "name": "AT2026zjy",
       "ra_deg": 65.031042,
