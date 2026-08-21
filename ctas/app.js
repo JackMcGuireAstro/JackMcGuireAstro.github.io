@@ -472,7 +472,7 @@
       var distance = Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2);
       if (distance < bestDistance) { bestDistance = distance; best = point; }
     });
-    return bestDistance <= 100 ? {point: best, x: x, y: y} : null;
+    return best && bestDistance <= 100 ? {point: best, x: x, y: y} : null;
   }
 
   function showSkyCandidate(candidate) {
