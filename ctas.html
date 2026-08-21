@@ -82,6 +82,32 @@
 
       <div class="ctas-status" id="ctas-status"></div>
 
+      <section class="ctas-sky" aria-labelledby="ctas-sky-title">
+        <div class="ctas-sky__head">
+          <div>
+            <p class="eyebrow">Celestial sphere</p>
+            <h3 id="ctas-sky-title">Where the newest candidates are</h3>
+            <p>Each point is positioned by right ascension and declination and colored by discovery magnitude.
+              Hover for a quick summary; select a point for the complete public follow-up record.</p>
+          </div>
+          <div class="ctas-window" role="group" aria-label="Sky time window">
+            <button type="button" class="ctas-window__button is-active" data-sky-days="7" aria-pressed="true">Weekly</button>
+            <button type="button" class="ctas-window__button" data-sky-days="30" aria-pressed="false">Monthly</button>
+          </div>
+        </div>
+        <div class="ctas-sky__stage" id="ctas-sky-stage">
+          <canvas id="ctas-sky-canvas" role="img" aria-label="All-sky map of CTAS candidates in the last seven days"></canvas>
+          <div class="ctas-sky__tooltip" id="ctas-sky-tooltip" role="status" hidden></div>
+        </div>
+        <div class="ctas-sky__foot">
+          <p class="ctas-sky__count" id="ctas-sky-count" aria-live="polite"></p>
+          <div class="ctas-mag-legend" aria-label="Discovery magnitude color scale">
+            <span>brighter</span><i aria-hidden="true"></i><span>fainter</span>
+          </div>
+        </div>
+        <div id="ctas-sky-detail" class="ctas-sky__detail" hidden></div>
+      </section>
+
       <div class="ctas-toolbar" id="ctas-toolbar" hidden>
         <div class="field">
           <label for="ctas-q">Search</label>

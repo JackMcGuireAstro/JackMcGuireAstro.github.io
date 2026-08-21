@@ -355,7 +355,7 @@ def main() -> int:
         "schema_version": SCHEMA_VERSION,
         "generated_at": utcstamp(),
         "origin": "local-snapshot",
-        "cadence": "approximately every 30 minutes",
+        "cadence": "about every 2 minutes",
         "candidate_count": len(candidates),
         "degraded": False,
         "candidates": candidates,
@@ -374,7 +374,7 @@ def main() -> int:
         "origin": "local-snapshot",
         "last_successful_update": payload["generated_at"],
         "candidate_count": len(candidates),
-        "cadence": "approximately every 30 minutes",
+        "cadence": "about every 2 minutes",
         "sources": [{
             "source": "ctas-local",
             "label": "CTAS accumulated event database",

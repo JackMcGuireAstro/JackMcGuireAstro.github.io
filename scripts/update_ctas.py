@@ -31,6 +31,7 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import sys
 import tempfile
 import traceback
@@ -43,7 +44,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 
 SCHEMA_VERSION = 1
-CADENCE_TEXT = "approximately every 30 minutes"
+CADENCE_TEXT = "about every 2 minutes"
+TNS_OBJECT = re.compile(r"^(?:AT|SN)?(\d{4}[a-z]+)$", re.IGNORECASE)
 
 # ---------------------------------------------------------------------------
 # Source registry
@@ -154,8 +156,14 @@ def sanitize_event(summary: dict[str, Any]) -> dict[str, Any] | None:
         if provider not in PUBLIC_LINKS:
             continue
         label, template = PUBLIC_LINKS[provider]
+        linked_id = str(external)
+        if provider == "tns":
+            match = TNS_OBJECT.fullmatch(linked_id.strip())
+            if not match:
+                continue
+            linked_id = match.group(1)
         links.append({"label": label, "designation": str(external),
-                      "url": template.format(id=str(external))})
+                      "url": template.format(id=linked_id)})
     if links:
         out["links"] = links[:6]
 

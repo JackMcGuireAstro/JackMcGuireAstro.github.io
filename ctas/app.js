@@ -15,7 +15,8 @@
   // let the reader ask for more. Search and sort always span the full set.
   var PAGE = 150;
   var state = { candidates: [], status: null, sortKey: "ctas_score", sortDir: -1,
-               q: "", cls: "", msg: "", stat: "", shown: PAGE };
+               q: "", cls: "", msg: "", stat: "", shown: PAGE,
+               skyDays: 7, skyPoints: [], skySelected: null };
 
   var el = {
     status:   document.getElementById("ctas-status"),
@@ -26,7 +27,12 @@
     q:        document.getElementById("ctas-q"),
     cls:      document.getElementById("ctas-class"),
     msg:      document.getElementById("ctas-messenger"),
-    stat:     document.getElementById("ctas-statusfilter")
+    stat:     document.getElementById("ctas-statusfilter"),
+    skyStage: document.getElementById("ctas-sky-stage"),
+    sky:      document.getElementById("ctas-sky-canvas"),
+    skyTip:   document.getElementById("ctas-sky-tooltip"),
+    skyCount: document.getElementById("ctas-sky-count"),
+    skyDetail: document.getElementById("ctas-sky-detail")
   };
   if (!el.results) return;
 
@@ -86,6 +92,27 @@
     return url
       ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(label) + '</a>'
       : '';
+  }
+
+  function catalogueUrl(row) {
+    if (!row || !row.url) return null;
+    try {
+      var parsed = new URL(row.url, window.location.href);
+      if (parsed.protocol !== "https:") return null;
+      if (row.label === "TNS") {
+        if (parsed.hostname !== "www.wis-tns.org" || parsed.port || parsed.search || parsed.hash) return null;
+        if (!/^\/object\/\d{4}[a-z]+$/i.test(parsed.pathname)) return null;
+      }
+      return parsed.href;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function catalogueLink(row) {
+    var url = catalogueUrl(row);
+    if (!url) return '<span class="ctas-sources__detail">' + esc(row && row.designation) + '</span>';
+    return link(url, row.label === "TNS" ? "TNS" : row.label);
   }
 
   function fact(label, value) {
@@ -156,8 +183,8 @@
         (row.abstract ? '<p>' + esc(row.abstract) + '</p>' : '') +
         link(row.canonical_url, "Read the full report") + '</li>';
     });
-    var catalogueLinks = (c.links || []).filter(function (row) { return row.url; }).map(function (row) {
-      return link(row.url, row.label === "TNS" ? "Open TNS record" : row.label);
+    var catalogueLinks = (c.links || []).filter(function (row) { return catalogueUrl(row); }).map(function (row) {
+      return link(catalogueUrl(row), row.label === "TNS" ? "Open TNS record" : row.label);
     }).join(" · ");
 
     return '<div class="ctas-detail"><div class="ctas-detail__intro"><div><p class="eyebrow">Follow-up record</p>' +
@@ -185,8 +212,8 @@
            esc(absolute(st.last_successful_update)),
            esc(relative(st.last_successful_update))) +
       cell("Update cadence",
-           esc(st.cadence || "approximately every 30 minutes"),
-           "Scheduled through GitHub Actions; exact minute not guaranteed.") +
+           esc(st.cadence || "about every 2 minutes"),
+           "The public mirror checks for new CTAS data every 2 minutes.") +
       cell("Public candidates",
            esc(String(st.candidate_count === undefined ? state.candidates.length : st.candidate_count)),
            st.runtime_seconds ? "Run took " + esc(String(st.runtime_seconds)) + "s" : "");
@@ -276,11 +303,7 @@
     var window_ = rows.slice(0, state.shown);
     var body = window_.map(function (c, index) {
       var detailId = "ctas-detail-" + index;
-      var links = (c.links || []).map(function (l) {
-        return l.url
-          ? '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label) + "</a>"
-          : '<span class="ctas-sources__detail">' + esc(l.designation) + "</span>";
-      }).join("");
+      var links = (c.links || []).map(catalogueLink).join("");
       return '<tr class="ctas-candidate-row">' +
         '<td class="name"><button type="button" class="ctas-candidate" data-detail="' + detailId + '" aria-expanded="false" aria-controls="' + detailId + '"><span>' + esc(c.name) + '</span><small>Show follow-up</small></button></td>' +
         "<td>" + (c.classification
@@ -326,6 +349,175 @@
         var label = btn.querySelector("small");
         if (label) label.textContent = opening ? "Hide follow-up" : "Show follow-up";
       });
+    });
+  }
+
+  // --------------------------------------------------------- celestial sky
+  function skyRows() {
+    var cutoff = Date.now() - state.skyDays * 86400000;
+    return state.candidates.filter(function (c) {
+      var when = parseDate(c.discovery_time);
+      return when && when.getTime() >= cutoff && when.getTime() <= Date.now() &&
+        isFinite(Number(c.ra_deg)) && isFinite(Number(c.dec_deg)) &&
+        Number(c.ra_deg) >= 0 && Number(c.ra_deg) < 360 &&
+        Number(c.dec_deg) >= -90 && Number(c.dec_deg) <= 90;
+    });
+  }
+
+  function mollweide(ra, dec, width, height) {
+    var lon = (180 - Number(ra)) * Math.PI / 180;
+    var lat = Number(dec) * Math.PI / 180;
+    var theta = lat;
+    for (var i = 0; i < 8; i += 1) {
+      var denominator = 2 + 2 * Math.cos(2 * theta);
+      if (Math.abs(denominator) < 1e-7) break;
+      theta -= (2 * theta + Math.sin(2 * theta) - Math.PI * Math.sin(lat)) / denominator;
+    }
+    var margin = 18;
+    var sx = (width - margin * 2) / (4 * Math.SQRT2);
+    var sy = (height - margin * 2) / (2 * Math.SQRT2);
+    return {
+      x: width / 2 + (2 * Math.SQRT2 / Math.PI) * lon * Math.cos(theta) * sx,
+      y: height / 2 - Math.SQRT2 * Math.sin(theta) * sy
+    };
+  }
+
+  function magnitudeColor(value) {
+    var mag = Number(value);
+    if (!isFinite(mag)) return "#a9b3c7";
+    var t = Math.max(0, Math.min(1, (mag - 13) / 10));
+    var stops = [[255, 211, 105], [88, 210, 226], [132, 94, 247]];
+    var a = t < 0.5 ? stops[0] : stops[1];
+    var b = t < 0.5 ? stops[1] : stops[2];
+    var u = t < 0.5 ? t * 2 : (t - 0.5) * 2;
+    return "rgb(" + a.map(function (v, i) { return Math.round(v + (b[i] - v) * u); }).join(",") + ")";
+  }
+
+  function drawCurve(ctx, samples, project) {
+    ctx.beginPath();
+    samples.forEach(function (sample, index) {
+      var p = project(sample);
+      if (index === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+    });
+    ctx.stroke();
+  }
+
+  function drawSky() {
+    if (!el.sky || !el.skyStage) return;
+    var cssWidth = Math.max(320, Math.floor(el.skyStage.getBoundingClientRect().width));
+    var cssHeight = Math.max(260, Math.min(520, Math.round(cssWidth * 0.5)));
+    var ratio = Math.min(window.devicePixelRatio || 1, 2);
+    el.sky.width = cssWidth * ratio;
+    el.sky.height = cssHeight * ratio;
+    el.sky.style.height = cssHeight + "px";
+    var ctx = el.sky.getContext("2d");
+    ctx.scale(ratio, ratio);
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+    var margin = 18;
+    ctx.fillStyle = "#07101d";
+    ctx.strokeStyle = "rgba(184, 200, 223, 0.34)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(cssWidth / 2, cssHeight / 2, (cssWidth - margin * 2) / 2,
+      (cssHeight - margin * 2) / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cssWidth / 2, cssHeight / 2, (cssWidth - margin * 2) / 2,
+      (cssHeight - margin * 2) / 2, 0, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.strokeStyle = "rgba(184, 200, 223, 0.16)";
+    [-60, -30, 0, 30, 60].forEach(function (dec) {
+      var samples = [];
+      for (var ra = 0; ra <= 360; ra += 4) samples.push({ra: ra, dec: dec});
+      drawCurve(ctx, samples, function (s) { return mollweide(s.ra, s.dec, cssWidth, cssHeight); });
+    });
+    for (var meridian = 0; meridian < 360; meridian += 30) {
+      var meridianSamples = [];
+      for (var d = -89; d <= 89; d += 3) meridianSamples.push({ra: meridian, dec: d});
+      drawCurve(ctx, meridianSamples, function (s) { return mollweide(s.ra, s.dec, cssWidth, cssHeight); });
+    }
+    ctx.restore();
+
+    var rows = skyRows();
+    state.skyPoints = rows.map(function (c) {
+      var point = mollweide(c.ra_deg, c.dec_deg, cssWidth, cssHeight);
+      point.candidate = c;
+      return point;
+    });
+    state.skyPoints.forEach(function (point) {
+      var selected = state.skySelected === point.candidate;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, selected ? 6.5 : 4.2, 0, Math.PI * 2);
+      ctx.fillStyle = magnitudeColor(point.candidate.discovery_magnitude);
+      ctx.fill();
+      ctx.strokeStyle = selected ? "#ffffff" : "rgba(255,255,255,0.56)";
+      ctx.lineWidth = selected ? 2.2 : 0.7;
+      ctx.stroke();
+    });
+    el.skyCount.textContent = rows.length + " candidate" + (rows.length === 1 ? "" : "s") +
+      " discovered in the last " + (state.skyDays === 7 ? "week" : "month") + ".";
+    el.sky.setAttribute("aria-label", "All-sky map of " + rows.length + " CTAS candidates discovered in the last " +
+      (state.skyDays === 7 ? "seven days" : "thirty days"));
+  }
+
+  function nearestSkyPoint(event) {
+    var rect = el.sky.getBoundingClientRect();
+    var x = event.clientX - rect.left, y = event.clientY - rect.top;
+    var best = null, bestDistance = 100;
+    state.skyPoints.forEach(function (point) {
+      var distance = Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2);
+      if (distance < bestDistance) { bestDistance = distance; best = point; }
+    });
+    return bestDistance <= 100 ? {point: best, x: x, y: y} : null;
+  }
+
+  function showSkyCandidate(candidate) {
+    state.skySelected = candidate;
+    el.skyDetail.hidden = false;
+    el.skyDetail.innerHTML = renderDetails(candidate);
+    drawSky();
+  }
+
+  function bindSky() {
+    if (!el.sky) return;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-sky-days]"), function (button) {
+      button.addEventListener("click", function () {
+        state.skyDays = Number(button.getAttribute("data-sky-days"));
+        state.skySelected = null;
+        el.skyDetail.hidden = true;
+        Array.prototype.forEach.call(document.querySelectorAll("[data-sky-days]"), function (item) {
+          var active = item === button;
+          item.classList.toggle("is-active", active);
+          item.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        drawSky();
+      });
+    });
+    el.sky.addEventListener("pointermove", function (event) {
+      var hit = nearestSkyPoint(event);
+      if (!hit) { el.skyTip.hidden = true; el.sky.style.cursor = "default"; return; }
+      var c = hit.point.candidate;
+      el.sky.style.cursor = "pointer";
+      el.skyTip.hidden = false;
+      el.skyTip.style.left = Math.min(hit.x + 14, el.sky.clientWidth - 210) + "px";
+      el.skyTip.style.top = Math.max(8, hit.y - 64) + "px";
+      el.skyTip.innerHTML = "<strong>" + esc(c.name) + "</strong><span>" +
+        esc(c.classification || "Unclassified") + " · mag " + esc(num(c.discovery_magnitude, 2) || "unknown") +
+        "</span><span>" + esc(sexagesimal(c.ra_deg, c.dec_deg)) + "</span>";
+    });
+    el.sky.addEventListener("pointerleave", function () { el.skyTip.hidden = true; });
+    el.sky.addEventListener("click", function (event) {
+      var hit = nearestSkyPoint(event);
+      if (hit) showSkyCandidate(hit.point.candidate);
+    });
+    var resizeTimer;
+    window.addEventListener("resize", function () {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(drawSky, 120);
     });
   }
 
@@ -376,6 +568,7 @@
     if (el.toolbar) el.toolbar.hidden = state.candidates.length === 0;
     renderStatus();
     populateFilters();
+    drawSky();
     renderTable();
   }).catch(function (err) {
     if (el.toolbar) el.toolbar.hidden = true;
@@ -389,4 +582,5 @@
   if (el.cls) el.cls.addEventListener("change", function () { state.cls = el.cls.value; state.shown = PAGE; renderTable(); });
   if (el.msg) el.msg.addEventListener("change", function () { state.msg = el.msg.value; state.shown = PAGE; renderTable(); });
   if (el.stat) el.stat.addEventListener("change", function () { state.stat = el.stat.value; state.shown = PAGE; renderTable(); });
+  bindSky();
 })();
