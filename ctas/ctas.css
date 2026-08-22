@@ -4,6 +4,55 @@
    ========================================================================== */
 
 /* ------------------------------------------------------------ status panel */
+.ctas-hero { padding-bottom: clamp(2rem, 5vw, 4rem); }
+.ctas-hero .hero__inner { padding-bottom: 0; }
+.ctas-status--hero {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 1.5rem 0;
+  background: rgba(255,255,255,.13);
+}
+.ctas-status--hero .ctas-status__cell { background: rgba(6,15,27,.78); }
+.ctas-brief {
+  max-width: 72rem;
+  margin-top: 1.5rem;
+  padding: clamp(1.2rem, 3vw, 2rem);
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(6,15,27,.72);
+}
+.ctas-brief h2 { margin: 0 0 .8rem; font-size: clamp(1.35rem, 3vw, 2rem); }
+.ctas-brief > p { max-width: 76ch; color: var(--ink-2); }
+.ctas-brief details {
+  border-top: 1px solid rgba(255,255,255,.12);
+  padding: .8rem 0;
+}
+.ctas-brief summary { cursor: pointer; color: var(--ink); font-weight: 700; }
+.ctas-brief details p { margin: .65rem 0 0; color: var(--ink-2); }
+.ctas-brief__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 1.5rem;
+  margin-top: .5rem;
+}
+.ctas-contents {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-block: 1px solid var(--border);
+  background: rgba(5,12,22,.94);
+  backdrop-filter: blur(12px);
+}
+.ctas-contents .wrap { display: flex; flex-wrap: wrap; gap: .45rem .65rem; align-items: center; padding-block: .7rem; }
+.ctas-contents span { margin-right: .3rem; color: var(--ink-3); font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.ctas-contents a {
+  padding: .38rem .6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--ink-2);
+  font-size: .78rem;
+  text-decoration: none;
+}
+.ctas-contents a:hover, .ctas-contents a:focus-visible { border-color: var(--gold); color: var(--gold); }
+[id] { scroll-margin-top: 5.5rem; }
 .ctas-status {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
@@ -366,6 +415,22 @@ table.ctas-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; mi
 .ctas-stream__score span { display: block; color: var(--muted, #aeb8c6); font-size: .65rem; text-transform: uppercase; letter-spacing: .08em; }
 .ctas-evidence-count { min-width: 10rem; font-size: .78rem; color: var(--muted, #aeb8c6); }
 .ctas-source-census .ctas-sources li { align-items: start; }
+.ctas-source-census { padding: 0; }
+.ctas-source-census > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.15rem 1.4rem;
+  cursor: pointer;
+  list-style: none;
+}
+.ctas-source-census > summary::-webkit-details-marker { display: none; }
+.ctas-source-census > summary::after { content: "+"; color: var(--gold); font-size: 1.5rem; line-height: 1; }
+.ctas-source-census[open] > summary::after { content: "−"; }
+.ctas-source-census > summary strong { display: block; margin-top: .15rem; color: var(--ink); font-size: 1.05rem; }
+.ctas-source-census > summary small { max-width: 28rem; color: var(--ink-3); text-align: right; }
+.ctas-source-census__body { padding: 0 1.4rem 1.4rem; border-top: 1px solid var(--border); }
 .ctas-source-census .ctas-sources li > div { min-width: 0; }
 .ctas-sources__counts { margin: .25rem 0; color: #d4a74f; font-size: .78rem; }
 .ctas-survey-title { margin-top: 2rem; }
@@ -376,7 +441,12 @@ table.ctas-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; mi
 .ctas-provider-stats > div { padding: .7rem; border: 1px solid rgba(255,255,255,.1); display: grid; gap: .15rem; }
 .ctas-provider-stats span { color: #d4a74f; font-size: .78rem; }
 .ctas-provider-stats small { color: var(--muted, #aeb8c6); }
+.ctas-ranked { margin: 2.25rem 0 0; }
 @media (max-width: 760px) {
+  .ctas-status--hero, .ctas-brief__grid { grid-template-columns: 1fr; }
+  .ctas-contents { position: static; }
+  .ctas-source-census > summary { align-items: start; }
+  .ctas-source-census > summary small { display: none; }
   .ctas-section-heading { display: block; }
   .ctas-section-heading > p { margin-top: .6rem; }
   .ctas-breakdowns { grid-template-columns: 1fr; }

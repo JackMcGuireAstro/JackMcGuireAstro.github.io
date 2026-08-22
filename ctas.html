@@ -52,72 +52,76 @@
 
   <!-- ============================================================== hero -->
 
-  <section class="hero">
+  <section class="hero ctas-hero" id="top">
     <div class="hero__sky" aria-hidden="true"></div>
     <div class="wrap hero__inner" style="grid-template-columns: 1fr;">
       <div>
         <p class="eyebrow">Cowboy Transient Alert System</p>
         <h1>CTAS</h1>
-        <p class="hero__statement">CTAS brings public supernova and multimessenger alerts together
-          with follow-up reports and information already known about the same area of sky. It gives a researcher
-          one place to check what was reported, what others have found, and whether the event deserves a closer look.</p>
+        <p class="hero__statement">CTAS brings public supernova and multimessenger alerts together with
+          follow-up reports and information already known about the same area of sky. It gives researchers one
+          public place to see what was reported, what others have found, and which candidates may deserve a closer look.</p>
         <div class="feature__badges" style="margin-top:1.4rem;">
           <span class="chip chip--experimental">Active development</span>
           <span class="chip chip--planned">Version <span data-ctas="version">1.2.0</span></span>
+        </div>
+        <div class="ctas-status ctas-status--hero" id="ctas-status"></div>
+
+        <div class="ctas-brief" id="about-ctas">
+          <h2>CTAS in brief</h2>
+          <p><strong>A transient</strong> is CTAS’s operational umbrella for a public, time-dependent astronomical
+            event or candidate that may warrant follow-up. It can be optical, gamma-ray, X-ray, radio, neutrino,
+            gravitational-wave or another multimessenger alert. Inclusion does not confirm a discovery,
+            classification, host or counterpart.</p>
+          <p><strong>The CTAS score</strong> is a 0–100 follow-up ordering aid, not a probability or a measure of
+            scientific importance. Higher scores generally identify recent, bright or information-poor candidates
+            that may benefit from attention sooner.</p>
+          <details>
+            <summary>How the score is calculated</summary>
+            <p>Start at 35; add up to 24 for recency, −8 to +20 for reported discovery brightness, +12 if
+              unclassified, +8 for conflicting classifications, +7 when no spectrum is retained, and up to +10
+              when the latest observation is old. Subtract 1.5 per retained quantitative observation, up to 12.
+              Add +4 per distinct messenger channel, up to 20. Retracted or bogus records score zero; the final
+              value is clipped to 0–100.</p>
+          </details>
+          <div class="ctas-brief__grid">
+            <details><summary>What CTAS is</summary><p>A public research catalog that collects rights-cleared alerts
+              and follow-up records, preserves source provenance, and supports researcher-led triage and analysis.</p></details>
+            <details><summary>What CTAS does not do</summary><p>CTAS does not control telescopes, submit observing
+              requests, publish classifications or make discovery claims. Restricted or uncertain-rights content is
+              not included in the public export.</p></details>
+            <details><summary>How a record moves through CTAS</summary><p>Public intake → rights screening and
+              normalization → context and triage → evidence-aware analysis → follow-up drafting → sanitized public
+              export. Conflicts, retractions and insufficient-data states remain visible.</p></details>
+            <details><summary>How it is built</summary><p>Local Python services, scientific libraries and SQLite
+              ingest and analyze records. A sanitized static export is checked about every two minutes and published
+              to this GitHub Pages site; credentials and internal records are excluded.</p></details>
+            <details><summary>More about CTAS</summary><p>CTAS is active research software designed and developed by
+              Jack McGuire. Scientists decide which source-attributed records and derived products are appropriate
+              for their own work. <a href="mailto:jackmcg7@live.com?subject=CTAS">Ask Jack about CTAS</a>.</p></details>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
+  <nav class="ctas-contents" aria-label="CTAS page contents">
+    <div class="wrap wrap--wide">
+      <span>On this page</span>
+      <a href="#about-ctas">Brief</a>
+      <a href="#catalog-overview">Catalog</a>
+      <a href="#active-sources">Sources &amp; surveys</a>
+      <a href="#recent-stream">Recent stream</a>
+      <a href="#celestial-sphere">Celestial sphere</a>
+      <a href="#ranked-candidates">Ranked candidates</a>
+    </div>
+  </nav>
+
   <!-- ====================================================== LIVE INTERFACE -->
 
-  <section class="section" aria-labelledby="live-title">
+  <section class="section" aria-label="Live CTAS catalog">
     <div class="wrap wrap--wide">
-      <div class="section__head">
-        <p class="eyebrow">Live</p>
-        <h2 id="live-title">Current public candidates</h2>
-        <p>A scheduled CTAS run produces this list, which is then published as static data. It includes only
-          public fields that have passed the system’s data-rights checks.</p>
-      </div>
-
-      <section class="ctas-definitions" aria-labelledby="ctas-definitions-title">
-        <div class="ctas-definitions__head">
-          <p class="eyebrow">Read the catalog</p>
-          <h3 id="ctas-definitions-title">What “transient” and “CTAS score” mean here</h3>
-        </div>
-        <div class="ctas-definitions__grid">
-          <article>
-            <h4>A transient is a candidate for attention</h4>
-            <p>CTAS uses <em>transient</em> as an operational umbrella for a public, time-dependent
-              astronomical event or candidate that may warrant follow-up. Entries can come from optical
-              transient reports or gamma-ray, X-ray, radio, neutrino, gravitational-wave and other
-              multimessenger alerts.</p>
-            <p>Appearance in this catalog does not mean CTAS has confirmed an astrophysical event,
-              discovery, physical classification, host or counterpart. Source caveats, conflicting
-              classifications, retractions and insufficient-data states remain part of the record.</p>
-          </article>
-          <article>
-            <h4>The CTAS score is follow-up priority, not scientific importance</h4>
-            <p>The 0–100 score orders CTAS’s review queue. A high value generally means “recent and
-              information-poor, so look soon.” It is not a probability, classification confidence or
-              claim that one target is scientifically more valuable than another.</p>
-            <details>
-              <summary>See the exact scoring rule</summary>
-              <p>Start at 35; add up to 24 for recency, −8 to +20 for reported discovery brightness,
-                +12 if unclassified, +8 for conflicting classifications, +7 when no spectrum is retained,
-                and up to +10 when the latest observation is old. Subtract 1.5 per retained quantitative
-                observation, up to 12. Add +4 per distinct messenger channel, up to 20. Retracted or bogus
-                records score zero; the final value is clipped to 0–100.</p>
-            </details>
-            <p>The score changes as public evidence arrives. Open a candidate to inspect its available
-              score factors and follow-up evidence, then apply your own scientific priorities.</p>
-          </article>
-        </div>
-      </section>
-
-      <div class="ctas-status" id="ctas-status"></div>
-
-      <section class="ctas-overview" aria-labelledby="ctas-overview-title">
+      <section class="ctas-overview" id="catalog-overview" aria-labelledby="ctas-overview-title">
         <div class="ctas-section-heading">
           <div>
             <p class="eyebrow">Catalog depth</p>
@@ -128,7 +132,7 @@
         <div class="ctas-metrics" id="ctas-metrics"></div>
         <div class="ctas-breakdowns">
           <div>
-            <h4>Candidate messengers</h4>
+            <h4>Candidate types</h4>
             <div class="ctas-bars" id="ctas-messenger-stats"></div>
           </div>
           <div>
@@ -138,7 +142,23 @@
         </div>
       </section>
 
-      <section class="ctas-stream" aria-labelledby="ctas-stream-title">
+      <details class="ctas-source-census" id="active-sources">
+        <summary>
+          <span><span class="eyebrow">Active inputs</span><strong>Sources, surveys and documentation</strong></span>
+          <small>Only sources and surveys represented in the public catalog are shown</small>
+        </summary>
+        <div class="ctas-source-census__body">
+          <ul class="ctas-sources" id="ctas-sources"></ul>
+          <h4 class="ctas-survey-title">Retained public records by provider</h4>
+          <div class="ctas-provider-stats" id="ctas-provider-stats"></div>
+          <h4 class="ctas-survey-title">Discovery surveys represented in the catalog</h4>
+          <div class="ctas-surveys" id="ctas-surveys"></div>
+          <p class="colophon" style="border:0;padding-top:1rem;">Counts include only public records whose
+            rights labels permit display. Disabled, unavailable, unused and not-configured inputs are omitted.</p>
+        </div>
+      </details>
+
+      <section class="ctas-stream" id="recent-stream" aria-labelledby="ctas-stream-title">
         <div class="ctas-section-heading">
           <div>
             <p class="eyebrow">Incoming stream</p>
@@ -149,7 +169,7 @@
         <ol class="ctas-stream__list" id="ctas-stream"></ol>
       </section>
 
-      <section class="ctas-sky" aria-labelledby="ctas-sky-title">
+      <section class="ctas-sky" id="celestial-sphere" aria-labelledby="ctas-sky-title">
         <div class="ctas-sky__head">
           <div>
             <p class="eyebrow">Celestial sphere</p>
@@ -175,6 +195,11 @@
         <div id="ctas-sky-detail" class="ctas-sky__detail" hidden></div>
       </section>
 
+      <section class="ctas-ranked" id="ranked-candidates" aria-labelledby="ranked-title">
+        <div class="ctas-section-heading">
+          <div><p class="eyebrow">Full feed</p><h3 id="ranked-title">All candidates ranked by CTAS score</h3></div>
+          <p>Select any candidate name to open its complete retained public follow-up record.</p>
+        </div>
       <div class="ctas-toolbar" id="ctas-toolbar" hidden>
         <div class="field">
           <label for="ctas-q">Search</label>
@@ -195,183 +220,10 @@
         <p class="ctas-count" id="ctas-count" aria-live="polite"></p>
       </div>
 
-      <div id="ctas-results"></div>
-
-      <section class="ctas-source-census" aria-labelledby="ctas-source-title">
-      <div class="ctas-section-heading">
-        <div>
-          <p class="eyebrow">Source census</p>
-          <h3 id="ctas-source-title">Every CTAS source and survey</h3>
-        </div>
-        <p>Runtime state, public scope, retained record totals and documentation are shown source by source.</p>
-      </div>
-      <ul class="ctas-sources" id="ctas-sources"></ul>
-      <h4 class="ctas-survey-title">Retained public records by provider</h4>
-      <div class="ctas-provider-stats" id="ctas-provider-stats"></div>
-      <h4 class="ctas-survey-title">Discovery surveys represented in the catalog</h4>
-      <div class="ctas-surveys" id="ctas-surveys"></div>
-      <p class="colophon" style="border:0;padding-top:1rem;">
-        CTAS publishes source state and public evidence—not credentials. A source shown as disabled,
-        unavailable or not configured contributed no hidden data. Counts include only records whose
-        rights labels permit public display.
-      </p>
+        <div id="ctas-results"></div>
       </section>
     </div>
 
-  </section>
-
-  <!-- ======================================================= what it is -->
-
-  <section class="section section--edge" aria-labelledby="what-title">
-    <div class="wrap">
-      <div class="about-grid">
-        <div>
-          <p class="eyebrow">What it is</p>
-          <h2 id="what-title">A research tool, not an automated observatory</h2>
-          <p>CTAS collects public alerts and follow-up records. Before it stores any scientific content,
-            it checks the record against a set of data-rights rules. Accepted records are converted to a
-            common format, and CTAS keeps the original source information and a checksum for each one. It can
-            then run local analyses such as light-curve fits, host-galaxy matching, spectrum checks and
-            observability calculations. A researcher reviews the results.</p>
-          <p>CTAS is usable research software under active development. Scientists can choose which
-            source-attributed records and derived products are useful for their own work. Optional external
-            validation and infrastructure assessments support stronger claims about a frozen analysis or
-            deployment, but they are not prerequisites for using this catalog. CTAS does not make or publish
-            discovery claims on its own. I design and develop its scientific workflow, data model,
-            data-rights rules, analysis tools and interface.</p>
-        </div>
-        <div>
-          <div class="note">
-            <p><strong>What CTAS does not do.</strong></p>
-            <p style="margin-bottom:0;">It does not control telescopes, submit observing requests, or publish
-              classifications. Access to a source does not automatically mean its data can be stored. Email and
-              webhook delivery are disabled by default, and each message remains a draft unless delivery is
-              enabled, the policy allows it, the destination is specified and that item has been approved.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-<!-- ======================================================================
-     CTAS:SYNC:BEGIN. Mirrors the CTAS project; regenerated by
-     tools/sync_ctas.py. Re-run that rather than hand-editing.
-     ====================================================================== -->
-
-  <!-- ========================================================== workflow -->
-
-  <section class="section section--edge" aria-labelledby="flow-title">
-    <div class="wrap">
-      <div class="section__head">
-        <p class="eyebrow">Workflow</p>
-        <h2 id="flow-title">How a record moves through CTAS</h2>
-        <p>Each stage shows its current status. Planned work is not presented as finished.</p>
-      </div>
-
-      <ul class="legend">
-        <li><span class="chip chip--done">Implemented</span></li>
-        <li><span class="chip chip--validating">Implemented, validating</span></li>
-        <li><span class="chip chip--experimental">Experimental</span></li>
-        <li><span class="chip chip--planned">Planned</span></li>
-      </ul>
-
-      <ol class="flow">
-        <li class="flow__stage" data-state="implemented">
-          <div class="flow__top"><h3>Intake</h3><span class="chip chip--done">Implemented</span></div>
-          <p>Connectors collect public transient reports, released community notes, circulars and archival
-            records. Each connector also reports whether it is configured, unavailable or blocked by
-            data-rights restrictions.</p>
-        </li>
-        <li class="flow__stage" data-state="implemented">
-          <div class="flow__top"><h3>Rights screening and normalization</h3><span class="chip chip--done">Implemented</span></div>
-          <p>CTAS stores scientific content only after a record receives an accepted rights label. Records
-            marked unknown, proprietary, embargoed or restricted are rejected before they can enter storage,
-            caches, responses or metrics.</p>
-        </li>
-        <li class="flow__stage" data-state="implemented">
-          <div class="flow__top"><h3>Context and triage</h3><span class="chip chip--done">Implemented, review-only</span></div>
-          <p>CTAS adds catalog and host-galaxy information, then places each event in a review queue that
-            remains available between runs. A researcher must leave a meaningful review note before the
-            event can move into follow-up planning.</p>
-        </li>
-        <li class="flow__stage" data-state="validating">
-          <div class="flow__top"><h3>Classification and analysis</h3><span class="chip chip--validating">Validating</span></div>
-          <p>CTAS records a separate assessment for each kind of evidence and keeps every version. It can
-            state when the evidence conflicts or when there is not enough data. Light-curve and spectrum
-            results are stored as machine-generated evidence, not treated as calibrated probability estimates.</p>
-        </li>
-        <li class="flow__stage" data-state="implemented">
-          <div class="flow__top"><h3>Follow-up drafting and public export</h3><span class="chip chip--done">Implemented, delivery gated</span></div>
-          <p>CTAS calculates observability, applies saved notification rules, prepares messages in an outbox
-            and creates the sanitized public export used on this page. Follow-up plans are saved with the
-            information needed to reproduce them. CTAS cannot submit those plans to an observatory.</p>
-        </li>
-        <li class="flow__stage" data-state="planned">
-          <div class="flow__top"><h3>Optional production assurance</h3><span class="chip chip--planned">Optional</span></div>
-          <p>High-availability storage, independently reviewed disaster-recovery and load tests, and a formal
-            on-call policy could support stronger service-resilience claims. They are not required to browse
-            or use CTAS as the public research catalog presented here.</p>
-        </li>
-      </ol>
-    </div>
-
-  </section>
-
-  <!-- ========================================================= technical -->
-
-  <section class="section section--edge" aria-labelledby="tech-title">
-    <div class="wrap">
-      <div class="section__head">
-        <p class="eyebrow">Under the hood</p>
-        <h2 id="tech-title">How it is built</h2>
-      </div>
-      <div class="spec">
-        <dl>
-          <div class="spec__row"><dt>Languages</dt>
-            <dd>Python 3.11+ for the service and scientific analysis; TypeScript for the operations dashboard.</dd></div>
-          <div class="spec__row"><dt>Service</dt>
-            <dd>FastAPI with asynchronous SQLAlchemy, Pydantic models, a durable work queue and Alembic migrations.</dd></div>
-          <div class="spec__row"><dt>Storage</dt>
-            <dd>PostgreSQL for deployed systems; SQLite in WAL mode for development on one machine.</dd></div>
-          <div class="spec__row"><dt>Scientific stack</dt>
-            <dd>Astropy and astropy-healpix, NumPy and SciPy. CTAS reads FITS images, HEALPix sky maps, Avro
-              alerts and two-column ASCII spectra, and records a checksum for every retained file.</dd></div>
-          <div class="spec__row"><dt>Tests</dt>
-            <dd>The test suite contains <span data-ctas="tests">108</span> pytest modules, with coverage reporting,
-              Ruff linting and mypy type checking.</dd></div>
-          <div class="spec__row"><dt>Public refresh</dt>
-            <dd>A scheduled GitHub Actions job runs CTAS, creates the sanitized dataset shown above and
-              republishes this site. Credentials and internal records are not included in the public files.</dd></div>
-        </dl>
-      </div>
-    </div>
-  </section>
-
-  <div class="wrap">
-    <p class="colophon" style="border:0;margin:0;padding-top:1.25rem;">
-      The project status shown above comes from the CTAS source code and was last checked on
-      <span data-ctas="synced">18 August 2026</span>.
-    </p>
-  </div>
-
-<!-- CTAS:SYNC:END -->
-
-  <!-- ============================================================= links -->
-
-  <section class="section section--edge" aria-labelledby="links-title">
-    <div class="wrap">
-      <div class="section__head">
-        <p class="eyebrow">Availability</p>
-        <h2 id="links-title">More about CTAS</h2>
-      </div>
-      <p class="lede">The processing code is currently kept in a private repository, so there is no public
-        source link yet. This page shows the project’s public data and current status. I am still preparing
-        the public documentation.</p>
-      <ul class="actions">
-        <li><a class="btn btn--primary" href="mailto:jackmcg7@live.com?subject=CTAS">Ask me about CTAS</a></li>
-        <li><a class="btn" href="research.html">Related research</a></li>
-      </ul>
-    </div>
   </section>
 
 </main>

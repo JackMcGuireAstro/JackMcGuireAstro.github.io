@@ -334,13 +334,13 @@
            esc(relative(st.last_successful_update))) +
       cell("Update cadence",
            esc(st.cadence || "about every 2 minutes"),
-           "The public mirror checks for new CTAS data every 2 minutes.") +
-      cell("Public candidates",
-           esc(String(st.candidate_count === undefined ? state.candidates.length : st.candidate_count)),
-           st.runtime_seconds ? "Run took " + esc(String(st.runtime_seconds)) + "s" : "");
+           "The public mirror checks for new CTAS data every 2 minutes.");
 
     if (Array.isArray(st.sources) && st.sources.length && el.sources) {
-      el.sources.innerHTML = st.sources.map(function (s) {
+      el.sources.innerHTML = st.sources.filter(function (s) {
+        var counts = s.record_counts || {};
+        return Object.keys(counts).some(function (key) { return Number(counts[key] || 0) > 0; });
+      }).map(function (s) {
         var d = s.state === "ok" ? "dot--ok"
               : (s.state === "disabled" ? "" : (s.state === "error" ? "dot--error" : "dot--degraded"));
         var recordCounts = s.record_counts || {};
