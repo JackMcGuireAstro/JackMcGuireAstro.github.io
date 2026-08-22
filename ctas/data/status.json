@@ -1,16 +1,1168 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "pipeline_status": "ok",
   "origin": "local-snapshot",
-  "last_successful_update": "2026-08-22T17:33:03Z",
+  "last_successful_update": "2026-08-22T17:35:05Z",
   "candidate_count": 2578,
   "cadence": "about every 2 minutes",
+  "statistics": {
+    "real_events": 2579,
+    "public_candidates": 2578,
+    "observations": 2408,
+    "spectra": 13,
+    "messenger_signals": 837,
+    "classifications": 974,
+    "publications": 825,
+    "candidates_with_follow_up": 857,
+    "messengers": {
+      "electromagnetic": 2057,
+      "gamma-ray": 204,
+      "multimessenger": 28,
+      "neutrino": 218,
+      "radio": 39,
+      "x-ray": 32
+    },
+    "priority_bands": {
+      "urgent_75_100": 190,
+      "high_50_74": 2198,
+      "routine_25_49": 175,
+      "low_0_24": 15
+    }
+  },
   "sources": [
     {
-      "source": "ctas-local",
-      "label": "CTAS accumulated event database",
-      "state": "ok",
-      "detail": "2578 public events of 2579 real events retained"
+      "source": "aavso",
+      "label": "AAVSO AVSpec Published Spectra",
+      "facility": "AAVSO",
+      "data_types": [
+        "published spectrum metadata",
+        "bounded FITS spectrum preview"
+      ],
+      "mode": "targeted-query",
+      "public_scope": "The anonymous search interface explicitly returns published observations; AAVSO permits publication use subject to its current Data Usage Guidelines",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://www.aavso.org/search-and-download-data/",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "aavso-aid",
+      "label": "AAVSO International Database Photometry",
+      "facility": "AAVSO",
+      "data_types": [
+        "observer-contributed optical/NIR photometry",
+        "upper limits"
+      ],
+      "mode": "targeted-query",
+      "public_scope": "AID observations are available for research and publication subject to AAVSO's current Data Usage Guidelines",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://docs.aavso.org/observations",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "rubin-alerce",
+      "label": "ALeRCE",
+      "facility": "Rubin community broker / Universidad de Chile partners",
+      "data_types": [
+        "Rubin alert",
+        "ZTF alert",
+        "classification",
+        "light curve"
+      ],
+      "mode": "live",
+      "public_scope": "Rubin alerts are world-public; broker-derived products retain provider attribution",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://rubinobservatory.org/for-scientists/data-products/alerts-and-brokers",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "nuem-gcn",
+      "label": "AMON IceCube\u2013HAWC Coincidences",
+      "facility": "AMON / IceCube Collaboration / HAWC Collaboration / NASA GCN",
+      "data_types": [
+        "subthreshold neutrino\u2013gamma coincidence candidate",
+        "source-reported 50% and 90% containment radii",
+        "source-reported false-alarm rate",
+        "HAWC transit time window",
+        "update or retraction"
+      ],
+      "mode": "live-and-archive",
+      "public_scope": "Only AMON stream 1 notices explicitly identifying the public IceCube\u2013HAWC pair are accepted",
+      "state": "connected",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.AMON_NU_EM_COINC",
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://gcn.nasa.gov/missions/icecube",
+      "enabled": true,
+      "record_counts": {}
+    },
+    {
+      "source": "rubin-ampel",
+      "label": "AMPEL",
+      "facility": "Rubin community broker",
+      "data_types": [
+        "Rubin alert",
+        "classification",
+        "channel output"
+      ],
+      "mode": "live",
+      "public_scope": "Rubin alerts are world-public",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://ampelproject.github.io/",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "rubin-antares",
+      "label": "ANTARES",
+      "facility": "NSF NOIRLab",
+      "data_types": [
+        "Rubin alert",
+        "ZTF alert",
+        "classification",
+        "catalog context"
+      ],
+      "mode": "live",
+      "public_scope": "Rubin and public ZTF broker outputs",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://antares.noirlab.edu/faq",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "asas-sn",
+      "label": "ASAS-SN Sky Patrol",
+      "facility": "The Ohio State University / University of Hawai\u02bbi",
+      "data_types": [
+        "light curve",
+        "transient discovery"
+      ],
+      "mode": "manual-on-demand-query",
+      "public_scope": "ASAS-SN explicitly describes Sky Patrol light curves as public and supplies publication citations",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://asas-sn.osu.edu/",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "atlas",
+      "label": "ATLAS",
+      "facility": "University of Hawai\u02bbi",
+      "data_types": [
+        "TNS discovery",
+        "forced photometry"
+      ],
+      "mode": "on-demand-query",
+      "public_scope": "ATLAS explicitly provides full public access to forced photometry after registration",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://fallingstar-data.com/forcedphot/apiguide/",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "authorized-file-drop",
+      "label": "Authorized local file import",
+      "facility": "User-owned files",
+      "data_types": [
+        "notification",
+        "photometry",
+        "spectrum",
+        "FITS",
+        "VOTable",
+        "CSV",
+        "JSON",
+        "Avro"
+      ],
+      "mode": "on-demand",
+      "public_scope": "Only public, open, or user-owned files explicitly selected by the user",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "docs/runbook.md",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "authorized-webhook",
+      "label": "Authorized observatory/TOM/SkyPortal webhook",
+      "facility": "User-owned instance",
+      "data_types": [
+        "notification",
+        "photometry",
+        "spectrum"
+      ],
+      "mode": "live",
+      "public_scope": "Public, open, or user-owned payloads explicitly labelled by sender",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "docs/adding-a-connector.md",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "rubin-babamul",
+      "label": "Babamul",
+      "facility": "Caltech",
+      "data_types": [
+        "Rubin alert",
+        "ZTF alert",
+        "focused channel"
+      ],
+      "mode": "live",
+      "public_scope": "Rubin alerts are world-public",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://babamul.caltech.edu/",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "calet-gcn",
+      "label": "CALET-GBM Public Flight Lightcurves",
+      "facility": "JAXA / ASI / NASA CALET on the ISS / NASA GCN",
+      "data_types": [
+        "omnidirectional high-energy trigger",
+        "trigger significance and duration",
+        "energy band and participating detectors",
+        "provider-hosted lightcurve link"
+      ],
+      "mode": "live-and-archive",
+      "public_scope": "NASA GCN publicly redistributes CALET-GBM flight-lightcurve notices and maintains a public archive",
+      "state": "connected",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.CALET_GBM_FLT_LC",
+      "last_message_at": "2026-08-20T23:40:48Z",
+      "lag_seconds": 0.34897,
+      "documentation_url": "https://gcn.nasa.gov/missions/calet",
+      "enabled": true,
+      "record_counts": {}
+    },
+    {
+      "source": "cadc",
+      "label": "Canadian Astronomy Data Centre",
+      "facility": "NRC Canada",
+      "data_types": [
+        "multi-observatory imaging",
+        "spectroscopy",
+        "TAP",
+        "ObsCore"
+      ],
+      "mode": "archive",
+      "public_scope": "Records explicitly public in collection metadata",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca/en/doc/data/",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "eso-archive",
+      "label": "ESO Science Archive",
+      "facility": "European Southern Observatory",
+      "data_types": [
+        "released reduced-product metadata",
+        "imaging",
+        "spectroscopy",
+        "time series"
+      ],
+      "mode": "on-demand-archive-query",
+      "public_scope": "Only ObsCore rows with a non-null past obs_release_date; ESO archive data are CC BY 4.0 with programme/DOI acknowledgment requirements",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://archive.eso.org/cms/eso-data-access-policy.html",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "fermi-gcn",
+      "label": "Fermi GBM and LAT Public Notices",
+      "facility": "NASA Fermi / GBM / LAT / NASA GCN",
+      "data_types": [
+        "gamma-ray trigger",
+        "flight localization",
+        "ground localization",
+        "final localization",
+        "subthreshold trigger",
+        "LAT localization",
+        "LAT offline detection",
+        "LAT monitored-source flare"
+      ],
+      "mode": "live",
+      "public_scope": "NASA GCN publicly redistributes the eight audited operational Fermi notice types",
+      "state": "connected",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.FERMI_GBM_ALERT, gcn.classic.text.FERMI_GBM_FLT_POS, gcn.classic.text.FERMI_GBM_GND_POS, gcn.classic.text.FERMI_GBM_FIN_POS, gcn.classic.text.FERMI_GBM_SUBTHRESH, gcn.classic.text.FERMI_LAT_POS_UPD, gcn.classic.text.FERMI_LAT_OFFLINE, gcn.classic.text.FERMI_LAT_MONITOR",
+      "last_message_at": "2026-08-21T08:30:52Z",
+      "lag_seconds": 0.725952,
+      "documentation_url": "https://gcn.nasa.gov/missions/fermi",
+      "enabled": true,
+      "record_counts": {}
+    },
+    {
+      "source": "rubin-fink",
+      "label": "Fink",
+      "facility": "Rubin community broker",
+      "data_types": [
+        "Rubin public filter alert",
+        "Rubin target alert history",
+        "Rubin forced measurement",
+        "public ZTF alert",
+        "difference photometry",
+        "classification",
+        "upper limit",
+        "science/template/difference cutout"
+      ],
+      "mode": "live-and-targeted-query",
+      "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
+      "state": "degraded",
+      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 287.4s",
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
+      "enabled": true,
+      "record_counts": {
+        "observations": 1892
+      }
+    },
+    {
+      "source": "rubin-fink-crossmatch",
+      "label": "Fink Rubin Positional Candidates",
+      "facility": "Rubin community broker",
+      "data_types": [
+        "Rubin diaObject positional candidate",
+        "first-detection-window context",
+        "broker classification context"
+      ],
+      "mode": "targeted-query",
+      "public_scope": "Rubin alerts and Fink's no-login LSST REST output are world-public",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://doc.lsst.fink-broker.org/services/api/conesearch/",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "gcn-high-energy",
+      "label": "GCN Unified Mission Notices",
+      "facility": "NASA GCN participating missions",
+      "data_types": [
+        "gamma-ray notice",
+        "X-ray notice",
+        "radio notice",
+        "optical cross-correlation",
+        "upper limit",
+        "external coincidence"
+      ],
+      "mode": "live-and-follow-up",
+      "public_scope": "Audited public Unified Schema notices, currently including Swift GUANO, Einstein Probe, MAXI, BOOM, and CHIME topic contracts",
+      "state": "connected",
+      "detail": "NASA GCN subscriptions active: gcn.notices.swift.bat.guano, gcn.notices.einstein_probe.wxt.alert, gcn.notices.maxi.gsc.known, gcn.notices.maxi.gsc.unknown, gcn.notices.boom.alert, gcn.notices.chime.frb",
+      "last_message_at": "2026-08-13T10:01:03Z",
+      "lag_seconds": 1.565676,
+      "documentation_url": "https://gcn.nasa.gov/notices",
+      "enabled": true,
+      "record_counts": {}
+    },
+    {
+      "source": "gecam-gcn",
+      "label": "GECAM Public Flight and Ground Notices",
+      "facility": "Chinese Academy of Sciences GECAM-B / NASA GCN",
+      "data_types": [
+        "gamma-ray trigger",
+        "flight localization",
+        "ground localization update",
+        "source-class candidate"
+      ],
+      "mode": "live",
+      "public_scope": "NASA GCN publicly redistributes the operational GECAM flight and ground notices",
+      "state": "connected",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.GECAM_FLT, gcn.classic.text.GECAM_GND",
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://gcn.nasa.gov/missions/gecam",
+      "enabled": true,
+      "record_counts": {}
+    },
+    {
+      "source": "gaia-dr3",
+      "label": "Gaia Data Release 3",
+      "facility": "ESA Gaia / CDS partner data centre",
+      "data_types": [
+        "public astrometry",
+        "mean G/BP/RP photometry",
+        "proper motion and parallax",
+        "catalog classification flags"
+      ],
+      "mode": "on-demand-catalog-query",
+      "public_scope": "Exact allowlist to the public Gaia DR3 source catalog I/355/gaiadr3 served by ESA's official CDS partner",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://www.cosmos.esa.int/web/gaia/data-access",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "gaia-alerts",
+      "label": "Gaia Science Alerts",
+      "facility": "ESA / Gaia DPAC",
+      "data_types": [
+        "historical alert",
+        "light curve"
+      ],
+      "mode": "archive",
+      "public_scope": "Released alerts are public",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://www.cosmos.esa.int/web/gaia/alerts",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "gemini-archive",
+      "label": "Gemini Observatory Archive",
+      "facility": "NSF NOIRLab / Gemini",
+      "data_types": [
+        "imaging",
+        "spectroscopy",
+        "observation logs"
+      ],
+      "mode": "archive",
+      "public_scope": "Non-proprietary data are world-public after the provider release date",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://archive.gemini.edu/help/api.html",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "hawc-gcn",
+      "label": "HAWC Very-High-Energy Burst Monitor",
+      "facility": "HAWC Collaboration / AMON / NASA GCN",
+      "data_types": [
+        "very-high-energy gamma-ray excess trigger",
+        "source region and containment",
+        "source-reported post-trials p-value",
+        "source-reported false-alarm rate",
+        "update or retraction"
+      ],
+      "mode": "live-and-archive",
+      "public_scope": "NASA GCN publicly redistributes the operational HAWC Burst Monitor stream and maintains a public notice archive",
+      "state": "connected",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.HAWC_BURST_MONITOR",
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://gcn.nasa.gov/missions/hawc",
+      "enabled": true,
+      "record_counts": {}
+    },
+    {
+      "source": "heasarc",
+      "label": "HEASARC",
+      "facility": "NASA Goddard",
+      "data_types": [
+        "public X-ray observation metadata",
+        "public archive coverage"
+      ],
+      "mode": "on-demand-archive-query",
+      "public_scope": "Past-release Swift, Chandra, XMM-Newton, NuSTAR, NICER, and XRISM master-table rows that satisfy a mission-specific availability contract",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://heasarc.gsfc.nasa.gov/docs/xamin-api.html",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "tns",
+      "label": "IAU Transient Name Server",
+      "facility": "IAU / Weizmann Institute",
+      "data_types": [
+        "discovery",
+        "classification",
+        "public-object metadata"
+      ],
+      "mode": "poll",
+      "public_scope": "Hourly delta files explicitly contain public objects",
+      "state": "connected",
+      "detail": "processed 0 public rows \u00b7 2026-08-22 16:00:00 - 17:00:00",
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://www.wis-tns.org/content/tns-getting-started",
+      "enabled": true,
+      "record_counts": {
+        "classifications": 176
+      }
+    },
+    {
+      "source": "ivoa",
+      "label": "IVOA-compatible services",
+      "facility": "User-configured providers",
+      "data_types": [
+        "VOEvent",
+        "ObsCore",
+        "TAP",
+        "SIA",
+        "SSA",
+        "VOTable"
+      ],
+      "mode": "configured",
+      "public_scope": "Only rows explicitly public at the configured service",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://www.ivoa.net/documents/",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "icecube-cascade-gcn",
+      "label": "IceCube High-Energy Cascade Alerts",
+      "facility": "IceCube Collaboration / AMON / NASA GCN",
+      "data_types": [
+        "high-energy cascade-neutrino candidate",
+        "source-reported 50% and 90% containment radii",
+        "source-hosted FITS and PNG probability maps",
+        "energy, signalness, and false-alarm rate",
+        "update or retraction"
+      ],
+      "mode": "live-and-archive",
+      "public_scope": "Only real-event rows from the explicitly public stream 26 archive and exact live topic are accepted",
+      "state": "connected",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.ICECUBE_CASCADE",
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://gcn.nasa.gov/missions/icecube",
+      "enabled": true,
+      "record_counts": {}
+    },
+    {
+      "source": "icecube-gcn",
+      "label": "IceCube Public Multimessenger Notices",
+      "facility": "IceCube Collaboration / NSF / AMON",
+      "data_types": [
+        "Gold/Bronze high-energy track-neutrino candidate",
+        "preliminary and revised localization",
+        "source-hosted probability map",
+        "energy, p_astro, and false-alarm rate",
+        "LVK coincidence follow-up"
+      ],
+      "mode": "live-bounded-retained-tail-and-public-history",
+      "public_scope": "Public Gold/Bronze track notices, explicitly named Classic archive files cited by GCN Circulars, and released LVK neutrino follow-up results",
+      "state": "connected",
+      "detail": "NASA GCN subscriptions active: gcn.notices.icecube.gold_bronze_track_alerts, gcn.notices.icecube.lvk_nu_track_search, gcn.classic.text.ICECUBE_CASCADE",
+      "last_message_at": "2026-08-21T07:23:43Z",
+      "lag_seconds": 1.584591,
+      "documentation_url": "https://gcn.nasa.gov/missions/icecube",
+      "enabled": true,
+      "record_counts": {}
+    },
+    {
+      "source": "konus-gcn",
+      "label": "Konus-Wind High-Energy Lightcurves",
+      "facility": "Ioffe Institute / NASA Wind / IPN / NASA GCN",
+      "data_types": [
+        "gamma-ray or high-energy count-rate increase",
+        "millisecond trigger time",
+        "energy band",
+        "provider-hosted lightcurve reference",
+        "source-reported temporal coincidence flag"
+      ],
+      "mode": "live-and-archive",
+      "public_scope": "NASA GCN publicly redistributes Konus-Wind notices and maintains a public lightcurve archive",
+      "state": "connected",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.KONUS_LC",
+      "last_message_at": "2026-08-21T18:52:30Z",
+      "lag_seconds": 0.358484,
+      "documentation_url": "https://gcn.nasa.gov/missions/konus",
+      "enabled": true,
+      "record_counts": {}
+    },
+    {
+      "source": "lvk-public-alerts",
+      "label": "LIGO/Virgo/KAGRA Public Alerts",
+      "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
+      "data_types": [
+        "gravitational-wave notice",
+        "HEALPix sky map",
+        "classification",
+        "retraction"
+      ],
+      "mode": "live",
+      "public_scope": "Public LVK alerts distributed through GCN and public GraceDB products",
+      "state": "connected",
+      "detail": "via NASA GCN: igwn.gwalert",
+      "last_message_at": "2026-08-22T17:13:35Z",
+      "lag_seconds": 1.574342,
+      "documentation_url": "https://gcn.nasa.gov/missions/lvk",
+      "enabled": true,
+      "record_counts": {}
+    },
+    {
+      "source": "rubin-lasair",
+      "label": "Lasair",
+      "facility": "University of Edinburgh / Queen's University Belfast",
+      "data_types": [
+        "Rubin alert",
+        "ZTF alert",
+        "light curve",
+        "streaming query"
+      ],
+      "mode": "targeted-query",
+      "public_scope": "Public ZTF broker object/light-curve output accessed through the user's account",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://lasair.readthedocs.io/en/main/core_functions/rest-api.html",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "mast",
+      "label": "Mikulski Archive for Space Telescopes",
+      "facility": "NASA / STScI",
+      "data_types": [
+        "public imaging",
+        "spectroscopy",
+        "UV/optical/IR time series"
+      ],
+      "mode": "archive",
+      "public_scope": "Records explicitly marked PUBLIC; selected products require attribution",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://archive.stsci.edu/publishing/data-use",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "gcn-circulars",
+      "label": "NASA GCN Circulars",
+      "facility": "NASA GCN worldwide author community",
+      "data_types": [
+        "discovery bulletin",
+        "follow-up report",
+        "classification context",
+        "upper limit",
+        "observing plan"
+      ],
+      "mode": "live-and-archive",
+      "public_scope": "Released GCN Circular author text, metadata, corrections, and provider-hosted links are publicly distributed",
+      "state": "connected",
+      "detail": "via NASA GCN: gcn.circulars",
+      "last_message_at": "2026-08-22T17:21:32Z",
+      "lag_seconds": 3.658645,
+      "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
+      "enabled": true,
+      "record_counts": {
+        "publications": 651
+      }
+    },
+    {
+      "source": "gcn",
+      "label": "NASA General Coordinates Network",
+      "facility": "NASA Goddard",
+      "data_types": [
+        "notice",
+        "circular",
+        "follow-up report",
+        "retraction"
+      ],
+      "mode": "live",
+      "public_scope": "NASA describes notices and Circulars as publicly redistributed",
+      "state": "connected",
+      "detail": "gcn.circulars",
+      "last_message_at": "2026-08-22T17:21:32Z",
+      "lag_seconds": 3.658645,
+      "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
+      "enabled": true,
+      "record_counts": {
+        "observations": 468,
+        "messenger_signals": 837,
+        "classifications": 788
+      }
+    },
+    {
+      "source": "ned",
+      "label": "NASA/IPAC Extragalactic Database",
+      "facility": "NASA / Caltech IPAC",
+      "data_types": [
+        "host identity",
+        "host position",
+        "redshift",
+        "distance",
+        "morphology",
+        "bounded extragalactic host-candidate cone"
+      ],
+      "mode": "on-demand-query",
+      "public_scope": "Public NED API responses with required NED acknowledgment retained",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://ned.ipac.caltech.edu/Docs%3A%3AAPI/",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "irsa",
+      "label": "NASA/IPAC Infrared Science Archive",
+      "facility": "NASA / IPAC",
+      "data_types": [
+        "public AllWISE crossmatch",
+        "public 2MASS crossmatch",
+        "infrared context"
+      ],
+      "mode": "on-demand-catalog-query",
+      "public_scope": "Allowlisted public AllWISE Source Catalog and 2MASS Point Source Catalog rows",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://irsa.ipac.caltech.edu/applications/Gator/GatorAid/irsa/catsearch.html",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "noirlab-archive",
+      "label": "NOIRLab Astro Data Archive",
+      "facility": "NSF NOIRLab",
+      "data_types": [
+        "released image metadata",
+        "public archive coverage"
+      ],
+      "mode": "on-demand-archive-query",
+      "public_scope": "Only science-image files whose exact metadata row supplies a nonblank past release_date",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://github.com/NOAO/nat-nb/blob/master/api-authentication.ipynb",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "rubin-pitt-google",
+      "label": "Pitt-Google",
+      "facility": "University of Pittsburgh / Google",
+      "data_types": [
+        "Rubin alert",
+        "broker enrichment"
+      ],
+      "mode": "live",
+      "public_scope": "Rubin alerts are world-public",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://pitt-broker.readthedocs.io/",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "private-tom-skyportal",
+      "label": "Private TOM Toolkit / SkyPortal / marshal instances",
+      "facility": "User-operated facilities",
+      "data_types": [
+        "candidate",
+        "photometry",
+        "spectrum",
+        "observing status"
+      ],
+      "mode": "disabled",
+      "public_scope": "Only user-owned or explicitly authorized instance records",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://tom-toolkit.readthedocs.io/",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "simbad",
+      "label": "SIMBAD Astronomical Database",
+      "facility": "CDS, Strasbourg",
+      "data_types": [
+        "literature object identity",
+        "object type",
+        "astrometry",
+        "redshift",
+        "morphology",
+        "bibliographic context"
+      ],
+      "mode": "on-demand-catalog-query",
+      "public_scope": "SIMBAD documents free access without registration under ODbL with acknowledgment and original-reference citation",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://simbad.cds.unistra.fr/simbad/",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "svom-gcn",
+      "label": "SVOM Public GRB and Counterpart Notices",
+      "facility": "CNES / CNSA / SVOM French Science Center",
+      "data_types": [
+        "gamma-ray trigger",
+        "X-ray counterpart",
+        "localization",
+        "slew status",
+        "update"
+      ],
+      "mode": "live",
+      "public_scope": "NASA GCN publicly redistributes the SVOM GRM, ECLAIRs, and MXT VOEvent topics",
+      "state": "disabled",
+      "detail": "VOEvent parser ready; SVOM GRM, ECLAIRs, and MXT topics must be selected for this NASA GCN client",
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://gcn.nasa.gov/missions/svom",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "superk-gcn",
+      "label": "Super-Kamiokande Supernova Neutrino Alerts",
+      "facility": "Super-Kamiokande Collaboration",
+      "data_types": [
+        "supernova neutrino-burst alert",
+        "localization",
+        "distance estimate",
+        "update",
+        "retraction"
+      ],
+      "mode": "live",
+      "public_scope": "NASA GCN publicly redistributes the Super-K JSON supernova-alert topic",
+      "state": "disabled",
+      "detail": "Parser ready; gcn.notice.superk.sn_alert must be selected for this NASA GCN client",
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://gcn.nasa.gov/missions/sksn",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "snews-gcn",
+      "label": "SuperNova Early Warning System",
+      "facility": "SNEWS detector network / NASA GCN",
+      "data_types": [
+        "core-collapse neutrino-burst alert",
+        "detector coincidence",
+        "broad localization",
+        "update"
+      ],
+      "mode": "live",
+      "public_scope": "NASA GCN publicly redistributes SNEWS real and weekly test notices",
+      "state": "connected",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.SNEWS",
+      "last_message_at": "2026-08-18T16:00:13Z",
+      "lag_seconds": 1.086894,
+      "documentation_url": "https://gcn.nasa.gov/missions/snews",
+      "enabled": true,
+      "record_counts": {}
+    },
+    {
+      "source": "swift-gcn",
+      "label": "Swift BAT to XRT/UVOT Follow-up",
+      "facility": "NASA Neil Gehrels Swift Observatory / NASA GCN",
+      "data_types": [
+        "BAT high-energy trigger and localization",
+        "BAT transient classification",
+        "XRT counterpart localization or nondetection",
+        "UVOT counterpart photometry or limiting magnitude",
+        "instrument-specific update or retraction"
+      ],
+      "mode": "live-and-follow-up",
+      "public_scope": "NASA GCN publicly redistributes the selected operational BAT/XRT/UVOT notices",
+      "state": "connected",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.SWIFT_BAT_QL_POS, gcn.classic.text.SWIFT_BAT_GRB_POS_ACK, gcn.classic.text.SWIFT_XRT_POSITION, gcn.classic.text.SWIFT_XRT_CENTROID, gcn.classic.text.SWIFT_UVOT_POS, gcn.classic.text.SWIFT_UVOT_POS_NACK",
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://gcn.nasa.gov/missions/swift",
+      "enabled": true,
+      "record_counts": {}
+    },
+    {
+      "source": "tns-astronotes",
+      "label": "TNS AstroNotes",
+      "facility": "IAU / Weizmann Institute",
+      "data_types": [
+        "public notice",
+        "discovery claim",
+        "classification",
+        "follow-up photometry table"
+      ],
+      "mode": "poll",
+      "public_scope": "Pages explicitly marked note-public with a release timestamp",
+      "state": "degraded",
+      "detail": "checked 9 released public AstroNotes before the provider rate limit; retained data remains available",
+      "last_message_at": "2026-08-22T02:49:50Z",
+      "lag_seconds": 52788.581029,
+      "documentation_url": "https://www.wis-tns.org/astronotes",
+      "enabled": true,
+      "record_counts": {
+        "observations": 48,
+        "publications": 174
+      }
+    },
+    {
+      "source": "tns-public-reports",
+      "label": "TNS Public Object Details and Spectra",
+      "facility": "IAU / Weizmann Institute",
+      "data_types": [
+        "public object detail",
+        "aggregate classification",
+        "public spectrum metadata",
+        "bounded public ASCII spectrum preview"
+      ],
+      "mode": "targeted-query",
+      "public_scope": "Only objects explicitly marked public=1 and spectrum rows explicitly marked public=1",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://www.wis-tns.org/sites/default/files/api/tns2_manuals/TNS2.0_APIs_manual.pdf",
+      "enabled": false,
+      "record_counts": {
+        "spectra": 10,
+        "classifications": 10
+      }
+    },
+    {
+      "source": "wiserep",
+      "label": "WISeREP Public Spectra",
+      "facility": "Weizmann Institute of Science",
+      "data_types": [
+        "public spectrum metadata",
+        "bounded public ASCII spectrum preview",
+        "repository publication and observer credits"
+      ],
+      "mode": "targeted-query",
+      "public_scope": "Only anonymous public=yes export rows independently marked public=1",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://www.wiserep.org/content/wiserep-getting-started",
+      "enabled": false,
+      "record_counts": {
+        "spectra": 3
+      }
+    },
+    {
+      "source": "ztf-irsa",
+      "label": "ZTF Public Data-Release Light Curves at IRSA",
+      "facility": "NASA/IPAC IRSA / Zwicky Transient Facility",
+      "data_types": [
+        "released catalog photometry",
+        "limiting magnitude",
+        "quality flags"
+      ],
+      "mode": "public-release-archive",
+      "public_scope": "Only the latest anonymous public data-release collection is queried",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://irsa.ipac.caltech.edu/docs/program_interface/ztf_lightcurve_api.html",
+      "enabled": false,
+      "record_counts": {}
+    },
+    {
+      "source": "ztf",
+      "label": "Zwicky Transient Facility",
+      "facility": "Caltech / ZTF Partnership",
+      "data_types": [
+        "alert",
+        "light curve",
+        "cutout"
+      ],
+      "mode": "live-and-archive",
+      "public_scope": "Public-alert products are available through official public services and brokers",
+      "state": "disabled",
+      "detail": null,
+      "last_message_at": null,
+      "lag_seconds": null,
+      "documentation_url": "https://ztf.uw.edu/",
+      "enabled": false,
+      "record_counts": {}
+    }
+  ],
+  "surveys": [
+    {
+      "survey": "Pan-STARRS",
+      "candidate_count": 577
+    },
+    {
+      "survey": "ZTF",
+      "candidate_count": 370
+    },
+    {
+      "survey": "WFST",
+      "candidate_count": 350
+    },
+    {
+      "survey": "GOTO",
+      "candidate_count": 216
+    },
+    {
+      "survey": "ATLAS",
+      "candidate_count": 195
+    },
+    {
+      "survey": "IceCube Bronze Track Alert",
+      "candidate_count": 109
+    },
+    {
+      "survey": "Fermi",
+      "candidate_count": 93
+    },
+    {
+      "survey": "IceCube Gold Track Alert",
+      "candidate_count": 57
+    },
+    {
+      "survey": "ALeRCE",
+      "candidate_count": 45
+    },
+    {
+      "survey": "IceCube HESE Cascade / AMON",
+      "candidate_count": 45
+    },
+    {
+      "survey": "LAST",
+      "candidate_count": 45
+    },
+    {
+      "survey": "Chime",
+      "candidate_count": 39
+    },
+    {
+      "survey": "None",
+      "candidate_count": 35
+    },
+    {
+      "survey": "AMON IceCube-HAWC",
+      "candidate_count": 28
+    },
+    {
+      "survey": "YSE",
+      "candidate_count": 19
+    },
+    {
+      "survey": "ATALab",
+      "candidate_count": 15
+    },
+    {
+      "survey": "CALET",
+      "candidate_count": 14
+    },
+    {
+      "survey": "Konus-Wind",
+      "candidate_count": 14
+    },
+    {
+      "survey": "Einstein Probe",
+      "candidate_count": 9
+    },
+    {
+      "survey": "Bronze Track Alert",
+      "candidate_count": 6
+    },
+    {
+      "survey": "JADES",
+      "candidate_count": 5
+    },
+    {
+      "survey": "MASTER",
+      "candidate_count": 5
+    },
+    {
+      "survey": "XOSS",
+      "candidate_count": 4
+    },
+    {
+      "survey": "DCAP",
+      "candidate_count": 3
+    },
+    {
+      "survey": "BlackGEM",
+      "candidate_count": 2
+    },
+    {
+      "survey": "SGLF",
+      "candidate_count": 2
+    },
+    {
+      "survey": "SNHunt",
+      "candidate_count": 2
+    },
+    {
+      "survey": "ASAS-SN",
+      "candidate_count": 1
+    },
+    {
+      "survey": "BHTOM",
+      "candidate_count": 1
+    },
+    {
+      "survey": "Gold Track Alert",
+      "candidate_count": 1
+    },
+    {
+      "survey": "ISSP",
+      "candidate_count": 1
+    },
+    {
+      "survey": "MAXI",
+      "candidate_count": 1
+    },
+    {
+      "survey": "TESSELLATE",
+      "candidate_count": 1
     }
   ]
 }
