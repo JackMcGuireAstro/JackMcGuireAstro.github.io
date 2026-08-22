@@ -1,11 +1,72 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-08-22T20:35:13Z",
+  "generated_at": "2026-08-22T20:37:16Z",
   "origin": "local-snapshot",
   "cadence": "about every 2 minutes",
-  "candidate_count": 2605,
+  "candidate_count": 2606,
   "degraded": false,
   "candidates": [
+    {
+      "name": "Einstein Probe-01709287395",
+      "ra_deg": 311.533,
+      "dec_deg": -66.155,
+      "coordinate_error_arcsec": 185.668272,
+      "discovery_time": "2026-08-22T20:31:42Z",
+      "discovery_survey": "Einstein Probe",
+      "discovery_instrument": "WXT",
+      "status": "candidate",
+      "classification": "Unclassified",
+      "ctas_score": 81.97,
+      "event_type": "x-ray-transient",
+      "primary_messenger": "x-ray",
+      "updated_at": "2026-08-22T20:36:55Z",
+      "score_factors": {
+        "recency_points": 23.97,
+        "classification_gap_points": 12.0,
+        "spectroscopy_gap_points": 7.0,
+        "coverage_reduction": 0.0,
+        "multimessenger_points": 4.0
+      },
+      "links": [
+        {
+          "label": "GCN",
+          "designation": "Einstein Probe-01709287395"
+        },
+        {
+          "label": "GCN",
+          "designation": "01709287395"
+        }
+      ],
+      "follow_up_counts": {
+        "classifications": 0,
+        "observations": 0,
+        "spectra": 0,
+        "messenger_signals": 1,
+        "publications": 0
+      },
+      "follow_up_total": 1,
+      "follow_up": {
+        "classifications": [],
+        "observations": [],
+        "spectra": [],
+        "messenger_signals": [
+          {
+            "provider": "gcn",
+            "provider_signal_id": "Einstein Probe-01709287395:alert:308",
+            "observed_at": "2026-08-22T20:31:42Z",
+            "messenger": "x-ray",
+            "role": "trigger",
+            "instrument": "Einstein Probe / WXT",
+            "detection": 1,
+            "alert_type": "initial",
+            "measurement": "Einstein Probe | WXT | initial | 01709287395",
+            "summary": "Public GCN notice normalized from source fields; mission-specific values and the complete source payload remain in the provenance envelope.",
+            "source_url": "https://gcn.nasa.gov/notices"
+          }
+        ],
+        "publications": []
+      }
+    },
     {
       "name": "GRB 260822A",
       "status": "candidate",
@@ -167301,6 +167362,21 @@
   ],
   "recent_stream": [
     {
+      "name": "Einstein Probe-01709287395",
+      "updated_at": "2026-08-22T20:36:55Z",
+      "discovery_time": "2026-08-22T20:31:42Z",
+      "classification": "Unclassified",
+      "primary_messenger": "x-ray",
+      "ctas_score": 81.97,
+      "follow_up_counts": {
+        "classifications": 0,
+        "observations": 0,
+        "spectra": 0,
+        "messenger_signals": 1,
+        "publications": 0
+      }
+    },
+    {
       "name": "GRB 260822A",
       "updated_at": "2026-08-22T20:25:55Z",
       "classification": "Unclassified",
@@ -167583,42 +167659,27 @@
         "messenger_signals": 0,
         "publications": 0
       }
-    },
-    {
-      "name": "SN2026zec",
-      "updated_at": "2026-08-22T19:00:55Z",
-      "discovery_time": "2026-08-12T09:41:25Z",
-      "classification": "SN Ia",
-      "primary_messenger": "electromagnetic",
-      "ctas_score": 43.86,
-      "follow_up_counts": {
-        "classifications": 2,
-        "observations": 0,
-        "spectra": 0,
-        "messenger_signals": 0,
-        "publications": 0
-      }
     }
   ],
   "statistics": {
-    "real_events": 2606,
-    "public_candidates": 2605,
+    "real_events": 2607,
+    "public_candidates": 2606,
     "observations": 2599,
     "spectra": 13,
-    "messenger_signals": 839,
+    "messenger_signals": 840,
     "classifications": 969,
     "publications": 827,
-    "candidates_with_follow_up": 860,
+    "candidates_with_follow_up": 861,
     "messengers": {
       "electromagnetic": 2083,
       "gamma-ray": 205,
       "multimessenger": 28,
       "neutrino": 218,
       "radio": 39,
-      "x-ray": 32
+      "x-ray": 33
     },
     "priority_bands": {
-      "urgent_75_100": 199,
+      "urgent_75_100": 200,
       "high_50_74": 2215,
       "routine_25_49": 176,
       "low_0_24": 15
@@ -167940,7 +168001,7 @@
       "mode": "live-and-targeted-query",
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "state": "degraded",
-      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 251.7s",
+      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 244.0s",
       "last_message_at": null,
       "lag_seconds": null,
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
@@ -168314,7 +168375,7 @@
       "enabled": true,
       "record_counts": {
         "observations": 472,
-        "messenger_signals": 839,
+        "messenger_signals": 840,
         "classifications": 782
       }
     },
@@ -168630,7 +168691,7 @@
     {
       "provider": "gcn",
       "observations": 472,
-      "messenger_signals": 839,
+      "messenger_signals": 840,
       "classifications": 782
     },
     {
@@ -168735,7 +168796,7 @@
     },
     {
       "survey": "Einstein Probe",
-      "candidate_count": 9
+      "candidate_count": 10
     },
     {
       "survey": "Bronze Track Alert",
