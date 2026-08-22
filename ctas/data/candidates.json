@@ -1,11 +1,135 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-22T15:50:46Z",
+  "generated_at": "2026-08-22T15:52:48Z",
   "origin": "local-snapshot",
   "cadence": "about every 2 minutes",
   "candidate_count": 2577,
   "degraded": false,
   "candidates": [
+    {
+      "name": "IceCube-260807A",
+      "discovery_time": "2026-08-07T06:04:41Z",
+      "discovery_survey": "Bronze Track Alert",
+      "discovery_instrument": "IC86",
+      "status": "candidate",
+      "classification": "Astrophysical neutrino",
+      "classification_probability": 0.2923,
+      "ctas_score": 46.0,
+      "event_type": "high-energy-neutrino-track",
+      "primary_messenger": "neutrino",
+      "updated_at": "2026-08-22T15:52:13Z",
+      "links": [
+        {
+          "label": "GCN",
+          "designation": "IceCube-260807A"
+        },
+        {
+          "label": "GCN",
+          "designation": "142963_68892416"
+        }
+      ],
+      "follow_up": {
+        "classifications": [
+          {
+            "provider": "gcn",
+            "classification": "Astrophysical neutrino",
+            "probability": 0.2923,
+            "method": "machine",
+            "asserted_at": "2026-08-07T13:07:58Z",
+            "citation_url": "https://gcn.nasa.gov/missions/icecube"
+          },
+          {
+            "provider": "gcn",
+            "classification": "Astrophysical neutrino",
+            "probability": 0.2913,
+            "method": "machine",
+            "asserted_at": "2026-08-07T06:05:15Z",
+            "citation_url": "https://gcn.nasa.gov/missions/icecube"
+          }
+        ],
+        "observations": [
+          {
+            "provider": "gcn",
+            "observed_at": "2026-08-11T04:52:36Z",
+            "detection": 0,
+            "telescope": "IceCube",
+            "summary": "IceCube-260807A: Upper limits from a search for additional neutrino events in IceCube",
+            "source_url": "https://gcn.nasa.gov/circulars/45353"
+          },
+          {
+            "provider": "gcn",
+            "observed_at": "2026-08-07T10:05:17Z",
+            "detection": 1,
+            "telescope": "IceCube",
+            "summary": "IceCube-260807A - IceCube observation of a high-energy neutrino candidate track-like event",
+            "source_url": "https://gcn.nasa.gov/circulars/45307"
+          }
+        ],
+        "messenger_signals": [
+          {
+            "provider": "gcn",
+            "provider_signal_id": "IceCube-260807A:r1:update",
+            "observed_at": "2026-08-07T06:04:41Z",
+            "messenger": "neutrino",
+            "role": "localization-update",
+            "instrument": "IC86 / Bronze Track Alert",
+            "detection": 1,
+            "alert_type": "update",
+            "false_alarm_rate_hz": 0.0,
+            "measurement": "Bronze Track Alert | 112.61 TeV | p_astro 0.2923 | 2.88 deg 90% source radius",
+            "summary": "Public IceCube high-energy track-neutrino candidate. p_astro and FAR characterize the IceCube event population; they do not establish an electromagnetic counterpart or common astrophysical origin.",
+            "source_url": "https://gcn.nasa.gov/missions/icecube",
+            "skymap_url": "https://roc-2.icecube.wisc.edu/public/alerts/IceCube-260807A_skymap_probdensity_multiorder.fits.gz"
+          },
+          {
+            "provider": "gcn",
+            "provider_signal_id": "IceCube-260807A:r0:initial",
+            "observed_at": "2026-08-07T06:04:41Z",
+            "messenger": "neutrino",
+            "role": "trigger",
+            "instrument": "IC86 / Bronze Track Alert",
+            "detection": 1,
+            "alert_type": "initial",
+            "false_alarm_rate_hz": 0.0,
+            "measurement": "Bronze Track Alert | 112.61 TeV | p_astro 0.2913 | 0.95 deg 90% source radius",
+            "summary": "Public IceCube high-energy track-neutrino candidate. p_astro and FAR characterize the IceCube event population; they do not establish an electromagnetic counterpart or common astrophysical origin.",
+            "source_url": "https://gcn.nasa.gov/missions/icecube"
+          }
+        ],
+        "publications": [
+          {
+            "provider": "gcn-circulars",
+            "provider_publication_id": "45420",
+            "publication_type": "GCN Circular",
+            "canonical_url": "https://gcn.nasa.gov/circulars/45420",
+            "published_at": "2026-08-22T15:52:10Z",
+            "title": "Fermi-LAT Gamma-ray Observations of IceCube-260807A",
+            "authors_text": "Simone Garrappa at Weizmann Institute of Science <simone.garrappa@weizmann.ac.il>",
+            "abstract": "L. Pfeiffer (Univ. of Wuerzburg), S. Buson (DESY, Univ. of Wuerzburg), S. Garrappa (Weizmann Institute of Science) and  C. Bartolini (INFN Bari) on behalf of the Fermi-LAT collaboration:"
+          },
+          {
+            "provider": "gcn-circulars",
+            "provider_publication_id": "45353",
+            "publication_type": "GCN Circular",
+            "canonical_url": "https://gcn.nasa.gov/circulars/45353",
+            "published_at": "2026-08-11T04:52:36Z",
+            "title": "IceCube-260807A: Upper limits from a search for additional neutrino events in IceCube",
+            "authors_text": "syan079@icecube.wisc.edu",
+            "abstract": "The IceCube Collaboration (http://icecube.wisc.edu/) reports:"
+          },
+          {
+            "provider": "gcn-circulars",
+            "provider_publication_id": "45307",
+            "publication_type": "GCN Circular",
+            "canonical_url": "https://gcn.nasa.gov/circulars/45307",
+            "published_at": "2026-08-07T10:05:17Z",
+            "title": "IceCube-260807A - IceCube observation of a high-energy neutrino candidate track-like event",
+            "authors_text": "Cristobal Zilleruelo Ca\u00f1as at DESY <cristobal.zilleruelo.canas@desy.de>",
+            "abstract": "The IceCube Collaboration (http://icecube.wisc.edu/) reports:"
+          }
+        ]
+      }
+    },
     {
       "name": "AT2026zjw",
       "ra_deg": 24.530751,
@@ -49820,120 +49944,6 @@
             "title": "GRB 260317A: SVOM/ECLAIRs detection through offline targeted search and its possible association to magnetar 1E 1841-04.5",
             "authors_text": "SVOM_group <svomgroup@bao.ac.cn>",
             "abstract": "H. Yang, O. Godet, S. Guillot, L. Bouchet, J.-L. Atteia (IRAP), T. Maiolino (LUMP), D. Turpin, S. Schanne (CEA)"
-          }
-        ]
-      }
-    },
-    {
-      "name": "IceCube-260807A",
-      "discovery_time": "2026-08-07T06:04:41Z",
-      "discovery_survey": "Bronze Track Alert",
-      "discovery_instrument": "IC86",
-      "status": "candidate",
-      "classification": "Astrophysical neutrino",
-      "classification_probability": 0.2923,
-      "ctas_score": 46.0,
-      "event_type": "high-energy-neutrino-track",
-      "primary_messenger": "neutrino",
-      "updated_at": "2026-08-13T05:20:42Z",
-      "links": [
-        {
-          "label": "GCN",
-          "designation": "IceCube-260807A"
-        },
-        {
-          "label": "GCN",
-          "designation": "142963_68892416"
-        }
-      ],
-      "follow_up": {
-        "classifications": [
-          {
-            "provider": "gcn",
-            "classification": "Astrophysical neutrino",
-            "probability": 0.2923,
-            "method": "machine",
-            "asserted_at": "2026-08-07T13:07:58Z",
-            "citation_url": "https://gcn.nasa.gov/missions/icecube"
-          },
-          {
-            "provider": "gcn",
-            "classification": "Astrophysical neutrino",
-            "probability": 0.2913,
-            "method": "machine",
-            "asserted_at": "2026-08-07T06:05:15Z",
-            "citation_url": "https://gcn.nasa.gov/missions/icecube"
-          }
-        ],
-        "observations": [
-          {
-            "provider": "gcn",
-            "observed_at": "2026-08-11T04:52:36Z",
-            "detection": 0,
-            "telescope": "IceCube",
-            "summary": "IceCube-260807A: Upper limits from a search for additional neutrino events in IceCube",
-            "source_url": "https://gcn.nasa.gov/circulars/45353"
-          },
-          {
-            "provider": "gcn",
-            "observed_at": "2026-08-07T10:05:17Z",
-            "detection": 1,
-            "telescope": "IceCube",
-            "summary": "IceCube-260807A - IceCube observation of a high-energy neutrino candidate track-like event",
-            "source_url": "https://gcn.nasa.gov/circulars/45307"
-          }
-        ],
-        "messenger_signals": [
-          {
-            "provider": "gcn",
-            "provider_signal_id": "IceCube-260807A:r1:update",
-            "observed_at": "2026-08-07T06:04:41Z",
-            "messenger": "neutrino",
-            "role": "localization-update",
-            "instrument": "IC86 / Bronze Track Alert",
-            "detection": 1,
-            "alert_type": "update",
-            "false_alarm_rate_hz": 0.0,
-            "measurement": "Bronze Track Alert | 112.61 TeV | p_astro 0.2923 | 2.88 deg 90% source radius",
-            "summary": "Public IceCube high-energy track-neutrino candidate. p_astro and FAR characterize the IceCube event population; they do not establish an electromagnetic counterpart or common astrophysical origin.",
-            "source_url": "https://gcn.nasa.gov/missions/icecube",
-            "skymap_url": "https://roc-2.icecube.wisc.edu/public/alerts/IceCube-260807A_skymap_probdensity_multiorder.fits.gz"
-          },
-          {
-            "provider": "gcn",
-            "provider_signal_id": "IceCube-260807A:r0:initial",
-            "observed_at": "2026-08-07T06:04:41Z",
-            "messenger": "neutrino",
-            "role": "trigger",
-            "instrument": "IC86 / Bronze Track Alert",
-            "detection": 1,
-            "alert_type": "initial",
-            "false_alarm_rate_hz": 0.0,
-            "measurement": "Bronze Track Alert | 112.61 TeV | p_astro 0.2913 | 0.95 deg 90% source radius",
-            "summary": "Public IceCube high-energy track-neutrino candidate. p_astro and FAR characterize the IceCube event population; they do not establish an electromagnetic counterpart or common astrophysical origin.",
-            "source_url": "https://gcn.nasa.gov/missions/icecube"
-          }
-        ],
-        "publications": [
-          {
-            "provider": "gcn-circulars",
-            "provider_publication_id": "45353",
-            "publication_type": "GCN Circular",
-            "canonical_url": "https://gcn.nasa.gov/circulars/45353",
-            "published_at": "2026-08-11T04:52:36Z",
-            "title": "IceCube-260807A: Upper limits from a search for additional neutrino events in IceCube",
-            "authors_text": "syan079@icecube.wisc.edu",
-            "abstract": "The IceCube Collaboration (http://icecube.wisc.edu/) reports:"
-          },
-          {
-            "provider": "gcn-circulars",
-            "provider_publication_id": "45307",
-            "publication_type": "GCN Circular",
-            "canonical_url": "https://gcn.nasa.gov/circulars/45307",
-            "published_at": "2026-08-07T10:05:17Z",
-            "title": "IceCube-260807A - IceCube observation of a high-energy neutrino candidate track-like event",
-            "authors_text": "Cristobal Zilleruelo Ca\u00f1as at DESY <cristobal.zilleruelo.canas@desy.de>",
-            "abstract": "The IceCube Collaboration (http://icecube.wisc.edu/) reports:"
           }
         ]
       }
