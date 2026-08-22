@@ -36,7 +36,7 @@ UTC = timezone.utc  # datetime.UTC is 3.11+; this works on 3.9+
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # database column -> published field name. Anything absent here is never
 # published. `id`, `simulation` and `created_at` are deliberately omitted.
@@ -245,8 +245,91 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         """,
     )
 
+    spectra = rows_by_event(
+        cur,
+        ids,
+        """
+        SELECT event_id, provider, provider_spectrum_id, observed_at, telescope,
+               instrument, configuration, wavelength_unit, flux_unit, resolution,
+               calibration_state, public_download_url, file_name, file_checksum,
+               source_url
+        FROM spectra
+        WHERE event_id IN ({ids})
+          AND data_rights IN ('public', 'open')
+        ORDER BY event_id, observed_at DESC, id
+        """,
+    )
+
     counts = {"total_real_events": cur.execute(
         "SELECT COUNT(*) FROM events WHERE COALESCE(simulation,0)=0").fetchone()[0]}
+
+    source_rows = [
+        {
+            "source": clean(row["id"]),
+            "label": clean(row["display_name"]),
+            "facility": clean(row["facility"]),
+            "data_types": json.loads(row["data_types"] or "[]"),
+            "mode": clean(row["mode"]),
+            "public_scope": clean(row["public_scope"]),
+            "state": clean(row["runtime_state"]) or "unknown",
+            "detail": clean(row["runtime_detail"]),
+            "last_message_at": iso(row["last_message_at"]),
+            "lag_seconds": clean(row["lag_seconds"]),
+            "documentation_url": clean(row["documentation_url"]),
+            "enabled": bool(row["enabled"]),
+        }
+        for row in cur.execute(
+            """
+            SELECT id, display_name, facility, data_types, mode, public_scope,
+                   runtime_state, runtime_detail, last_message_at, lag_seconds,
+                   documentation_url, enabled
+            FROM sources
+            ORDER BY display_name, id
+            """
+        )
+    ]
+
+    provider_counts: dict[str, dict[str, int]] = {}
+    for kind, table, extra in (
+        ("observations", "observations", "COALESCE(superseded,0)=0"),
+        ("spectra", "spectra", "1=1"),
+        ("messenger_signals", "messenger_signals", "COALESCE(simulation,0)=0"),
+        ("classifications", "classification_assertions",
+         "COALESCE(superseded,0)=0 AND COALESCE(retracted,0)=0"),
+    ):
+        for row in cur.execute(
+            f"""
+            SELECT provider, COUNT(*) AS n
+            FROM {table}
+            WHERE data_rights IN ('public','open') AND {extra}
+            GROUP BY provider
+            """
+        ):
+            provider_counts.setdefault(str(row["provider"]), {})[kind] = int(row["n"])
+    for row in cur.execute(
+        """
+        SELECT p.provider, COUNT(*) AS n
+        FROM publication_event_links pel
+        JOIN publications p ON p.id = pel.publication_id
+        WHERE p.data_rights IN ('public','open')
+        GROUP BY p.provider
+        """
+    ):
+        provider_counts.setdefault(str(row["provider"]), {})["publications"] = int(row["n"])
+
+    survey_rows = [
+        {"survey": str(row["survey"]), "candidate_count": int(row["n"])}
+        for row in cur.execute(
+            """
+            SELECT discovery_survey AS survey, COUNT(*) AS n
+            FROM events
+            WHERE COALESCE(simulation,0)=0 AND status != 'merged'
+              AND discovery_survey IS NOT NULL AND TRIM(discovery_survey) != ''
+            GROUP BY discovery_survey
+            ORDER BY n DESC, discovery_survey
+            """
+        )
+    ]
     con.close()
 
     out: list[dict[str, Any]] = []
@@ -311,9 +394,14 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         follow_up = {
             "classifications": classifications.get(r["id"], []),
             "observations": observations.get(r["id"], []),
+            "spectra": spectra.get(r["id"], []),
             "messenger_signals": signals.get(r["id"], []),
             "publications": publications.get(r["id"], []),
         }
+        rec["follow_up_counts"] = {
+            key: len(value) for key, value in follow_up.items()
+        }
+        rec["follow_up_total"] = sum(rec["follow_up_counts"].values())
         if any(follow_up.values()):
             rec["follow_up"] = follow_up
 
@@ -321,6 +409,9 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
 
     counts["published"] = len(out)
     counts["skipped"] = skipped
+    counts["sources"] = source_rows
+    counts["provider_counts"] = provider_counts
+    counts["surveys"] = survey_rows
     return out, counts
 
 
@@ -380,6 +471,58 @@ def main() -> int:
         "candidates": candidates,
     }
 
+    def total(field: str) -> int:
+        return sum(int(c.get("follow_up_counts", {}).get(field, 0)) for c in candidates)
+
+    messenger_counts: dict[str, int] = {}
+    priority_bands = {"urgent_75_100": 0, "high_50_74": 0, "routine_25_49": 0, "low_0_24": 0}
+    for candidate in candidates:
+        messenger = str(candidate.get("primary_messenger") or "unknown")
+        messenger_counts[messenger] = messenger_counts.get(messenger, 0) + 1
+        score = float(candidate.get("ctas_score") or 0)
+        band = ("urgent_75_100" if score >= 75 else "high_50_74" if score >= 50
+                else "routine_25_49" if score >= 25 else "low_0_24")
+        priority_bands[band] += 1
+
+    recent = sorted(
+        candidates,
+        key=lambda row: row.get("updated_at") or row.get("discovery_time") or "",
+        reverse=True,
+    )[:20]
+    payload["recent_stream"] = [
+        {
+            key: row[key] for key in (
+                "name", "updated_at", "discovery_time", "classification",
+                "primary_messenger", "ctas_score", "follow_up_counts",
+            ) if key in row
+        }
+        for row in recent
+    ]
+    payload["statistics"] = {
+        "real_events": counts["total_real_events"],
+        "public_candidates": len(candidates),
+        "observations": total("observations"),
+        "spectra": total("spectra"),
+        "messenger_signals": total("messenger_signals"),
+        "classifications": total("classifications"),
+        "publications": total("publications"),
+        "candidates_with_follow_up": sum(c.get("follow_up_total", 0) > 0 for c in candidates),
+        "messengers": dict(sorted(messenger_counts.items())),
+        "priority_bands": priority_bands,
+    }
+    payload["sources"] = [
+        {**source, "record_counts": counts["provider_counts"].get(str(source["source"]), {})}
+        for source in counts["sources"]
+    ]
+    payload["provider_statistics"] = [
+        {"provider": provider, **record_counts}
+        for provider, record_counts in sorted(
+            counts["provider_counts"].items(),
+            key=lambda item: (-sum(item[1].values()), item[0]),
+        )
+    ]
+    payload["surveys"] = counts["surveys"]
+
     problems = validate(payload)
     if problems:
         print("export failed validation:", file=sys.stderr)
@@ -394,13 +537,9 @@ def main() -> int:
         "last_successful_update": payload["generated_at"],
         "candidate_count": len(candidates),
         "cadence": "about every 2 minutes",
-        "sources": [{
-            "source": "ctas-local",
-            "label": "CTAS accumulated event database",
-            "state": "ok",
-            "detail": f"{counts['published']} public events "
-                      f"of {counts['total_real_events']} real events retained",
-        }],
+        "statistics": payload["statistics"],
+        "sources": payload["sources"],
+        "surveys": payload["surveys"],
     }
 
     body = json.dumps(payload, indent=2)

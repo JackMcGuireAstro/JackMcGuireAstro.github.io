@@ -305,3 +305,81 @@ table.ctas-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; mi
 
 /* `display:flex` above would otherwise defeat the [hidden] attribute. */
 .ctas-toolbar[hidden] { display: none; }
+/* Public catalog depth, incoming stream and complete source census */
+.ctas-overview,
+.ctas-stream,
+.ctas-source-census {
+  margin: 2.25rem 0;
+  padding: clamp(1.15rem, 2vw, 1.8rem);
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(7,14,25,.58);
+}
+.ctas-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 2rem;
+  margin-bottom: 1.25rem;
+}
+.ctas-section-heading h3,
+.ctas-section-heading p { margin-bottom: 0; }
+.ctas-section-heading > p { max-width: 42rem; color: var(--muted, #aeb8c6); }
+.ctas-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: .65rem;
+}
+.ctas-metric {
+  min-height: 7rem;
+  padding: 1rem;
+  border: 1px solid rgba(255,255,255,.09);
+  background: rgba(255,255,255,.035);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.ctas-metric strong { font-size: clamp(1.5rem, 2.7vw, 2.35rem); line-height: 1; }
+.ctas-metric span { color: var(--muted, #aeb8c6); font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; }
+.ctas-breakdowns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+.ctas-bars { display: grid; gap: .45rem; }
+.ctas-bar { display: grid; grid-template-columns: minmax(7rem, 1fr) minmax(6rem, 2fr) auto; gap: .65rem; align-items: center; font-size: .82rem; }
+.ctas-bar i { height: .45rem; background: rgba(255,255,255,.08); position: relative; }
+.ctas-bar i::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--bar); background: #d4a74f; }
+.ctas-stream__list { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.ctas-stream__list li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  padding: .95rem 1rem;
+  border-top: 1px solid rgba(255,255,255,.1);
+}
+.ctas-stream__number { color: #d4a74f; font-family: monospace; }
+.ctas-stream__list p { margin: 0 0 .2rem; display: flex; align-items: center; gap: .55rem; }
+.ctas-stream__list small { color: var(--muted, #aeb8c6); }
+.ctas-stream__score { min-width: 4.5rem; text-align: right; font-size: 1.4rem; }
+.ctas-stream__score span { display: block; color: var(--muted, #aeb8c6); font-size: .65rem; text-transform: uppercase; letter-spacing: .08em; }
+.ctas-evidence-count { min-width: 10rem; font-size: .78rem; color: var(--muted, #aeb8c6); }
+.ctas-source-census .ctas-sources li { align-items: start; }
+.ctas-source-census .ctas-sources li > div { min-width: 0; }
+.ctas-sources__counts { margin: .25rem 0; color: #d4a74f; font-size: .78rem; }
+.ctas-survey-title { margin-top: 2rem; }
+.ctas-surveys { display: flex; flex-wrap: wrap; gap: .45rem; }
+.ctas-surveys span { padding: .45rem .65rem; border: 1px solid rgba(255,255,255,.11); font-size: .78rem; }
+.ctas-surveys strong { color: #fff; }
+.ctas-provider-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .5rem; }
+.ctas-provider-stats > div { padding: .7rem; border: 1px solid rgba(255,255,255,.1); display: grid; gap: .15rem; }
+.ctas-provider-stats span { color: #d4a74f; font-size: .78rem; }
+.ctas-provider-stats small { color: var(--muted, #aeb8c6); }
+@media (max-width: 760px) {
+  .ctas-section-heading { display: block; }
+  .ctas-section-heading > p { margin-top: .6rem; }
+  .ctas-breakdowns { grid-template-columns: 1fr; }
+  .ctas-stream__list li { grid-template-columns: auto 1fr; }
+  .ctas-stream__score { grid-column: 2; text-align: left; }
+}

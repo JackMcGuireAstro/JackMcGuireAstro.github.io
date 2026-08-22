@@ -117,6 +117,38 @@
 
       <div class="ctas-status" id="ctas-status"></div>
 
+      <section class="ctas-overview" aria-labelledby="ctas-overview-title">
+        <div class="ctas-section-heading">
+          <div>
+            <p class="eyebrow">Catalog depth</p>
+            <h3 id="ctas-overview-title">What CTAS currently retains</h3>
+          </div>
+          <p>Counts below cover public, rights-cleared records in the complete published catalog.</p>
+        </div>
+        <div class="ctas-metrics" id="ctas-metrics"></div>
+        <div class="ctas-breakdowns">
+          <div>
+            <h4>Candidate messengers</h4>
+            <div class="ctas-bars" id="ctas-messenger-stats"></div>
+          </div>
+          <div>
+            <h4>Priority distribution</h4>
+            <div class="ctas-bars" id="ctas-priority-stats"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ctas-stream" aria-labelledby="ctas-stream-title">
+        <div class="ctas-section-heading">
+          <div>
+            <p class="eyebrow">Incoming stream</p>
+            <h3 id="ctas-stream-title">Newest CTAS updates</h3>
+          </div>
+          <p>The three most recent catalog changes appear here above the score-ranked list.</p>
+        </div>
+        <ol class="ctas-stream__list" id="ctas-stream"></ol>
+      </section>
+
       <section class="ctas-sky" aria-labelledby="ctas-sky-title">
         <div class="ctas-sky__head">
           <div>
@@ -165,12 +197,25 @@
 
       <div id="ctas-results"></div>
 
-      <h3 style="margin-top:2.5rem;font-size:1.05rem;">Alert sources used in this run</h3>
+      <section class="ctas-source-census" aria-labelledby="ctas-source-title">
+      <div class="ctas-section-heading">
+        <div>
+          <p class="eyebrow">Source census</p>
+          <h3 id="ctas-source-title">Every CTAS source and survey</h3>
+        </div>
+        <p>Runtime state, public scope, retained record totals and documentation are shown source by source.</p>
+      </div>
       <ul class="ctas-sources" id="ctas-sources"></ul>
+      <h4 class="ctas-survey-title">Retained public records by provider</h4>
+      <div class="ctas-provider-stats" id="ctas-provider-stats"></div>
+      <h4 class="ctas-survey-title">Discovery surveys represented in the catalog</h4>
+      <div class="ctas-surveys" id="ctas-surveys"></div>
       <p class="colophon" style="border:0;padding-top:1rem;">
-        Public sources that do not require a login are enabled. Sources that need an account or API key
-        remain <em>disabled</em> until the required credentials are added.
+        CTAS publishes source state and public evidence—not credentials. A source shown as disabled,
+        unavailable or not configured contributed no hidden data. Counts include only records whose
+        rights labels permit public display.
       </p>
+      </section>
     </div>
 
   </section>

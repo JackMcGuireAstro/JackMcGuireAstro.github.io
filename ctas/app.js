@@ -14,13 +14,19 @@
   // 2,000+ rows is too many DOM nodes to paint at once; render a window and
   // let the reader ask for more. Search and sort always span the full set.
   var PAGE = 150;
-  var state = { candidates: [], status: null, sortKey: "ctas_score", sortDir: -1,
+  var state = { candidates: [], status: null, snapshot: null, sortKey: "ctas_score", sortDir: -1,
                q: "", cls: "", msg: "", stat: "", shown: PAGE,
                skyDays: 7, skyPoints: [], skySelected: null };
 
   var el = {
     status:   document.getElementById("ctas-status"),
+    metrics:  document.getElementById("ctas-metrics"),
+    messengerStats: document.getElementById("ctas-messenger-stats"),
+    priorityStats: document.getElementById("ctas-priority-stats"),
+    stream:   document.getElementById("ctas-stream"),
     sources:  document.getElementById("ctas-sources"),
+    providerStats: document.getElementById("ctas-provider-stats"),
+    surveys:  document.getElementById("ctas-surveys"),
     toolbar:  document.getElementById("ctas-toolbar"),
     results:  document.getElementById("ctas-results"),
     count:    document.getElementById("ctas-count"),
@@ -155,6 +161,7 @@
     var counts = [
       ["classification", follow.classifications],
       ["observation", follow.observations],
+      ["spectrum", follow.spectra],
       ["messenger notice", follow.messenger_signals],
       ["public report", follow.publications]
     ].filter(function (item) { return Array.isArray(item[1]) && item[1].length; })
@@ -201,6 +208,15 @@
         link(row.source_url, "Open notice") + (row.source_url && row.skymap_url ? " · " : "") +
         link(row.skymap_url, "Open sky map") + '</li>';
     });
+    var spectra = detailList("Public spectra", follow.spectra, function (row) {
+      var coverage = [row.telescope, row.instrument, row.calibration_state,
+                      row.observed_at ? absolute(row.observed_at) : ""].filter(Boolean).join(" · ");
+      var url = row.public_download_url || row.source_url;
+      return '<li><strong>' + esc(row.file_name || row.provider_spectrum_id || "Spectrum") + '</strong>' +
+        '<span>' + esc(coverage) + '</span>' +
+        (row.resolution !== undefined ? '<p>Reported resolution: ' + esc(num(row.resolution, 1)) + '</p>' : '') +
+        link(url, "Open spectrum source") + '</li>';
+    });
     var publications = detailList("Circulars and public follow-up reports", follow.publications, function (row) {
       return '<li><strong>' + esc(row.title || row.publication_type || "Public report") + '</strong>' +
         '<span>' + esc([row.authors_text, row.provider, row.published_at ? absolute(row.published_at) : ""].filter(Boolean).join(" · ")) + '</span>' +
@@ -216,7 +232,87 @@
       '<p class="ctas-detail__score"><span>CTAS follow-up priority</span><strong>' + esc(num(c.ctas_score, 1) || "—") + '</strong><small>Operational ordering aid, not scientific importance or probability.</small></p></div>' +
       context + (catalogueLinks ? '<p class="ctas-detail__catalogues">' + catalogueLinks + '</p>' : '') +
       renderScoreFactors(c) +
-      '<div class="ctas-detail__grid">' + classifications + signals + observations + publications + '</div></div>';
+      '<div class="ctas-detail__grid">' + classifications + signals + observations + spectra + publications + '</div></div>';
+  }
+
+  function renderOverview() {
+    var snapshot = state.snapshot || {};
+    var stats = snapshot.statistics || {};
+    if (el.metrics) {
+      [
+        ["Public candidates", stats.public_candidates],
+        ["With follow-up", stats.candidates_with_follow_up],
+        ["Observations", stats.observations],
+        ["Spectra", stats.spectra],
+        ["Messenger notices", stats.messenger_signals],
+        ["Classifications", stats.classifications],
+        ["Reports & circulars", stats.publications]
+      ].forEach(function (item) {
+        if (item[1] === undefined) return;
+        el.metrics.insertAdjacentHTML("beforeend",
+          '<div class="ctas-metric"><strong>' + esc(Number(item[1]).toLocaleString()) +
+          '</strong><span>' + esc(item[0]) + '</span></div>');
+      });
+    }
+
+    function bars(target, rows) {
+      if (!target || !rows.length) return;
+      var max = Math.max.apply(null, rows.map(function (row) { return row[1]; })) || 1;
+      target.innerHTML = rows.map(function (row) {
+        return '<div class="ctas-bar"><span>' + esc(row[0]) + '</span>' +
+          '<i style="--bar:' + esc(String(100 * row[1] / max)) + '%"></i>' +
+          '<strong>' + esc(Number(row[1]).toLocaleString()) + '</strong></div>';
+      }).join("");
+    }
+    bars(el.messengerStats, Object.keys(stats.messengers || {}).map(function (key) {
+      return [key, stats.messengers[key]];
+    }).sort(function (a, b) { return b[1] - a[1]; }));
+    var priorityLabels = {
+      urgent_75_100: "Urgent · 75–100",
+      high_50_74: "High · 50–74",
+      routine_25_49: "Routine · 25–49",
+      low_0_24: "Low · 0–24"
+    };
+    bars(el.priorityStats, Object.keys(priorityLabels).map(function (key) {
+      return [priorityLabels[key], (stats.priority_bands || {})[key] || 0];
+    }));
+
+    if (el.stream) {
+      el.stream.innerHTML = (snapshot.recent_stream || []).slice(0, 3).map(function (row, index) {
+        var counts = row.follow_up_counts || {};
+        var evidence = [
+          counts.observations ? counts.observations + " obs" : "",
+          counts.spectra ? counts.spectra + " spec" : "",
+          counts.messenger_signals ? counts.messenger_signals + " messages" : "",
+          counts.publications ? counts.publications + " reports" : ""
+        ].filter(Boolean).join(" · ") || "event record only";
+        return '<li><span class="ctas-stream__number">0' + (index + 1) + '</span><div>' +
+          '<p><strong>' + esc(row.name) + '</strong><span class="pill">' +
+          esc(row.classification || "Unclassified") + '</span></p>' +
+          '<small>' + esc(relative(row.updated_at || row.discovery_time)) + ' · ' +
+          esc(row.primary_messenger || "unknown") + ' · ' + esc(evidence) + '</small></div>' +
+          '<strong class="ctas-stream__score">' + esc(num(row.ctas_score, 1) || "—") +
+          '<span>priority</span></strong></li>';
+      }).join("");
+    }
+
+    if (el.surveys) {
+      el.surveys.innerHTML = (snapshot.surveys || []).map(function (row) {
+        return '<span><strong>' + esc(row.survey) + '</strong> ' +
+          esc(Number(row.candidate_count).toLocaleString()) + '</span>';
+      }).join("");
+    }
+    if (el.providerStats) {
+      el.providerStats.innerHTML = (snapshot.provider_statistics || []).map(function (row) {
+        var total = ["observations", "spectra", "messenger_signals", "classifications", "publications"]
+          .reduce(function (sum, key) { return sum + Number(row[key] || 0); }, 0);
+        var parts = ["observations", "spectra", "messenger_signals", "classifications", "publications"]
+          .filter(function (key) { return row[key]; })
+          .map(function (key) { return Number(row[key]).toLocaleString() + " " + key.replace("_", " "); });
+        return '<div><strong>' + esc(row.provider) + '</strong><span>' +
+          esc(total.toLocaleString()) + ' total</span><small>' + esc(parts.join(" · ")) + '</small></div>';
+      }).join("");
+    }
   }
 
   // ----------------------------------------------------------------- status
@@ -247,10 +343,17 @@
       el.sources.innerHTML = st.sources.map(function (s) {
         var d = s.state === "ok" ? "dot--ok"
               : (s.state === "disabled" ? "" : (s.state === "error" ? "dot--error" : "dot--degraded"));
-        return '<li><span class="dot ' + d + '"></span>' +
+        var recordCounts = s.record_counts || {};
+        var retained = Object.keys(recordCounts).map(function (key) {
+          return esc(Number(recordCounts[key]).toLocaleString()) + " " + esc(key.replace("_", " "));
+        }).join(" · ");
+        return '<li><span class="dot ' + d + '"></span><div>' +
                '<span class="ctas-sources__name">' + esc(s.label || s.source) + "</span>" +
-               '<span class="pill">' + esc(s.state) + "</span>" +
-               '<span class="ctas-sources__detail">' + esc(s.detail || "") + "</span></li>";
+               '<span class="pill">' + esc(s.state || "unknown") + "</span>" +
+               '<p class="ctas-sources__detail">' + esc(s.public_scope || s.detail || "") + "</p>" +
+               (retained ? '<p class="ctas-sources__counts">' + retained + '</p>' : '') +
+               (s.documentation_url ? link(s.documentation_url, "Source documentation") : '') +
+               "</div></li>";
       }).join("");
     }
   }
@@ -286,6 +389,7 @@
     { key: "name",            label: "Object" },
     { key: "classification",  label: "Classification" },
     { key: "ctas_score",      label: "Follow-up priority", num: true },
+    { key: "follow_up_total", label: "Public evidence", num: true },
     { key: "ra_deg",          label: "Position (RA / Dec)" },
     { key: "discovery_time",  label: "Discovered" },
     { key: "discovery_magnitude", label: "Mag", num: true },
@@ -329,19 +433,27 @@
     var body = window_.map(function (c, index) {
       var detailId = "ctas-detail-" + index;
       var links = (c.links || []).map(catalogueLink).join("");
+      var fc = c.follow_up_counts || {};
+      var evidence = [
+        fc.observations ? fc.observations + " obs" : "",
+        fc.spectra ? fc.spectra + " spec" : "",
+        fc.messenger_signals ? fc.messenger_signals + " msg" : "",
+        fc.publications ? fc.publications + " reports" : ""
+      ].filter(Boolean).join(" · ") || "event only";
       return '<tr class="ctas-candidate-row">' +
         '<td class="name"><button type="button" class="ctas-candidate" data-detail="' + detailId + '" aria-expanded="false" aria-controls="' + detailId + '"><span>' + esc(c.name) + '</span><small>Show follow-up</small></button></td>' +
         "<td>" + (c.classification
                   ? '<span class="pill">' + esc(c.classification) + "</span>"
                   : '<span class="ctas-sources__detail">unclassified</span>') + "</td>" +
         '<td class="num">' + esc(num(c.ctas_score, 1)) + "</td>" +
+        '<td class="ctas-evidence-count">' + esc(evidence) + "</td>" +
         '<td class="num">' + esc(sexagesimal(c.ra_deg, c.dec_deg)) + "</td>" +
         "<td>" + esc(c.discovery_time ? absolute(c.discovery_time) : "") + "</td>" +
         '<td class="num">' + esc(num(c.discovery_magnitude, 2)) + "</td>" +
         '<td class="num">' + esc(num(c.redshift, 4)) + "</td>" +
         "<td>" + esc(text(c.discovery_survey)) + "</td>" +
         '<td class="links">' + links + "</td>" +
-      '</tr><tr class="ctas-detail-row" id="' + detailId + '" hidden><td colspan="9">' + renderDetails(c) + '</td></tr>';
+      '</tr><tr class="ctas-detail-row" id="' + detailId + '" hidden><td colspan="10">' + renderDetails(c) + '</td></tr>';
     }).join("");
 
     el.results.innerHTML =
@@ -583,6 +695,7 @@
     getJSON("status.json").catch(function () { return null; })
   ]).then(function (res) {
     var data = res[0] || {};
+    state.snapshot = data;
     state.candidates = Array.isArray(data.candidates) ? data.candidates : [];
     state.status = res[1] || {
       pipeline_status: data.degraded ? "degraded" : "ok",
@@ -592,6 +705,7 @@
     };
     if (el.toolbar) el.toolbar.hidden = state.candidates.length === 0;
     renderStatus();
+    renderOverview();
     populateFilters();
     drawSky();
     renderTable();
