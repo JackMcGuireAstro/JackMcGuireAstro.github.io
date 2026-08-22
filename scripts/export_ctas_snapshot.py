@@ -39,8 +39,7 @@ from typing import Any
 SCHEMA_VERSION = 1
 
 # database column -> published field name. Anything absent here is never
-# published. `id`, `simulation`, `priority_factors` and `created_at` are
-# deliberately omitted.
+# published. `id`, `simulation` and `created_at` are deliberately omitted.
 COLUMNS: dict[str, str] = {
     "preferred_name": "name",
     "ra_deg": "ra_deg",
@@ -77,6 +76,12 @@ TNS_OBJECT = re.compile(r"^(?:AT|SN)?(\d{4}[a-z]+)$", re.IGNORECASE)
 # Merged records are audit rows pointing at a surviving parent, not separate
 # astronomical events. CTAS's own query layer hides them; so do we.
 EXCLUDED_STATUS = {"merged"}
+
+PUBLIC_SCORE_FACTORS = {
+    "recency_points", "brightness_points", "classification_gap_points",
+    "classification_conflict_points", "spectroscopy_gap_points", "coverage_reduction",
+    "observation_gap_points", "multimessenger_points", "status",
+}
 
 
 def iso(value: Any) -> str | None:
@@ -149,7 +154,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
 
     cols = ", ".join(COLUMNS)
     rows = cur.execute(
-        f"SELECT id, simulation, {cols} FROM events "
+        f"SELECT id, simulation, priority_factors, {cols} FROM events "
         f"WHERE COALESCE(simulation, 0) = 0 "
         f"ORDER BY COALESCE(updated_at, discovery_time) DESC "
         f"LIMIT ?",
@@ -265,6 +270,20 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
                 if v is None:
                     continue
             rec[dest] = v
+
+        try:
+            raw_factors = json.loads(r["priority_factors"] or "{}")
+        except (TypeError, json.JSONDecodeError):
+            raw_factors = {}
+        if isinstance(raw_factors, dict):
+            factors = {
+                key: clean(value) for key, value in raw_factors.items()
+                if key in PUBLIC_SCORE_FACTORS
+                and isinstance(value, (int, float, str, bool))
+                and clean(value) is not None
+            }
+            if factors:
+                rec["score_factors"] = factors
 
         links = []
         for a in alias_map.get(r["id"], []):

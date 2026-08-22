@@ -126,6 +126,30 @@
       rows.map(render).join("") + '</ul></section>';
   }
 
+  function renderScoreFactors(c) {
+    var labels = {
+      recency_points: "Recency points",
+      brightness_points: "Brightness points",
+      classification_gap_points: "Unclassified points",
+      classification_conflict_points: "Classification conflict",
+      spectroscopy_gap_points: "No-spectrum points",
+      coverage_reduction: "Observation-coverage reduction",
+      observation_gap_points: "Observation-gap points",
+      multimessenger_points: "Multimessenger points",
+      status: "Status override"
+    };
+    var factors = c.score_factors || {};
+    var rows = Object.keys(labels).filter(function (key) {
+      return factors[key] !== undefined && factors[key] !== null && factors[key] !== "";
+    }).map(function (key) {
+      var value = factors[key];
+      if (key !== "status" && Number.isFinite(Number(value))) value = Number(value).toFixed(2);
+      return '<div><dt>' + esc(labels[key]) + '</dt><dd>' + esc(value) + '</dd></div>';
+    }).join("");
+    if (!rows) return "";
+    return '<section class="ctas-score-factors"><h4>Why this score?</h4><dl>' + rows + '</dl></section>';
+  }
+
   function renderDetails(c) {
     var follow = c.follow_up || {};
     var counts = [
@@ -189,8 +213,9 @@
 
     return '<div class="ctas-detail"><div class="ctas-detail__intro"><div><p class="eyebrow">Follow-up record</p>' +
       '<h3>' + esc(c.name) + '</h3><p>' + esc(rationale) + '</p></div>' +
-      '<p class="ctas-detail__score"><span>CTAS review score</span><strong>' + esc(num(c.ctas_score, 1) || "—") + '</strong><small>Ordering aid, not a calibrated scientific probability.</small></p></div>' +
+      '<p class="ctas-detail__score"><span>CTAS follow-up priority</span><strong>' + esc(num(c.ctas_score, 1) || "—") + '</strong><small>Operational ordering aid, not scientific importance or probability.</small></p></div>' +
       context + (catalogueLinks ? '<p class="ctas-detail__catalogues">' + catalogueLinks + '</p>' : '') +
+      renderScoreFactors(c) +
       '<div class="ctas-detail__grid">' + classifications + signals + observations + publications + '</div></div>';
   }
 
@@ -260,7 +285,7 @@
   var COLUMNS = [
     { key: "name",            label: "Object" },
     { key: "classification",  label: "Classification" },
-    { key: "ctas_score",      label: "CTAS score", num: true },
+    { key: "ctas_score",      label: "Follow-up priority", num: true },
     { key: "ra_deg",          label: "Position (RA / Dec)" },
     { key: "discovery_time",  label: "Discovered" },
     { key: "discovery_magnitude", label: "Mag", num: true },
@@ -321,7 +346,7 @@
 
     el.results.innerHTML =
       '<div class="ctas-table-wrap"><table class="ctas-table">' +
-      "<caption>Public CTAS candidates, highest score first. Positions are J2000.</caption>" +
+      "<caption>Public CTAS candidates, highest follow-up priority first. Positions are J2000.</caption>" +
       "<thead><tr>" + head + "</tr></thead><tbody>" + body + "</tbody></table></div>" +
       (rows.length > state.shown
         ? '<p style="margin-top:1rem;text-align:center;">' +

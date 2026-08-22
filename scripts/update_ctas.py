@@ -107,6 +107,12 @@ PUBLIC_EVENT_FIELDS = {
     "updated_at": "updated_at",
 }
 
+PUBLIC_SCORE_FACTORS = {
+    "recency_points", "brightness_points", "classification_gap_points",
+    "classification_conflict_points", "spectroscopy_gap_points", "coverage_reduction",
+    "observation_gap_points", "multimessenger_points", "status",
+}
+
 # Public catalogue services we are willing to deep-link to, keyed by the
 # alias provider CTAS records. Anything else becomes a plain designation.
 PUBLIC_LINKS = {
@@ -143,6 +149,16 @@ def sanitize_event(summary: dict[str, Any]) -> dict[str, Any] | None:
         if isinstance(value, float) and value != value:  # NaN
             continue
         out[dest] = value
+
+    raw_factors = summary.get("priority_factors")
+    if isinstance(raw_factors, dict):
+        factors = {
+            key: value for key, value in raw_factors.items()
+            if key in PUBLIC_SCORE_FACTORS
+            and isinstance(value, (int, float, str, bool))
+        }
+        if factors:
+            out["score_factors"] = factors
 
     links = []
     for alias in summary.get("aliases") or []:

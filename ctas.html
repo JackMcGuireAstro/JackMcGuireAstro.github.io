@@ -80,6 +80,41 @@
           public fields that have passed the system’s data-rights checks.</p>
       </div>
 
+      <section class="ctas-definitions" aria-labelledby="ctas-definitions-title">
+        <div class="ctas-definitions__head">
+          <p class="eyebrow">Read the catalog</p>
+          <h3 id="ctas-definitions-title">What “transient” and “CTAS score” mean here</h3>
+        </div>
+        <div class="ctas-definitions__grid">
+          <article>
+            <h4>A transient is a candidate for attention</h4>
+            <p>CTAS uses <em>transient</em> as an operational umbrella for a public, time-dependent
+              astronomical event or candidate that may warrant follow-up. Entries can come from optical
+              transient reports or gamma-ray, X-ray, radio, neutrino, gravitational-wave and other
+              multimessenger alerts.</p>
+            <p>Appearance in this catalog does not mean CTAS has confirmed an astrophysical event,
+              discovery, physical classification, host or counterpart. Source caveats, conflicting
+              classifications, retractions and insufficient-data states remain part of the record.</p>
+          </article>
+          <article>
+            <h4>The CTAS score is follow-up priority, not scientific importance</h4>
+            <p>The 0–100 score orders CTAS’s review queue. A high value generally means “recent and
+              information-poor, so look soon.” It is not a probability, classification confidence or
+              claim that one target is scientifically more valuable than another.</p>
+            <details>
+              <summary>See the exact scoring rule</summary>
+              <p>Start at 35; add up to 24 for recency, −8 to +20 for reported discovery brightness,
+                +12 if unclassified, +8 for conflicting classifications, +7 when no spectrum is retained,
+                and up to +10 when the latest observation is old. Subtract 1.5 per retained quantitative
+                observation, up to 12. Add +4 per distinct messenger channel, up to 20. Retracted or bogus
+                records score zero; the final value is clipped to 0–100.</p>
+            </details>
+            <p>The score changes as public evidence arrives. Open a candidate to inspect its available
+              score factors and follow-up evidence, then apply your own scientific priorities.</p>
+          </article>
+        </div>
+      </section>
+
       <div class="ctas-status" id="ctas-status"></div>
 
       <section class="ctas-sky" aria-labelledby="ctas-sky-title">
@@ -153,10 +188,12 @@
             common format, and CTAS keeps the original source information and a checksum for each one. It can
             then run local analyses such as light-curve fits, host-galaxy matching, spectrum checks and
             observability calculations. A researcher reviews the results.</p>
-          <p>CTAS is still research software under active development. It is being built toward eventual
-            production use, but it is not a certified service and it does not make or publish discovery claims
-            on its own. I design and develop its scientific workflow, data model, data-rights rules, analysis
-            tools and interface.</p>
+          <p>CTAS is usable research software under active development. Scientists can choose which
+            source-attributed records and derived products are useful for their own work. Optional external
+            validation and infrastructure assessments support stronger claims about a frozen analysis or
+            deployment, but they are not prerequisites for using this catalog. CTAS does not make or publish
+            discovery claims on its own. I design and develop its scientific workflow, data model,
+            data-rights rules, analysis tools and interface.</p>
         </div>
         <div>
           <div class="note">
@@ -225,10 +262,10 @@
             information needed to reproduce them. CTAS cannot submit those plans to an observatory.</p>
         </li>
         <li class="flow__stage" data-state="planned">
-          <div class="flow__top"><h3>Certified production operation</h3><span class="chip chip--planned">Planned</span></div>
-          <p>Before CTAS could run as a certified production service, it would still need a calibrated survey
-            image feed, high-availability storage, independently reviewed disaster-recovery and load tests,
-            and a formal on-call policy.</p>
+          <div class="flow__top"><h3>Optional production assurance</h3><span class="chip chip--planned">Optional</span></div>
+          <p>High-availability storage, independently reviewed disaster-recovery and load tests, and a formal
+            on-call policy could support stronger service-resilience claims. They are not required to browse
+            or use CTAS as the public research catalog presented here.</p>
         </li>
       </ol>
     </div>
