@@ -2,17 +2,17 @@
   "schema_version": 2,
   "pipeline_status": "ok",
   "origin": "local-snapshot",
-  "last_successful_update": "2026-08-22T19:03:07Z",
+  "last_successful_update": "2026-08-22T19:05:10Z",
   "candidate_count": 2591,
   "cadence": "about every 2 minutes",
   "statistics": {
     "real_events": 2592,
     "public_candidates": 2591,
-    "observations": 2536,
+    "observations": 2537,
     "spectra": 13,
     "messenger_signals": 837,
     "classifications": 975,
-    "publications": 825,
+    "publications": 826,
     "candidates_with_follow_up": 858,
     "messengers": {
       "electromagnetic": 2070,
@@ -345,7 +345,7 @@
       "mode": "live-and-targeted-query",
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "state": "degraded",
-      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 295.2s",
+      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 309.5s",
       "last_message_at": null,
       "lag_seconds": null,
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
@@ -522,8 +522,8 @@
       ],
       "mode": "poll",
       "public_scope": "Hourly delta files explicitly contain public objects",
-      "state": "connected",
-      "detail": "processed 2 public rows \u00b7 2026-08-22 18:00:00 - 19:00:00",
+      "state": "degraded",
+      "detail": "ConnectError: [Errno 8] nodename nor servname provided, or not known; retry in 2.0s",
       "last_message_at": null,
       "lag_seconds": null,
       "documentation_url": "https://www.wis-tns.org/content/tns-getting-started",
@@ -631,8 +631,8 @@
       "public_scope": "Public LVK alerts distributed through GCN and public GraceDB products",
       "state": "connected",
       "detail": "via NASA GCN: igwn.gwalert",
-      "last_message_at": "2026-08-22T18:13:35Z",
-      "lag_seconds": 3.363196,
+      "last_message_at": "2026-08-22T19:03:40Z",
+      "lag_seconds": 1.766653,
       "documentation_url": "https://gcn.nasa.gov/missions/lvk",
       "enabled": true,
       "record_counts": {}
@@ -691,12 +691,12 @@
       "public_scope": "Released GCN Circular author text, metadata, corrections, and provider-hosted links are publicly distributed",
       "state": "connected",
       "detail": "NASA GCN subscriptions active: gcn.circulars",
-      "last_message_at": "2026-08-22T17:21:32Z",
-      "lag_seconds": 3.658645,
+      "last_message_at": "2026-08-22T19:03:18Z",
+      "lag_seconds": 2.651523,
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "record_counts": {
-        "publications": 651
+        "publications": 652
       }
     },
     {
@@ -713,12 +713,12 @@
       "public_scope": "NASA describes notices and Circulars as publicly redistributed",
       "state": "connected",
       "detail": "igwn.gwalert",
-      "last_message_at": "2026-08-22T18:13:35Z",
-      "lag_seconds": 3.363196,
+      "last_message_at": "2026-08-22T19:03:40Z",
+      "lag_seconds": 1.766653,
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "record_counts": {
-        "observations": 468,
+        "observations": 469,
         "messenger_signals": 837,
         "classifications": 788
       }
@@ -938,7 +938,7 @@
       "mode": "poll",
       "public_scope": "Pages explicitly marked note-public with a release timestamp",
       "state": "degraded",
-      "detail": "checked 9 released public AstroNotes before the provider rate limit; retained data remains available",
+      "detail": "ConnectError: [Errno 8] nodename nor servname provided, or not known; retry in 2.5s",
       "last_message_at": "2026-08-22T02:49:50Z",
       "lag_seconds": 58234.779768,
       "documentation_url": "https://www.wis-tns.org/astronotes",
