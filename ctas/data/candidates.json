@@ -1,11 +1,91 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-08-22T20:24:59Z",
+  "generated_at": "2026-08-22T20:27:02Z",
   "origin": "local-snapshot",
   "cadence": "about every 2 minutes",
   "candidate_count": 2605,
   "degraded": false,
   "candidates": [
+    {
+      "name": "GRB 260822A",
+      "status": "candidate",
+      "classification": "Unclassified",
+      "ctas_score": 52.76,
+      "event_type": "gamma-ray-transient",
+      "primary_messenger": "gamma-ray",
+      "updated_at": "2026-08-22T20:25:55Z",
+      "score_factors": {
+        "classification_gap_points": 12.0,
+        "spectroscopy_gap_points": 7.0,
+        "coverage_reduction": 1.5,
+        "observation_gap_points": 0.26
+      },
+      "links": [
+        {
+          "label": "GCN",
+          "designation": "GRB 260822A"
+        }
+      ],
+      "follow_up_counts": {
+        "classifications": 0,
+        "observations": 1,
+        "spectra": 0,
+        "messenger_signals": 0,
+        "publications": 3
+      },
+      "follow_up_total": 4,
+      "follow_up": {
+        "classifications": [],
+        "observations": [
+          {
+            "provider": "gcn",
+            "observed_at": "2026-08-22T17:21:22Z",
+            "detection": 0,
+            "telescope": "GCN follow-up team",
+            "band": "L",
+            "magnitude_system": "AB",
+            "limiting_magnitude": 20.7,
+            "photometry_method": "publication-reported",
+            "summary": "Machine-extracted explicit magnitude from GCN Circular 45423; verify against source text. Context: No new transients that could be credibly associated with GRB 260822A were detected down to an average 5-sigma depth of L > 20.7 AB mag.",
+            "source_url": "https://gcn.nasa.gov/circulars/45423"
+          }
+        ],
+        "spectra": [],
+        "messenger_signals": [],
+        "publications": [
+          {
+            "provider": "gcn-circulars",
+            "provider_publication_id": "45424",
+            "publication_type": "GCN Circular",
+            "canonical_url": "https://gcn.nasa.gov/circulars/45424",
+            "published_at": "2026-08-22T20:25:52Z",
+            "title": "GRB 260822A: GROWTH-India Telescope Upper Limits",
+            "authors_text": "Aditya Pawan Saikia at IIT Bombay <adityaps@iitb.ac.in>",
+            "abstract": "A. P. Saikia, V. Vijaykumar, V. Swain, V. Bhalerao (IITB), G.C. Anupama, S. Barway (IIA) and K. Angail (IAO) report on behalf of the GIT team:"
+          },
+          {
+            "provider": "gcn-circulars",
+            "provider_publication_id": "45423",
+            "publication_type": "GCN Circular",
+            "canonical_url": "https://gcn.nasa.gov/circulars/45423",
+            "published_at": "2026-08-22T19:03:18Z",
+            "title": "GRB 260822A: GOTO optical upper limit",
+            "authors_text": "d.s.oneill@bham.ac.uk",
+            "abstract": "D. O'Neill, S. Moran, G. Ramsay, R. Starling, B. Gompertz, K. Ackley, M. Dyer, J. Lyman, K. Ulaczyk, D. Steeghs, D. Galloway, V. Dhillon, P. O'Brien, K. Noysena, R. Kotak, R. Breton, J. Casares, L. Nuttall, B. Godson, T. Killestein, A. Kumar, M. Pursiainen, on behalf of GOTO collaboration:"
+          },
+          {
+            "provider": "gcn-circulars",
+            "provider_publication_id": "45422",
+            "publication_type": "GCN Circular",
+            "canonical_url": "https://gcn.nasa.gov/circulars/45422",
+            "published_at": "2026-08-22T17:21:32Z",
+            "title": "GRB 260822A: SVOM detection of a short burst",
+            "authors_text": "SVOM_group <svomgroup@bao.ac.cn>",
+            "abstract": "S. Schanne, D. Turpin, D. G\u00f6tz (CEA/Irfu) report on behalf of the SVOM mission team:"
+          }
+        ]
+      }
+    },
     {
       "name": "Fermi-GBM-809122868",
       "discovery_time": "2026-08-22T20:21:03Z",
@@ -1965,76 +2045,6 @@
         "spectra": [],
         "messenger_signals": [],
         "publications": []
-      }
-    },
-    {
-      "name": "GRB 260822A",
-      "status": "candidate",
-      "classification": "Unclassified",
-      "ctas_score": 52.64,
-      "event_type": "gamma-ray-transient",
-      "primary_messenger": "gamma-ray",
-      "updated_at": "2026-08-22T19:03:21Z",
-      "score_factors": {
-        "classification_gap_points": 12.0,
-        "spectroscopy_gap_points": 7.0,
-        "coverage_reduction": 1.5,
-        "observation_gap_points": 0.14
-      },
-      "links": [
-        {
-          "label": "GCN",
-          "designation": "GRB 260822A"
-        }
-      ],
-      "follow_up_counts": {
-        "classifications": 0,
-        "observations": 1,
-        "spectra": 0,
-        "messenger_signals": 0,
-        "publications": 2
-      },
-      "follow_up_total": 3,
-      "follow_up": {
-        "classifications": [],
-        "observations": [
-          {
-            "provider": "gcn",
-            "observed_at": "2026-08-22T17:21:22Z",
-            "detection": 0,
-            "telescope": "GCN follow-up team",
-            "band": "L",
-            "magnitude_system": "AB",
-            "limiting_magnitude": 20.7,
-            "photometry_method": "publication-reported",
-            "summary": "Machine-extracted explicit magnitude from GCN Circular 45423; verify against source text. Context: No new transients that could be credibly associated with GRB 260822A were detected down to an average 5-sigma depth of L > 20.7 AB mag.",
-            "source_url": "https://gcn.nasa.gov/circulars/45423"
-          }
-        ],
-        "spectra": [],
-        "messenger_signals": [],
-        "publications": [
-          {
-            "provider": "gcn-circulars",
-            "provider_publication_id": "45423",
-            "publication_type": "GCN Circular",
-            "canonical_url": "https://gcn.nasa.gov/circulars/45423",
-            "published_at": "2026-08-22T19:03:18Z",
-            "title": "GRB 260822A: GOTO optical upper limit",
-            "authors_text": "d.s.oneill@bham.ac.uk",
-            "abstract": "D. O'Neill, S. Moran, G. Ramsay, R. Starling, B. Gompertz, K. Ackley, M. Dyer, J. Lyman, K. Ulaczyk, D. Steeghs, D. Galloway, V. Dhillon, P. O'Brien, K. Noysena, R. Kotak, R. Breton, J. Casares, L. Nuttall, B. Godson, T. Killestein, A. Kumar, M. Pursiainen, on behalf of GOTO collaboration:"
-          },
-          {
-            "provider": "gcn-circulars",
-            "provider_publication_id": "45422",
-            "publication_type": "GCN Circular",
-            "canonical_url": "https://gcn.nasa.gov/circulars/45422",
-            "published_at": "2026-08-22T17:21:32Z",
-            "title": "GRB 260822A: SVOM detection of a short burst",
-            "authors_text": "SVOM_group <svomgroup@bao.ac.cn>",
-            "abstract": "S. Schanne, D. Turpin, D. G\u00f6tz (CEA/Irfu) report on behalf of the SVOM mission team:"
-          }
-        ]
       }
     },
     {
@@ -167291,6 +167301,20 @@
   ],
   "recent_stream": [
     {
+      "name": "GRB 260822A",
+      "updated_at": "2026-08-22T20:25:55Z",
+      "classification": "Unclassified",
+      "primary_messenger": "gamma-ray",
+      "ctas_score": 52.76,
+      "follow_up_counts": {
+        "classifications": 0,
+        "observations": 1,
+        "spectra": 0,
+        "messenger_signals": 0,
+        "publications": 3
+      }
+    },
+    {
       "name": "Fermi-GBM-809122868",
       "updated_at": "2026-08-22T20:22:02Z",
       "discovery_time": "2026-08-22T20:21:03Z",
@@ -167546,20 +167570,6 @@
       }
     },
     {
-      "name": "GRB 260822A",
-      "updated_at": "2026-08-22T19:03:21Z",
-      "classification": "Unclassified",
-      "primary_messenger": "gamma-ray",
-      "ctas_score": 52.64,
-      "follow_up_counts": {
-        "classifications": 0,
-        "observations": 1,
-        "spectra": 0,
-        "messenger_signals": 0,
-        "publications": 2
-      }
-    },
-    {
       "name": "AT2026zas",
       "updated_at": "2026-08-22T19:00:55Z",
       "discovery_time": "2026-08-12T08:34:39Z",
@@ -167597,7 +167607,7 @@
     "spectra": 13,
     "messenger_signals": 839,
     "classifications": 969,
-    "publications": 826,
+    "publications": 827,
     "candidates_with_follow_up": 860,
     "messengers": {
       "electromagnetic": 2083,
@@ -168275,13 +168285,13 @@
       "mode": "live-and-archive",
       "public_scope": "Released GCN Circular author text, metadata, corrections, and provider-hosted links are publicly distributed",
       "state": "connected",
-      "detail": "NASA GCN subscriptions active: gcn.circulars",
-      "last_message_at": "2026-08-22T19:03:18Z",
-      "lag_seconds": 2.651523,
+      "detail": "via NASA GCN: gcn.circulars",
+      "last_message_at": "2026-08-22T20:25:52Z",
+      "lag_seconds": 2.736343,
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "record_counts": {
-        "publications": 652
+        "publications": 653
       }
     },
     {
@@ -168297,9 +168307,9 @@
       "mode": "live",
       "public_scope": "NASA describes notices and Circulars as publicly redistributed",
       "state": "connected",
-      "detail": "gcn.classic.text.FERMI_GBM_ALERT",
-      "last_message_at": "2026-08-22T20:22:01Z",
-      "lag_seconds": 0.607857,
+      "detail": "gcn.circulars",
+      "last_message_at": "2026-08-22T20:25:52Z",
+      "lag_seconds": 2.736343,
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "record_counts": {
@@ -168629,7 +168639,7 @@
     },
     {
       "provider": "gcn-circulars",
-      "publications": 652
+      "publications": 653
     },
     {
       "provider": "tns-astronotes",
