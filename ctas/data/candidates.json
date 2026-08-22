@@ -1,11 +1,106 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-08-22T20:20:54Z",
+  "generated_at": "2026-08-22T20:22:57Z",
   "origin": "local-snapshot",
   "cadence": "about every 2 minutes",
-  "candidate_count": 2604,
+  "candidate_count": 2605,
   "degraded": false,
   "candidates": [
+    {
+      "name": "Fermi-GBM-809122868",
+      "discovery_time": "2026-08-22T20:21:03Z",
+      "discovery_survey": "Fermi",
+      "discovery_instrument": "GBM",
+      "status": "candidate",
+      "classification": "Below horizon",
+      "classification_probability": 1.0,
+      "ctas_score": 77.99,
+      "event_type": "high-energy-trigger",
+      "primary_messenger": "gamma-ray",
+      "updated_at": "2026-08-22T20:22:02Z",
+      "score_factors": {
+        "recency_points": 23.99,
+        "classification_conflict_points": 8.0,
+        "spectroscopy_gap_points": 7.0,
+        "coverage_reduction": 0.0,
+        "multimessenger_points": 4.0
+      },
+      "links": [
+        {
+          "label": "GCN",
+          "designation": "Fermi-GBM-809122868"
+        },
+        {
+          "label": "GCN",
+          "designation": "Fermi GBM trigger 809122868"
+        },
+        {
+          "label": "GCN",
+          "designation": "bn260822848"
+        }
+      ],
+      "follow_up_counts": {
+        "classifications": 2,
+        "observations": 0,
+        "spectra": 0,
+        "messenger_signals": 2,
+        "publications": 0
+      },
+      "follow_up_total": 4,
+      "follow_up": {
+        "classifications": [
+          {
+            "provider": "gcn",
+            "classification": "n/a",
+            "probability": 0.0,
+            "method": "machine",
+            "asserted_at": "2026-08-22T20:21:33Z",
+            "citation_url": "https://gcn.gsfc.nasa.gov/other/809122868.fermi"
+          },
+          {
+            "provider": "gcn",
+            "classification": "Below horizon",
+            "probability": 1.0,
+            "method": "machine",
+            "asserted_at": "2026-08-22T20:21:33Z",
+            "citation_url": "https://gcn.gsfc.nasa.gov/other/809122868.fermi"
+          }
+        ],
+        "observations": [],
+        "spectra": [],
+        "messenger_signals": [
+          {
+            "provider": "gcn",
+            "provider_signal_id": "Fermi-GBM-809122868:111:9146",
+            "observed_at": "2026-08-22T20:21:03Z",
+            "messenger": "gamma-ray",
+            "role": "localization-update",
+            "instrument": "Fermi / GBM",
+            "detection": 1,
+            "alert_type": "Fermi-GBM Flight Position",
+            "significance_sigma": 10.7,
+            "measurement": "Fermi-GBM Flight Position | 10.7 sigma | 0.512 s | 12.75 deg source radius | 100% Below horizon",
+            "summary": "Public Fermi-GBM detector notice normalized from the mission-specific Classic text contract. A trigger is high-energy evidence, not an optical counterpart or a confirmed GRB classification; the complete source notice and evolving localization remain in provenance.",
+            "source_url": "https://gcn.gsfc.nasa.gov/other/809122868.fermi"
+          },
+          {
+            "provider": "gcn",
+            "provider_signal_id": "Fermi-GBM-809122868:110:4292",
+            "observed_at": "2026-08-22T20:21:03Z",
+            "messenger": "gamma-ray",
+            "role": "trigger",
+            "instrument": "Fermi / GBM",
+            "detection": 1,
+            "alert_type": "Fermi-GBM Alert",
+            "significance_sigma": 4.6,
+            "measurement": "Fermi-GBM Alert | 4.6 sigma | 0.256 s | 47-291 keV",
+            "summary": "Public Fermi-GBM detector notice normalized from the mission-specific Classic text contract. A trigger is high-energy evidence, not an optical counterpart or a confirmed GRB classification; the complete source notice and evolving localization remain in provenance.",
+            "source_url": "https://gcn.gsfc.nasa.gov/other/809122868.fermi"
+          }
+        ],
+        "publications": []
+      }
+    },
     {
       "name": "GRB 260708A",
       "discovery_time": "2026-07-09T17:01:32Z",
@@ -167196,6 +167291,21 @@
   ],
   "recent_stream": [
     {
+      "name": "Fermi-GBM-809122868",
+      "updated_at": "2026-08-22T20:22:02Z",
+      "discovery_time": "2026-08-22T20:21:03Z",
+      "classification": "Below horizon",
+      "primary_messenger": "gamma-ray",
+      "ctas_score": 77.99,
+      "follow_up_counts": {
+        "classifications": 2,
+        "observations": 0,
+        "spectra": 0,
+        "messenger_signals": 2,
+        "publications": 0
+      }
+    },
+    {
       "name": "GRB 260708A",
       "updated_at": "2026-08-22T20:06:40Z",
       "discovery_time": "2026-07-09T17:01:32Z",
@@ -167478,42 +167588,27 @@
         "messenger_signals": 0,
         "publications": 0
       }
-    },
-    {
-      "name": "AT2026zjk",
-      "updated_at": "2026-08-22T18:49:50Z",
-      "discovery_time": "2026-08-19T03:10:36Z",
-      "classification": "Unclassified",
-      "primary_messenger": "electromagnetic",
-      "ctas_score": 62.49,
-      "follow_up_counts": {
-        "classifications": 0,
-        "observations": 0,
-        "spectra": 0,
-        "messenger_signals": 0,
-        "publications": 0
-      }
     }
   ],
   "statistics": {
-    "real_events": 2605,
-    "public_candidates": 2604,
+    "real_events": 2606,
+    "public_candidates": 2605,
     "observations": 2599,
     "spectra": 13,
-    "messenger_signals": 837,
-    "classifications": 967,
+    "messenger_signals": 839,
+    "classifications": 969,
     "publications": 826,
-    "candidates_with_follow_up": 859,
+    "candidates_with_follow_up": 860,
     "messengers": {
       "electromagnetic": 2083,
-      "gamma-ray": 204,
+      "gamma-ray": 205,
       "multimessenger": 28,
       "neutrino": 218,
       "radio": 39,
       "x-ray": 32
     },
     "priority_bands": {
-      "urgent_75_100": 198,
+      "urgent_75_100": 199,
       "high_50_74": 2215,
       "routine_25_49": 176,
       "low_0_24": 15
@@ -167811,9 +167906,9 @@
       "mode": "live",
       "public_scope": "NASA GCN publicly redistributes the eight audited operational Fermi notice types",
       "state": "connected",
-      "detail": "NASA GCN subscriptions active: gcn.classic.text.FERMI_GBM_ALERT, gcn.classic.text.FERMI_GBM_FLT_POS, gcn.classic.text.FERMI_GBM_GND_POS, gcn.classic.text.FERMI_GBM_FIN_POS, gcn.classic.text.FERMI_GBM_SUBTHRESH, gcn.classic.text.FERMI_LAT_POS_UPD, gcn.classic.text.FERMI_LAT_OFFLINE, gcn.classic.text.FERMI_LAT_MONITOR",
-      "last_message_at": "2026-08-21T08:30:52Z",
-      "lag_seconds": 0.725952,
+      "detail": "via NASA GCN: gcn.classic.text.FERMI_GBM_ALERT",
+      "last_message_at": "2026-08-22T20:22:01Z",
+      "lag_seconds": 0.607857,
       "documentation_url": "https://gcn.nasa.gov/missions/fermi",
       "enabled": true,
       "record_counts": {}
@@ -168202,15 +168297,15 @@
       "mode": "live",
       "public_scope": "NASA describes notices and Circulars as publicly redistributed",
       "state": "connected",
-      "detail": "igwn.gwalert",
-      "last_message_at": "2026-08-22T20:13:35Z",
-      "lag_seconds": 3.694324,
+      "detail": "gcn.classic.text.FERMI_GBM_ALERT",
+      "last_message_at": "2026-08-22T20:22:01Z",
+      "lag_seconds": 0.607857,
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "record_counts": {
         "observations": 472,
-        "messenger_signals": 837,
-        "classifications": 780
+        "messenger_signals": 839,
+        "classifications": 782
       }
     },
     {
@@ -168525,8 +168620,8 @@
     {
       "provider": "gcn",
       "observations": 472,
-      "messenger_signals": 837,
-      "classifications": 780
+      "messenger_signals": 839,
+      "classifications": 782
     },
     {
       "provider": "rubin-fink",
@@ -168582,7 +168677,7 @@
     },
     {
       "survey": "Fermi",
-      "candidate_count": 93
+      "candidate_count": 94
     },
     {
       "survey": "IceCube Gold Track Alert",
