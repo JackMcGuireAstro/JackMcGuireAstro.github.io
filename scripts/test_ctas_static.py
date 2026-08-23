@@ -188,6 +188,8 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertFalse(EXPORTER.validate(self.snapshot))
         publisher = (ROOT / "scripts/publish_ctas.sh").read_text()
         self.assertNotIn("git add -- ctas/data\n", publisher)
+        self.assertIn(".backup '$PUBLISH_DB'", publisher)
+        self.assertEqual(publisher.count('--database "$PUBLISH_DB"'), 2)
         for name in ("candidates.json", "status.json", "source-universe.json", "link-health.json", "certification.json"):
             self.assertIn(name, publisher)
 

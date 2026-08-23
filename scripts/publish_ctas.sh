@@ -35,6 +35,7 @@ LOG_DIR="${CTAS_LOG_DIR:-$HOME/Library/Logs/ctas-mirror}"
 LOG="$LOG_DIR/publish.log"
 STAMP="$LOG_DIR/.last-publish"
 LOCKDIR="$LOG_DIR/.lock.d"
+PUBLISH_DB=""
 
 DRY=0; FORCE=0
 for a in "$@"; do
@@ -66,11 +67,27 @@ if ! mkdir "$LOCKDIR" 2>/dev/null; then
     exit 0
   fi
 fi
-trap 'rmdir "$LOCKDIR" 2>/dev/null' EXIT
+cleanup() {
+  if [ -n "$PUBLISH_DB" ] && [ -f "$PUBLISH_DB" ]; then
+    rm -f -- "$PUBLISH_DB"
+  fi
+  rmdir "$LOCKDIR" 2>/dev/null
+}
+trap cleanup EXIT
 
 [ -d "$SITE" ] || die "website repo not found: $SITE"
 [ -f "$DB" ]   || die "CTAS database not found: $DB"
 cd "$SITE"     || die "cannot enter $SITE"
+
+# Freeze one transactionally consistent SQLite view for the whole release.
+# The live pipeline may continue writing to the canonical database while link
+# checks and assurance artifacts are generated, but no publication mixes two
+# database states.
+PUBLISH_DB=$(mktemp "${TMPDIR:-/tmp}/ctas-publish.XXXXXX") \
+  || die "could not allocate a temporary database snapshot"
+sqlite3 "$DB" ".backup '$PUBLISH_DB'" \
+  || die "could not create a consistent database snapshot"
+[ -s "$PUBLISH_DB" ] || die "database snapshot is empty"
 
 # ------------------------------------------------------------- rate guard
 if [ "$FORCE" -eq 0 ] && [ "$MIN_INTERVAL" -gt 0 ] && [ -f "$STAMP" ]; then
@@ -83,14 +100,14 @@ if [ "$FORCE" -eq 0 ] && [ "$MIN_INTERVAL" -gt 0 ] && [ -f "$STAMP" ]; then
 fi
 
 # ----------------------------------------------------------------- export
-python3 scripts/export_ctas_snapshot.py --database "$DB" --output-dir ctas/data >>"$LOG" 2>&1 \
+python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data >>"$LOG" 2>&1 \
   || die "export failed; nothing committed"
 python3 scripts/check_ctas_links.py --candidates ctas/data/candidates.json \
   --source-universe ctas/data/source-universe.json --output ctas/data/link-health.json >>"$LOG" 2>&1 \
   || die "public link validation failed; nothing committed"
 # Rebuild once so the certificate binds the current link-health artifact and
 # its catalog-content checksum. The exported scientific rows are deterministic.
-python3 scripts/export_ctas_snapshot.py --database "$DB" --output-dir ctas/data >>"$LOG" 2>&1 \
+python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data >>"$LOG" 2>&1 \
   || die "certificate rebuild failed; nothing committed"
 
 CERT_STATUS=$(python3 -c "import json;print(json.load(open('ctas/data/certification.json'))['status'])" 2>/dev/null || echo "unreadable")
