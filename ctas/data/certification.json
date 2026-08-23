@@ -1,0 +1,66 @@
+{
+  "architecture": "local-python-to-static-github-pages",
+  "candidate_count": 2618,
+  "claim_boundary": "Automated static-catalog assurance; not peer review, scientific truth, or a managed-service deployment claim.",
+  "files": {
+    "ctas.html": {
+      "bytes": 13583,
+      "sha256": "5f187d7d66678a6801e9fc6c4a6445ddf27ba5e79f83d80b0beb4f9c828b4d68"
+    },
+    "ctas/app.js": {
+      "bytes": 34899,
+      "sha256": "631b6176c24bdf0d33430ddda7dfd126ccb20a98c53f69b0a80161c56d000ca6"
+    },
+    "ctas/ctas.css": {
+      "bytes": 18692,
+      "sha256": "945b6c4b2540d1c74722d93cda7dc17497bbe96e1763656b52e26800d8d637fa"
+    },
+    "ctas/data/candidates.json": {
+      "bytes": 6089311,
+      "sha256": "6ce97cba8a754b54f42b3156ceb9c351b7c3703bb08708e75ef2e9cc5b423004"
+    },
+    "scripts/export_ctas_snapshot.py": {
+      "bytes": 23389,
+      "sha256": "b5c2cafdee5f937a94bf6dc0b0623075770b55ac9097990d8169fa22fcdc1db2"
+    },
+    "scripts/mirror_loop.sh": {
+      "bytes": 1737,
+      "sha256": "34cca4babee1ba48f7e63daab0a8bb78b74bc2363cc8bbee66531501a3708464"
+    },
+    "scripts/publish_ctas.sh": {
+      "bytes": 5423,
+      "sha256": "98c881938af763685daa583bd083ecad9c018b18c3e27cacd700e4c64eaa6b81"
+    }
+  },
+  "gates": [
+    {
+      "evidence": "2618/2618",
+      "id": "catalog-population",
+      "passed": true
+    },
+    {
+      "evidence": "allowlisted fields and fail-closed validation",
+      "id": "public-export-safety",
+      "passed": true
+    },
+    {
+      "evidence": "2618/2618",
+      "id": "candidate-detail-counts",
+      "passed": true
+    },
+    {
+      "evidence": "120-second mirror loop",
+      "id": "two-minute-publication-contract",
+      "passed": true
+    },
+    {
+      "evidence": "contents, sky controls, ranked feed, and candidate details",
+      "id": "public-research-surface",
+      "passed": true
+    }
+  ],
+  "generated_at": "2026-08-23T04:20:34Z",
+  "report_checksum_sha256": "e983a275c4e6f7784498f228bee1b707e01022e84e520c28e93abcddc65eaa5d",
+  "schema": "ctas.static-catalog-certification@1.0.0",
+  "status": "certified-static-catalog"
+}

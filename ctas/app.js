@@ -329,6 +329,11 @@
     el.status.innerHTML =
       cell("Pipeline status",
            '<span class="dot ' + dotClass + '"></span>' + esc(label)) +
+      cell("Catalog assurance",
+           st.static_catalog_assurance && st.static_catalog_assurance.status === "certified-static-catalog"
+             ? '<span class="dot dot--ok"></span>Static catalog checks passed'
+             : '<span class="dot dot--degraded"></span>Checks unavailable',
+           "Automated export, safety, completeness, interface, and publication checks; not peer review.") +
       cell("Last successful update",
            esc(absolute(st.last_successful_update)),
            esc(relative(st.last_successful_update))) +

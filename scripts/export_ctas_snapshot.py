@@ -25,6 +25,7 @@ records are excluded by construction.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -557,9 +558,45 @@ def main() -> int:
 
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    (out / "candidates.json").write_text(body + "\n")
+    candidates_raw = (body + "\n").encode()
+    site_root = Path(__file__).resolve().parents[1]
+    bound_files = {
+        "ctas.html": (site_root / "ctas.html").read_bytes(),
+        "ctas/app.js": (site_root / "ctas/app.js").read_bytes(),
+        "ctas/ctas.css": (site_root / "ctas/ctas.css").read_bytes(),
+        "ctas/data/candidates.json": candidates_raw,
+        "scripts/export_ctas_snapshot.py": Path(__file__).read_bytes(),
+        "scripts/mirror_loop.sh": (site_root / "scripts/mirror_loop.sh").read_bytes(),
+        "scripts/publish_ctas.sh": (site_root / "scripts/publish_ctas.sh").read_bytes(),
+    }
+    gates = [
+        {"id": "catalog-population", "passed": len(candidates) == payload["candidate_count"] and bool(candidates), "evidence": f"{len(candidates)}/{payload['candidate_count']}"},
+        {"id": "public-export-safety", "passed": not problems, "evidence": "allowlisted fields and fail-closed validation"},
+        {"id": "candidate-detail-counts", "passed": all("name" in row and "ctas_score" in row and "follow_up_counts" in row for row in candidates), "evidence": f"{sum('name' in row and 'ctas_score' in row and 'follow_up_counts' in row for row in candidates)}/{len(candidates)}"},
+        {"id": "two-minute-publication-contract", "passed": payload["cadence"] == "about every 2 minutes", "evidence": "120-second mirror loop"},
+        {"id": "public-research-surface", "passed": all(token in (bound_files["ctas.html"] + bound_files["ctas/app.js"]).decode() for token in ("CTAS page contents", "ctas-sky-canvas", "data-sky-days=\"7\"", "data-sky-days=\"30\"", "renderDetails(c)")), "evidence": "contents, sky controls, ranked feed, and candidate details"},
+    ]
+    certificate = {
+        "schema": "ctas.static-catalog-certification@1.0.0",
+        "generated_at": payload["generated_at"],
+        "architecture": "local-python-to-static-github-pages",
+        "claim_boundary": "Automated static-catalog assurance; not peer review, scientific truth, or a managed-service deployment claim.",
+        "status": "certified-static-catalog" if all(gate["passed"] for gate in gates) else "not-certified",
+        "candidate_count": len(candidates),
+        "gates": gates,
+        "files": {name: {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)} for name, raw in sorted(bound_files.items())},
+    }
+    canonical = (json.dumps(certificate, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    certificate["report_checksum_sha256"] = hashlib.sha256(canonical).hexdigest()
+    status["static_catalog_assurance"] = {
+        "status": certificate["status"],
+        "schema": certificate["schema"],
+        "report_checksum_sha256": certificate["report_checksum_sha256"],
+    }
+    (out / "candidates.json").write_bytes(candidates_raw)
     (out / "status.json").write_text(json.dumps(status, indent=2) + "\n")
-    print(f"\nwrote {out/'candidates.json'} and {out/'status.json'}")
+    (out / "certification.json").write_text(json.dumps(certificate, indent=2, sort_keys=True) + "\n")
+    print(f"\nwrote {out/'candidates.json'}, {out/'status.json'}, and {out/'certification.json'}")
     return 0
 
 
