@@ -80,6 +80,11 @@ plutil -lint "$DEST" >/dev/null 2>&1 \
   || { bad "generated agent is malformed"; exit 1; }
 
 launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
+rmdir "$LOG_DIR/.runner.lock.d" 2>/dev/null || true
+if [ -s "$LOG_DIR/launchd.err.log" ] && grep -q 'Documents/GitHub.*Operation not permitted' "$LOG_DIR/launchd.err.log"; then
+  mv "$LOG_DIR/launchd.err.log" "$LOG_DIR/launchd.err.pre-runtime-$(date -u '+%Y%m%dT%H%M%SZ').log"
+  ok "archived legacy Documents/TCC errors"
+fi
 launchctl bootstrap "$DOMAIN" "$DEST" 2>/dev/null \
   || { bad "launchctl bootstrap failed"; exit 1; }
 launchctl enable "$DOMAIN/$LABEL" 2>/dev/null || true
@@ -87,11 +92,16 @@ ok "agent loaded"
 
 echo
 echo "Running the background service once now"
+BASELINE_RUNS=$(launchctl print "$DOMAIN/$LABEL" 2>/dev/null | awk -F'= ' '/runs =/{print $2; exit}')
+BASELINE_RUNS=${BASELINE_RUNS:-0}
 launchctl kickstart -k "$DOMAIN/$LABEL" 2>/dev/null \
   || { bad "could not start the agent"; exit 1; }
 for _ in {1..30}; do
-  state=$(launchctl print "$DOMAIN/$LABEL" 2>/dev/null | awk -F'= ' '/state =/{print $2; exit}')
-  [ "$state" != "running" ] && break
+  AGENT_STATE=$(launchctl print "$DOMAIN/$LABEL" 2>/dev/null || true)
+  state=$(printf '%s\n' "$AGENT_STATE" | awk -F'= ' '/state =/{print $2; exit}')
+  runs=$(printf '%s\n' "$AGENT_STATE" | awk -F'= ' '/runs =/{print $2; exit}')
+  exit_code=$(printf '%s\n' "$AGENT_STATE" | awk -F'= ' '/last exit code =/{print $2; exit}')
+  if [ "${runs:-0}" -gt "$BASELINE_RUNS" ] && [ "$state" != "running" ] && [ -n "$exit_code" ]; then break; fi
   sleep 2
 done
 

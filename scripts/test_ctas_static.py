@@ -253,6 +253,8 @@ class CertificateAndArtifactTests(unittest.TestCase):
         agent = (ROOT / "scripts/io.github.jackmcguireastro.ctas-mirror.plist").read_text()
         self.assertIn('git fetch --quiet origin "$BRANCH"', runner)
         self.assertIn('git merge --quiet --ff-only "origin/$BRANCH"', runner)
+        self.assertIn("trap 'rmdir", runner)
+        self.assertNotIn("exec env CTAS_SITE", runner)
         self.assertIn("<key>StartInterval</key>", agent)
         self.assertIn("<integer>120</integer>", agent)
         self.assertNotIn("<key>WatchPaths</key>", agent)

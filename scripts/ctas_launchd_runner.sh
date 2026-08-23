@@ -62,5 +62,6 @@ else
   fi
 fi
 
-exec env CTAS_SITE="$SITE" CTAS_DB="$DB" CTAS_BRANCH="$BRANCH" CTAS_LOG_DIR="$LOG_DIR" \
+env CTAS_SITE="$SITE" CTAS_DB="$DB" CTAS_BRANCH="$BRANCH" CTAS_LOG_DIR="$LOG_DIR" \
   /bin/bash "$SITE/scripts/publish_ctas.sh"
+exit $?
