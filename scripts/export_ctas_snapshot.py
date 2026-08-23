@@ -229,9 +229,9 @@ ADDITIONAL_SOURCE_CONTRACTS = (
      "Public 2MASS rows returned by the rights-allowlisted IRSA adapter.", "Anonymous public query", "represented-through-provider",
      "represented-through-another-provider", "Positional candidates are not automatic transient, counterpart, or host associations."),
     ("ads", "NASA Astrophysics Data System", "NASA ADS", "reports-and-literature",
-     ["bibliographic links", "literature context"], "planned rights-safe linking", "https://ui.adsabs.harvard.edu/",
-     "Only public bibliographic metadata and links would be eligible.", "API token required for automated search",
-     "documented-not-implemented", "credentials-required", "No ADS connector is implemented; no literature search is claimed."),
+     ["bibliographic metadata", "literature links", "exact transient-name context"], "bounded exact-name API query", "https://ui.adsabs.harvard.edu/help/api/",
+     "Only public bibliographic metadata and provider links are retained; article full text is not mirrored.", "API token required for automated search",
+     "implemented-credentials-required", "scheduled", "Exact retained transient names are required; a no-match is preserved and no article reuse rights are inferred."),
 )
 
 # database column -> published field name. Anything absent here is never
