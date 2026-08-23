@@ -1,11 +1,80 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-08-23T06:59:52Z",
+  "generated_at": "2026-08-23T07:01:56Z",
   "origin": "local-snapshot",
   "cadence": "about every 2 minutes",
-  "candidate_count": 2618,
+  "candidate_count": 2619,
   "degraded": false,
   "candidates": [
+    {
+      "name": "Chime-1174588599",
+      "ra_deg": 316.752881,
+      "dec_deg": 29.442615,
+      "coordinate_error_arcsec": 1886.82048,
+      "discovery_time": "2026-08-23T07:00:08Z",
+      "discovery_survey": "Chime",
+      "status": "candidate",
+      "classification": "high-importance",
+      "classification_probability": 0.9917,
+      "ctas_score": 70.0,
+      "event_type": "fast-radio-burst",
+      "primary_messenger": "radio",
+      "updated_at": "2026-08-23T07:00:25Z",
+      "score_factors": {
+        "recency_points": 24.0,
+        "spectroscopy_gap_points": 7.0,
+        "coverage_reduction": 0.0,
+        "multimessenger_points": 4.0
+      },
+      "links": [
+        {
+          "label": "GCN",
+          "designation": "Chime-1174588599"
+        },
+        {
+          "label": "GCN",
+          "designation": "1174588599"
+        }
+      ],
+      "follow_up_counts": {
+        "classifications": 1,
+        "observations": 0,
+        "spectra": 0,
+        "messenger_signals": 1,
+        "publications": 0
+      },
+      "follow_up_total": 2,
+      "follow_up": {
+        "classifications": [
+          {
+            "provider": "gcn",
+            "classification": "high-importance",
+            "probability": 0.9917,
+            "method": "machine",
+            "asserted_at": "2026-08-23T07:00:25Z",
+            "citation_url": "https://gcn.nasa.gov/notices"
+          }
+        ],
+        "observations": [],
+        "spectra": [],
+        "messenger_signals": [
+          {
+            "provider": "gcn",
+            "provider_signal_id": "Chime-1174588599:frb:559",
+            "observed_at": "2026-08-23T07:00:08Z",
+            "messenger": "radio",
+            "role": "trigger",
+            "instrument": "Chime",
+            "detection": 1,
+            "alert_type": "initial",
+            "measurement": "Chime | initial | 1174588599",
+            "summary": "Public GCN notice normalized from source fields; mission-specific values and the complete source payload remain in the provenance envelope.",
+            "source_url": "https://gcn.nasa.gov/notices"
+          }
+        ],
+        "publications": []
+      }
+    },
     {
       "name": "GRB 260822A",
       "status": "candidate",
@@ -168219,6 +168288,21 @@
   ],
   "recent_stream": [
     {
+      "name": "Chime-1174588599",
+      "updated_at": "2026-08-23T07:00:25Z",
+      "discovery_time": "2026-08-23T07:00:08Z",
+      "classification": "high-importance",
+      "primary_messenger": "radio",
+      "ctas_score": 70.0,
+      "follow_up_counts": {
+        "classifications": 1,
+        "observations": 0,
+        "spectra": 0,
+        "messenger_signals": 1,
+        "publications": 0
+      }
+    },
+    {
       "name": "GRB 260822A",
       "updated_at": "2026-08-23T06:10:06Z",
       "classification": "Unclassified",
@@ -168500,43 +168584,28 @@
         "messenger_signals": 0,
         "publications": 0
       }
-    },
-    {
-      "name": "AT2026zne",
-      "updated_at": "2026-08-22T21:01:14Z",
-      "discovery_time": "2026-08-18T19:04:36Z",
-      "classification": "Unclassified",
-      "primary_messenger": "electromagnetic",
-      "ctas_score": 57.55,
-      "follow_up_counts": {
-        "classifications": 0,
-        "observations": 0,
-        "spectra": 0,
-        "messenger_signals": 0,
-        "publications": 0
-      }
     }
   ],
   "statistics": {
-    "real_events": 2619,
-    "public_candidates": 2618,
+    "real_events": 2620,
+    "public_candidates": 2619,
     "observations": 2621,
     "spectra": 13,
-    "messenger_signals": 841,
-    "classifications": 969,
+    "messenger_signals": 842,
+    "classifications": 970,
     "publications": 829,
-    "candidates_with_follow_up": 864,
+    "candidates_with_follow_up": 865,
     "messengers": {
       "electromagnetic": 2094,
       "gamma-ray": 206,
       "multimessenger": 28,
       "neutrino": 218,
-      "radio": 39,
+      "radio": 40,
       "x-ray": 33
     },
     "priority_bands": {
       "urgent_75_100": 207,
-      "high_50_74": 2219,
+      "high_50_74": 2220,
       "routine_25_49": 177,
       "low_0_24": 15
     }
@@ -169231,8 +169300,8 @@
       "enabled": true,
       "record_counts": {
         "observations": 472,
-        "messenger_signals": 841,
-        "classifications": 782
+        "messenger_signals": 842,
+        "classifications": 783
       }
     },
     {
@@ -169551,8 +169620,8 @@
     {
       "provider": "gcn",
       "observations": 472,
-      "messenger_signals": 841,
-      "classifications": 782
+      "messenger_signals": 842,
+      "classifications": 783
     },
     {
       "provider": "gcn-circulars",
@@ -169624,7 +169693,7 @@
     },
     {
       "survey": "Chime",
-      "candidate_count": 39
+      "candidate_count": 40
     },
     {
       "survey": "None",
