@@ -2,7 +2,7 @@
   "schema_version": 2,
   "pipeline_status": "ok",
   "origin": "local-snapshot",
-  "last_successful_update": "2026-08-23T13:04:24Z",
+  "last_successful_update": "2026-08-23T13:06:28Z",
   "candidate_count": 2661,
   "cadence": "about every 2 minutes",
   "statistics": {
@@ -345,7 +345,7 @@
       "mode": "live-and-targeted-query",
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "state": "degraded",
-      "detail": "ConnectTimeout: ; retry in 292.5s",
+      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 297.0s",
       "last_message_at": null,
       "lag_seconds": null,
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
@@ -1168,6 +1168,6 @@
   "static_catalog_assurance": {
     "status": "certified-static-catalog",
     "schema": "ctas.static-catalog-certification@1.0.0",
-    "report_checksum_sha256": "816119bfca299f1bff15df1fde4e04c893c60cfc313bc8e598ec0c9976e20408"
+    "report_checksum_sha256": "f38bee45ecb4a69814ee22a97534ac0e8fd80e2f64dac81beb839990dd0289cb"
   }
 }
