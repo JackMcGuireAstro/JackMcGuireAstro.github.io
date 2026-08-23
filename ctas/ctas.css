@@ -453,3 +453,141 @@ table.ctas-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; mi
   .ctas-stream__list li { grid-template-columns: auto 1fr; }
   .ctas-stream__score { grid-column: 2; text-align: left; }
 }
+
+/* ---------------------------------------------------- discovery workflows */
+.ctas-presets {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  padding: .75rem;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.025);
+}
+.ctas-presets > span {
+  align-self: center;
+  margin-right: .35rem;
+  color: var(--ink-3);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.ctas-presets button {
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: .42rem .65rem;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font: 650 .75rem/1.2 var(--font-sans);
+  cursor: pointer;
+}
+.ctas-presets button:hover,
+.ctas-presets button:focus-visible { border-color: var(--gold); color: var(--gold); }
+.ctas-presets button.is-active { border-color: var(--gold); background: var(--gold); color: #07101d; }
+
+/* ----------------------------------------------------- candidate evidence */
+.ctas-designations,
+.ctas-score-explanation { color: var(--ink-2); font-size: .86rem; }
+.ctas-known-missing {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 1rem 0;
+  border: 1px solid var(--border);
+  background: var(--border);
+}
+.ctas-known-missing p { margin: 0; padding: .85rem; background: var(--surface); color: var(--ink-2); font-size: .84rem; }
+.ctas-evidence-count strong,
+.ctas-evidence-count small { display: block; }
+.ctas-evidence-count strong { color: var(--ink); margin-bottom: .2rem; }
+.ctas-completeness,
+.ctas-source-coverage,
+.ctas-timeline,
+.ctas-evidence-lists { margin-top: 1rem; border: 1px solid var(--border); background: rgba(255,255,255,.02); }
+.ctas-completeness > summary,
+.ctas-source-coverage > summary,
+.ctas-timeline > summary,
+.ctas-evidence-lists > summary {
+  padding: .85rem 1rem;
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 700;
+}
+.ctas-completeness > summary span { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+.ctas-completeness > summary small,
+.ctas-source-coverage > summary small,
+.ctas-timeline > summary small { color: var(--ink-3); font-weight: 500; }
+.ctas-completeness > p,
+.ctas-source-coverage > p,
+.ctas-timeline > p { margin: 0; padding: 0 1rem .85rem; color: var(--ink-3); font-size: .82rem; }
+.ctas-completeness > ul {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1px;
+  margin: 0;
+  padding: 1px;
+  background: var(--border);
+}
+.ctas-completeness li { display: flex; justify-content: space-between; gap: .75rem; margin: 0; padding: .65rem .75rem; background: var(--surface); font-size: .78rem; }
+.ctas-completeness li strong { color: var(--ink-3); font-size: .7rem; text-transform: uppercase; }
+.ctas-completeness li.is-present strong { color: var(--green); }
+.ctas-completeness li.is-missing strong { color: var(--gold); }
+.ctas-completeness li.is-not-assessed strong,
+.ctas-completeness li.is-not-applicable strong { color: var(--ink-3); }
+.ctas-source-coverage > ul { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: .55rem; margin: 0; padding: 0 1rem 1rem; }
+.ctas-source-coverage > ul > li { margin: 0; padding: .8rem; border: 1px solid var(--border); background: var(--surface); }
+.ctas-source-coverage li > div { display: flex; justify-content: space-between; gap: .6rem; align-items: start; }
+.ctas-source-coverage li p { margin: .35rem 0; color: var(--ink-2); font-size: .78rem; }
+.ctas-source-coverage li small { color: var(--ink-3); }
+.ctas-source-coverage__links { display: flex; flex-wrap: wrap; gap: .3rem .75rem; }
+.ctas-timeline > ol { list-style: none; display: grid; gap: .5rem; margin: 0; padding: 0 1rem 1rem; }
+.ctas-timeline > ol > li { display: grid; grid-template-columns: minmax(10rem, 15rem) 1fr; gap: 1rem; margin: 0; padding: .8rem; border-left: 2px solid var(--gold); background: var(--surface); }
+.ctas-timeline li > div:last-child { display: grid; gap: .25rem; min-width: 0; }
+.ctas-timeline li .pill { justify-self: start; }
+.ctas-timeline li small { color: var(--ink-3); }
+.ctas-timeline li p { margin: .2rem 0; color: var(--ink-2); font-size: .82rem; }
+.ctas-timeline__clocks { display: grid; align-content: start; gap: .2rem; color: var(--ink-3); font-size: .72rem; }
+.ctas-evidence-lists > .ctas-detail__grid { padding: 0 1rem 1rem; }
+
+/* ------------------------------------------------------ source universe */
+.ctas-source-universe { margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+.ctas-source-universe > summary { cursor: pointer; padding: .7rem 0; }
+.ctas-source-universe > summary span,
+.ctas-source-universe > summary strong,
+.ctas-source-universe > summary small { display: block; }
+.ctas-source-universe > summary small { margin-top: .15rem; color: var(--ink-3); font-weight: 400; }
+.ctas-source-universe > p { color: var(--ink-3); max-width: 72ch; }
+.ctas-source-universe__summary { display: flex; flex-wrap: wrap; gap: .45rem; margin: 1rem 0; }
+.ctas-source-universe__summary > * { padding: .4rem .55rem; border: 1px solid var(--border); font-size: .75rem; }
+.ctas-source-universe__groups { display: grid; gap: .6rem; }
+.ctas-source-universe__groups > details { border: 1px solid var(--border); background: rgba(255,255,255,.02); }
+.ctas-source-universe__groups > details > summary { display: flex; justify-content: space-between; gap: 1rem; cursor: pointer; padding: .75rem; text-transform: capitalize; }
+.ctas-source-universe__groups ul { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: .45rem; margin: 0; padding: 0 .75rem .75rem; }
+.ctas-source-universe__groups li { margin: 0; padding: .75rem; border: 1px solid var(--border); background: var(--surface); }
+.ctas-source-universe__groups li > div { display: flex; justify-content: space-between; gap: .5rem; }
+.ctas-source-universe__groups li p { margin: .4rem 0; color: var(--ink-2); font-size: .78rem; }
+.ctas-source-universe__groups li small { display: block; color: var(--ink-3); font-size: .72rem; }
+.ctas-source-universe__limit { color: var(--gold) !important; }
+
+#ctas-sky-canvas:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
+.ctas-mag-legend b { width: .7rem; height: .7rem; border: 1px solid #fff; border-radius: 50%; background: #a9b3c7; }
+button:focus-visible,
+summary:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+@media (max-width: 760px) {
+  .ctas-known-missing { grid-template-columns: 1fr; }
+  .ctas-timeline > ol > li { grid-template-columns: 1fr; }
+  .ctas-presets { flex-wrap: nowrap; overflow-x: auto; padding-bottom: .85rem; }
+  .ctas-presets > span,
+  .ctas-presets button { flex: 0 0 auto; }
+  .ctas-source-universe__groups ul { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}

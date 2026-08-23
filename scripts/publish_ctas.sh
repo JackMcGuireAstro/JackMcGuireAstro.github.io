@@ -10,7 +10,8 @@
 #   ./scripts/publish_ctas.sh --dry-run    export and report; push nothing
 #   ./scripts/publish_ctas.sh --force      ignore the minimum-interval guard
 #
-# It commits ONLY ctas/data/. Any other work in progress is left untouched.
+# It commits ONLY the explicit public-artifact allowlist below. Any other work
+# in progress is left untouched.
 # It never force-pushes and never rewrites history.
 # =============================================================================
 set -uo pipefail
@@ -18,6 +19,13 @@ set -uo pipefail
 SITE="${CTAS_SITE:-$HOME/Documents/GitHub/JackMcGuireAstro.github.io}"
 DB="${CTAS_DB:-$HOME/.codex/.chatgpt-projects/g-p-6a5d91be2e688191b7333527fcd488b3/data/soc.db}"
 BRANCH="${CTAS_BRANCH:-main}"
+PUBLIC_FILES=(
+  ctas/data/candidates.json
+  ctas/data/status.json
+  ctas/data/source-universe.json
+  ctas/data/link-health.json
+  ctas/data/certification.json
+)
 
 # Floor between published commits, not a schedule. 0 = publish as soon as the
 # data actually changes. Nothing happens at all unless the data changed.
@@ -77,6 +85,17 @@ fi
 # ----------------------------------------------------------------- export
 python3 scripts/export_ctas_snapshot.py --database "$DB" --output-dir ctas/data >>"$LOG" 2>&1 \
   || die "export failed; nothing committed"
+python3 scripts/check_ctas_links.py --candidates ctas/data/candidates.json \
+  --source-universe ctas/data/source-universe.json --output ctas/data/link-health.json >>"$LOG" 2>&1 \
+  || die "public link validation failed; nothing committed"
+# Rebuild once so the certificate binds the current link-health artifact and
+# its catalog-content checksum. The exported scientific rows are deterministic.
+python3 scripts/export_ctas_snapshot.py --database "$DB" --output-dir ctas/data >>"$LOG" 2>&1 \
+  || die "certificate rebuild failed; nothing committed"
+
+CERT_STATUS=$(python3 -c "import json;print(json.load(open('ctas/data/certification.json'))['status'])" 2>/dev/null || echo "unreadable")
+[ "$CERT_STATUS" = "certified-static-catalog" ] \
+  || die "static-catalog assurance is $CERT_STATUS; refusing publication"
 
 # ------------------------------------------------------------ changed at all?
 # Compare against HEAD, not the index: a previous run (or GitHub Desktop) may
@@ -84,26 +103,37 @@ python3 scripts/export_ctas_snapshot.py --database "$DB" --output-dir ctas/data 
 # "no change" for data that has never actually been published.
 if git diff --quiet HEAD -- ctas/data/candidates.json 2>/dev/null; then
   say "no change in candidate data since the last commit; nothing to publish"
-  git checkout -- ctas/data/status.json 2>/dev/null || true
+  git checkout -- "${PUBLIC_FILES[@]}" 2>/dev/null || true
   exit 0
 fi
 
 COUNT=$(python3 -c "import json;print(json.load(open('ctas/data/candidates.json'))['candidate_count'])" 2>/dev/null || echo "?")
 
 if [ "$DRY" -eq 1 ]; then
-  say "--dry-run: $COUNT candidates; would commit ctas/data and push to $BRANCH"
+  say "--dry-run: $COUNT candidates; would commit the five public CTAS artifacts and push to $BRANCH"
   exit 0
 fi
 
 # ------------------------------------------------------- refuse a dirty index
 # Only ctas/data may be committed. If anything else is already staged, stop
 # rather than sweeping work-in-progress into an automated commit.
-STAGED_OTHER=$(git diff --cached --name-only | grep -v '^ctas/data/' || true)
+STAGED_OTHER=$(git diff --cached --name-only | while IFS= read -r staged; do
+  allowed=0
+  for public_file in "${PUBLIC_FILES[@]}"; do [ "$staged" = "$public_file" ] && allowed=1; done
+  [ "$allowed" -eq 1 ] || printf '%s\n' "$staged"
+done)
 if [ -n "$STAGED_OTHER" ]; then
   die "other files are already staged; refusing to commit. Staged: $(echo "$STAGED_OTHER" | tr '\n' ' ')"
 fi
 
-git add -- ctas/data || die "git add failed"
+git add -- "${PUBLIC_FILES[@]}" || die "git add failed"
+
+STAGED=$(git diff --cached --name-only)
+for staged in $STAGED; do
+  allowed=0
+  for public_file in "${PUBLIC_FILES[@]}"; do [ "$staged" = "$public_file" ] && allowed=1; done
+  [ "$allowed" -eq 1 ] || die "unexpected staged path after allowlisted add: $staged"
+done
 
 # If the last commit is one of ours and has not reached origin yet, amend it
 # instead of stacking a new commit every cycle. A run of failing pushes then

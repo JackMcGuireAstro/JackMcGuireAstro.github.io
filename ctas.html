@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://jackmcguireastro.github.io/assets/images/ctas/ctas-card.png">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="assets/css/site.css">
-<link rel="stylesheet" href="ctas/ctas.css?v=20260822-layout1">
+<link rel="stylesheet" href="ctas/ctas.css?v=20260823-catalog2">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>
@@ -63,7 +63,7 @@
           public place to see what was reported, what others have found, and which candidates may deserve a closer look.</p>
         <div class="feature__badges" style="margin-top:1.4rem;">
           <span class="chip chip--experimental">Active development</span>
-          <span class="chip chip--planned">Version <span data-ctas="version">1.2.0</span></span>
+          <span class="chip chip--planned">Version <span data-ctas="version">1.3.0</span></span>
         </div>
         <div class="ctas-status ctas-status--hero" id="ctas-status"></div>
 
@@ -153,6 +153,15 @@
           <div class="ctas-provider-stats" id="ctas-provider-stats"></div>
           <h4 class="ctas-survey-title">Discovery surveys represented in the catalog</h4>
           <div class="ctas-surveys" id="ctas-surveys"></div>
+          <details class="ctas-source-universe" id="complete-source-universe">
+            <summary>
+              <span><strong>Complete CTAS source universe</strong><small>Implemented, planned, manual, unavailable and represented sources</small></span>
+            </summary>
+            <p>This maintained universe records what CTAS can or may consult and the honest state of each source.
+              It is not a claim that every astronomical service exists here or that every source was queried for every candidate.</p>
+            <div class="ctas-source-universe__summary" id="ctas-source-universe-summary"></div>
+            <div class="ctas-source-universe__groups" id="ctas-source-universe-groups"></div>
+          </details>
           <p class="colophon" style="border:0;padding-top:1rem;">Counts include only public records whose
             rights labels permit display. Disabled, unavailable, unused and not-configured inputs are omitted.</p>
         </div>
@@ -183,13 +192,14 @@
           </div>
         </div>
         <div class="ctas-sky__stage" id="ctas-sky-stage">
-          <canvas id="ctas-sky-canvas" role="img" aria-label="All-sky map of CTAS candidates in the last seven days"></canvas>
+          <p id="ctas-sky-help" class="sr-only">Use the weekly and monthly buttons to change the time window. Focus the sky map and use the arrow keys to review plotted candidates; press Enter to open the selected record.</p>
+          <canvas id="ctas-sky-canvas" role="img" tabindex="0" aria-describedby="ctas-sky-help" aria-label="All-sky map of CTAS candidates in the last seven days"></canvas>
           <div class="ctas-sky__tooltip" id="ctas-sky-tooltip" role="status" hidden></div>
         </div>
         <div class="ctas-sky__foot">
           <p class="ctas-sky__count" id="ctas-sky-count" aria-live="polite"></p>
-          <div class="ctas-mag-legend" aria-label="Discovery magnitude color scale">
-            <span>brighter</span><i aria-hidden="true"></i><span>fainter</span>
+          <div class="ctas-mag-legend" aria-label="Discovery magnitude color scale: lower magnitude is brighter; yellow is about magnitude 13 or brighter, cyan is about magnitude 18, purple is about magnitude 23 or fainter, and gray means magnitude unavailable">
+            <span>≤13 brighter</span><i aria-hidden="true"></i><span>≥23 fainter</span><b aria-hidden="true"></b><span>unknown</span>
           </div>
         </div>
         <div id="ctas-sky-detail" class="ctas-sky__detail" hidden></div>
@@ -201,6 +211,23 @@
           <p>Select any candidate name to open its complete retained public follow-up record.</p>
         </div>
       <div class="ctas-toolbar" id="ctas-toolbar" hidden>
+        <div class="ctas-presets" role="group" aria-label="Quick candidate views">
+          <span>Quick views</span>
+          <button type="button" class="is-active" data-preset="all" aria-pressed="true">All</button>
+          <button type="button" data-preset="newest" aria-pressed="false">Newest</button>
+          <button type="button" data-preset="priority" aria-pressed="false">Highest priority</button>
+          <button type="button" data-preset="updated" aria-pressed="false">Recently updated</button>
+          <button type="button" data-preset="classified" aria-pressed="false">Newly classified</button>
+          <button type="button" data-preset="retracted" aria-pressed="false">Retracted</button>
+          <button type="button" data-preset="spectra" aria-pressed="false">New spectra · 30d</button>
+          <button type="button" data-preset="no-spectra" aria-pressed="false">No spectrum</button>
+          <button type="button" data-preset="messenger" aria-pressed="false">New messenger notices · 7d</button>
+          <button type="button" data-preset="unclassified" aria-pressed="false">Unclassified</button>
+          <button type="button" data-preset="bright" aria-pressed="false">Bright · ≤18 mag</button>
+          <button type="button" data-preset="multimessenger" aria-pressed="false">Multimessenger</button>
+          <button type="button" data-preset="rich" aria-pressed="false">Rich records</button>
+          <button type="button" data-preset="event-only" aria-pressed="false">Event only</button>
+        </div>
         <div class="field">
           <label for="ctas-q">Search</label>
           <input type="search" id="ctas-q" placeholder="Name, class, messenger…" autocomplete="off">
@@ -255,7 +282,8 @@
 
 <script src="assets/js/site.js"></script>
 
-<script src="ctas/app.js?v=20260822-layout1"></script>
+<script src="ctas/catalog-model.js?v=20260823-catalog2"></script>
+<script src="ctas/app.js?v=20260823-catalog2"></script>
 
 </body>
 </html>
