@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "2b9280816433539992394715d1a6cc1c7feda1828260c629dc48d3a1b39f5cd1"
+      "sha256": "3b39192e55ec45cb2e2550cbef2090ecb155d768ec3096dcdac4208d02f032d5"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "eed5e423816d3f2740a58e4d3ba81527f56125b40ed996d19f219a07796faf95"
+      "sha256": "caf9e5331ed3ad439f2d4eacecdf0b5cb5f182c7a667fa737d25c3c02a6eb051"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "3f3fd1f1fdffe20f8f1deaf078ec8a5d69814d240de06fc2cf5d6d105eac45be"
+      "sha256": "c16517c692ca1836b21da027442d6ba2c427871087e275c44603580bdd025eff"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "0ec135c6d058215493fb3c7b6200d6f66f55a4f03234fdaf5eb653056eb98f1d"
+      "report_checksum_sha256": "203404f7cc6502c70b35a0555d2537522573f07692fe52c2cb67fd68473802a8"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "9e5ce2d6bf7aa1d8ea25dffb9a5086c70e1e65da9de57be8c3a341bb3700913a"
+      "sha256": "3f42792d35676e3b8815d50424e52b1d2d50ecd1b3f91b145a327ef21f093f79"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "c34a0c99f6d4741a317329c6d4cc533c82952edc709be4192f62986f7c5d7a9a"
+      "sha256": "c9b74408dc9dd827bf437903d1ef533544f46105cafa33b17acb8187b22a1cd3"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "a4daa829fcdf6bef2e2058ce4861c0ce6f6cb037ed2fad005c89e2f974fad064"
+      "sha256": "34ab1d32816bf71761e453ad671a554d69a15b037a58e1933e3fd024d51761ba"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2752,
-  "catalog_content_checksum_sha256": "4bdfb0d270520c1e069eed82e7cbb7980e7f8cc07c552330401ce6bb25be077b",
+  "catalog_content_checksum_sha256": "7ef3405f1bea2fd866abf51dbc104ebd19e775638e144ddf1353e2fccc9026f7",
   "degraded_source_count": 4,
-  "export_checked_at": "2026-08-23T22:25:21Z",
-  "last_successful_update": "2026-08-23T22:25:21Z",
-  "latest_record_update": "2026-08-23T22:23:22Z",
+  "export_checked_at": "2026-08-23T22:38:36Z",
+  "last_successful_update": "2026-08-23T22:38:36Z",
+  "latest_record_update": "2026-08-23T22:37:51Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "87315b12e0893edc3850c6feb764707ffb99ea1d5faa3b827da62bca4fcd77d4",
+  "publication_state_checksum_sha256": "2f00cfc032d7aa83a6de9e3260730a857ca9ff8abfabc81975d9afecc4de339b",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "5e9c731821d747515d0b33363717b9c1de66c6a6be9ee02566c2d9125f2e5729",
+    "artifact_checksum_sha256": "7ac9e449c897ecab8e1d74e5e60b95c4a4652003ec8ce5147551c5d071ee4a6c",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 73
   },
@@ -861,7 +861,9 @@
       "protocol": "Authenticated REST object query; livestream remains separate",
       "public_scope": "Public ZTF broker object/light-curve output accessed through the user's account",
       "rate_or_cadence_limit": "One exact retained ZTF alias per target refresh; provider documents 100 calls/hour for a standard user token",
-      "record_counts": {},
+      "record_counts": {
+        "observations": 8
+      },
       "source": "rubin-lasair",
       "state": "disabled"
     },
@@ -1227,12 +1229,12 @@
         "classification",
         "follow-up photometry table"
       ],
-      "detail": "Checked 8 released public records before the provider rate limit; retained public data remain available.",
+      "detail": "Checked 9 released public records before the provider rate limit; retained public data remain available.",
       "documentation_url": "https://www.wis-tns.org/astronotes",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 156787.652124,
+      "lag_seconds": 157586.915796,
       "last_message_at": "2026-08-22T02:49:50Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1355,11 +1357,11 @@
     }
   ],
   "static_catalog_assurance": {
-    "content_release_id": "6fd5b6d704c6fce590896d1258f7c73bb31ef6d61fa2708e21aa7785b289c34f",
-    "report_checksum_sha256": "0ec135c6d058215493fb3c7b6200d6f66f55a4f03234fdaf5eb653056eb98f1d",
+    "content_release_id": "4f6cc9a88fe994aa20d6a0e8970bd6ba27b5602531f427a03d5369f578e4afd0",
+    "report_checksum_sha256": "203404f7cc6502c70b35a0555d2537522573f07692fe52c2cb67fd68473802a8",
     "schema": "ctas.static-catalog-certification@2.0.0",
     "status": "certified-static-catalog",
-    "valid_until": "2026-08-23T22:55:21Z"
+    "valid_until": "2026-08-23T23:08:36Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1392,12 +1394,12 @@
       "radio": 42,
       "x-ray": 34
     },
-    "observations": 2715,
+    "observations": 2723,
     "priority_bands": {
-      "high_50_74": 2321,
+      "high_50_74": 2322,
       "low_0_24": 15,
       "routine_25_49": 193,
-      "urgent_75_100": 223
+      "urgent_75_100": 222
     },
     "public_candidates": 2752,
     "publications": 836,
@@ -1535,5 +1537,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-23T22:55:21Z"
+  "valid_until": "2026-08-23T23:08:36Z"
 }
