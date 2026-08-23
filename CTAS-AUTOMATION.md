@@ -1,179 +1,121 @@
-# CTAS automation
+# CTAS public-catalog automation
 
-Two independent automatic systems. They do different things and must not be
-confused with each other.
+CTAS is published as a public static catalog. The scientific database and
+Python ingestion pipeline run locally; a user LaunchAgent checks every 120
+seconds and pushes only an explicit allowlist of public artifacts to this
+GitHub Pages repository.
 
+No local dashboard, managed database, secret manager, or human approval step is
+part of this publication path.
+
+## Architecture
+
+```text
+local CTAS SQLite database
+        |
+        | transactionally consistent SQLite backup
+        v
+Python public exporter and validators
+        |
+        | compact index + 32 lazy shards + full download + assurance artifacts
+        v
+dedicated runtime checkout (public repository only)
+        |
+        | allowlisted commit, ordinary SSH push
+        v
+GitHub Pages /ctas.html
 ```
-SOURCE CODE SYNC                      PUBLIC DATA REFRESH
-your Mac, every ~30 min               GitHub Actions, every ~30 min
-  ~/Documents/GitHub/ctas               runs CTAS headlessly
-        |                                       |
-   validate, commit                     sanitized public JSON
-        |                                       |
-   push to private CTAS repo            full-site Pages artifact
-                                                |
-                                    jackmcguireastro.github.io/ctas.html
-```
 
-The public refresh does **not** depend on your Mac. The source sync does.
+The runtime checkout is kept at
+`~/Library/Application Support/CTASPublisher/site`. It is intentionally outside
+`Documents`, because macOS can deny background jobs access to protected folders.
+The authoring checkout in `Documents/GitHub` remains available for normal site
+work and is not the background runtime.
 
----
+## Schedule and freshness
 
-## A. Public data refresh (GitHub Actions)
+- `launchd` runs the short job every 120 seconds and once at login/load.
+- It runs while the Mac is awake, online, and the user is logged in. Sleep or
+  power-off delays publication; the existing static snapshot remains online.
+- Candidate or durable source-state changes publish immediately on the next
+  check.
+- Unchanged state does not create a commit every two minutes. A bounded
+  15-minute heartbeat refreshes the certificate before its 30-minute validity
+  window expires.
+- Code-only changes also force a matching certificate refresh.
 
-| | |
-|---|---|
-| Workflow | `.github/workflows/update-ctas.yml` |
-| Schedule | `cron: "7,37 * * * *"` — approximately every 30 minutes |
-| Also runs on | `workflow_dispatch` (manual) and any push to `main` |
-| Required secret | `CTAS_REPO_TOKEN` |
-| Optional variable | `CTAS_REPO` (defaults to `JackMcGuireAstro/ctas`) |
-| Deployment | Pages **artifact** — no data commits are ever made |
-| Concurrency | group `pages`, in-progress deploys are never cancelled |
+## Safety behavior
 
-GitHub does not guarantee the exact minute, and may skip scheduled runs under
-load. The site therefore says "approximately every 30 minutes" rather than
-promising a clock time.
+- The exporter reads a frozen SQLite backup, so a release cannot mix database
+  states while ingestion continues.
+- Only the 40 explicit public data artifacts in `publish_ctas.sh` are staged.
+- Dirty non-data files in the runtime checkout stop the job.
+- A rejected push remains local and is amended on the next run; divergence is
+  rebased only when Git can do so cleanly, otherwise publication stops without
+  forcing history.
+- Recursive safety checks reject credentials, private paths, malformed public
+  records, and unverified link hosts.
+- Insecure source URLs are retained as non-clickable provenance rather than
+  being rendered publicly.
+- Every published release binds the interface, exporter, source universe,
+  compact index, all shards, tests, and automation contract to checksums.
 
-### What it does
+Static-catalog assurance verifies release integrity and claim boundaries. It is
+not peer review, scientific truth, classification validation, discovery
+authority, or a managed-service uptime claim.
 
-1. Checks out this website repository.
-2. Checks out the **private** CTAS repository into `_ctas_src/` using
-   `CTAS_REPO_TOKEN`.
-3. Installs CTAS with pip.
-4. Runs `python scripts/update_ctas.py --output-dir ctas/data`.
-5. Validates the generated JSON (parses, plausible size, no local paths, no
-   credential-shaped strings).
-6. Assembles `_site/` — the complete website — excluding `_ctas_src/`,
-   `scripts/`, `tools/`, `.github/` and `.git`.
-7. Verifies the artifact still contains every page, the CV, all seven
-   presentation PDFs and the images, and that nothing private leaked in.
-8. Uploads and deploys the artifact.
+## Install or replace the service
 
-### Failure behaviour
-
-- A source that is unreachable is recorded in `status.json` and the run
-  continues.
-- If **no** source succeeds and a previous dataset exists, that dataset is kept
-  and the status becomes `degraded`.
-- If no source succeeds and there is no previous dataset, the script exits `1`
-  and the job stops **before** the deploy step, so the currently published site
-  stays exactly as it was.
-- Any validation failure also stops the job before deployment.
-
-### First run
-
-The very first run has no previous dataset. If the sources happen to be quiet,
-trigger it manually with **Run workflow → allow_empty = true** so an honest
-empty dataset is published.
-
----
-
-## B. Source-code sync (your Mac)
-
-| | |
-|---|---|
-| Script | `~/Documents/GitHub/ctas/scripts/auto_git_sync.sh` |
-| LaunchAgent | `~/Library/LaunchAgents/io.github.jackmcguireastro.ctas-sync.plist` |
-| Interval | `StartInterval 1800` — every 30 minutes |
-| Log | `~/Library/Logs/ctas-sync/auto_git_sync.log` (rotates at 1 MB) |
-
-### Install
+Run once:
 
 ```bash
-cd ~/Documents/GitHub/ctas
-sed "s|REPLACE_WITH_HOME|$HOME|g" scripts/io.github.jackmcguireastro.ctas-sync.plist \
-  > ~/Library/LaunchAgents/io.github.jackmcguireastro.ctas-sync.plist
-mkdir -p ~/Library/Logs/ctas-sync
-launchctl load ~/Library/LaunchAgents/io.github.jackmcguireastro.ctas-sync.plist
+bash scripts/install_ctas_mirror.sh
 ```
 
-Disable with:
+The installer verifies the database, Python, SQLite, and unattended SSH push;
+creates or fast-forwards the dedicated runtime checkout; installs the
+120-second LaunchAgent; and requires its first run to exit successfully.
+
+No GitHub token is stored. The job uses the existing non-interactive SSH key
+with `BatchMode=yes` and `IdentitiesOnly=yes`.
+
+## Verify
 
 ```bash
-launchctl unload ~/Library/LaunchAgents/io.github.jackmcguireastro.ctas-sync.plist
+bash scripts/diagnose_ctas_mirror.sh
 ```
 
-Dry run (changes nothing):
+A healthy result shows:
+
+- label `io.github.jackmcguireastro.ctas-mirror` loaded;
+- `StartInterval` equal to 120;
+- last exit code 0;
+- a readable local database and runtime checkout;
+- runtime Git state synchronized with `origin/main`;
+- no current errors in `launchd.err.log`; and
+- a successful unattended push dry-run.
+
+The public release can be independently reproduced with
+`supernova_watch.static_catalog_certification.build_static_catalog_certificate`
+from the primary CTAS project.
+
+## Disable
 
 ```bash
-~/Documents/GitHub/ctas/scripts/auto_git_sync.sh --dry-run --verbose
+bash scripts/install_ctas_mirror.sh --uninstall
 ```
 
-### Requirements
+Uninstalling removes the LaunchAgent but deliberately leaves the runtime
+checkout and logs for recovery and audit.
 
-Your Mac must be **awake and online** for a sync to run. It does **not** need to
-be unlocked — a LaunchAgent runs for the logged-in user whether or not the
-screen is locked, but it does not run while the machine is asleep. launchd
-fires a missed `StartInterval` once the Mac wakes, so sleeping delays a sync
-rather than skipping it.
+## Public artifacts
 
-### Safety behaviour
-
-- No changes → exits 0 without committing.
-- Compile check fails → no commit, no push.
-- `.env`, databases, logs, caches, backups, virtualenvs → never staged, and
-  re-checked after `git add`; if any reached the index the script unstages
-  everything and stops.
-- Remote diverged → stops and logs. It never pulls, merges, rebases or forces.
-- Push rejected or auth failed → the commit stays local; nothing is forced.
-
----
-
-## Alert sources
-
-### Enabled now (no credentials required)
-
-| Source | Service | Note |
-|---|---|---|
-| `fink-lsst` | Fink / Rubin LSST public broker | Rubin alert packets are world-public with no proprietary period |
-| `tns-astronotes` | TNS AstroNotes | Only notes explicitly marked `note-public` are retained |
-
-Context and cross-match services used during enrichment (NED, SIMBAD, Gaia,
-HEASARC, IRSA, NOIRLab, MAST, ESO, WiseRep) are anonymous public query
-services and need no credentials.
-
-### Disabled until secrets are added
-
-| Source | Required secrets |
-|---|---|
-| TNS public object deltas | `TNS_BOT_ID`, `TNS_BOT_NAME`, `TNS_API_KEY` |
-| NASA GCN public Kafka stream | `GCN_CLIENT_ID`, `GCN_CLIENT_SECRET` |
-| ATLAS forced photometry | `ATLAS_API_TOKEN` |
-| AAVSO AID photometry | `AAVSO_AID_API_TOKEN` |
-
-The workflow already passes these through. Adding them under
-**Settings → Secrets and variables → Actions** is all that is needed — no code
-change, no redesign. `update_ctas.py` reports each source as `disabled` with
-the exact variables it is waiting for.
-
-### Limitations
-
-- Each Actions run starts with an empty ephemeral database, so connectors work
-  from their bounded lookback window rather than a durable cursor. Long-running
-  local CTAS retains more history than the public snapshot shows.
-- Local FITS detection, notification delivery and follow-up submission are not
-  part of the public pipeline. They stay local and gated.
-- The public export is an allowlist. Only the fields named in
-  `PUBLIC_EVENT_FIELDS` in `scripts/update_ctas.py` can ever be published.
-
----
-
-## Public output
-
-| File | Contents |
-|---|---|
-| `ctas/data/candidates.json` | Allowlisted candidate records, schema v1 |
-| `ctas/data/status.json` | Pipeline status, last successful update, candidate count, per-source states |
-
-Consumed by `ctas/app.js`, rendered at `/ctas.html`.
-
-## Local use
-
-```bash
-# refresh the public data locally (needs CTAS installed)
-python scripts/update_ctas.py --output-dir ctas/data
-
-# preview the whole site
-python3 -m http.server 8000
-```
+- `ctas/data/catalog-index.json`: compact initial catalog index.
+- `ctas/data/candidate-chunks/manifest.json`: checksums for 32 lazy detail shards.
+- `ctas/data/candidate-chunks/*.json`: complete candidate workspaces.
+- `ctas/data/candidates.json`: full-catalog download.
+- `ctas/data/status.json`: freshness, source health, counts, and publication state.
+- `ctas/data/source-universe.json`: maintained source and survey contracts.
+- `ctas/data/release-history.json`: checksum-addressed catalog changes.
+- `ctas/data/link-health.json`: recursive URL roles and structural checks.
+- `ctas/data/certification.json`: checksum-bound static-catalog assurance report.

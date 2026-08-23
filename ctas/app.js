@@ -548,7 +548,7 @@
       statusCell("Public candidates", Number(status.candidate_count || snapshot.candidate_count || state.candidates.length).toLocaleString(),
         "Positional catalog entries; not all are confirmed discoveries") +
       statusCell("Static release assurance", esc(humanKey(assurance.status || "pending")), assurance.content_release_id ? "Release " + esc(shortHash(assurance.content_release_id)) + "…" : "Checksum report available below") +
-      statusCell("Publication cadence", "2-minute change check", "Unchanged snapshots receive a periodic freshness heartbeat");
+      statusCell("Publication cadence", "2-minute change check", "Runs while the publishing host is awake and online; unchanged snapshots receive a periodic freshness heartbeat");
   }
 
   function barRows(values, labels) {

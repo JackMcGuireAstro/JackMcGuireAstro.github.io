@@ -249,6 +249,14 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn("CODE_BINDING_CHANGED", publisher)
         self.assertIn('if [ "$FORCE" -eq 0 ] && [ "$HEARTBEAT_AGE"', publisher)
         self.assertNotIn("git diff --quiet HEAD -- ctas/data/candidates.json", publisher)
+        runner = (ROOT / "scripts/ctas_launchd_runner.sh").read_text()
+        agent = (ROOT / "scripts/io.github.jackmcguireastro.ctas-mirror.plist").read_text()
+        self.assertIn('git fetch --quiet origin "$BRANCH"', runner)
+        self.assertIn('git merge --quiet --ff-only "origin/$BRANCH"', runner)
+        self.assertIn("<key>StartInterval</key>", agent)
+        self.assertIn("<integer>120</integer>", agent)
+        self.assertNotIn("<key>WatchPaths</key>", agent)
+        self.assertIn("Library/Application Support/CTASPublisher/site", agent)
 
     def test_compact_index_and_all_detail_shards_are_checksum_bound(self):
         self.assertEqual(self.index["candidate_count"], self.snapshot["candidate_count"])

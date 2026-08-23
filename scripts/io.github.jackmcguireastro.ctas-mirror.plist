@@ -6,38 +6,26 @@
     <key>Label</key>
     <string>io.github.jackmcguireastro.ctas-mirror</string>
 
-    <!-- Mirror the local CTAS database onto the public site. -->
+    <!-- Update the dedicated public publisher checkout, then mirror one
+         transactionally frozen CTAS database snapshot to GitHub Pages. -->
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>REPLACE_WITH_HOME/Documents/GitHub/JackMcGuireAstro.github.io/scripts/publish_ctas.sh</string>
+        <string>REPLACE_WITH_HOME/Library/Application Support/CTASPublisher/site/scripts/ctas_launchd_runner.sh</string>
     </array>
 
-    <!-- Event driven, not scheduled. launchd runs the job when these paths
-         change. There is no polling interval: a change to the database is
-         what triggers a publish. The script itself exits without committing
-         when the exported data turns out to be identical. -->
-    <key>WatchPaths</key>
-    <array>
-        <string>REPLACE_WITH_HOME/.codex/.chatgpt-projects/g-p-6a5d91be2e688191b7333527fcd488b3/data</string>
-        <string>REPLACE_WITH_HOME/.codex/.chatgpt-projects/g-p-6a5d91be2e688191b7333527fcd488b3/data/soc.db</string>
-        <string>REPLACE_WITH_HOME/.codex/.chatgpt-projects/g-p-6a5d91be2e688191b7333527fcd488b3/data/soc.db-wal</string>
-    </array>
+    <!-- Deterministic two-minute check while the Mac is awake and the user is
+         logged in. The publisher avoids commits for unchanged state. -->
+    <key>StartInterval</key>
+    <integer>120</integer>
 
     <!-- Publish once when the agent is loaded, so the site is current
          immediately rather than waiting for the next database write. -->
     <key>RunAtLoad</key>
     <true/>
 
-    <!-- launchd will not relaunch the job more often than this. CTAS writes
-         to the database continuously, so without a floor the watcher would
-         fire every few seconds. The script applies its own longer floor
-         between actual commits (CTAS_MIN_INTERVAL). -->
-    <key>ThrottleInterval</key>
-    <integer>60</integer>
-
     <key>WorkingDirectory</key>
-    <string>REPLACE_WITH_HOME/Documents/GitHub/JackMcGuireAstro.github.io</string>
+    <string>REPLACE_WITH_HOME/Library/Application Support/CTASPublisher/site</string>
 
     <key>StandardOutPath</key>
     <string>REPLACE_WITH_HOME/Library/Logs/ctas-mirror/launchd.out.log</string>
@@ -54,13 +42,19 @@
              directly and never try to ask a human anything. The key's
              passphrase, if it has one, comes from the login keychain. -->
         <key>GIT_SSH_COMMAND</key>
-        <string>ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i REPLACE_WITH_HOME/.ssh/id_ed25519</string>
+        <string>ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -i REPLACE_WITH_HOME/.ssh/id_ed25519</string>
         <key>HOME</key>
         <string>REPLACE_WITH_HOME</string>
         <!-- Minimum seconds between published commits. Lower it for a faster
              mirror and more commits; raise it for fewer. -->
         <key>CTAS_MIN_INTERVAL</key>
         <string>0</string>
+        <key>CTAS_HEARTBEAT_INTERVAL</key>
+        <string>900</string>
+        <key>CTAS_SITE</key>
+        <string>REPLACE_WITH_HOME/Library/Application Support/CTASPublisher/site</string>
+        <key>CTAS_DB</key>
+        <string>REPLACE_WITH_HOME/.codex/.chatgpt-projects/g-p-6a5d91be2e688191b7333527fcd488b3/data/soc.db</string>
     </dict>
 
     <key>KeepAlive</key>

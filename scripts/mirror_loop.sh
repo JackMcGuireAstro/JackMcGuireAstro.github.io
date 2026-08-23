@@ -2,7 +2,8 @@
 # =============================================================================
 # mirror_loop.sh - keep GitHub following the local CTAS database.
 #
-# Run this in a Terminal window and leave it open:
+# Diagnostic foreground fallback only. Normal operation uses the installed
+# launchd service and does not require an open Terminal. To run the fallback:
 #     bash ~/Documents/GitHub/JackMcGuireAstro.github.io/scripts/mirror_loop.sh
 #
 # Every cycle it re-exports the database and publishes if the data changed.

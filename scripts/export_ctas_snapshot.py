@@ -1953,7 +1953,9 @@ def main() -> int:
     code_paths = (
         "ctas.html", "ctas/app.js", "ctas/catalog-model.js", "ctas/ctas.css", "scripts/export_ctas_snapshot.py",
         "scripts/check_ctas_links.py", "scripts/test_ctas_static.py", "scripts/test_ctas_catalog_model.js",
-        "scripts/mirror_loop.sh", "scripts/publish_ctas.sh",
+        "scripts/mirror_loop.sh", "scripts/publish_ctas.sh", "scripts/ctas_launchd_runner.sh",
+        "scripts/install_ctas_mirror.sh", "scripts/diagnose_ctas_mirror.sh",
+        "scripts/io.github.jackmcguireastro.ctas-mirror.plist", "CTAS-AUTOMATION.md",
     )
     working_code = {
         path: (site_root / path).read_bytes()
@@ -2128,7 +2130,10 @@ def main() -> int:
     ).decode("utf-8", errors="replace")
     publisher_text = b"\n".join(
         deployed_code[path]
-        for path in ("scripts/mirror_loop.sh", "scripts/publish_ctas.sh")
+        for path in (
+            "scripts/publish_ctas.sh", "scripts/ctas_launchd_runner.sh",
+            "scripts/io.github.jackmcguireastro.ctas-mirror.plist",
+        )
         if path in deployed_code
     ).decode("utf-8", errors="replace")
     interpretation_tokens = (
@@ -2143,7 +2148,10 @@ def main() -> int:
     )
     cadence_contract = (
         payload["cadence"] == "about every 2 minutes" and
-        'EVERY="${CTAS_EVERY:-120}"' in publisher_text and 'sleep "$EVERY"' in publisher_text
+        "<key>StartInterval</key>" in publisher_text and
+        "<integer>120</integer>" in publisher_text and
+        "ctas_launchd_runner.sh" in publisher_text and
+        "CTAS_HEARTBEAT_INTERVAL" in publisher_text
     )
     link_health_current = bool(
         isinstance(link_health, dict) and

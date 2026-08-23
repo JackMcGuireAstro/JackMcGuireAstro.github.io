@@ -3,8 +3,9 @@
 # publish_ctas.sh - mirror the local CTAS database onto the public website.
 #
 # The local database is the original. This makes GitHub follow it. Normally run
-# by a launchd WatchPaths agent, which fires when the database changes rather
-# than on a clock, so there is no polling interval to wait out.
+# by a launchd agent every 120 seconds while the publishing Mac is awake and
+# logged in. Unchanged state exits without a data commit until its bounded
+# freshness heartbeat is due.
 #
 #   ./scripts/publish_ctas.sh              export; commit and push if changed
 #   ./scripts/publish_ctas.sh --dry-run    export and report; push nothing
