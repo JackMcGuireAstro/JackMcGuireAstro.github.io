@@ -36,7 +36,6 @@
 
   var el = {
     status: document.getElementById("ctas-status"),
-    releaseAlert: document.getElementById("ctas-release-alert"),
     overviewSummary: document.getElementById("ctas-overview-summary"),
     metrics: document.getElementById("ctas-metrics"),
     eventStats: document.getElementById("ctas-event-stats"),
@@ -542,8 +541,8 @@
     var cached = status.pipeline_status === "cached";
     var assurance = status.static_catalog_assurance || {};
     el.status.classList.toggle("is-degraded", degraded || cached);
-    el.status.innerHTML = statusCell("Pipeline", cached ? "Cached snapshot" : degraded ? "Operational with source limits" : "Operational",
-      cached ? "A live refresh failed; the last successfully loaded public snapshot remains usable" : degraded ? esc(status.degraded_source_count || 0) + " represented source" + (Number(status.degraded_source_count) === 1 ? "" : "s") + " currently degraded; retained catalog remains available" : "Public pipeline healthy") +
+    el.status.innerHTML = statusCell("Pipeline", cached ? "Cached snapshot" : "Operational",
+      cached ? "A live refresh failed; the last successfully loaded public snapshot remains usable" : degraded ? "Catalog and automatic updates are active; individual source availability is reported below" : "Catalog and automatic updates are active") +
       statusCell("Last successful public snapshot", esc(relative(generated) || "unavailable"), esc(absolute(generated))) +
       statusCell("Public candidates", Number(status.candidate_count || snapshot.candidate_count || state.candidates.length).toLocaleString(),
         "Positional catalog entries; not all are confirmed discoveries") +
@@ -652,11 +651,6 @@
           esc(entry.summary) + "</p>" + (entry.evidence ? "<small>" + esc(entry.evidence) + "</small>" : "") +
           '<code title="Catalog checksum">' + esc(shortHash(entry.catalog_content_checksum_sha256)) + "…</code></li>";
       }).join("") + "</ol>";
-    var batch = entries.find(function (entry) { return Number(entry.added_count) === 81 && Number(entry.previous_candidate_count) === 2661; });
-    if (batch && el.releaseAlert) {
-      el.releaseAlert.hidden = false;
-      el.releaseAlert.innerHTML = '<strong>Catalog change explained:</strong> the 2,661 → 2,742 jump was one accepted public TNS hourly batch—80 WFST records and 1 ZTF record, with no simulations, removals, or changes to existing candidates. It was a provider batch/backfill, not 81 discoveries occurring within 53 minutes. <a href="#catalog-changes">Review the checksum-bound change record</a>.';
-    }
   }
 
   function visible() {
