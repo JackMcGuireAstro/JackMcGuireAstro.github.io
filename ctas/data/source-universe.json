@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "7ac9e449c897ecab8e1d74e5e60b95c4a4652003ec8ce5147551c5d071ee4a6c",
+  "artifact_checksum_sha256": "dbd7764546e77cbe1d7531d7f875304cebfdd35d699b6574bee58d67c47fda97",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
-  "family_count": 9,
-  "generated_at": "2026-08-23T22:38:36Z",
+  "family_count": 10,
+  "generated_at": "2026-08-23T22:43:46Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -583,7 +583,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "1685790f00093fb6393cc321f2a3e9f20f5b4e9841702b8777ab5088404ab723",
+      "contract_checksum_sha256": "1b1fc82b76fefa458321041dec4154ceb3e7c878135a9461d30417ec3b3546ec",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -598,7 +598,7 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-08-23T22:36:05Z",
+      "last_attempt_at": "2026-08-23T22:42:40Z",
       "last_successful_at": "2026-08-23T16:33:43Z",
       "last_successful_response": "2026-08-23T16:33:43Z",
       "last_verified": "2026-08-08",
@@ -610,7 +610,7 @@
       "protocol": "Anonymous real-time Fink/LSST REST polling, exact-object Rubin source/forced history, plus anonymous targeted Fink/ZTF archive",
       "public_disposition_counts": {
         "provider-failure": 92,
-        "searched-no-match": 2511,
+        "searched-no-match": 2512,
         "searched-with-data": 63
       },
       "public_record_counts": {
@@ -2740,6 +2740,45 @@
     },
     {
       "access_mode": "targeted-query",
+      "authentication_requirement": "NASA ADS API token",
+      "connector_implementation_state": "implemented-public-metadata-credentials-required",
+      "contract_checksum_sha256": "8bcfd3eb99c82fffb611632b4c06cfa76bd35a0f9caa9f30f9fecf5d11d4e0c3",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "bibliographic metadata",
+        "literature links",
+        "exact transient-name context"
+      ],
+      "documentation_url": "https://ui.adsabs.harvard.edu/help/api/",
+      "implementation_state": "implemented-credentials-required",
+      "known_limitations": "CTAS retains metadata and provider links only; it does not mirror article full text or infer reuse rights from discoverability",
+      "last_attempt_at": "2026-08-23T22:41:36Z",
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "NASA Astrophysics Data System",
+      "operational_state": "scheduled",
+      "organization_or_facility": "NASA / Smithsonian Astrophysical Observatory",
+      "primary_family": "other-declared-sources",
+      "product_contracts": [],
+      "protocol": "NASA ADS Search API JSON",
+      "public_disposition_counts": {
+        "searched-no-match": 1
+      },
+      "public_record_counts": {},
+      "query_scope": "targeted-query",
+      "rate_or_cadence_limit": "One exact-name query per watched-target refresh; at most 25 metadata records",
+      "representation_state": "dispositions-only",
+      "represented_directly": false,
+      "represented_through": null,
+      "rights_or_public_access_basis": "Public bibliographic metadata returned by the ADS API",
+      "secondary_families": [],
+      "source_family": "other-declared-sources",
+      "source_key": "ads",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "targeted-query",
       "authentication_requirement": "AAVSO API token",
       "connector_implementation_state": "implemented-public-photometry-on-demand-credentials-required",
       "contract_checksum_sha256": "a987aeba151c5d490de1872941a925f315d47705d71edf65e15ce867b65ff0f6",
@@ -2815,45 +2854,6 @@
       "secondary_families": [],
       "source_family": "photometric-follow-up",
       "source_key": "ztf-irsa",
-      "topic_contracts": []
-    },
-    {
-      "access_mode": "planned rights-safe linking",
-      "authentication_requirement": "API token required for automated search",
-      "connector_implementation_state": "documented-not-implemented",
-      "contract_checksum_sha256": "be559e618c9d9f00c8d969e899ebd615fc4f3fa00caf978b1c46accde9890cd5",
-      "contract_version": "1.0.0",
-      "data_types": [
-        "bibliographic links",
-        "literature context"
-      ],
-      "documentation_url": "https://ui.adsabs.harvard.edu/",
-      "implementation_state": "documented-not-implemented",
-      "known_limitations": "No ADS connector is implemented; no literature search is claimed.",
-      "last_attempt_at": null,
-      "last_successful_at": null,
-      "last_successful_response": null,
-      "last_verified": "2026-08-23",
-      "name": "NASA Astrophysics Data System",
-      "operational_state": "credentials-required",
-      "organization_or_facility": "NASA ADS",
-      "primary_family": "reports-and-literature",
-      "product_contracts": [
-        "bibliographic links",
-        "literature context"
-      ],
-      "protocol": "provider-dependent",
-      "public_disposition_counts": {},
-      "public_record_counts": {},
-      "query_scope": "planned rights-safe linking",
-      "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
-      "representation_state": "none",
-      "represented_directly": false,
-      "represented_through": null,
-      "rights_or_public_access_basis": "Only public bibliographic metadata and links would be eligible.",
-      "secondary_families": [],
-      "source_family": "reports-and-literature",
-      "source_key": "ads",
       "topic_contracts": []
     },
     {
