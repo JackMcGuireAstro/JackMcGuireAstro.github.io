@@ -41,6 +41,11 @@ from typing import Any
 SCHEMA_VERSION = 2
 
 SOURCE_UNIVERSE_SCHEMA = "ctas.public-source-universe@1.0.0"
+CATALOG_INDEX_SCHEMA = "ctas.public-catalog-index@1.0.0"
+CANDIDATE_CHUNK_SCHEMA = "ctas.public-candidate-chunk@1.0.0"
+CANDIDATE_MANIFEST_SCHEMA = "ctas.public-candidate-manifest@1.0.0"
+RELEASE_HISTORY_SCHEMA = "ctas.public-release-history@1.0.0"
+CANDIDATE_BUCKET_COUNT = 32
 SOURCE_STATE_VOCABULARY = (
     "active-returning-data",
     "active-no-recent-messages",
@@ -313,6 +318,53 @@ def tns_object_id(value: str) -> str | None:
     return match.group(1) if match else None
 
 
+def candidate_bucket(name: str) -> str:
+    """Return a stable content bucket so candidate details can load on demand."""
+
+    return f"{int(hashlib.sha256(name.encode()).hexdigest()[:8], 16) % CANDIDATE_BUCKET_COUNT:02x}"
+
+
+def reported_label_kind(candidate: dict[str, Any]) -> str:
+    """Describe what the consensus label represents without overstating it."""
+
+    label = str(candidate.get("classification") or "Unclassified").strip().lower()
+    messenger = str(candidate.get("primary_messenger") or "").strip().lower()
+    event_type = str(candidate.get("event_type") or "").strip().lower()
+    if not label or label == "unclassified":
+        return "unclassified"
+    if label in {
+        "below horizon", "distant particles", "high-importance", "unreliable location",
+        "retracted", "bogus",
+    }:
+        return "operational alert label"
+    if messenger not in {"", "electromagnetic", "optical"} or any(
+        token in event_type for token in ("notice", "neutrino", "gamma", "x-ray", "radio", "gravitational")
+    ):
+        return "alert or event label"
+    if re.search(r"(^|\b)(sn|supernova|nova|tde|kilonova|cv|agn)(\b|$)", label):
+        return "astronomical classification"
+    return "provider-reported label"
+
+
+def public_runtime_detail(value: Any) -> str | None:
+    """Convert connector diagnostics into stable, non-technical public wording."""
+
+    detail = clean(value)
+    if detail is None:
+        return None
+    raw = str(detail)
+    lower = raw.lower()
+    if "certificate_verify_failed" in lower or "certificate has expired" in lower:
+        return "Provider TLS certificate validation failed; CTAS retained the last rights-cleared data and scheduled a retry."
+    if "rate limit" in lower or "rate-limit" in lower or "rate_limited" in lower:
+        retained = re.search(r"checked\s+(\d+)\s+released public", raw, re.IGNORECASE)
+        prefix = f"Checked {retained.group(1)} released public records before " if retained else "Reached "
+        return prefix + "the provider rate limit; retained public data remain available."
+    # Retry countdowns are volatile operational internals and cause meaningless
+    # public commits. Keep the durable diagnostic while omitting the timer.
+    return re.sub(r";?\s*retry in\s+[0-9.]+s\s*$", "", raw, flags=re.IGNORECASE)
+
+
 def source_family(source_id: str, _data_types: list[str] | None = None) -> str:
     """Return the explicit, reviewed primary family for a registry source."""
 
@@ -442,26 +494,45 @@ def completeness_for(candidate: dict[str, Any]) -> dict[str, Any]:
         candidate.get(key) is not None for key in ("host_name", "host_redshift", "redshift", "distance_mpc")
     )
     host_present = any(candidate.get(key) is not None for key in ("host_name", "host_redshift", "redshift", "distance_mpc"))
-    if follow.get("host_context") or follow.get("catalog_counterparts"):
+    if follow.get("host_context"):
         host_present = True
+    catalog_context_present = bool(follow.get("catalog_counterparts"))
+    source_link_count = sum(
+        1 for link in candidate.get("links", [])
+        if str(link.get("url") or "").startswith("https://")
+    )
+    source_link_count += sum(
+        1 for row in candidate.get("source_coverage", [])
+        if any(str(row.get(key) or "").startswith("https://") for key in (
+            "object_specific_result_url", "query_evidence_url", "documentation_url",
+        ))
+    )
+    for rows in candidate.get("follow_up", {}).values():
+        source_link_count += sum(
+            1 for row in rows
+            if any(str(value or "").startswith("https://") for key, value in row.items() if key.endswith("_url"))
+        )
     components = [
         {"id": "identity", "label": "Public identity", "state": "present"},
-        {"id": "discovery", "label": "Discovery time and survey", "state": "present" if candidate.get("discovery_time") and candidate.get("discovery_survey") else "missing"},
+        {"id": "discovery-time", "label": "Discovery time", "state": "present" if candidate.get("discovery_time") else "missing"},
+        {"id": "discovery-survey", "label": "Discovery survey or facility", "state": "present" if candidate.get("discovery_survey") else "missing"},
         {"id": "coordinates", "label": "Sky coordinates", "state": "present" if candidate.get("ra_deg") is not None and candidate.get("dec_deg") is not None else "missing"},
         {"id": "discovery-photometry", "label": "Discovery magnitude", "state": "present" if candidate.get("discovery_magnitude") is not None else ("missing" if optical_applicable else "not-applicable")},
         {"id": "classification", "label": "Public classification", "state": "present" if candidate.get("classification") and candidate.get("classification") != "Unclassified" else "missing"},
         {"id": "follow-up-photometry", "label": "Subsequent photometry or limits", "state": "present" if follow.get("observations", 0) else ("missing" if optical_applicable else "not-applicable")},
         {"id": "spectrum", "label": "Public spectrum", "state": "present" if follow.get("spectra", 0) else ("missing" if optical_applicable else "not-applicable")},
         {"id": "host-context", "label": "Host or environmental context", "state": "present" if host_present else ("missing" if host_applicable else "not-applicable")},
+        {"id": "catalog-context", "label": "Positional catalog context", "state": "present" if catalog_context_present else "not-assessed"},
         {"id": "messenger", "label": "Messenger evidence", "state": "present" if follow.get("messenger_signals", 0) else ("not-applicable" if messenger in {"", "electromagnetic"} else "missing")},
         {"id": "reports", "label": "Public reports", "state": "present" if follow.get("publications", 0) else "missing"},
-        {"id": "source-links", "label": "Authoritative source links", "state": "present" if any(link.get("url") for link in candidate.get("links", [])) else "missing"},
+        {"id": "source-links", "label": "Verified source or evidence links", "state": "present" if source_link_count else "missing"},
         {"id": "source-dispositions", "label": "Source-search dispositions", "state": "present" if candidate.get("source_coverage") else "not-assessed"},
     ]
     for component in components:
         component["evidence_count"] = {
             "identity": 1,
-            "discovery": int(bool(candidate.get("discovery_time") and candidate.get("discovery_survey"))),
+            "discovery-time": int(bool(candidate.get("discovery_time"))),
+            "discovery-survey": int(bool(candidate.get("discovery_survey"))),
             "coordinates": int(candidate.get("ra_deg") is not None and candidate.get("dec_deg") is not None),
             "discovery-photometry": int(candidate.get("discovery_magnitude") is not None),
             "classification": int(bool(candidate.get("classification") and candidate.get("classification") != "Unclassified")),
@@ -469,11 +540,12 @@ def completeness_for(candidate: dict[str, Any]) -> dict[str, Any]:
             "spectrum": int(follow.get("spectra", 0)),
             "host-context": max(
                 1 if host_present else 0,
-                int(follow.get("host_context", 0)) + int(follow.get("catalog_counterparts", 0)),
+                int(follow.get("host_context", 0)),
             ),
+            "catalog-context": int(follow.get("catalog_counterparts", 0)),
             "messenger": int(follow.get("messenger_signals", 0)),
             "reports": int(follow.get("publications", 0)),
-            "source-links": len(candidate.get("links", [])),
+            "source-links": source_link_count,
             "source-dispositions": len(candidate.get("source_coverage", [])),
         }.get(component["id"], 0)
     applicable = [row for row in components if row["state"] not in {"not-applicable", "not-assessed"}]
@@ -524,8 +596,11 @@ def score_explanation_for(candidate: dict[str, Any]) -> str:
             continue
         if abs(number) < 1e-9:
             continue
-        direction = "adds" if number > 0 else "reduces by"
-        parts.append(f"{label} {direction} {abs(number):g} points")
+        if key == "coverage_reduction":
+            parts.append(f"{label} reduces the score by {abs(number):g} points")
+        else:
+            direction = "adds" if number > 0 else "reduces by"
+            parts.append(f"{label} {direction} {abs(number):g} points")
     if factors.get("status"):
         parts.append(f"the {factors['status']} status applies an override")
     if not parts:
@@ -642,7 +717,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
     cols = ", ".join(COLUMNS)
     event_sql = (
         f"SELECT id, simulation, priority_factors, {cols} FROM events "
-        f"WHERE COALESCE(simulation, 0) = 0 "
+        f"WHERE COALESCE(simulation, 0) = 0 AND INSTR(preferred_name, '%') = 0 "
         f"ORDER BY COALESCE(updated_at, discovery_time) DESC"
     )
     rows = cur.execute(event_sql + (" LIMIT ?" if limit > 0 else ""), ((limit,) if limit > 0 else ())).fetchall()
@@ -885,7 +960,13 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         "eligible_public_events": cur.execute(
             """SELECT COUNT(*) FROM events WHERE COALESCE(simulation,0)=0
                AND LOWER(COALESCE(status,'')) != 'merged'
+               AND INSTR(preferred_name, '%') = 0
                AND preferred_name IS NOT NULL AND TRIM(preferred_name) != ''"""
+        ).fetchone()[0],
+        "quality_quarantined_events": cur.execute(
+            """SELECT COUNT(*) FROM events WHERE COALESCE(simulation,0)=0
+               AND LOWER(COALESCE(status,'')) != 'merged'
+               AND INSTR(preferred_name, '%') > 0"""
         ).fetchone()[0],
     }
 
@@ -898,7 +979,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             "mode": clean(row["mode"]),
             "public_scope": clean(row["public_scope"]),
             "state": clean(row["runtime_state"]) or "unknown",
-            "detail": clean(row["runtime_detail"]),
+            "detail": public_runtime_detail(row["runtime_detail"]),
             "last_message_at": iso(row["last_message_at"]),
             "lag_seconds": clean(row["lag_seconds"]),
             "documentation_url": (
@@ -966,6 +1047,22 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             }
             if factors:
                 rec["score_factors"] = factors
+
+        reported_magnitude = rec.get("discovery_magnitude")
+        if reported_magnitude is not None and not -30 <= float(reported_magnitude) <= 40:
+            # Preserve the provider value for audit while keeping it out of
+            # magnitude-dependent views and the public ordering score.
+            rec["reported_discovery_magnitude"] = reported_magnitude
+            rec.pop("discovery_magnitude", None)
+            rec.setdefault("data_quality_flags", []).append({
+                "field": "discovery_magnitude",
+                "state": "excluded-from-derived-use",
+                "reason": "source-reported value is outside the declared -30 to 40 magnitude publication range",
+            })
+            brightness = float(rec.get("score_factors", {}).pop("brightness_points", 0) or 0)
+            rec["ctas_score"] = round(
+                max(0.0, min(100.0, float(rec.get("ctas_score") or 0) - brightness)), 2
+            )
 
         links = []
         for a in alias_map.get(r["id"], []):
@@ -1107,6 +1204,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             rec["source_coverage"] = coverage
 
         rec["record_completeness"] = completeness_for(rec)
+        rec["reported_label_kind"] = reported_label_kind(rec)
         rec["score_explanation"] = score_explanation_for(rec)
         timeline = timeline_for(rec)
         meaningful = next(
@@ -1157,8 +1255,11 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             rec.get("classification") or "unclassified",
             f"{rec['follow_up_total']} retained public evidence rows",
         ]
+        source_attribution = rec.get("discovery_survey")
+        if not source_attribution and rec.get("designations"):
+            source_attribution = rec["designations"][0].get("source")
         rec["candidate_summary"] = {
-            "why_in_ctas": "CTAS retains a rights-cleared public event record attributed to " + str(rec.get("discovery_survey") or rec.get("primary_messenger") or "a declared public source") + ".",
+            "why_in_ctas": "CTAS retains a rights-cleared public event record attributed to " + str(source_attribution or "a declared public event source") + ".",
             "known": "; ".join(str(value) for value in known_bits),
             "missing": ", ".join(missing_labels) if missing_labels else "No applicable component in the public-record model is currently marked missing.",
             "non_claim": "Inclusion or positional context does not establish discovery, classification, counterpart, or host identity.",
@@ -1338,7 +1439,7 @@ def main() -> int:
         "schema_version": SCHEMA_VERSION,
         "generated_at": generated_at,
         "export_checked_at": generated_at,
-        "valid_until": (generated_dt + timedelta(minutes=10)).isoformat().replace("+00:00", "Z"),
+        "valid_until": (generated_dt + timedelta(minutes=30)).isoformat().replace("+00:00", "Z"),
         "latest_record_update": max(
             (row.get("updated_at") or row.get("discovery_time") or "" for row in candidates),
             default="",
@@ -1354,10 +1455,13 @@ def main() -> int:
         return sum(int(c.get("follow_up_counts", {}).get(field, 0)) for c in candidates)
 
     messenger_counts: dict[str, int] = {}
+    event_type_counts: dict[str, int] = {}
     priority_bands = {"urgent_75_100": 0, "high_50_74": 0, "routine_25_49": 0, "low_0_24": 0}
     for candidate in candidates:
         messenger = str(candidate.get("primary_messenger") or "unknown")
         messenger_counts[messenger] = messenger_counts.get(messenger, 0) + 1
+        event_type = str(candidate.get("event_type") or "unspecified")
+        event_type_counts[event_type] = event_type_counts.get(event_type, 0) + 1
         score = float(candidate.get("ctas_score") or 0)
         band = ("urgent_75_100" if score >= 75 else "high_50_74" if score >= 50
                 else "routine_25_49" if score >= 25 else "low_0_24")
@@ -1380,6 +1484,8 @@ def main() -> int:
     payload["statistics"] = {
         "real_events": counts["total_real_events"],
         "public_candidates": len(candidates),
+        "quality_quarantined_records": counts["quality_quarantined_events"],
+        "magnitude_values_excluded": sum(bool(c.get("data_quality_flags")) for c in candidates),
         "observations": total("observations"),
         "spectra": total("spectra"),
         "messenger_signals": total("messenger_signals"),
@@ -1391,6 +1497,7 @@ def main() -> int:
         "archive_products": total("archive_products"),
         "candidates_with_follow_up": sum(c.get("follow_up_total", 0) > 0 for c in candidates),
         "messengers": dict(sorted(messenger_counts.items())),
+        "event_types": dict(sorted(event_type_counts.items())),
         "priority_bands": priority_bands,
     }
     payload["sources"] = [
@@ -1597,29 +1704,148 @@ def main() -> int:
         json.dumps(candidates, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
 
+    summary_fields = (
+        "name", "event_type", "primary_messenger", "messenger_channels",
+        "ra_deg", "dec_deg", "coordinate_error_arcsec", "discovery_time",
+        "discovery_survey", "discovery_instrument", "discovery_magnitude",
+        "reported_discovery_magnitude", "status", "classification",
+        "reported_label_kind", "classification_probability", "ctas_score",
+        "follow_up_counts", "follow_up_total", "redshift", "updated_at",
+        "latest_classification_at", "latest_spectrum_at", "latest_messenger_at",
+        "latest_retraction_at", "links", "designations", "data_quality_flags",
+    )
+    index_candidates = []
+    bucket_rows: dict[str, list[dict[str, Any]]] = {
+        f"{index:02x}": [] for index in range(CANDIDATE_BUCKET_COUNT)
+    }
+    for candidate in candidates:
+        bucket = candidate_bucket(str(candidate["name"]))
+        compact = {key: candidate[key] for key in summary_fields if key in candidate}
+        completeness = candidate.get("record_completeness", {})
+        compact["record_completeness"] = {
+            key: completeness[key] for key in (
+                "label", "present", "applicable", "not_assessed", "fraction",
+            ) if key in completeness
+        }
+        compact["detail_chunk"] = f"candidate-chunks/{bucket}.json"
+        index_candidates.append(compact)
+        bucket_rows[bucket].append(candidate)
+
+    chunk_raw: dict[str, bytes] = {}
+    for bucket, bucket_candidates in sorted(bucket_rows.items()):
+        document = {
+            "schema": CANDIDATE_CHUNK_SCHEMA,
+            "bucket": bucket,
+            "candidate_count": len(bucket_candidates),
+            "candidates": bucket_candidates,
+        }
+        relative = f"ctas/data/candidate-chunks/{bucket}.json"
+        chunk_raw[relative] = (
+            json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode()
+
+    catalog_index = {
+        "schema": CATALOG_INDEX_SCHEMA,
+        "schema_version": SCHEMA_VERSION,
+        "generated_at": payload["generated_at"],
+        "export_checked_at": payload["export_checked_at"],
+        "valid_until": payload["valid_until"],
+        "latest_record_update": payload["latest_record_update"],
+        "origin": payload["origin"],
+        "cadence": payload["cadence"],
+        "candidate_count": len(index_candidates),
+        "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
+        "statistics": payload["statistics"],
+        "recent_stream": payload["recent_stream"],
+        "provider_statistics": payload["provider_statistics"],
+        "surveys": payload["surveys"],
+        "source_universe": payload["source_universe"],
+        "detail_manifest": "ctas/data/candidate-chunks/manifest.json",
+        "candidates": index_candidates,
+    }
+    catalog_index_raw = (
+        json.dumps(catalog_index, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode()
+    candidate_manifest = {
+        "schema": CANDIDATE_MANIFEST_SCHEMA,
+        "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
+        "candidate_count": len(candidates),
+        "chunk_count": len(chunk_raw),
+        "chunks": [
+            {
+                "path": path,
+                "candidate_count": len(bucket_rows[Path(path).stem]),
+                "bytes": len(raw),
+                "sha256": hashlib.sha256(raw).hexdigest(),
+            }
+            for path, raw in sorted(chunk_raw.items())
+        ],
+    }
+    candidate_manifest_raw = (
+        json.dumps(candidate_manifest, indent=2, sort_keys=True) + "\n"
+    ).encode()
+
     problems = validate(payload)
     problems.extend(recursive_safety_problems(source_universe, "source-universe"))
+    problems.extend(recursive_safety_problems(catalog_index, "catalog-index"))
+    problems.extend(recursive_safety_problems(candidate_manifest, "candidate-manifest"))
     if problems:
         print("export failed validation:", file=sys.stderr)
         for p in problems[:20]:
             print("  -", p, file=sys.stderr)
         return 1
 
+    degraded_source_states = {"temporarily-unavailable", "rate-limited", "provider-failure"}
+    degraded_sources = [
+        row for row in source_universe_rows
+        if row.get("operational_state") in degraded_source_states
+        and (
+            any(int(value or 0) > 0 for value in row.get("public_record_counts", {}).values())
+            or row.get("implementation_state") == "implemented"
+        )
+    ]
+    publication_state_checksum = hashlib.sha256(
+        json.dumps(
+            {
+                "catalog": payload["catalog_content_checksum_sha256"],
+                "sources": [
+                    {
+                        "source_key": row["source_key"],
+                        "operational_state": row["operational_state"],
+                        "public_record_counts": row["public_record_counts"],
+                        "known_limitations": row.get("known_limitations"),
+                    }
+                    for row in source_universe_rows
+                ],
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
     status = {
         "schema_version": SCHEMA_VERSION,
-        "pipeline_status": "ok",
+        "pipeline_status": "degraded" if degraded_sources else "ok",
         "origin": "local-snapshot",
         "last_successful_update": payload["generated_at"],
         "export_checked_at": payload["export_checked_at"],
         "valid_until": payload["valid_until"],
         "latest_record_update": payload["latest_record_update"],
         "candidate_count": len(candidates),
+        "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
+        "publication_state_checksum_sha256": publication_state_checksum,
+        "degraded_source_count": len(degraded_sources),
         "cadence": "about every 2 minutes",
         "statistics": payload["statistics"],
         "sources": payload["sources"],
         "surveys": payload["surveys"],
         "source_universe": payload["source_universe"],
     }
+    problems.extend(recursive_safety_problems(status, "status"))
+    if problems:
+        print("export failed validation:", file=sys.stderr)
+        for problem in problems[:20]:
+            print("  -", problem, file=sys.stderr)
+        return 1
 
     body = json.dumps(payload, indent=2)
     print(f"database        : {db.name}")
@@ -1639,6 +1865,81 @@ def main() -> int:
     candidates_raw = (body + "\n").encode()
     site_root = Path(__file__).resolve().parents[1]
     source_universe_raw = (json.dumps(source_universe, indent=2, sort_keys=True) + "\n").encode()
+    release_history_path = out / "release-history.json"
+    try:
+        release_history = json.loads(release_history_path.read_text())
+    except (OSError, json.JSONDecodeError):
+        release_history = {"schema": RELEASE_HISTORY_SCHEMA, "entries": []}
+    if release_history.get("schema") != RELEASE_HISTORY_SCHEMA or not isinstance(release_history.get("entries"), list):
+        release_history = {"schema": RELEASE_HISTORY_SCHEMA, "entries": []}
+
+    previous_snapshot_raw = git_blob(site_root, "HEAD", "ctas/data/candidates.json")
+    try:
+        previous_snapshot = json.loads(previous_snapshot_raw) if previous_snapshot_raw else None
+    except (TypeError, json.JSONDecodeError):
+        previous_snapshot = None
+    previous_checksum = (previous_snapshot or {}).get("catalog_content_checksum_sha256")
+    if previous_snapshot and previous_checksum != payload["catalog_content_checksum_sha256"]:
+        previous_by_name = {
+            str(row.get("name")): row for row in previous_snapshot.get("candidates", []) if row.get("name")
+        }
+        current_by_name = {str(row["name"]): row for row in candidates}
+        added = sorted(set(current_by_name) - set(previous_by_name))
+        removed = sorted(set(previous_by_name) - set(current_by_name))
+        changed = sorted(
+            name for name in set(current_by_name) & set(previous_by_name)
+            if current_by_name[name] != previous_by_name[name]
+        )
+        survey_counts_for_added: dict[str, int] = {}
+        for name in added:
+            survey = str(current_by_name[name].get("discovery_survey") or "source not recorded")
+            survey_counts_for_added[survey] = survey_counts_for_added.get(survey, 0) + 1
+        if added or removed:
+            summary = (
+                f"{len(added):+d} public candidate records and {len(removed)} removals; "
+                "source-reported records are not necessarily newly discovered events."
+            )
+            change_kind = "candidate-intake"
+        else:
+            summary = f"Public metadata or evidence changed for {len(changed)} existing candidate records."
+            change_kind = "record-update"
+        entry = {
+            "published_at": payload["generated_at"],
+            "change_kind": change_kind,
+            "previous_candidate_count": len(previous_by_name),
+            "candidate_count": len(current_by_name),
+            "added_count": len(added),
+            "removed_count": len(removed),
+            "changed_count": len(changed),
+            "added_source_summary": dict(sorted(survey_counts_for_added.items())),
+            "sample_added": added[:12],
+            "sample_removed": removed[:12],
+            "summary": summary,
+            "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
+            "previous_catalog_content_checksum_sha256": previous_checksum,
+            "base_commit": git_ref(site_root, "HEAD"),
+        }
+        existing_checksums = {
+            row.get("catalog_content_checksum_sha256") for row in release_history["entries"]
+        }
+        if entry["catalog_content_checksum_sha256"] not in existing_checksums:
+            release_history["entries"].insert(0, entry)
+            release_history["entries"] = release_history["entries"][:24]
+    release_history["generated_at"] = (
+        release_history["entries"][0]["published_at"] if release_history["entries"] else payload["generated_at"]
+    )
+    release_history["claim_boundary"] = (
+        "Counts describe public CTAS catalog changes, not independent discoveries or scientific validation."
+    )
+    release_history_raw = (
+        json.dumps(release_history, indent=2, sort_keys=True) + "\n"
+    ).encode()
+    problems.extend(recursive_safety_problems(release_history, "release-history"))
+    if problems:
+        print("export failed validation:", file=sys.stderr)
+        for problem in problems[:20]:
+            print("  -", problem, file=sys.stderr)
+        return 1
     link_health_path = out / "link-health.json"
     try:
         link_health = json.loads(link_health_path.read_text()) if link_health_path.exists() else None
@@ -1675,7 +1976,11 @@ def main() -> int:
     bound_files = {
         **deployed_code,
         "ctas/data/candidates.json": candidates_raw,
+        "ctas/data/catalog-index.json": catalog_index_raw,
+        "ctas/data/candidate-chunks/manifest.json": candidate_manifest_raw,
+        **chunk_raw,
         "ctas/data/source-universe.json": source_universe_raw,
+        "ctas/data/release-history.json": release_history_raw,
     }
 
     if link_health_raw:
@@ -1816,19 +2121,29 @@ def main() -> int:
         generated and valid_until and generated <= datetime.now(UTC) + timedelta(minutes=1)
         and valid_until >= datetime.now(UTC) + timedelta(minutes=5)
     )
-    deployed_text = b"\n".join(deployed_code.values()).decode("utf-8", errors="replace")
+    public_ui_text = b"\n".join(
+        deployed_code[path]
+        for path in ("ctas.html", "ctas/app.js", "ctas/catalog-model.js", "ctas/ctas.css")
+        if path in deployed_code
+    ).decode("utf-8", errors="replace")
+    publisher_text = b"\n".join(
+        deployed_code[path]
+        for path in ("scripts/mirror_loop.sh", "scripts/publish_ctas.sh")
+        if path in deployed_code
+    ).decode("utf-8", errors="replace")
     interpretation_tokens = (
         "follow-up ordering aid", "not a probability", "does not establish discovery",
-        "record completeness", "not scientific importance",
+        "Completeness describes retained fields", "scientific importance",
     )
     ui_tokens = (
         "CTAS page contents", "ctas-sky-canvas", "data-sky-days=\"7\"",
-        "data-sky-days=\"30\"", "data-preset=\"event-only\"", "renderDetails(c)",
-        "renderSourceUniverse", "renderTimeline", "source-universe.json", "keydown",
+        "data-sky-days=\"30\"", "data-preset=\"event-only\"", "renderDetails(candidate)",
+        "renderSourceUniverse", "renderTimeline", "catalog-index.json", "detail_chunk",
+        "candidate-workspace", "release-history.json", "keydown",
     )
     cadence_contract = (
         payload["cadence"] == "about every 2 minutes" and
-        'EVERY="${CTAS_EVERY:-120}"' in deployed_text and 'sleep "$EVERY"' in deployed_text
+        'EVERY="${CTAS_EVERY:-120}"' in publisher_text and 'sleep "$EVERY"' in publisher_text
     )
     link_health_current = bool(
         isinstance(link_health, dict) and
@@ -1837,14 +2152,46 @@ def main() -> int:
         link_health.get("structural_status") == "passed" and
         link_health.get("live_status") in {"passed", "degraded-provider-unavailable"}
     )
+    shard_integrity = (
+        catalog_index.get("schema") == CATALOG_INDEX_SCHEMA
+        and catalog_index.get("candidate_count") == len(candidates)
+        and len(index_candidates) == len(candidates)
+        and {row["name"] for row in index_candidates} == set(names)
+        and candidate_manifest.get("chunk_count") == CANDIDATE_BUCKET_COUNT
+        and sum(row["candidate_count"] for row in candidate_manifest["chunks"]) == len(candidates)
+        and all(
+            row.get("detail_chunk") == f"candidate-chunks/{candidate_bucket(str(row['name']))}.json"
+            for row in index_candidates
+        )
+    )
+    magnitude_safety = all(
+        candidate.get("discovery_magnitude") is None
+        or -30 <= float(candidate["discovery_magnitude"]) <= 40
+        for candidate in candidates
+    )
+    release_history_integrity = (
+        release_history.get("schema") == RELEASE_HISTORY_SCHEMA
+        and isinstance(release_history.get("entries"), list)
+        and all(
+            row.get("catalog_content_checksum_sha256")
+            and isinstance(row.get("added_count"), int)
+            and isinstance(row.get("removed_count"), int)
+            for row in release_history["entries"]
+        )
+    )
 
     gates = [
         gate("required-public-artifacts", all(path in bound_files for path in (
             "ctas.html", "ctas/app.js", "ctas/ctas.css", "ctas/data/candidates.json",
+            "ctas/data/catalog-index.json", "ctas/data/candidate-chunks/manifest.json",
             "ctas/data/source-universe.json", "ctas/data/link-health.json",
-        )), "HTML, JavaScript, CSS, candidate snapshot, source universe, and link-health artifact"),
+            "ctas/data/release-history.json",
+        )), "HTML, JavaScript, CSS, full download, lazy catalog shards, source universe, history, and link-health artifact"),
         gate("catalog-population", bool(candidates) and not counts["catalog_truncated"] and len(candidates) == counts["eligible_public_events"] and len(names) == len(set(names)), f"{len(candidates)} complete eligible records; truncated={counts['catalog_truncated']}"),
         gate("candidate-public-contract", required_contract, f"{sum(bool(c.get('name')) and 'ctas_score' in c for c in candidates)}/{len(candidates)} identity and score records"),
+        gate("lazy-catalog-shard-integrity", shard_integrity, f"{len(candidates)} index rows across {len(chunk_raw)} checksum-bound chunks"),
+        gate("derived-magnitude-safety", magnitude_safety, f"{payload['statistics']['magnitude_values_excluded']} implausible source values retained only as flagged raw reports"),
+        gate("release-history-integrity", release_history_integrity, f"{len(release_history['entries'])} checksum-addressed public catalog changes"),
         gate("coordinate-integrity", coordinate_contract, "coordinate pairs are complete/absent and within ICRS degree ranges"),
         gate("follow-up-count-integrity", follow_up_integrity, "candidate counts and totals reproduce all retained public arrays"),
         gate("public-statistics-integrity", stats_integrity, "headline, evidence, messenger, and priority totals reproduced"),
@@ -1860,9 +2207,9 @@ def main() -> int:
         gate("record-completeness-reproducibility", completeness_integrity, "public components recompute independently of CTAS priority"),
         gate("unified-timeline-integrity", timeline_integrity, "retained timeline entries reproduce with distinct scientific, publication, and CTAS clocks"),
         gate("tns-link-structure", tns_structure, f"{len(tns_links)} canonical object-specific TNS links"),
-        gate("representative-external-link-health", link_health_current, "structural checks pass; temporary remote failures are represented as degraded"),
-        gate("interpretation-and-limitations", all(token in deployed_text for token in interpretation_tokens), "priority, completeness, discovery, and scientific-claim boundaries are public"),
-        gate("browser-interaction-contract", all(token in deployed_text for token in ui_tokens), "full-catalog presets, source universe, timeline, weekly/monthly sky, table and keyboard interaction code present"),
+        gate("recursive-link-structure-and-sampled-tns-health", link_health_current, "all exported URLs are recursively classified and structurally checked; live health applies only to the explicitly sampled TNS object page"),
+        gate("interpretation-and-limitations", all(token in public_ui_text for token in interpretation_tokens), "priority, completeness, discovery, and scientific-claim boundaries are public"),
+        gate("browser-interaction-contract", all(token in public_ui_text for token in ui_tokens), "compact-index loading, lazy candidate shards, source universe, release history, weekly/monthly sky, full-record workspaces, filters, and keyboard interaction are present"),
         gate("deployed-code-binding", working_matches_head, "bound code bytes exactly match HEAD, not a dirty working tree"),
         gate("local-origin-code-alignment", head_matches_origin, "HEAD bound code bytes match origin/main; generated data declares a successor release"),
         gate("certification-publication-contract", True, "checksum-bound report is written to ctas/data/certification.json and included by the explicit publisher allowlist"),
@@ -1901,17 +2248,27 @@ def main() -> int:
     }
     status["artifacts"] = {
         "candidates": {"path": "ctas/data/candidates.json", "sha256": hashlib.sha256(candidates_raw).hexdigest()},
+        "catalog_index": {"path": "ctas/data/catalog-index.json", "sha256": hashlib.sha256(catalog_index_raw).hexdigest()},
+        "candidate_manifest": {"path": "ctas/data/candidate-chunks/manifest.json", "sha256": hashlib.sha256(candidate_manifest_raw).hexdigest()},
         "source_universe": {"path": "ctas/data/source-universe.json", "sha256": hashlib.sha256(source_universe_raw).hexdigest()},
+        "release_history": {"path": "ctas/data/release-history.json", "sha256": hashlib.sha256(release_history_raw).hexdigest()},
         "link_health": {"path": "ctas/data/link-health.json", "sha256": hashlib.sha256(link_health_raw).hexdigest() if link_health_raw else None},
         "certification": {"path": "ctas/data/certification.json", "report_checksum_sha256": certificate["report_checksum_sha256"]},
     }
     status_raw = (json.dumps(status, indent=2, sort_keys=True) + "\n").encode()
     certificate_raw = (json.dumps(certificate, indent=2, sort_keys=True) + "\n").encode()
     atomic_write(out / "candidates.json", candidates_raw)
+    atomic_write(out / "catalog-index.json", catalog_index_raw)
+    chunk_dir = out / "candidate-chunks"
+    chunk_dir.mkdir(parents=True, exist_ok=True)
+    atomic_write(chunk_dir / "manifest.json", candidate_manifest_raw)
+    for relative, raw in chunk_raw.items():
+        atomic_write(site_root / relative, raw)
     atomic_write(out / "status.json", status_raw)
     atomic_write(out / "source-universe.json", source_universe_raw)
+    atomic_write(out / "release-history.json", release_history_raw)
     atomic_write(out / "certification.json", certificate_raw)
-    print(f"\nwrote {out/'candidates.json'}, {out/'status.json'}, {out/'source-universe.json'}, and {out/'certification.json'}")
+    print(f"\nwrote compact index, {len(chunk_raw)} lazy detail chunks, full download, status, source universe, history, and certificate")
     print(f"static assurance: {certificate['status']} ({sum(g['passed'] for g in gates)}/{len(gates)} gates)")
     return 0
 

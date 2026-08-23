@@ -29,7 +29,7 @@
     if (preset === "newest") return Boolean(discovered && discovered.getTime() >= thirtyDays);
     if (preset === "updated") return Boolean(updated && updated.getTime() >= sevenDays);
     if (preset === "classified") return Boolean(classified && classified.getTime() >= sevenDays);
-    if (preset === "retracted") return Boolean(retracted && retracted.getTime() >= sevenDays);
+    if (preset === "retracted") return String(candidate.status || "").toLowerCase() === "retracted" || Boolean(retracted);
     if (preset === "spectra") return Boolean(spectrum && spectrum.getTime() >= thirtyDays);
     if (preset === "no-spectra") return !Number(counts.spectra || 0);
     if (preset === "messenger") return Boolean(messenger && messenger.getTime() >= sevenDays);
@@ -38,7 +38,37 @@
     if (preset === "multimessenger") return String(candidate.primary_messenger || "").toLowerCase() === "multimessenger" || (candidate.messenger_channels || []).length >= 2;
     if (preset === "rich") return completeness.label === "Rich public record";
     if (preset === "event-only") return Number(candidate.follow_up_total || 0) === 0;
+    if (preset === "needs-follow-up") {
+      return Number(candidate.follow_up_total || 0) === 0 ||
+        !Number(counts.spectra || 0) ||
+        !candidate.classification || candidate.classification === "Unclassified";
+    }
     return true;
+  }
+
+  function pad2(value) {
+    return (Number(value) < 10 ? "0" : "") + Number(value);
+  }
+
+  function sexagesimal(raDeg, decDeg) {
+    var ra = Number(raDeg), dec = Number(decDeg);
+    if (!isFinite(ra) || !isFinite(dec) || ra < 0 || ra >= 360 || dec < -90 || dec > 90) return "";
+
+    var raTenths = Math.round((ra / 15) * 36000);
+    var raDay = 24 * 36000;
+    raTenths = ((raTenths % raDay) + raDay) % raDay;
+    var h = Math.floor(raTenths / 36000);
+    var m = Math.floor((raTenths % 36000) / 600);
+    var s = (raTenths % 600) / 10;
+
+    var decSeconds = Math.round(Math.abs(dec) * 3600);
+    var d = Math.floor(decSeconds / 3600);
+    var dm = Math.floor((decSeconds % 3600) / 60);
+    var ds = decSeconds % 60;
+    var sign = dec < 0 || Object.is(dec, -0) ? "-" : "+";
+
+    return pad2(h) + ":" + pad2(m) + ":" + (s < 10 ? "0" : "") + s.toFixed(1) +
+      " " + sign + pad2(d) + ":" + pad2(dm) + ":" + pad2(ds);
   }
 
   function skyCandidates(candidates, days, now) {
@@ -54,5 +84,5 @@
     });
   }
 
-  return { matchesPreset: matchesPreset, skyCandidates: skyCandidates };
+  return { matchesPreset: matchesPreset, skyCandidates: skyCandidates, sexagesimal: sexagesimal };
 }));

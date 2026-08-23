@@ -21,15 +21,28 @@ DB="${CTAS_DB:-$HOME/.codex/.chatgpt-projects/g-p-6a5d91be2e688191b7333527fcd488
 BRANCH="${CTAS_BRANCH:-main}"
 PUBLIC_FILES=(
   ctas/data/candidates.json
+  ctas/data/catalog-index.json
+  ctas/data/candidate-chunks/manifest.json
   ctas/data/status.json
   ctas/data/source-universe.json
+  ctas/data/release-history.json
   ctas/data/link-health.json
   ctas/data/certification.json
 )
+for bucket_index in {0..31}; do
+  printf -v bucket '%02x' "$bucket_index"
+  PUBLIC_FILES+=("ctas/data/candidate-chunks/$bucket.json")
+done
 
 # Floor between published commits, not a schedule. 0 = publish as soon as the
 # data actually changes. Nothing happens at all unless the data changed.
 MIN_INTERVAL="${CTAS_MIN_INTERVAL:-0}"
+
+# The watcher still checks every two minutes. When neither candidate content nor
+# durable source state changed, publish only a bounded freshness heartbeat.
+# This avoids a meaningless 23 MB catalog commit every poll while keeping the
+# public certificate comfortably inside its 30-minute verification window.
+HEARTBEAT_INTERVAL="${CTAS_HEARTBEAT_INTERVAL:-900}"
 
 LOG_DIR="${CTAS_LOG_DIR:-$HOME/Library/Logs/ctas-mirror}"
 LOG="$LOG_DIR/publish.log"
@@ -51,6 +64,12 @@ mkdir -p "$LOG_DIR"
 
 say() { printf '%s  %s\n' "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" "$*" >>"$LOG"; printf '%s\n' "$*"; }
 die() { say "FAIL  $*"; exit 1; }
+
+case "$HEARTBEAT_INTERVAL" in
+  ''|0*|*[!0-9]*) die "CTAS_HEARTBEAT_INTERVAL must be an integer from 120 to 900 seconds" ;;
+esac
+[ "$HEARTBEAT_INTERVAL" -ge 120 ] && [ "$HEARTBEAT_INTERVAL" -le 900 ] \
+  || die "CTAS_HEARTBEAT_INTERVAL must stay between 120 and 900 seconds"
 
 export GIT_TERMINAL_PROMPT=0        # never hang waiting for a credential
 
@@ -115,19 +134,53 @@ CERT_STATUS=$(python3 -c "import json;print(json.load(open('ctas/data/certificat
   || die "static-catalog assurance is $CERT_STATUS; refusing publication"
 
 # ------------------------------------------------------------ changed at all?
-# Compare against HEAD, not the index: a previous run (or GitHub Desktop) may
-# have left the file staged, and comparing against the index would then report
-# "no change" for data that has never actually been published.
-if git diff --quiet HEAD -- ctas/data/candidates.json 2>/dev/null; then
-  say "no change in candidate data since the last commit; nothing to publish"
-  git checkout -- "${PUBLIC_FILES[@]}" 2>/dev/null || true
+# publication_state_checksum_sha256 covers candidate content plus durable
+# source states/counts/limitations. Generated timestamps are intentionally not
+# part of it, so unchanged science does not become a new release every poll.
+CURRENT_STATE=$(python3 -c "import json;print(json.load(open('ctas/data/status.json')).get('publication_state_checksum_sha256',''))" 2>/dev/null || echo "")
+[ -n "$CURRENT_STATE" ] || die "status.json has no publication-state checksum"
+HEAD_META=$(git show HEAD:ctas/data/status.json 2>/dev/null | python3 -c '
+import datetime, json, sys
+doc = json.load(sys.stdin)
+stamp = doc.get("last_successful_update") or doc.get("generated_at") or ""
+try:
+    parsed = datetime.datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    epoch = int(parsed.timestamp())
+except (TypeError, ValueError):
+    epoch = 0
+print("{}\t{}".format(doc.get("publication_state_checksum_sha256", ""), epoch))
+' 2>/dev/null || true)
+HEAD_STATE=${HEAD_META%%$'\t'*}
+HEAD_PUBLISHED_EPOCH=${HEAD_META#*$'\t'}
+NOW_EPOCH=$(date +%s)
+PENDING_CTAS_COMMIT=0
+if git log -1 --pretty=%s 2>/dev/null | grep -q '^CTAS data: ' \
+   && ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+  PENDING_CTAS_COMMIT=1
+fi
+
+if [ "$CURRENT_STATE" = "$HEAD_STATE" ] && [ "$PENDING_CTAS_COMMIT" -eq 0 ]; then
+  case "$HEAD_PUBLISHED_EPOCH" in
+    ''|*[!0-9]*) HEARTBEAT_AGE=$HEARTBEAT_INTERVAL ;;
+    *) HEARTBEAT_AGE=$((NOW_EPOCH - HEAD_PUBLISHED_EPOCH)) ;;
+  esac
+  if [ "$HEARTBEAT_AGE" -ge 0 ] && [ "$HEARTBEAT_AGE" -lt "$HEARTBEAT_INTERVAL" ]; then
+    say "publication state unchanged; next freshness heartbeat in $((HEARTBEAT_INTERVAL - HEARTBEAT_AGE))s"
+    git checkout -- "${PUBLIC_FILES[@]}" 2>/dev/null || true
+    exit 0
+  fi
+  say "publication state unchanged; publishing the bounded freshness heartbeat"
+fi
+
+if git diff --quiet HEAD -- "${PUBLIC_FILES[@]}" 2>/dev/null; then
+  say "public artifacts already match HEAD; nothing to publish"
   exit 0
 fi
 
 COUNT=$(python3 -c "import json;print(json.load(open('ctas/data/candidates.json'))['candidate_count'])" 2>/dev/null || echo "?")
 
 if [ "$DRY" -eq 1 ]; then
-  say "--dry-run: $COUNT candidates; would commit the five public CTAS artifacts and push to $BRANCH"
+  say "--dry-run: $COUNT candidates; would commit ${#PUBLIC_FILES[@]} allowlisted public CTAS artifacts and push to $BRANCH"
   exit 0
 fi
 
@@ -156,8 +209,7 @@ done
 # instead of stacking a new commit every cycle. A run of failing pushes then
 # leaves ONE pending commit carrying the newest data, not dozens of stale ones.
 AMEND=""
-if git log -1 --pretty=%s 2>/dev/null | grep -q '^CTAS data: ' \
-   && ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+if [ "$PENDING_CTAS_COMMIT" -eq 1 ]; then
   AMEND="--amend"
   say "previous CTAS commit is still unpushed; amending it rather than stacking"
 fi

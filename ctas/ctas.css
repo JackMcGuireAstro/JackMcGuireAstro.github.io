@@ -591,3 +591,238 @@ select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* ========================================================================
+   CTAS 1.4 professional catalog workflow
+   ======================================================================== */
+.ctas-hero__inner { grid-template-columns: minmax(0, 1fr) !important; }
+.ctas-badges { margin-top: 1.25rem; }
+.ctas-status--hero { grid-template-columns: repeat(5, minmax(0, 1fr)); border-radius: 0; }
+.ctas-status--hero.is-degraded { border-color: rgba(212, 167, 79, .52); }
+.ctas-hero__actions { display: flex; flex-wrap: wrap; gap: .7rem; margin: 1rem 0 1.5rem; }
+.ctas-hero__actions .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+.ctas-brief__lead { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+.ctas-brief__lead p { margin: 0; color: var(--ink-2); }
+.ctas-learning { margin-top: 1.1rem; }
+.ctas-learning > summary { display: flex; justify-content: space-between; gap: 1rem; align-items: center; min-height: 44px; }
+.ctas-learning > summary::after { content: "+"; color: var(--gold); font-size: 1.35rem; }
+.ctas-learning[open] > summary::after { content: "−"; }
+.ctas-learning .ctas-brief__grid { margin-top: 1rem; gap: 1px; background: var(--border); }
+.ctas-learning section { padding: 1rem; background: rgba(4, 11, 20, .86); }
+.ctas-learning h3 { margin: 0 0 .45rem; font-size: .95rem; }
+.ctas-learning section p { margin: 0; }
+.ctas-release-alert {
+  margin: -.4rem 0 1.25rem;
+  padding: .9rem 1rem;
+  border: 1px solid rgba(212, 167, 79, .45);
+  border-left: 3px solid var(--gold);
+  background: rgba(212, 167, 79, .08);
+  color: var(--ink-2);
+  font-size: .88rem;
+}
+.ctas-release-alert[hidden] { display: none; }
+.ctas-release-alert strong { color: var(--ink); }
+
+.ctas-contents { top: 4.55rem; z-index: 90; }
+.ctas-utility { border-bottom: 1px solid var(--border); background: rgba(7, 14, 25, .98); }
+.ctas-utility .wrap { display: flex; flex-wrap: wrap; gap: .15rem 1rem; padding-block: .62rem; }
+.ctas-utility a { color: var(--ink-3); font-size: .76rem; text-decoration: none; }
+.ctas-utility a:hover, .ctas-utility a:focus-visible { color: var(--gold); }
+.ctas-utility a:not(:last-child)::after { content: "·"; margin-left: 1rem; color: var(--border-strong); }
+
+.ctas-interface { overflow: clip; }
+.ctas-interface .wrap > *, .ctas-hero .wrap > * { min-width: 0; }
+.ctas-panel {
+  margin: 1rem 0;
+  padding: 0 !important;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(7, 14, 25, .58);
+  overflow: clip;
+}
+.ctas-panel > summary {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center !important;
+  gap: 1rem;
+  min-height: 68px;
+  padding: 1rem 1.2rem !important;
+  cursor: pointer;
+  list-style: none;
+}
+.ctas-panel > summary::-webkit-details-marker { display: none; }
+.ctas-panel > summary::after { content: "+" !important; flex: 0 0 auto; color: var(--gold); font-size: 1.5rem; line-height: 1; }
+.ctas-panel[open] > summary::after { content: "−" !important; }
+.ctas-panel > summary span { min-width: 0; }
+.ctas-panel > summary .eyebrow { display: block; margin: 0 0 .12rem; }
+.ctas-panel > summary strong { display: block; color: var(--ink); font-size: 1.03rem; }
+.ctas-panel > summary small { margin-left: auto; max-width: 34rem; color: var(--ink-3); font-size: .77rem; text-align: right; }
+.ctas-panel__body { padding: 1.2rem; border-top: 1px solid var(--border); }
+.ctas-overview, .ctas-source-census { margin: 1rem 0; }
+.ctas-breakdowns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ctas-bar { grid-template-columns: minmax(8.5rem, 1fr) minmax(4rem, 1.4fr) auto; }
+
+.ctas-release-list { list-style: none; display: grid; gap: .6rem; margin: 0; padding: 0; }
+.ctas-release-list li { margin: 0; padding: .9rem; border: 1px solid var(--border); background: var(--surface); }
+.ctas-release-list li > div { display: flex; justify-content: space-between; gap: 1rem; }
+.ctas-release-list li span, .ctas-release-list li small { color: var(--ink-3); }
+.ctas-release-list li p { margin: .4rem 0; color: var(--ink-2); }
+.ctas-release-list code { display: inline-block; margin-top: .4rem; color: var(--gold); font-size: .72rem; }
+.ctas-claim-boundary { max-width: 72ch; color: var(--ink-3); }
+
+.ctas-stream { margin: 1rem 0; border-radius: var(--radius); }
+.ctas-stream__list button { all: unset; cursor: pointer; color: var(--ink); }
+.ctas-stream__list button:hover strong, .ctas-stream__list button:focus-visible strong { color: var(--gold); }
+.ctas-stream__list button:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+
+.ctas-sky { margin: 1rem 0; }
+.ctas-sky__head > p { max-width: 78ch; color: var(--ink-2); }
+.ctas-sky__accessible-label { display: block; margin-top: 1rem; color: var(--ink-3); font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.ctas-sky__accessible { width: min(100%, 38rem); min-height: 44px; margin-top: .35rem; padding: .55rem .7rem; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-2); color: var(--ink); }
+
+.ctas-ranked { margin-top: 2rem; }
+.ctas-workspace {
+  margin: 0 0 1.25rem;
+  padding: clamp(1rem, 2.5vw, 1.75rem);
+  border: 1px solid rgba(212, 167, 79, .42);
+  border-top: 3px solid var(--gold);
+  border-radius: var(--radius);
+  background: linear-gradient(145deg, rgba(14, 29, 48, .98), rgba(7, 14, 25, .98));
+  scroll-margin-top: 9rem;
+}
+.ctas-workspace[hidden] { display: none; }
+.ctas-workspace__head { display: flex; justify-content: space-between; gap: 1.5rem; align-items: start; }
+.ctas-workspace__head h3 { margin: .15rem 0 .45rem; font-size: clamp(1.5rem, 3.4vw, 2.35rem); }
+.ctas-workspace__head p { max-width: 74ch; margin-bottom: 0; }
+.ctas-workspace__actions, .ctas-evidence-tools, .ctas-source-links { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .7rem; }
+.ctas-workspace__actions { margin: 1rem 0; }
+.ctas-workspace button, .ctas-evidence-tools button, .ctas-clear, .ctas-more button, .ctas-empty button {
+  min-height: 42px;
+  padding: .52rem .75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font: 650 .78rem/1.2 var(--font-sans);
+  cursor: pointer;
+}
+.ctas-workspace button:hover, .ctas-workspace button:focus-visible,
+.ctas-clear:hover, .ctas-more button:hover { border-color: var(--gold); color: var(--gold); }
+.ctas-quality-note, .ctas-cache-warning {
+  margin: 1rem 0;
+  padding: .85rem 1rem;
+  border: 1px solid rgba(212, 167, 79, .4);
+  border-left: 3px solid var(--gold);
+  background: rgba(212, 167, 79, .06);
+}
+.ctas-quality-note p, .ctas-cache-warning { color: var(--ink-2); }
+.ctas-quality-note p { margin: .3rem 0 0; }
+.ctas-original-sources { margin: 1rem 0; padding: 1rem; border: 1px solid var(--border); background: rgba(255,255,255,.025); }
+.ctas-original-sources h4 { margin: 0 0 .65rem; }
+.ctas-original-sources p { margin: .65rem 0 0; color: var(--ink-3); font-size: .8rem; }
+.ctas-known-missing strong, .ctas-known-missing span { display: block; }
+.ctas-known-missing strong { margin-bottom: .28rem; color: var(--ink); font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; }
+.ctas-source-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: .28rem .48rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--ink-2);
+  font-size: .75rem;
+  text-decoration: none;
+}
+.ctas-source-link:hover, .ctas-source-link:focus-visible { border-color: var(--gold); color: var(--gold); }
+.ctas-source-link::after { content: "↗"; margin-left: .35rem; font-size: .72em; }
+.ctas-source-link--object, .ctas-source-link--record { border-color: rgba(96, 211, 148, .42); }
+.ctas-source-link--query { border-style: dashed; }
+.ctas-link-unavailable, .ctas-link-empty { color: var(--ink-3); font-size: .75rem; }
+.ctas-link-unavailable { display: inline-flex; align-items: center; min-height: 32px; padding: .25rem .45rem; border: 1px dashed var(--border); }
+.ctas-label-kind, .ctas-table-sub { display: block; margin-top: .25rem; color: var(--ink-3); font-size: .68rem; }
+
+.ctas-score-factors, .ctas-evidence-panel { margin-top: .75rem; border: 1px solid var(--border); background: rgba(255,255,255,.02); }
+.ctas-score-factors > summary, .ctas-evidence-panel > summary {
+  display: flex; justify-content: space-between; align-items: center; gap: .8rem;
+  min-height: 48px; padding: .75rem .9rem; cursor: pointer; color: var(--ink); font-weight: 700;
+}
+.ctas-score-factors > p { padding: 0 .9rem; color: var(--ink-2); }
+.ctas-score-factors dl { padding: 0 .9rem .9rem; }
+.ctas-evidence-panel > summary small { margin-left: auto; color: var(--ink-3); font-weight: 500; }
+.ctas-evidence-panel__body { padding: 0 .9rem .9rem; }
+.ctas-evidence-panel__body > p { color: var(--ink-2); }
+.ctas-evidence-tools { margin: .25rem 0 .75rem; }
+.ctas-evidence-tools label { display: inline-flex; align-items: center; gap: .45rem; color: var(--ink-3); font-size: .78rem; }
+.ctas-evidence-tools select { min-height: 42px; padding: .4rem .6rem; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--surface-2); color: var(--ink); }
+.ctas-lightcurve { margin: .8rem 0; }
+.ctas-lightcurve svg { display: block; width: 100%; height: auto; min-height: 240px; border: 1px solid var(--border); background: #07101d; }
+.ctas-plot-bg { fill: rgba(255,255,255,.018); }
+.ctas-axis { stroke: rgba(184,200,223,.55); stroke-width: 1; }
+.ctas-axis-label { fill: #aeb8c6; font: 12px var(--font-mono); }
+.ctas-lightcurve p { margin: .45rem 0 0; color: var(--ink-3); font-size: .75rem; }
+.ctas-evidence-table-wrap { max-width: 100%; overflow-x: auto; margin-top: .8rem; border: 1px solid var(--border); }
+.ctas-evidence-table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: .78rem; }
+.ctas-evidence-table caption { padding: .65rem; text-align: left; color: var(--ink-3); }
+.ctas-evidence-table th, .ctas-evidence-table td { padding: .55rem .65rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+.ctas-evidence-table th { background: var(--surface-2); color: var(--ink-2); }
+.ctas-evidence-table .ctas-source-links { min-width: 10rem; }
+.ctas-record-list { list-style: none; display: grid; gap: .55rem; margin: .5rem 0 0; padding: 0; }
+.ctas-record-list li { margin: 0; padding: .75rem; border: 1px solid var(--border); background: var(--surface); }
+.ctas-record-list li > span, .ctas-record-list li > small { display: block; margin-top: .25rem; color: var(--ink-3); }
+
+.ctas-toolbar { display: block; width: 100%; padding: .9rem; border: 1px solid var(--border); background: rgba(255,255,255,.02); }
+.ctas-toolbar[hidden] { display: none; }
+.ctas-presets { width: 100%; padding: 0; border: 0; background: transparent; }
+.ctas-more-filters { margin: .75rem 0 0; border-top: 1px solid var(--border); }
+.ctas-more-filters > summary { min-height: 44px; padding: .65rem 0; cursor: pointer; color: var(--ink-2); font-size: .8rem; font-weight: 700; }
+.ctas-more-filters .ctas-presets { padding: .1rem 0 .75rem; }
+.ctas-fields { display: grid; grid-template-columns: minmax(12rem, 2fr) repeat(3, minmax(10rem, 1fr)); gap: .65rem; margin-top: .8rem; }
+.ctas-fields .field input, .ctas-fields .field select { width: 100%; min-width: 0; }
+.ctas-filter-state { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: .75rem; }
+.ctas-filter-state .ctas-count { margin: 0; padding: 0; }
+.ctas-clear { min-height: 38px; }
+.ctas-more { margin-top: 1rem; text-align: center; }
+table.ctas-table { min-width: 1080px; }
+.ctas-table td .ctas-source-links { min-width: 10rem; }
+.ctas-table th:nth-child(4), .ctas-table td:nth-child(4) { min-width: 11rem; }
+
+.ctas-loading { display: grid; gap: .25rem; }
+.ctas-loading span { color: var(--ink-3); font-size: .8rem; }
+.ctas-methods__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--border); }
+.ctas-methods__grid section { padding: 1rem; background: var(--surface); }
+.ctas-methods__grid h3 { margin: 0 0 .45rem; font-size: .95rem; }
+.ctas-methods__grid p { margin: 0; color: var(--ink-2); }
+
+@media (max-width: 980px) {
+  .ctas-status--hero { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ctas-breakdowns { grid-template-columns: 1fr; }
+  .ctas-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .ctas-contents { position: static; }
+  .ctas-utility .wrap { overflow-x: auto; flex-wrap: nowrap; }
+  .ctas-utility a { flex: 0 0 auto; }
+  .ctas-status--hero, .ctas-brief__lead, .ctas-learning .ctas-brief__grid,
+  .ctas-methods__grid, .ctas-fields { grid-template-columns: 1fr; }
+  .ctas-panel > summary { align-items: start !important; min-height: 62px; padding: .9rem !important; }
+  .ctas-panel > summary small { display: none; }
+  .ctas-panel__body { padding: .9rem; }
+  .ctas-stream__list li { grid-template-columns: auto minmax(0, 1fr); gap: .65rem; }
+  .ctas-stream__score { grid-column: 2; }
+  .ctas-workspace__head { display: block; }
+  .ctas-detail__score { margin-top: 1rem; text-align: left; }
+  .ctas-sky__head, .ctas-sky__foot { display: block; }
+  .ctas-window { margin: .75rem 0; }
+  .ctas-presets { flex-wrap: wrap; overflow: visible; }
+  .ctas-filter-state { align-items: start; flex-direction: column; }
+  .ctas-lightcurve svg { min-height: 190px; }
+}
+
+@media (max-width: 460px) {
+  .ctas-status--hero { grid-template-columns: 1fr; }
+  .ctas-hero__actions .btn { width: 100%; }
+  .ctas-mag-legend { flex-wrap: wrap; }
+  .ctas-mag-legend i { width: 80px; }
+  .ctas-workspace { padding: .85rem; }
+}

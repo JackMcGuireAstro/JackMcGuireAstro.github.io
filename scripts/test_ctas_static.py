@@ -190,8 +190,19 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertNotIn("git add -- ctas/data\n", publisher)
         self.assertIn(".backup '$PUBLISH_DB'", publisher)
         self.assertEqual(publisher.count('--database "$PUBLISH_DB"'), 2)
-        for name in ("candidates.json", "status.json", "source-universe.json", "link-health.json", "certification.json"):
+        for name in (
+            "candidates.json", "catalog-index.json", "candidate-chunks/manifest.json",
+            "status.json", "source-universe.json", "release-history.json",
+            "link-health.json", "certification.json",
+        ):
             self.assertIn(name, publisher)
+        self.assertIn('for bucket_index in {0..31}', publisher)
+        self.assertIn('PUBLIC_FILES+=("ctas/data/candidate-chunks/$bucket.json")', publisher)
+        self.assertIn('HEARTBEAT_INTERVAL="${CTAS_HEARTBEAT_INTERVAL:-900}"', publisher)
+        self.assertIn('[ "$HEARTBEAT_INTERVAL" -ge 120 ]', publisher)
+        self.assertIn('[ "$HEARTBEAT_INTERVAL" -le 900 ]', publisher)
+        self.assertIn("publication_state_checksum_sha256", publisher)
+        self.assertNotIn("git diff --quiet HEAD -- ctas/data/candidates.json", publisher)
 
 
 if __name__ == "__main__":

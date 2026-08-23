@@ -34,7 +34,11 @@ assert.strictEqual(model.matchesPreset(candidate({primary_messenger: "multimesse
 assert.strictEqual(model.matchesPreset(candidate({messenger_channels: ["neutrino", "gamma-ray"]}), "multimessenger", now), true);
 assert.strictEqual(model.matchesPreset(candidate({follow_up_counts: {spectra: 1}}), "no-spectra", now), false);
 assert.strictEqual(model.matchesPreset(candidate({latest_retraction_at: "2026-08-22T00:00:00Z"}), "retracted", now), true);
-assert.strictEqual(model.matchesPreset(candidate({latest_retraction_at: "2026-06-22T00:00:00Z"}), "retracted", now), false);
+assert.strictEqual(model.matchesPreset(candidate({latest_retraction_at: "2026-06-22T00:00:00Z"}), "retracted", now), true);
+assert.strictEqual(model.matchesPreset(candidate({status: "retracted", latest_retraction_at: null}), "retracted", now), true,
+  "provider-retracted records remain discoverable even when the source supplied no explicit retraction clock");
+assert.strictEqual(model.matchesPreset(candidate({follow_up_total: 4, follow_up_counts: {spectra: 1}, classification: "SN Ia"}), "needs-follow-up", now), false);
+assert.strictEqual(model.matchesPreset(candidate({follow_up_total: 4, follow_up_counts: {spectra: 0}, classification: "SN Ia"}), "needs-follow-up", now), true);
 
 const sky = [
   candidate({name: "week", discovery_time: "2026-08-22T00:00:00Z"}),
@@ -45,4 +49,10 @@ const sky = [
 assert.deepStrictEqual(model.skyCandidates(sky, 7, now).map(c => c.name), ["week"]);
 assert.deepStrictEqual(model.skyCandidates(sky, 30, now).map(c => c.name), ["week", "month"]);
 
-console.log("catalog model: 12 assertions passed");
+assert.strictEqual(model.sexagesimal(359.999999, 89.999999), "00:00:00.0 +90:00:00",
+  "rounding must carry without emitting a :60 component");
+assert.strictEqual(model.sexagesimal(15, -0), "01:00:00.0 -00:00:00");
+assert.strictEqual(model.sexagesimal(20, -10), "01:20:00.0 -10:00:00");
+assert.strictEqual(model.sexagesimal(360, 0), "", "out-of-range ICRS coordinates are refused");
+
+console.log("catalog model: 19 assertions passed");
