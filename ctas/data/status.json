@@ -2,34 +2,34 @@
   "artifacts": {
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "a7fd62409defbdf350c9f4eb3866a5493cf2af2b858b14acca1018809f3c0b1a"
+      "sha256": "7981b958ceed72401e760af25b94b5cdb75ea77ed7e0b4e80d382e37ff909c8d"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "6118919e52653c262b49ef6c4e9bdc985a91038af4eba0ec30521f145ab6fccd"
+      "report_checksum_sha256": "e67f522d42b0cc6f11f53d2ee04112546c31da25135af039c2f456dbc6d12249"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": null
+      "sha256": "745c2dc250fbb4a3a58cbb43eef4edc1280f81ac5785f12bb615979edda974dc"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "6debaee06dec64f8a35f1d73640cba0c5140b1f0a5d61400e140aa8b9a7008b0"
+      "sha256": "3538dcb09cd5a8ccb8ba2688ae04f779f9bba3861a714dce21f87f2e9d50204f"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2744,
-  "export_checked_at": "2026-08-23T16:05:10Z",
-  "last_successful_update": "2026-08-23T16:05:10Z",
+  "export_checked_at": "2026-08-23T16:26:00Z",
+  "last_successful_update": "2026-08-23T16:26:00Z",
   "latest_record_update": "2026-08-23T16:03:41Z",
   "origin": "local-snapshot",
   "pipeline_status": "ok",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "ce3f587dc8739253b32e65ee6d2bcc50f17b71e191a2a01c96db05a313ac1e3c",
+    "artifact_checksum_sha256": "e0a79f2813a3e606ac31332488a25c5a4e0298bcb4b5a8479289b2622d457b98",
     "schema": "ctas.public-source-universe@1.0.0",
-    "source_count": 72
+    "source_count": 73
   },
   "sources": [
     {
@@ -246,7 +246,7 @@
         "Avro"
       ],
       "detail": null,
-      "documentation_url": "docs/runbook.md",
+      "documentation_url": null,
       "enabled": false,
       "facility": "User-owned files",
       "label": "Authorized local file import",
@@ -271,7 +271,7 @@
         "spectrum"
       ],
       "detail": null,
-      "documentation_url": "docs/adding-a-connector.md",
+      "documentation_url": null,
       "enabled": false,
       "facility": "User-owned instance",
       "label": "Authorized observatory/TOM/SkyPortal webhook",
@@ -433,7 +433,7 @@
         "upper limit",
         "science/template/difference cutout"
       ],
-      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 258.6s",
+      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 249.9s",
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "enabled": true,
       "facility": "Rubin community broker",
@@ -810,8 +810,8 @@
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 1.725863,
-      "last_message_at": "2026-08-23T16:03:41Z",
+      "lag_seconds": 0.216801,
+      "last_message_at": "2026-08-23T16:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -916,8 +916,8 @@
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 1.725863,
-      "last_message_at": "2026-08-23T16:03:41Z",
+      "lag_seconds": 0.216801,
+      "last_message_at": "2026-08-23T16:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -1215,7 +1215,7 @@
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 133463.493335,
+      "lag_seconds": 135277.647439,
       "last_message_at": "2026-08-22T02:49:50Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1338,11 +1338,11 @@
     }
   ],
   "static_catalog_assurance": {
-    "content_release_id": "a1bf931e5441462afc5dd2e6e9a39150e83cc830bdc31d07078c9973dd3722f6",
-    "report_checksum_sha256": "6118919e52653c262b49ef6c4e9bdc985a91038af4eba0ec30521f145ab6fccd",
+    "content_release_id": "1d4643d0cdfb0ce50031bdcd51c9ed95f9ee94e10670869f029b19772cd08b9a",
+    "report_checksum_sha256": "e67f522d42b0cc6f11f53d2ee04112546c31da25135af039c2f456dbc6d12249",
     "schema": "ctas.static-catalog-certification@2.0.0",
-    "status": "not-certified",
-    "valid_until": "2026-08-23T16:15:10Z"
+    "status": "certified-static-catalog",
+    "valid_until": "2026-08-23T16:36:00Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1502,5 +1502,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-23T16:15:10Z"
+  "valid_until": "2026-08-23T16:36:00Z"
 }

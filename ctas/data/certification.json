@@ -1,56 +1,68 @@
 {
   "architecture": "local-python-to-static-github-pages",
   "candidate_count": 2744,
-  "catalog_content_checksum_sha256": "e6f1be76a336beb421135e710af52e776aac39d366a7947d5c602c8d89876b27",
+  "catalog_content_checksum_sha256": "76d82ee7e2cf44c981d97b51785336f5432cb6e61877015de372128b1ab27768",
   "claim_boundary": "Automated static-catalog assurance; not peer review, scientific truth, classification validation, discovery authority, or a managed-service deployment claim.",
-  "content_release_id": "a1bf931e5441462afc5dd2e6e9a39150e83cc830bdc31d07078c9973dd3722f6",
+  "content_release_id": "1d4643d0cdfb0ce50031bdcd51c9ed95f9ee94e10670869f029b19772cd08b9a",
   "files": {
     "ctas.html": {
-      "bytes": 13583,
-      "sha256": "5f187d7d66678a6801e9fc6c4a6445ddf27ba5e79f83d80b0beb4f9c828b4d68"
+      "bytes": 16442,
+      "sha256": "0ba77dbfcea29f292f85e6d8679353f06f19c1302a09c8beeb6d7444beb66a1b"
     },
     "ctas/app.js": {
-      "bytes": 34899,
-      "sha256": "631b6176c24bdf0d33430ddda7dfd126ccb20a98c53f69b0a80161c56d000ca6"
+      "bytes": 58151,
+      "sha256": "de620ff68fa4afe91ef394183b152c0f8d251bcbd8903cb7426d7f3b04047fbf"
     },
     "ctas/catalog-model.js": {
-      "bytes": 3048,
-      "sha256": "91bef057395f8a939e8d92b8b8e76e8f5e6122af2d1fc00dccb4ea384584f069"
+      "bytes": 3192,
+      "sha256": "9d7832a26cf5e0d628b59e8e18c45529e781a0ac7cbe624d80e2d7b1264eba0f"
     },
     "ctas/ctas.css": {
-      "bytes": 18692,
-      "sha256": "945b6c4b2540d1c74722d93cda7dc17497bbe96e1763656b52e26800d8d637fa"
+      "bytes": 25831,
+      "sha256": "50839e273dc24c29325e422513609573eb1a7995a783abca26bc5e3f087ef6b8"
     },
     "ctas/data/candidates.json": {
-      "bytes": 24905681,
-      "sha256": "a7fd62409defbdf350c9f4eb3866a5493cf2af2b858b14acca1018809f3c0b1a"
+      "bytes": 24594965,
+      "sha256": "7981b958ceed72401e760af25b94b5cdb75ea77ed7e0b4e80d382e37ff909c8d"
+    },
+    "ctas/data/link-health.json": {
+      "bytes": 1104,
+      "sha256": "745c2dc250fbb4a3a58cbb43eef4edc1280f81ac5785f12bb615979edda974dc"
     },
     "ctas/data/source-universe.json": {
-      "bytes": 138247,
-      "sha256": "6debaee06dec64f8a35f1d73640cba0c5140b1f0a5d61400e140aa8b9a7008b0"
+      "bytes": 140095,
+      "sha256": "3538dcb09cd5a8ccb8ba2688ae04f779f9bba3861a714dce21f87f2e9d50204f"
     },
     "scripts/check_ctas_links.py": {
-      "bytes": 8884,
-      "sha256": "dfd2bfd2ef7796fd70f6f6bffc8e3d0b213adf9853435a7d7538afd9f2b2ea0f"
+      "bytes": 9361,
+      "sha256": "c7dcf04a461a3d1128befb6e8d546a7504b8cf053f38b882c3c12755f6d28a76"
     },
     "scripts/export_ctas_snapshot.py": {
-      "bytes": 23389,
-      "sha256": "b5c2cafdee5f937a94bf6dc0b0623075770b55ac9097990d8169fa22fcdc1db2"
+      "bytes": 95193,
+      "sha256": "0c25db3870ba3abc25d6a97b72f23cd22155b55a309568f8bbe0c6c6f258d359"
     },
     "scripts/mirror_loop.sh": {
       "bytes": 1737,
       "sha256": "34cca4babee1ba48f7e63daab0a8bb78b74bc2363cc8bbee66531501a3708464"
     },
     "scripts/publish_ctas.sh": {
-      "bytes": 5423,
-      "sha256": "98c881938af763685daa583bd083ecad9c018b18c3e27cacd700e4c64eaa6b81"
+      "bytes": 6894,
+      "sha256": "4a03c8d4f140b13f10ff10b5b20135b8c742a31c70bb6ec3693b73f43ddb43ec"
+    },
+    "scripts/test_ctas_catalog_model.js": {
+      "bytes": 2518,
+      "sha256": "d1fd19f414a726334c006ea244ba91b1aa95b1270678b0c1ec8eef5fc01cd8c3"
+    },
+    "scripts/test_ctas_static.py": {
+      "bytes": 10042,
+      "sha256": "c5b7a4ae0097630617d54f20956c7b2d45bd9979cf145a7f3d7d5086749c10d6"
     }
   },
   "gates": [
     {
       "evidence": "HTML, JavaScript, CSS, candidate snapshot, source universe, and link-health artifact",
       "id": "required-public-artifacts",
-      "passed": false
+      "passed": true
     },
     {
       "evidence": "2744 complete eligible records; truncated=False",
@@ -98,7 +110,7 @@
       "passed": true
     },
     {
-      "evidence": "generated 2026-08-23T16:05:10Z; valid until 2026-08-23T16:15:10Z",
+      "evidence": "generated 2026-08-23T16:26:00Z; valid until 2026-08-23T16:36:00Z",
       "id": "snapshot-freshness",
       "passed": true
     },
@@ -108,19 +120,19 @@
       "passed": true
     },
     {
-      "evidence": "72 unique versioned source contracts",
+      "evidence": "73 unique versioned source contracts",
       "id": "source-universe-schema",
       "passed": true
     },
     {
       "evidence": "providers=12; surveys=32",
       "id": "source-and-survey-closure",
-      "passed": false
+      "passed": true
     },
     {
       "evidence": "controlled dispositions and integer retained-record counts",
       "id": "candidate-source-dispositions",
-      "passed": false
+      "passed": true
     },
     {
       "evidence": "public components recompute independently of CTAS priority",
@@ -140,27 +152,27 @@
     {
       "evidence": "structural checks pass; temporary remote failures are represented as degraded",
       "id": "representative-external-link-health",
-      "passed": false
+      "passed": true
     },
     {
       "evidence": "priority, completeness, discovery, and scientific-claim boundaries are public",
       "id": "interpretation-and-limitations",
-      "passed": false
+      "passed": true
     },
     {
       "evidence": "full-catalog presets, source universe, timeline, weekly/monthly sky, table and keyboard interaction code present",
       "id": "browser-interaction-contract",
-      "passed": false
+      "passed": true
     },
     {
       "evidence": "bound code bytes exactly match HEAD, not a dirty working tree",
       "id": "deployed-code-binding",
-      "passed": false
+      "passed": true
     },
     {
       "evidence": "HEAD bound code bytes match origin/main; generated data declares a successor release",
       "id": "local-origin-code-alignment",
-      "passed": false
+      "passed": true
     },
     {
       "evidence": "checksum-bound report is written to ctas/data/certification.json and included by the explicit publisher allowlist",
@@ -173,15 +185,15 @@
       "passed": true
     }
   ],
-  "generated_at": "2026-08-23T16:05:10Z",
+  "generated_at": "2026-08-23T16:26:00Z",
   "publication_relationship": {
-    "base_commit": "5c6cdf7642b36895823ef8ed6379b1cde575396d",
+    "base_commit": "d0bbf6d41509daa10300c600d2c53dd0507709da",
     "kind": "generated-successor-to-origin-main",
-    "local_head": "5c6cdf7642b36895823ef8ed6379b1cde575396d",
+    "local_head": "d0bbf6d41509daa10300c600d2c53dd0507709da",
     "statement": "Generated public data are the declared next successor to the bound origin/main code; post-push live verification confirms public byte availability."
   },
-  "report_checksum_sha256": "6118919e52653c262b49ef6c4e9bdc985a91038af4eba0ec30521f145ab6fccd",
+  "report_checksum_sha256": "e67f522d42b0cc6f11f53d2ee04112546c31da25135af039c2f456dbc6d12249",
   "schema": "ctas.static-catalog-certification@2.0.0",
-  "status": "not-certified",
-  "valid_until": "2026-08-23T16:15:10Z"
+  "status": "certified-static-catalog",
+  "valid_until": "2026-08-23T16:36:00Z"
 }
