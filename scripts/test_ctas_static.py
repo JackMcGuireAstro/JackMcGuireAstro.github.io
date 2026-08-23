@@ -82,6 +82,24 @@ class CompletenessTests(unittest.TestCase):
         low, high = event(ctas_score=1), event(ctas_score=99)
         self.assertEqual(EXPORTER.completeness_for(low), EXPORTER.completeness_for(high))
 
+    def test_catalog_context_is_not_promoted_to_host_context(self):
+        candidate = event(
+            follow_up_counts={**event()["follow_up_counts"], "catalog_counterparts": 1},
+            follow_up_total=1,
+        )
+        components = {row["id"]: row for row in EXPORTER.completeness_for(candidate)["components"]}
+        self.assertEqual(components["catalog-context"]["state"], "present")
+        self.assertEqual(components["host-context"]["state"], "missing")
+
+    def test_nested_evidence_link_counts_as_source_link(self):
+        candidate = event(
+            follow_up={"observations": [{"source_url": "https://fink-portal.org/ZTF26abc"}]},
+            follow_up_counts={**event()["follow_up_counts"], "observations": 1},
+            follow_up_total=1,
+        )
+        components = {row["id"]: row for row in EXPORTER.completeness_for(candidate)["components"]}
+        self.assertEqual(components["source-links"]["state"], "present")
+
 
 class DispositionAndLinkTests(unittest.TestCase):
     def test_source_dispositions_remain_distinct(self):
@@ -102,6 +120,28 @@ class DispositionAndLinkTests(unittest.TestCase):
         self.assertTrue(EXPORTER.recursive_safety_problems({"nested": {"api_key": "x"}}))
         self.assertTrue(EXPORTER.recursive_safety_problems({"nested": "/Users/private/file"}))
         self.assertFalse(EXPORTER.recursive_safety_problems({"components": [{"id": "spectrum"}]}))
+
+    def test_score_explanation_describes_coverage_as_a_reduction(self):
+        explanation = EXPORTER.score_explanation_for(event(score_factors={"coverage_reduction": 7.5}))
+        self.assertIn("reduces the score by 7.5 points", explanation)
+        self.assertNotIn("coverage adds", explanation)
+
+    def test_runtime_errors_are_sanitized_for_public_status(self):
+        detail = EXPORTER.public_runtime_detail("ConnectError: CERTIFICATE_VERIFY_FAILED; retry in 19.4s")
+        self.assertEqual(
+            detail,
+            "Provider TLS certificate validation failed; CTAS retained the last rights-cleared data and scheduled a retry.",
+        )
+
+    def test_reported_label_kind_separates_operational_alerts(self):
+        self.assertEqual(
+            EXPORTER.reported_label_kind(event(classification="high-importance")),
+            "operational alert label",
+        )
+        self.assertEqual(
+            EXPORTER.reported_label_kind(event(classification="SN Ia")),
+            "astronomical classification",
+        )
 
 
 class TimelineTests(unittest.TestCase):
@@ -147,6 +187,8 @@ class CertificateAndArtifactTests(unittest.TestCase):
     def setUpClass(cls):
         cls.data_dir = ROOT / "ctas/data"
         cls.snapshot = json.loads((cls.data_dir / "candidates.json").read_text())
+        cls.index = json.loads((cls.data_dir / "catalog-index.json").read_text())
+        cls.manifest = json.loads((cls.data_dir / "candidate-chunks/manifest.json").read_text())
         cls.universe = json.loads((cls.data_dir / "source-universe.json").read_text())
         cls.certificate = json.loads((cls.data_dir / "certification.json").read_text())
 
@@ -203,6 +245,34 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn('[ "$HEARTBEAT_INTERVAL" -le 900 ]', publisher)
         self.assertIn("publication_state_checksum_sha256", publisher)
         self.assertNotIn("git diff --quiet HEAD -- ctas/data/candidates.json", publisher)
+
+    def test_compact_index_and_all_detail_shards_are_checksum_bound(self):
+        self.assertEqual(self.index["candidate_count"], self.snapshot["candidate_count"])
+        self.assertEqual(self.manifest["candidate_count"], self.snapshot["candidate_count"])
+        self.assertEqual(self.manifest["chunk_count"], EXPORTER.CANDIDATE_BUCKET_COUNT)
+        names = set()
+        for row in self.manifest["chunks"]:
+            path = ROOT / row["path"]
+            raw = path.read_bytes()
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), row["sha256"])
+            document = json.loads(raw)
+            self.assertEqual(document["candidate_count"], row["candidate_count"])
+            for candidate in document["candidates"]:
+                self.assertEqual(document["bucket"], EXPORTER.candidate_bucket(candidate["name"]))
+                names.add(candidate["name"])
+        self.assertEqual(names, {row["name"] for row in self.snapshot["candidates"]})
+        self.assertEqual(names, {row["name"] for row in self.index["candidates"]})
+
+    def test_published_magnitudes_and_names_are_safe_for_scientific_views(self):
+        candidates = self.snapshot["candidates"]
+        self.assertTrue(all("%" not in row["name"] for row in candidates))
+        self.assertTrue(all(
+            row.get("discovery_magnitude") is None or -30 <= float(row["discovery_magnitude"]) <= 40
+            for row in candidates
+        ))
+        flagged = [row for row in candidates if row.get("data_quality_flags")]
+        self.assertEqual(len(flagged), self.snapshot["statistics"]["magnitude_values_excluded"])
+        self.assertTrue(all("reported_discovery_magnitude" in row for row in flagged))
 
 
 if __name__ == "__main__":
