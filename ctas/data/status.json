@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "3c7bd46f258419d7de141edb9e123f94dd47b2069af41d3dcfde1cbca606e196"
+      "sha256": "2b9280816433539992394715d1a6cc1c7feda1828260c629dc48d3a1b39f5cd1"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "78452997283df95aec9586193b3adf0b46aaeecf7241eab5d7bdd7611224f6dd"
+      "sha256": "eed5e423816d3f2740a58e4d3ba81527f56125b40ed996d19f219a07796faf95"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "9ecbc7f362a3c357e7ba1b9de327df04eb91113b077c51cd4303d6595e59d8cf"
+      "sha256": "3f3fd1f1fdffe20f8f1deaf078ec8a5d69814d240de06fc2cf5d6d105eac45be"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "6a1c1dde23ba91f3c6724e57f9916168db7d61f0d7192eded71e46c6b98fda28"
+      "report_checksum_sha256": "0ec135c6d058215493fb3c7b6200d6f66f55a4f03234fdaf5eb653056eb98f1d"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "e326a4d1a2df1376e422c6ad9b57eaf1b1aaba9cdd458de3d4b01492b1fb888f"
+      "sha256": "9e5ce2d6bf7aa1d8ea25dffb9a5086c70e1e65da9de57be8c3a341bb3700913a"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "e31e264dfeaa81103dad11b3d4edcf016c2b09a90edee363f86798ae9196ec6d"
+      "sha256": "c34a0c99f6d4741a317329c6d4cc533c82952edc709be4192f62986f7c5d7a9a"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "67f23dfeceb04a9d1a66de906afe679fbeca84bc01be80fbe74c0df2336df3c0"
+      "sha256": "a4daa829fcdf6bef2e2058ce4861c0ce6f6cb037ed2fad005c89e2f974fad064"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2752,
-  "catalog_content_checksum_sha256": "7c0809e4769d3a03f6de1d713f23139a2fa2a9cc69be12ac4c7a9c6ef1d2fb78",
+  "catalog_content_checksum_sha256": "4bdfb0d270520c1e069eed82e7cbb7980e7f8cc07c552330401ce6bb25be077b",
   "degraded_source_count": 4,
-  "export_checked_at": "2026-08-23T22:08:33Z",
-  "last_successful_update": "2026-08-23T22:08:33Z",
-  "latest_record_update": "2026-08-23T21:14:33Z",
+  "export_checked_at": "2026-08-23T22:25:21Z",
+  "last_successful_update": "2026-08-23T22:25:21Z",
+  "latest_record_update": "2026-08-23T22:23:22Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "404f610d4336fce324e8f3832eadf3ca86e87d86346b9ec822ed495b5684d13f",
+  "publication_state_checksum_sha256": "87315b12e0893edc3850c6feb764707ffb99ea1d5faa3b827da62bca4fcd77d4",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "9f1558cb470740b7f197e2945b1ef4f4128c1a0ace8cdc38f382a533cf18d268",
+    "artifact_checksum_sha256": "5e9c731821d747515d0b33363717b9c1de66c6a6be9ee02566c2d9125f2e5729",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 73
   },
@@ -243,7 +243,9 @@
       "protocol": "TNS / forced-photometry REST API",
       "public_scope": "ATLAS explicitly provides full public access to forced photometry after registration",
       "rate_or_cadence_limit": "Provider throttling; no bulk requests without contacting ATLAS",
-      "record_counts": {},
+      "record_counts": {
+        "observations": 31
+      },
       "source": "atlas",
       "state": "disabled"
     },
@@ -820,13 +822,13 @@
         "classification",
         "retraction"
       ],
-      "detail": "via NASA GCN: igwn.gwalert",
+      "detail": "NASA GCN subscriptions active: igwn.gwalert",
       "documentation_url": "https://gcn.nasa.gov/missions/lvk",
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 1.457347,
-      "last_message_at": "2026-08-23T22:08:14Z",
+      "lag_seconds": 0.403691,
+      "last_message_at": "2026-08-23T22:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -898,7 +900,7 @@
         "upper limit",
         "observing plan"
       ],
-      "detail": "via NASA GCN: gcn.circulars",
+      "detail": "NASA GCN subscriptions active: gcn.circulars",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA GCN worldwide author community",
@@ -926,13 +928,13 @@
         "follow-up report",
         "retraction"
       ],
-      "detail": "igwn.gwalert",
+      "detail": "gcn.circulars, igwn.gwalert, gcn.notices.icecube.gold_bronze_track_alerts, gcn.notices.icecube.lvk_nu_track_search, gcn.classic.text.SNEWS, gcn.notices.swift.bat.guano, gcn.notices.einstein_probe.wxt.alert, gcn.notices.maxi.gsc.known, gcn.notices.maxi.gsc.unknown, gcn.notices.boom.alert, gcn.notices.chime.frb, gcn.classic.text.FERMI_GBM_ALERT, gcn.classic.text.FERMI_GBM_FLT_POS, gcn.classic.text.FERMI_GBM_GND_POS, gcn.classic.text.FERMI_GBM_FIN_POS, gcn.classic.text.FERMI_GBM_SUBTHRESH, gcn.classic.text.FERMI_LAT_POS_UPD, gcn.classic.text.FERMI_LAT_OFFLINE, gcn.classic.text.FERMI_LAT_MONITOR, gcn.classic.text.SWIFT_BAT_QL_POS, gcn.classic.text.SWIFT_BAT_GRB_POS_ACK, gcn.classic.text.SWIFT_XRT_POSITION, gcn.classic.text.SWIFT_XRT_CENTROID, gcn.classic.text.SWIFT_UVOT_POS, gcn.classic.text.SWIFT_UVOT_POS_NACK, gcn.classic.text.GECAM_FLT, gcn.classic.text.GECAM_GND, gcn.classic.text.CALET_GBM_FLT_LC, gcn.classic.text.HAWC_BURST_MONITOR, gcn.classic.text.KONUS_LC, gcn.classic.text.AMON_NU_EM_COINC, gcn.classic.text.ICECUBE_CASCADE",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 1.457347,
-      "last_message_at": "2026-08-23T22:08:14Z",
+      "lag_seconds": 0.403691,
+      "last_message_at": "2026-08-23T22:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -1225,12 +1227,12 @@
         "classification",
         "follow-up photometry table"
       ],
-      "detail": "Checked 9 released public records before the provider rate limit; retained public data remain available.",
+      "detail": "Checked 8 released public records before the provider rate limit; retained public data remain available.",
       "documentation_url": "https://www.wis-tns.org/astronotes",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 155373.008216,
+      "lag_seconds": 156787.652124,
       "last_message_at": "2026-08-22T02:49:50Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1240,7 +1242,7 @@
       "rate_or_cadence_limit": "Bounded latest-page poll every 30 minutes",
       "record_counts": {
         "observations": 48,
-        "publications": 174
+        "publications": 175
       },
       "source": "tns-astronotes",
       "state": "degraded"
@@ -1353,15 +1355,15 @@
     }
   ],
   "static_catalog_assurance": {
-    "content_release_id": "9b1945119e1ccf7f26632ef9315f0e9902d5d31e780df046710270400e3a354b",
-    "report_checksum_sha256": "6a1c1dde23ba91f3c6724e57f9916168db7d61f0d7192eded71e46c6b98fda28",
+    "content_release_id": "6fd5b6d704c6fce590896d1258f7c73bb31ef6d61fa2708e21aa7785b289c34f",
+    "report_checksum_sha256": "0ec135c6d058215493fb3c7b6200d6f66f55a4f03234fdaf5eb653056eb98f1d",
     "schema": "ctas.static-catalog-certification@2.0.0",
     "status": "certified-static-catalog",
-    "valid_until": "2026-08-23T22:38:33Z"
+    "valid_until": "2026-08-23T22:55:21Z"
   },
   "statistics": {
     "archive_products": 0,
-    "candidates_with_follow_up": 1015,
+    "candidates_with_follow_up": 1017,
     "catalog_counterparts": 1105,
     "classification_history": 305,
     "classifications": 972,
@@ -1390,15 +1392,15 @@
       "radio": 42,
       "x-ray": 34
     },
-    "observations": 2684,
+    "observations": 2715,
     "priority_bands": {
-      "high_50_74": 2320,
+      "high_50_74": 2321,
       "low_0_24": 15,
       "routine_25_49": 193,
-      "urgent_75_100": 224
+      "urgent_75_100": 223
     },
     "public_candidates": 2752,
-    "publications": 835,
+    "publications": 836,
     "quality_quarantined_records": 1,
     "real_events": 2754,
     "spectra": 13
@@ -1533,5 +1535,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-23T22:38:33Z"
+  "valid_until": "2026-08-23T22:55:21Z"
 }
