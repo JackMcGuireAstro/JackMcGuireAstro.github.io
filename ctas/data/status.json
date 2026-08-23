@@ -2,7 +2,7 @@
   "schema_version": 2,
   "pipeline_status": "ok",
   "origin": "local-snapshot",
-  "last_successful_update": "2026-08-23T15:42:09Z",
+  "last_successful_update": "2026-08-23T15:48:16Z",
   "candidate_count": 2742,
   "cadence": "about every 2 minutes",
   "statistics": {
@@ -11,9 +11,9 @@
     "observations": 2683,
     "spectra": 13,
     "messenger_signals": 844,
-    "classifications": 972,
+    "classifications": 1277,
     "publications": 833,
-    "candidates_with_follow_up": 869,
+    "candidates_with_follow_up": 1013,
     "messengers": {
       "electromagnetic": 2214,
       "gamma-ray": 206,
@@ -435,7 +435,7 @@
       "mode": "live-and-targeted-query",
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "state": "degraded",
-      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 312.8s",
+      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 208.9s",
       "last_message_at": null,
       "lag_seconds": null,
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
@@ -553,7 +553,9 @@
       "adapter_status": "implemented-public-gaia-partner-catalog-on-demand",
       "last_verified": "2026-08-04",
       "enabled": false,
-      "record_counts": {}
+      "record_counts": {
+        "catalog_counterparts": 30
+      }
     },
     {
       "source": "gaia-alerts",
@@ -679,6 +681,7 @@
       "last_verified": "2026-07-21",
       "enabled": true,
       "record_counts": {
+        "designations": 2109,
         "classifications": 177
       }
     },
@@ -923,8 +926,8 @@
       "enabled": true,
       "record_counts": {
         "observations": 472,
-        "messenger_signals": 844,
-        "classifications": 785
+        "classifications": 1090,
+        "messenger_signals": 844
       }
     },
     {
@@ -953,7 +956,9 @@
       "adapter_status": "implemented-public-on-demand",
       "last_verified": "2026-08-03",
       "enabled": false,
-      "record_counts": {}
+      "record_counts": {
+        "host_context": 11
+      }
     },
     {
       "source": "irsa",
@@ -978,7 +983,9 @@
       "adapter_status": "implemented-public-catalog-metadata-on-demand",
       "last_verified": "2026-08-04",
       "enabled": false,
-      "record_counts": {}
+      "record_counts": {
+        "catalog_counterparts": 67
+      }
     },
     {
       "source": "noirlab-archive",
@@ -1080,7 +1087,9 @@
       "adapter_status": "implemented-open-literature-context-on-demand",
       "last_verified": "2026-08-04",
       "enabled": false,
-      "record_counts": {}
+      "record_counts": {
+        "catalog_counterparts": 106
+      }
     },
     {
       "source": "svom-gcn",
@@ -1214,8 +1223,8 @@
       "last_verified": "2026-08-10",
       "enabled": true,
       "record_counts": {
-        "observations": 48,
-        "publications": 174
+        "publications": 174,
+        "observations": 48
       }
     },
     {
@@ -1243,8 +1252,8 @@
       "last_verified": "2026-08-07",
       "enabled": false,
       "record_counts": {
-        "spectra": 10,
-        "classifications": 10
+        "classifications": 10,
+        "spectra": 10
       }
     },
     {
@@ -1375,10 +1384,6 @@
       "candidate_count": 41
     },
     {
-      "survey": "None",
-      "candidate_count": 35
-    },
-    {
       "survey": "AMON IceCube-HAWC",
       "candidate_count": 28
     },
@@ -1461,13 +1466,13 @@
   ],
   "source_universe": {
     "schema": "ctas.public-source-universe@1.0.0",
-    "source_count": 49,
+    "source_count": 72,
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "26dda9cb47bbe2f28327cd49478dfcc8660796a003705a5d0a1ac31c5486421e"
+    "artifact_checksum_sha256": "df381c4419799b330d2a61cbaf48e4fbb61ab5312e5aca2107a2d7cc9c793e68"
   },
   "static_catalog_assurance": {
     "status": "certified-static-catalog",
     "schema": "ctas.static-catalog-certification@1.0.0",
-    "report_checksum_sha256": "6fc96e55f97030e395c80c918bc3935541e0037a9ea73bbb6a84447cba155097"
+    "report_checksum_sha256": "27edee425899f6696e0e945cb30201d801658dd90dc328cd8626dbdad751d297"
   }
 }
