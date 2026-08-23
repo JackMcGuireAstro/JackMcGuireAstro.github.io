@@ -1,11 +1,57 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-08-23T08:30:01Z",
+  "generated_at": "2026-08-23T08:32:04Z",
   "origin": "local-snapshot",
   "cadence": "about every 2 minutes",
-  "candidate_count": 2631,
+  "candidate_count": 2632,
   "degraded": false,
   "candidates": [
+    {
+      "name": "EP260822a",
+      "status": "candidate",
+      "classification": "Unclassified",
+      "ctas_score": 54.0,
+      "event_type": "x-ray-transient",
+      "primary_messenger": "x-ray",
+      "updated_at": "2026-08-23T08:30:26Z",
+      "score_factors": {
+        "classification_gap_points": 12.0,
+        "spectroscopy_gap_points": 7.0,
+        "coverage_reduction": 0.0
+      },
+      "links": [
+        {
+          "label": "GCN",
+          "designation": "EP260822a"
+        }
+      ],
+      "follow_up_counts": {
+        "classifications": 0,
+        "observations": 0,
+        "spectra": 0,
+        "messenger_signals": 0,
+        "publications": 1
+      },
+      "follow_up_total": 1,
+      "follow_up": {
+        "classifications": [],
+        "observations": [],
+        "spectra": [],
+        "messenger_signals": [],
+        "publications": [
+          {
+            "provider": "gcn-circulars",
+            "provider_publication_id": "45428",
+            "publication_type": "GCN Circular",
+            "canonical_url": "https://gcn.nasa.gov/circulars/45428",
+            "published_at": "2026-08-23T08:30:22Z",
+            "title": "EP260822a: Einstein Probe detection of a fast X-ray transient",
+            "authors_text": "EP Team at NAOC/CAS <ep_ta@bao.ac.cn>",
+            "abstract": "J. P. Feng, B. Zhang (USTC), Y. Q. Zhao(USTC,PRIC), H. Sun (NAO,CAS) on behalf of the Einstein Probe (EP) team:"
+          }
+        ]
+      }
+    },
     {
       "name": "AT2026yyt",
       "ra_deg": 114.898964,
@@ -168768,6 +168814,20 @@
   ],
   "recent_stream": [
     {
+      "name": "EP260822a",
+      "updated_at": "2026-08-23T08:30:26Z",
+      "classification": "Unclassified",
+      "primary_messenger": "x-ray",
+      "ctas_score": 54.0,
+      "follow_up_counts": {
+        "classifications": 0,
+        "observations": 0,
+        "spectra": 0,
+        "messenger_signals": 0,
+        "publications": 1
+      }
+    },
+    {
       "name": "AT2026yyt",
       "updated_at": "2026-08-23T08:27:03Z",
       "discovery_time": "2026-08-15T12:16:28Z",
@@ -169050,43 +169110,28 @@
         "messenger_signals": 0,
         "publications": 0
       }
-    },
-    {
-      "name": "AT2026zke",
-      "updated_at": "2026-08-23T01:46:09Z",
-      "discovery_time": "2026-08-19T09:07:22Z",
-      "classification": "Unclassified",
-      "primary_messenger": "electromagnetic",
-      "ctas_score": 45.22,
-      "follow_up_counts": {
-        "classifications": 0,
-        "observations": 67,
-        "spectra": 0,
-        "messenger_signals": 0,
-        "publications": 0
-      }
     }
   ],
   "statistics": {
-    "real_events": 2632,
-    "public_candidates": 2631,
+    "real_events": 2633,
+    "public_candidates": 2632,
     "observations": 2624,
     "spectra": 13,
     "messenger_signals": 842,
     "classifications": 970,
-    "publications": 829,
-    "candidates_with_follow_up": 865,
+    "publications": 830,
+    "candidates_with_follow_up": 866,
     "messengers": {
       "electromagnetic": 2106,
       "gamma-ray": 206,
       "multimessenger": 28,
       "neutrino": 218,
       "radio": 40,
-      "x-ray": 33
+      "x-ray": 34
     },
     "priority_bands": {
       "urgent_75_100": 207,
-      "high_50_74": 2232,
+      "high_50_74": 2233,
       "routine_25_49": 177,
       "low_0_24": 15
     }
@@ -169753,12 +169798,12 @@
       "public_scope": "Released GCN Circular author text, metadata, corrections, and provider-hosted links are publicly distributed",
       "state": "connected",
       "detail": "via NASA GCN: gcn.circulars",
-      "last_message_at": "2026-08-23T06:10:02Z",
-      "lag_seconds": 3.953482,
+      "last_message_at": "2026-08-23T08:30:22Z",
+      "lag_seconds": 3.754994,
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "record_counts": {
-        "publications": 655
+        "publications": 656
       }
     },
     {
@@ -169774,9 +169819,9 @@
       "mode": "live",
       "public_scope": "NASA describes notices and Circulars as publicly redistributed",
       "state": "connected",
-      "detail": "igwn.gwalert",
-      "last_message_at": "2026-08-23T08:13:34Z",
-      "lag_seconds": 0.2327,
+      "detail": "gcn.circulars",
+      "last_message_at": "2026-08-23T08:30:22Z",
+      "lag_seconds": 3.754994,
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "record_counts": {
@@ -170106,7 +170151,7 @@
     },
     {
       "provider": "gcn-circulars",
-      "publications": 655
+      "publications": 656
     },
     {
       "provider": "tns-astronotes",
