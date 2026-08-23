@@ -2,7 +2,7 @@
   "schema_version": 2,
   "pipeline_status": "ok",
   "origin": "local-snapshot",
-  "last_successful_update": "2026-08-23T12:54:09Z",
+  "last_successful_update": "2026-08-23T12:56:12Z",
   "candidate_count": 2660,
   "cadence": "about every 2 minutes",
   "statistics": {
@@ -12,7 +12,7 @@
     "spectra": 13,
     "messenger_signals": 844,
     "classifications": 972,
-    "publications": 832,
+    "publications": 833,
     "candidates_with_follow_up": 869,
     "messengers": {
       "electromagnetic": 2132,
@@ -345,7 +345,7 @@
       "mode": "live-and-targeted-query",
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "state": "degraded",
-      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 254.9s",
+      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 300.1s",
       "last_message_at": null,
       "lag_seconds": null,
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
@@ -691,12 +691,12 @@
       "public_scope": "Released GCN Circular author text, metadata, corrections, and provider-hosted links are publicly distributed",
       "state": "connected",
       "detail": "via NASA GCN: gcn.circulars",
-      "last_message_at": "2026-08-23T10:27:10Z",
-      "lag_seconds": 2.339089,
+      "last_message_at": "2026-08-23T12:55:36Z",
+      "lag_seconds": 2.626748,
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "record_counts": {
-        "publications": 658
+        "publications": 659
       }
     },
     {
@@ -712,9 +712,9 @@
       "mode": "live",
       "public_scope": "NASA describes notices and Circulars as publicly redistributed",
       "state": "connected",
-      "detail": "igwn.gwalert",
-      "last_message_at": "2026-08-23T12:13:34Z",
-      "lag_seconds": 0.284649,
+      "detail": "gcn.circulars",
+      "last_message_at": "2026-08-23T12:55:36Z",
+      "lag_seconds": 2.626748,
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "record_counts": {
@@ -1168,6 +1168,6 @@
   "static_catalog_assurance": {
     "status": "certified-static-catalog",
     "schema": "ctas.static-catalog-certification@1.0.0",
-    "report_checksum_sha256": "cb0ca1b242f93f1e2dfdfc3342ee94af63c6019a6d6007f41df2b8d21117bfcc"
+    "report_checksum_sha256": "d87f0f65c7ab607ea22f8585e96090ab7f459a9fd255518f29d8c462ef8853e5"
   }
 }
