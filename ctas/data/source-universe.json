@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "ff0222c4ddd0de92c542c998a06684323554f110551f8a66a53092d009edbc5c",
+  "artifact_checksum_sha256": "9bde94919aa6cbda0a3596f823b4f5fc2faacbc4b2b31362d1f2cd77882d7dce",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
   "family_count": 9,
-  "generated_at": "2026-08-23T16:32:55Z",
+  "generated_at": "2026-08-23T16:35:09Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -268,7 +268,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous for metadata and released public files",
       "connector_implementation_state": "implemented-explicit-release-verified-image-metadata-on-demand",
-      "contract_checksum_sha256": "e4ed096b5c3c92b2dd68bb63a94bb3794f4c13eec4d9274e74cf9412eb5d8f26",
+      "contract_checksum_sha256": "bff056016068eeba530baaa5bcea8b685640653a79d8691707f6e65b1518f13e",
       "contract_version": "1.0.0",
       "data_types": [
         "released image metadata",
@@ -277,7 +277,7 @@
       "documentation_url": "https://github.com/NOAO/nat-nb/blob/master/api-authentication.ipynb",
       "implementation_state": "implemented",
       "known_limitations": "All archive metadata are visible anonymously, including metadata for proprietary files; this adapter stores no unreleased row and downloads no bytes",
-      "last_attempt_at": "2026-08-23T16:26:07Z",
+      "last_attempt_at": "2026-08-23T16:32:55Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
@@ -289,7 +289,7 @@
       "protocol": "Anonymous SIA plus exact Advanced Search release verification",
       "public_disposition_counts": {
         "provider-failure": 180,
-        "searched-no-match": 1999,
+        "searched-no-match": 2000,
         "temporarily-unavailable": 16
       },
       "public_record_counts": {},
@@ -583,7 +583,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "e94254ba46cfb99922b5e65409d5237c6e15bb8366e32d7eeb6c73af3242f138",
+      "contract_checksum_sha256": "27153d32abb16d04a19671d3437e8110489900e24d72df044fba86da7f29c6d1",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -598,9 +598,9 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-08-23T16:32:09Z",
-      "last_successful_at": "2026-08-23T15:33:31Z",
-      "last_successful_response": "2026-08-23T15:33:31Z",
+      "last_attempt_at": "2026-08-23T16:33:43Z",
+      "last_successful_at": "2026-08-23T16:33:43Z",
+      "last_successful_response": "2026-08-23T16:33:43Z",
       "last_verified": "2026-08-08",
       "name": "Fink",
       "operational_state": "temporarily-unavailable",
@@ -611,10 +611,10 @@
       "public_disposition_counts": {
         "provider-failure": 92,
         "searched-no-match": 2439,
-        "searched-with-data": 62
+        "searched-with-data": 63
       },
       "public_record_counts": {
-        "observations": 2163
+        "observations": 2164
       },
       "query_scope": "live-and-targeted-query",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
@@ -1945,7 +1945,7 @@
       "access_mode": "on-demand-query",
       "authentication_requirement": "Registered forced-photometry API token",
       "connector_implementation_state": "implemented-public-credentials-required",
-      "contract_checksum_sha256": "b42b0a74a4d5c992c36e803c09a8cb93227d8632cea4b86fc72e074354283fbf",
+      "contract_checksum_sha256": "289950ba37f07cc08985fb3c32ca96ac39bcbca14d00f9ffd2c6f77a4249e1c3",
       "contract_version": "1.0.0",
       "data_types": [
         "TNS discovery",
@@ -1954,7 +1954,7 @@
       "documentation_url": "https://fallingstar-data.com/forcedphot/apiguide/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Result URLs are short-lived; requests must remain bounded and attribution/citations are mandatory",
-      "last_attempt_at": "2026-08-23T16:26:07Z",
+      "last_attempt_at": "2026-08-23T16:32:55Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-03",
@@ -1965,7 +1965,7 @@
       "product_contracts": [],
       "protocol": "TNS / forced-photometry REST API",
       "public_disposition_counts": {
-        "credentials-required": 2199
+        "credentials-required": 2200
       },
       "public_record_counts": {
         "candidates": 211
