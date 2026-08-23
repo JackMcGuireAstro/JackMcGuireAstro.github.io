@@ -2,7 +2,7 @@
   "schema_version": 2,
   "pipeline_status": "ok",
   "origin": "local-snapshot",
-  "last_successful_update": "2026-08-23T10:06:14Z",
+  "last_successful_update": "2026-08-23T10:08:17Z",
   "candidate_count": 2638,
   "cadence": "about every 2 minutes",
   "statistics": {
@@ -345,7 +345,7 @@
       "mode": "live-and-targeted-query",
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "state": "degraded",
-      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 306.9s",
+      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 276.8s",
       "last_message_at": null,
       "lag_seconds": null,
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
@@ -631,8 +631,8 @@
       "public_scope": "Public LVK alerts distributed through GCN and public GraceDB products",
       "state": "connected",
       "detail": "via NASA GCN: igwn.gwalert",
-      "last_message_at": "2026-08-23T10:03:40Z",
-      "lag_seconds": 1.590653,
+      "last_message_at": "2026-08-23T10:08:15Z",
+      "lag_seconds": 2.238067,
       "documentation_url": "https://gcn.nasa.gov/missions/lvk",
       "enabled": true,
       "record_counts": {}
@@ -713,8 +713,8 @@
       "public_scope": "NASA describes notices and Circulars as publicly redistributed",
       "state": "connected",
       "detail": "igwn.gwalert",
-      "last_message_at": "2026-08-23T10:03:40Z",
-      "lag_seconds": 1.590653,
+      "last_message_at": "2026-08-23T10:08:15Z",
+      "lag_seconds": 2.238067,
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "record_counts": {
@@ -940,7 +940,7 @@
       "state": "degraded",
       "detail": "checked 9 released public AstroNotes before the provider rate limit; retained data remains available",
       "last_message_at": "2026-08-22T02:49:50Z",
-      "lag_seconds": 110865.681004,
+      "lag_seconds": 112681.005807,
       "documentation_url": "https://www.wis-tns.org/astronotes",
       "enabled": true,
       "record_counts": {
@@ -1168,6 +1168,6 @@
   "static_catalog_assurance": {
     "status": "certified-static-catalog",
     "schema": "ctas.static-catalog-certification@1.0.0",
-    "report_checksum_sha256": "b4f18d1921331e6ac0e90540d212119cc98fa0d5c48ca7accfac710542b52706"
+    "report_checksum_sha256": "6f3a26bac5c6a573037d78a36ef9304a4fc68e7fd9a66d2957d93c6da769ea1f"
   }
 }
