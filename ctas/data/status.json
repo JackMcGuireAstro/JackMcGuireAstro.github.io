@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "43c24df30751e4928f8fbad281435f3e0c0d3a8707a8655237ed6f2b6638e3ec"
+      "sha256": "c40c794529311bfb1e21da1bdc911d7a2efb0990a412a706cedfcde49688a13c"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "8cf930a2aece11ad064a10b2dff77b2fc99fae67669819db8ed3af0aeea1d48a"
+      "sha256": "72acff755d379cf616ac92cb9186fdf35925aa07dbd88da0578b3c44809aae10"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "848518cceab7d8e2f96da38f408ccd637da642660445cedb584955d343676ff8"
+      "sha256": "1adba33cd888c39c4617d781d1f52959d0fa6164144b615b07df5f403fa96359"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "b5679edd7ebdfd02647107fedc610b2f747b96c3091b6747997e75ee11edf476"
+      "report_checksum_sha256": "d3fb3edefb6fe3c71dd883424b73fc9cde4f0cf7ff7f3f3a4cb1bf19a27755b6"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "ca8dd8bf4479c3c26f1369b9903acf23a46a8003104be2167fdad0505061662f"
+      "sha256": "06cf99cfde24ae52774f95aa740f7f1d84e5c6c07323aca132feebffcc66431b"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "c6b3c93767cda5db27be54d032e59158542ab1f7145df5b611cd8e8eed675eea"
+      "sha256": "678ea4111f6ff58bb01f085cc604ed9f9e352a8ba38e5a6922445262b86bad24"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "0387533781d52653c395dff6a9b08ee2d6cd223447e604bde54beae8548ed76c"
+      "sha256": "a670763d0925dad424600c2f6fcaa2a6e19cff79ee2e6b4fc7f6ddb3864b5329"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2752,
-  "catalog_content_checksum_sha256": "e8671ee2794d402f824f76b49cb1cc2595f3b07ab26bec80dffeac618c2b1671",
-  "degraded_source_count": 5,
-  "export_checked_at": "2026-08-23T21:09:04Z",
-  "last_successful_update": "2026-08-23T21:09:04Z",
-  "latest_record_update": "2026-08-23T21:05:02Z",
+  "catalog_content_checksum_sha256": "1b4078cf3edfb5b7de7219b7305f4702a5983a562d272bc7067f144c49444965",
+  "degraded_source_count": 7,
+  "export_checked_at": "2026-08-23T21:14:39Z",
+  "last_successful_update": "2026-08-23T21:14:39Z",
+  "latest_record_update": "2026-08-23T21:14:14Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "edf2e81dc921fd9e9e60e5d31cc123424bbaeb55b713f09dc771e3365bed6b86",
+  "publication_state_checksum_sha256": "a3c85eabb5264a6f4b15b7d1b6069369554034089f47c9dd1dfbebf32820ee98",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "3c4a7515be0765ed80d5e625bad5ddd816c77ecba5313622ba7704f25d67fc75",
+    "artifact_checksum_sha256": "7ba9d23b3f16dec58606ceb7f46537d0fce69cac382e7e259cb1f71786d79004",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 73
   },
@@ -825,8 +825,8 @@
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 2.277369,
-      "last_message_at": "2026-08-23T21:08:15Z",
+      "lag_seconds": 1.648221,
+      "last_message_at": "2026-08-23T21:13:35Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -898,13 +898,13 @@
         "upper limit",
         "observing plan"
       ],
-      "detail": "NASA GCN subscriptions active: gcn.circulars",
+      "detail": "via NASA GCN: gcn.circulars",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA GCN worldwide author community",
       "label": "NASA GCN Circulars",
-      "lag_seconds": 2.626748,
-      "last_message_at": "2026-08-23T12:55:36Z",
+      "lag_seconds": 43091.903854,
+      "last_message_at": "2026-08-23T09:16:01Z",
       "last_verified": "2026-08-04",
       "mode": "live-and-archive",
       "proprietary_risk": "Circular prose is retained as an attributed author report; values are not promoted to machine measurements without a mission-specific parser",
@@ -926,13 +926,13 @@
         "follow-up report",
         "retraction"
       ],
-      "detail": "igwn.gwalert",
+      "detail": "gcn.circulars",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 2.277369,
-      "last_message_at": "2026-08-23T21:08:15Z",
+      "lag_seconds": 43091.903854,
+      "last_message_at": "2026-08-23T09:16:01Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -1353,11 +1353,11 @@
     }
   ],
   "static_catalog_assurance": {
-    "content_release_id": "aeceb8f90dd71748bc1bfff9d57fd1ced90365c8f959854660bb800b96012541",
-    "report_checksum_sha256": "b5679edd7ebdfd02647107fedc610b2f747b96c3091b6747997e75ee11edf476",
+    "content_release_id": "bbf9757e02e2563b8cb1cbcb9e432b14059863a236581fb2469ea674bdd7275e",
+    "report_checksum_sha256": "d3fb3edefb6fe3c71dd883424b73fc9cde4f0cf7ff7f3f3a4cb1bf19a27755b6",
     "schema": "ctas.static-catalog-certification@2.0.0",
     "status": "certified-static-catalog",
-    "valid_until": "2026-08-23T21:39:04Z"
+    "valid_until": "2026-08-23T21:44:39Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1533,5 +1533,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-23T21:39:04Z"
+  "valid_until": "2026-08-23T21:44:39Z"
 }
