@@ -1,31 +1,33 @@
 {
   "architecture": "local-python-to-static-github-pages",
   "candidate_count": 2742,
-  "claim_boundary": "Automated static-catalog assurance; not peer review, scientific truth, or a managed-service deployment claim.",
+  "catalog_content_checksum_sha256": "b3a99086931e37b4e2a26862d3913efa98883e12b374ce37fd7553f79b5c055d",
+  "claim_boundary": "Automated static-catalog assurance; not peer review, scientific truth, classification validation, discovery authority, or a managed-service deployment claim.",
+  "content_release_id": "56853c8273dc08f8d0cf73249f66f55e84824ff1c307e3159351a743c15e7eb5",
   "files": {
     "ctas.html": {
-      "bytes": 15837,
-      "sha256": "929e8d7a76367d19ef703ec596b4f0f617087e92f3e05b0c1b65044a80e723e0"
+      "bytes": 13583,
+      "sha256": "5f187d7d66678a6801e9fc6c4a6445ddf27ba5e79f83d80b0beb4f9c828b4d68"
     },
     "ctas/app.js": {
-      "bytes": 47408,
-      "sha256": "898d1ce30a03d8726e666f587c56236e92b4ca59ee5fc9c5e7dc77ca5ddf32e3"
+      "bytes": 34899,
+      "sha256": "631b6176c24bdf0d33430ddda7dfd126ccb20a98c53f69b0a80161c56d000ca6"
     },
     "ctas/ctas.css": {
       "bytes": 18692,
       "sha256": "945b6c4b2540d1c74722d93cda7dc17497bbe96e1763656b52e26800d8d637fa"
     },
     "ctas/data/candidates.json": {
-      "bytes": 30530209,
-      "sha256": "145defa53d51514bf91943587314cedfd71ab098e56c84d2b6c7788e09572c22"
+      "bytes": 30530572,
+      "sha256": "978f25011f8662ecaa2d4ea0d38e6cab0983984b5f604e6963e20a01d69ef483"
     },
     "ctas/data/source-universe.json": {
       "bytes": 138275,
-      "sha256": "59892de5a078f8cf2de3a4ef5ba40ca5d142bd3ddf9bd8c513ce913190849048"
+      "sha256": "9806326fb227bb0dcb6721918eff059f518bf52273f85f9cca5df3f3c55a81a5"
     },
     "scripts/export_ctas_snapshot.py": {
-      "bytes": 75687,
-      "sha256": "6af5a6c7a75040a272f334d6dda6f45978ea620adf4a75b6ad076b6303290188"
+      "bytes": 23389,
+      "sha256": "b5c2cafdee5f937a94bf6dc0b0623075770b55ac9097990d8169fa22fcdc1db2"
     },
     "scripts/mirror_loop.sh": {
       "bytes": 1737,
@@ -38,33 +40,140 @@
   },
   "gates": [
     {
-      "evidence": "2742/2742",
+      "evidence": "HTML, JavaScript, CSS, candidate snapshot, source universe, and link-health artifact",
+      "id": "required-public-artifacts",
+      "passed": false
+    },
+    {
+      "evidence": "2742 complete eligible records; truncated=False",
       "id": "catalog-population",
       "passed": true
     },
     {
-      "evidence": "allowlisted fields and fail-closed validation",
+      "evidence": "2742/2742 identity and score records",
+      "id": "candidate-public-contract",
+      "passed": true
+    },
+    {
+      "evidence": "coordinate pairs are complete/absent and within ICRS degree ranges",
+      "id": "coordinate-integrity",
+      "passed": true
+    },
+    {
+      "evidence": "candidate counts and totals reproduce all retained public arrays",
+      "id": "follow-up-count-integrity",
+      "passed": true
+    },
+    {
+      "evidence": "headline, evidence, messenger, and priority totals reproduced",
+      "id": "public-statistics-integrity",
+      "passed": true
+    },
+    {
+      "evidence": "recent stream resolves to the complete published catalog",
+      "id": "recent-stream-integrity",
+      "passed": true
+    },
+    {
+      "evidence": "12 provider totals reproduced",
+      "id": "source-statistics-integrity",
+      "passed": true
+    },
+    {
+      "evidence": "32 discovery-survey totals reproduced",
+      "id": "survey-statistics-integrity",
+      "passed": true
+    },
+    {
+      "evidence": "recursive allowlist safety check across public candidate and source artifacts",
       "id": "public-export-safety",
       "passed": true
     },
     {
-      "evidence": "2742/2742",
-      "id": "candidate-detail-counts",
+      "evidence": "generated 2026-08-23T15:54:33Z; valid until 2026-08-23T16:04:33Z",
+      "id": "snapshot-freshness",
       "passed": true
     },
     {
-      "evidence": "120-second mirror loop",
+      "evidence": "120-second mirror contract and current export heartbeat",
       "id": "two-minute-publication-contract",
       "passed": true
     },
     {
-      "evidence": "contents, sky controls, ranked feed, and candidate details",
-      "id": "public-research-surface",
+      "evidence": "72 unique versioned source contracts",
+      "id": "source-universe-schema",
+      "passed": true
+    },
+    {
+      "evidence": "providers=12; surveys=32",
+      "id": "source-and-survey-closure",
+      "passed": false
+    },
+    {
+      "evidence": "controlled dispositions and integer retained-record counts",
+      "id": "candidate-source-dispositions",
+      "passed": false
+    },
+    {
+      "evidence": "public components recompute independently of CTAS priority",
+      "id": "record-completeness-reproducibility",
+      "passed": true
+    },
+    {
+      "evidence": "retained timeline entries reproduce with distinct scientific, publication, and CTAS clocks",
+      "id": "unified-timeline-integrity",
+      "passed": true
+    },
+    {
+      "evidence": "2111 canonical object-specific TNS links",
+      "id": "tns-link-structure",
+      "passed": true
+    },
+    {
+      "evidence": "structural checks pass; temporary remote failures are represented as degraded",
+      "id": "representative-external-link-health",
+      "passed": false
+    },
+    {
+      "evidence": "priority, completeness, discovery, and scientific-claim boundaries are public",
+      "id": "interpretation-and-limitations",
+      "passed": false
+    },
+    {
+      "evidence": "full-catalog presets, source universe, timeline, weekly/monthly sky, table and keyboard interaction code present",
+      "id": "browser-interaction-contract",
+      "passed": false
+    },
+    {
+      "evidence": "bound code bytes exactly match HEAD, not a dirty working tree",
+      "id": "deployed-code-binding",
+      "passed": false
+    },
+    {
+      "evidence": "HEAD bound code bytes match origin/main; generated data declares a successor release",
+      "id": "local-origin-code-alignment",
+      "passed": false
+    },
+    {
+      "evidence": "checksum-bound report is written to ctas/data/certification.json and included by the explicit publisher allowlist",
+      "id": "certification-publication-contract",
+      "passed": true
+    },
+    {
+      "evidence": "Automated static-catalog assurance; not peer review, scientific truth, classification validation, discovery authority, or a managed-service deployment claim.",
+      "id": "exact-claim-boundary",
       "passed": true
     }
   ],
-  "generated_at": "2026-08-23T15:50:24Z",
-  "report_checksum_sha256": "f2da1a51de31c3eb8514c3b381ec6827f29d101ce4a7289ded1c278645b2ca2e",
-  "schema": "ctas.static-catalog-certification@1.0.0",
-  "status": "certified-static-catalog"
+  "generated_at": "2026-08-23T15:54:33Z",
+  "publication_relationship": {
+    "base_commit": "dbddcb091d828777da9bf5937182cf3adde91ebc",
+    "kind": "generated-successor-to-origin-main",
+    "local_head": "dbddcb091d828777da9bf5937182cf3adde91ebc",
+    "statement": "Generated public data are the declared next successor to the bound origin/main code; post-push live verification confirms public byte availability."
+  },
+  "report_checksum_sha256": "91df35aa0416f583a96724803b88cb3d6d6ab4c470e8f65b508ad1f330d5fab5",
+  "schema": "ctas.static-catalog-certification@2.0.0",
+  "status": "not-certified",
+  "valid_until": "2026-08-23T16:04:33Z"
 }
