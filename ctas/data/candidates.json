@@ -1,11 +1,47 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-08-23T09:02:46Z",
+  "generated_at": "2026-08-23T09:04:49Z",
   "origin": "local-snapshot",
   "cadence": "about every 2 minutes",
   "candidate_count": 2632,
   "degraded": false,
   "candidates": [
+    {
+      "name": "AT2026znk",
+      "ra_deg": 327.437291,
+      "dec_deg": 3.335184,
+      "discovery_time": "2026-08-22T23:35:49Z",
+      "discovery_survey": "GOTO",
+      "discovery_magnitude": 19.59,
+      "status": "candidate",
+      "classification": "Unclassified",
+      "ctas_score": 78.37,
+      "event_type": "optical-transient",
+      "primary_messenger": "electromagnetic",
+      "updated_at": "2026-08-23T09:03:18Z",
+      "score_factors": {
+        "recency_points": 20.85,
+        "brightness_points": 3.53,
+        "classification_gap_points": 12.0,
+        "spectroscopy_gap_points": 7.0,
+        "coverage_reduction": 0.0
+      },
+      "links": [
+        {
+          "label": "TNS",
+          "designation": "AT2026znk",
+          "url": "https://www.wis-tns.org/object/2026znk"
+        }
+      ],
+      "follow_up_counts": {
+        "classifications": 0,
+        "observations": 0,
+        "spectra": 0,
+        "messenger_signals": 0,
+        "publications": 0
+      },
+      "follow_up_total": 0
+    },
     {
       "name": "EP260822a",
       "status": "candidate",
@@ -2864,42 +2900,6 @@
         "messenger_signals": [],
         "publications": []
       }
-    },
-    {
-      "name": "AT2026znk",
-      "ra_deg": 327.437314,
-      "dec_deg": 3.335198,
-      "discovery_time": "2026-08-22T23:35:49Z",
-      "discovery_survey": "GOTO",
-      "discovery_magnitude": 19.59,
-      "status": "candidate",
-      "classification": "Unclassified",
-      "ctas_score": 81.05,
-      "event_type": "optical-transient",
-      "primary_messenger": "electromagnetic",
-      "updated_at": "2026-08-23T01:01:57Z",
-      "score_factors": {
-        "recency_points": 23.52,
-        "brightness_points": 3.53,
-        "classification_gap_points": 12.0,
-        "spectroscopy_gap_points": 7.0,
-        "coverage_reduction": 0.0
-      },
-      "links": [
-        {
-          "label": "TNS",
-          "designation": "AT2026znk",
-          "url": "https://www.wis-tns.org/object/2026znk"
-        }
-      ],
-      "follow_up_counts": {
-        "classifications": 0,
-        "observations": 0,
-        "spectra": 0,
-        "messenger_signals": 0,
-        "publications": 0
-      },
-      "follow_up_total": 0
     },
     {
       "name": "AT2026zng",
@@ -168814,6 +168814,21 @@
   ],
   "recent_stream": [
     {
+      "name": "AT2026znk",
+      "updated_at": "2026-08-23T09:03:18Z",
+      "discovery_time": "2026-08-22T23:35:49Z",
+      "classification": "Unclassified",
+      "primary_messenger": "electromagnetic",
+      "ctas_score": 78.37,
+      "follow_up_counts": {
+        "classifications": 0,
+        "observations": 0,
+        "spectra": 0,
+        "messenger_signals": 0,
+        "publications": 0
+      }
+    },
+    {
       "name": "EP260822a",
       "updated_at": "2026-08-23T08:30:26Z",
       "classification": "Unclassified",
@@ -169091,21 +169106,6 @@
       "follow_up_counts": {
         "classifications": 0,
         "observations": 25,
-        "spectra": 0,
-        "messenger_signals": 0,
-        "publications": 0
-      }
-    },
-    {
-      "name": "AT2026zna",
-      "updated_at": "2026-08-23T04:14:10Z",
-      "discovery_time": "2026-08-22T17:58:52Z",
-      "classification": "Unclassified",
-      "primary_messenger": "electromagnetic",
-      "ctas_score": 76.76,
-      "follow_up_counts": {
-        "classifications": 0,
-        "observations": 0,
         "spectra": 0,
         "messenger_signals": 0,
         "publications": 0
@@ -169630,7 +169630,7 @@
       "mode": "poll",
       "public_scope": "Hourly delta files explicitly contain public objects",
       "state": "connected",
-      "detail": "processed 1 public rows \u00b7 2026-08-23 07:00:00 - 08:00:00",
+      "detail": "processed 1 public rows \u00b7 2026-08-23 08:00:00 - 09:00:00",
       "last_message_at": null,
       "lag_seconds": null,
       "documentation_url": "https://www.wis-tns.org/content/tns-getting-started",
@@ -169738,8 +169738,8 @@
       "public_scope": "Public LVK alerts distributed through GCN and public GraceDB products",
       "state": "connected",
       "detail": "via NASA GCN: igwn.gwalert",
-      "last_message_at": "2026-08-23T08:13:34Z",
-      "lag_seconds": 0.2327,
+      "last_message_at": "2026-08-23T09:03:43Z",
+      "lag_seconds": 1.801402,
       "documentation_url": "https://gcn.nasa.gov/missions/lvk",
       "enabled": true,
       "record_counts": {}
@@ -169819,9 +169819,9 @@
       "mode": "live",
       "public_scope": "NASA describes notices and Circulars as publicly redistributed",
       "state": "connected",
-      "detail": "gcn.circulars",
-      "last_message_at": "2026-08-23T08:30:22Z",
-      "lag_seconds": 3.754994,
+      "detail": "igwn.gwalert",
+      "last_message_at": "2026-08-23T09:03:43Z",
+      "lag_seconds": 1.801402,
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "record_counts": {
