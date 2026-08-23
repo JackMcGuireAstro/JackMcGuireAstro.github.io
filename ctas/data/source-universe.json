@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "0f3938babb2de78c01d37fa41bd7222c6635c191ccdea2a4cfb108361288513c",
+  "artifact_checksum_sha256": "8af753f9bbcb44e0e6b2aa0c94f29dfcfe31baaaa2d4d10263a901dc3b304dd9",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
   "family_count": 10,
-  "generated_at": "2026-08-23T23:15:28Z",
+  "generated_at": "2026-08-23T23:18:05Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -1949,7 +1949,7 @@
       "access_mode": "on-demand-query",
       "authentication_requirement": "Registered forced-photometry API token",
       "connector_implementation_state": "implemented-public-credentials-required",
-      "contract_checksum_sha256": "d1e9c6eea9b3d811f5382894ab2bb7ae8ddcc8983bef18395dd20d9e86d5b0de",
+      "contract_checksum_sha256": "4cfc5882ebe5cfda610d1b7cde8aa2286c857a48cb029be8e89d1fafcea1755d",
       "contract_version": "1.0.0",
       "data_types": [
         "TNS discovery",
@@ -1958,9 +1958,9 @@
       "documentation_url": "https://fallingstar-data.com/forcedphot/apiguide/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Result URLs are short-lived; requests must remain bounded and attribution/citations are mandatory",
-      "last_attempt_at": "2026-08-23T23:01:23Z",
-      "last_successful_at": "2026-08-23T23:01:23Z",
-      "last_successful_response": "2026-08-23T23:01:23Z",
+      "last_attempt_at": "2026-08-23T23:15:21Z",
+      "last_successful_at": "2026-08-23T23:15:21Z",
+      "last_successful_response": "2026-08-23T23:15:21Z",
       "last_verified": "2026-08-03",
       "name": "ATLAS",
       "operational_state": "scheduled",
@@ -1970,11 +1970,11 @@
       "protocol": "TNS / forced-photometry REST API",
       "public_disposition_counts": {
         "credentials-required": 2242,
-        "searched-with-data": 3
+        "searched-with-data": 4
       },
       "public_record_counts": {
         "candidates": 211,
-        "observations": 50
+        "observations": 81
       },
       "query_scope": "on-demand-query",
       "rate_or_cadence_limit": "Provider throttling; no bulk requests without contacting ATLAS",
@@ -2743,7 +2743,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "NASA ADS API token",
       "connector_implementation_state": "implemented-public-metadata-credentials-required",
-      "contract_checksum_sha256": "95253e4a03f5dce1c6b15a3a660aa80eeba3d972d938f96b0aa42b3d6bfe7a50",
+      "contract_checksum_sha256": "621927c539ff1e8bb32df60228f29ee344bdd9a2252c44fdd465815fce1f2850",
       "contract_version": "1.0.0",
       "data_types": [
         "bibliographic metadata",
@@ -2753,18 +2753,19 @@
       "documentation_url": "https://ui.adsabs.harvard.edu/help/api/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "CTAS retains metadata and provider links only; it does not mirror article full text or infer reuse rights from discoverability",
-      "last_attempt_at": "2026-08-23T23:01:23Z",
+      "last_attempt_at": "2026-08-23T23:15:21Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-23",
       "name": "NASA Astrophysics Data System",
-      "operational_state": "scheduled",
+      "operational_state": "temporarily-unavailable",
       "organization_or_facility": "NASA / Smithsonian Astrophysical Observatory",
       "primary_family": "other-declared-sources",
       "product_contracts": [],
       "protocol": "NASA ADS Search API JSON",
       "public_disposition_counts": {
-        "searched-no-match": 2
+        "searched-no-match": 2,
+        "temporarily-unavailable": 1
       },
       "public_record_counts": {},
       "query_scope": "targeted-query",
