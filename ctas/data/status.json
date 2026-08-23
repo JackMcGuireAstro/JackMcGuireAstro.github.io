@@ -2,12 +2,12 @@
   "schema_version": 2,
   "pipeline_status": "ok",
   "origin": "local-snapshot",
-  "last_successful_update": "2026-08-23T14:01:44Z",
-  "candidate_count": 2661,
+  "last_successful_update": "2026-08-23T14:54:51Z",
+  "candidate_count": 2742,
   "cadence": "about every 2 minutes",
   "statistics": {
-    "real_events": 2662,
-    "public_candidates": 2661,
+    "real_events": 2743,
+    "public_candidates": 2742,
     "observations": 2681,
     "spectra": 13,
     "messenger_signals": 844,
@@ -15,7 +15,7 @@
     "publications": 833,
     "candidates_with_follow_up": 869,
     "messengers": {
-      "electromagnetic": 2133,
+      "electromagnetic": 2214,
       "gamma-ray": 206,
       "multimessenger": 28,
       "neutrino": 218,
@@ -24,8 +24,8 @@
     },
     "priority_bands": {
       "urgent_75_100": 220,
-      "high_50_74": 2248,
-      "routine_25_49": 178,
+      "high_50_74": 2311,
+      "routine_25_49": 196,
       "low_0_24": 15
     }
   },
@@ -345,7 +345,7 @@
       "mode": "live-and-targeted-query",
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "state": "degraded",
-      "detail": "ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032); retry in 271.6s",
+      "detail": "ConnectError: [Errno 8] nodename nor servname provided, or not known; retry in 224.0s",
       "last_message_at": null,
       "lag_seconds": null,
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
@@ -523,7 +523,7 @@
       "mode": "poll",
       "public_scope": "Hourly delta files explicitly contain public objects",
       "state": "connected",
-      "detail": "processed 2 public rows \u00b7 2026-08-23 12:00:00 - 13:00:00",
+      "detail": "processed 81 public rows \u00b7 2026-08-23 13:00:00 - 14:00:00",
       "last_message_at": null,
       "lag_seconds": null,
       "documentation_url": "https://www.wis-tns.org/content/tns-getting-started",
@@ -630,7 +630,7 @@
       "mode": "live",
       "public_scope": "Public LVK alerts distributed through GCN and public GraceDB products",
       "state": "connected",
-      "detail": "via NASA GCN: igwn.gwalert",
+      "detail": "NASA GCN subscriptions active: igwn.gwalert",
       "last_message_at": "2026-08-23T13:13:34Z",
       "lag_seconds": 0.469011,
       "documentation_url": "https://gcn.nasa.gov/missions/lvk",
@@ -690,7 +690,7 @@
       "mode": "live-and-archive",
       "public_scope": "Released GCN Circular author text, metadata, corrections, and provider-hosted links are publicly distributed",
       "state": "connected",
-      "detail": "via NASA GCN: gcn.circulars",
+      "detail": "NASA GCN subscriptions active: gcn.circulars",
       "last_message_at": "2026-08-23T12:55:36Z",
       "lag_seconds": 2.626748,
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
@@ -712,7 +712,7 @@
       "mode": "live",
       "public_scope": "NASA describes notices and Circulars as publicly redistributed",
       "state": "connected",
-      "detail": "igwn.gwalert",
+      "detail": "gcn.circulars, igwn.gwalert, gcn.notices.icecube.gold_bronze_track_alerts, gcn.notices.icecube.lvk_nu_track_search, gcn.classic.text.SNEWS, gcn.notices.swift.bat.guano, gcn.notices.einstein_probe.wxt.alert, gcn.notices.maxi.gsc.known, gcn.notices.maxi.gsc.unknown, gcn.notices.boom.alert, gcn.notices.chime.frb, gcn.classic.text.FERMI_GBM_ALERT, gcn.classic.text.FERMI_GBM_FLT_POS, gcn.classic.text.FERMI_GBM_GND_POS, gcn.classic.text.FERMI_GBM_FIN_POS, gcn.classic.text.FERMI_GBM_SUBTHRESH, gcn.classic.text.FERMI_LAT_POS_UPD, gcn.classic.text.FERMI_LAT_OFFLINE, gcn.classic.text.FERMI_LAT_MONITOR, gcn.classic.text.SWIFT_BAT_QL_POS, gcn.classic.text.SWIFT_BAT_GRB_POS_ACK, gcn.classic.text.SWIFT_XRT_POSITION, gcn.classic.text.SWIFT_XRT_CENTROID, gcn.classic.text.SWIFT_UVOT_POS, gcn.classic.text.SWIFT_UVOT_POS_NACK, gcn.classic.text.GECAM_FLT, gcn.classic.text.GECAM_GND, gcn.classic.text.CALET_GBM_FLT_LC, gcn.classic.text.HAWC_BURST_MONITOR, gcn.classic.text.KONUS_LC, gcn.classic.text.AMON_NU_EM_COINC, gcn.classic.text.ICECUBE_CASCADE",
       "last_message_at": "2026-08-23T13:13:34Z",
       "lag_seconds": 0.469011,
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
@@ -940,7 +940,7 @@
       "state": "degraded",
       "detail": "checked 9 released public AstroNotes before the provider rate limit; retained data remains available",
       "last_message_at": "2026-08-22T02:49:50Z",
-      "lag_seconds": 125385.64478,
+      "lag_seconds": 129833.834398,
       "documentation_url": "https://www.wis-tns.org/astronotes",
       "enabled": true,
       "record_counts": {
@@ -1037,12 +1037,12 @@
       "candidate_count": 577
     },
     {
-      "survey": "ZTF",
-      "candidate_count": 395
+      "survey": "WFST",
+      "candidate_count": 430
     },
     {
-      "survey": "WFST",
-      "candidate_count": 350
+      "survey": "ZTF",
+      "candidate_count": 396
     },
     {
       "survey": "GOTO",
@@ -1168,6 +1168,6 @@
   "static_catalog_assurance": {
     "status": "certified-static-catalog",
     "schema": "ctas.static-catalog-certification@1.0.0",
-    "report_checksum_sha256": "b1d74f42e8b3e9a225bb8a6a7fbd65b0ef35e859e9eabd7ba1cc456ebc36fea3"
+    "report_checksum_sha256": "eee242dfb6c7026db0b58d49408511d98ba6c558c6be10b158480c9e640f44b6"
   }
 }
