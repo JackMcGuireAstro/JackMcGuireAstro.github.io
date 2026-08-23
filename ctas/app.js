@@ -642,8 +642,11 @@
   function renderReleaseHistory() {
     var history = state.releaseHistory || {}, entries = Array.isArray(history.entries) ? history.entries : [];
     if (!entries.length) { el.releaseHistory.innerHTML = "<p>No release-history entries are available.</p>"; return; }
+    var visibleEntries = window.CTASCatalogModel
+      ? window.CTASCatalogModel.releaseHistorySelection(entries, 6, 8)
+      : entries.slice(0, 6);
     el.releaseHistory.innerHTML = '<p class="ctas-claim-boundary">' + esc(history.claim_boundary || "Catalog changes are not scientific validation.") +
-      '</p><ol class="ctas-release-list">' + entries.slice(0, 6).map(function (entry) {
+      '</p><ol class="ctas-release-list">' + visibleEntries.map(function (entry) {
         var delta = (entry.added_count ? "+" + entry.added_count + " added" : "0 added") + " · " + entry.removed_count + " removed · " + entry.changed_count + " changed";
         return "<li><div><strong>" + esc(absolute(entry.published_at)) + "</strong><span>" + esc(delta) + "</span></div><p>" +
           esc(entry.summary) + "</p>" + (entry.evidence ? "<small>" + esc(entry.evidence) + "</small>" : "") +
@@ -876,6 +879,19 @@
     if (!match) return null;
     try { return decodeURIComponent(match[1]); } catch (_) { return null; }
   }
+  function revealFragment(hash) {
+    var fragment = String(hash || window.location.hash || "").replace(/^#/, "");
+    if (!fragment || fragment.indexOf("candidate=") === 0) return;
+    try { fragment = decodeURIComponent(fragment); } catch (_) { return; }
+    var target = document.getElementById(fragment);
+    if (!target) return;
+    if (target.tagName === "DETAILS") target.open = true;
+    var parent = target.parentElement && target.parentElement.closest("details");
+    while (parent) {
+      parent.open = true;
+      parent = parent.parentElement && parent.parentElement.closest("details");
+    }
+  }
   function openCandidate(summary, scroll) {
     if (!summary || !summary.detail_chunk) return;
     state.activeSummary = summary; state.activeDetail = null; setCandidateHash(summary.name);
@@ -943,6 +959,8 @@
       });
     });
     document.addEventListener("click", function (event) {
+      var fragmentLink = event.target.closest('a[href^="#"]');
+      if (fragmentLink) revealFragment(fragmentLink.getAttribute("href"));
       var open = event.target.closest("[data-open-candidate]");
       if (open) {
         var summary = state.candidates.find(function (candidate) { return candidate.name === open.getAttribute("data-open-candidate"); });
@@ -982,8 +1000,12 @@
       state.photBand[state.activeDetail.name] = event.target.value;
       var panel = el.workspace.querySelector("[data-phot-panel]"); if (panel) panel.outerHTML = renderPhotometry(state.activeDetail);
     });
-    window.addEventListener("hashchange", function () { if (candidateFromHash()) openHashCandidate(false); });
-    window.addEventListener("popstate", function () { if (candidateFromHash()) openHashCandidate(false); });
+    window.addEventListener("hashchange", function () {
+      if (candidateFromHash()) openHashCandidate(false); else revealFragment();
+    });
+    window.addEventListener("popstate", function () {
+      if (candidateFromHash()) openHashCandidate(false); else revealFragment();
+    });
   }
 
   function applySnapshot(index, status, universe, releaseHistory, cached) {
@@ -992,7 +1014,7 @@
     state.sourceUniverse = universe; state.releaseHistory = releaseHistory; state.cachedSnapshot = Boolean(cached);
     if (cached) state.status = Object.assign({}, state.status, {pipeline_status: "cached"});
     if (el.toolbar) el.toolbar.hidden = !state.candidates.length;
-    renderStatus(); renderOverview(); renderSourceUniverse(); renderReleaseHistory(); populateFilters(); renderTable(); drawSky(); openHashCandidate(false);
+    renderStatus(); renderOverview(); renderSourceUniverse(); renderReleaseHistory(); populateFilters(); renderTable(); drawSky(); openHashCandidate(false); revealFragment();
   }
   function showLoadError(error) {
     var cached = null;

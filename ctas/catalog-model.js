@@ -84,5 +84,28 @@
     });
   }
 
-  return { matchesPreset: matchesPreset, skyCandidates: skyCandidates, sexagesimal: sexagesimal };
+  function releaseHistorySelection(entries, recentLimit, totalLimit) {
+    var rows = Array.isArray(entries) ? entries : [];
+    var recent = Math.max(0, Number(recentLimit) || 0);
+    var total = Math.max(recent, Number(totalLimit) || recent);
+    var selected = rows.slice(0, recent), seen = {};
+    selected.forEach(function (entry) {
+      seen[String(entry.catalog_content_checksum_sha256 || entry.published_at || "")] = true;
+    });
+    rows.forEach(function (entry) {
+      var notable = Boolean(entry.evidence) || Number(entry.added_count || 0) + Number(entry.removed_count || 0) >= 50;
+      var key = String(entry.catalog_content_checksum_sha256 || entry.published_at || "");
+      if (notable && !seen[key] && selected.length < total) {
+        selected.push(entry); seen[key] = true;
+      }
+    });
+    return selected;
+  }
+
+  return {
+    matchesPreset: matchesPreset,
+    releaseHistorySelection: releaseHistorySelection,
+    skyCandidates: skyCandidates,
+    sexagesimal: sexagesimal
+  };
 }));

@@ -55,4 +55,16 @@ assert.strictEqual(model.sexagesimal(15, -0), "01:00:00.0 -00:00:00");
 assert.strictEqual(model.sexagesimal(20, -10), "01:20:00.0 -10:00:00");
 assert.strictEqual(model.sexagesimal(360, 0), "", "out-of-range ICRS coordinates are refused");
 
-console.log("catalog model: 19 assertions passed");
+const history = Array.from({length: 9}, (_, index) => ({
+  published_at: "2026-08-23T" + String(18 - index).padStart(2, "0") + ":00:00Z",
+  catalog_content_checksum_sha256: String(index).repeat(64),
+  added_count: 0,
+  removed_count: 0
+}));
+history[8] = Object.assign({}, history[8], {added_count: 81, evidence: "checksum-bound TNS batch"});
+const visibleHistory = model.releaseHistorySelection(history, 6, 8);
+assert.strictEqual(visibleHistory.length, 7);
+assert.strictEqual(visibleHistory[6].added_count, 81,
+  "a documented material intake remains visible after routine releases exceed the recent preview");
+
+console.log("catalog model: 21 assertions passed");
