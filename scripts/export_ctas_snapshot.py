@@ -1371,6 +1371,32 @@ def certificate_status(gates: list[dict[str, Any]]) -> str:
     return "certified-static-catalog" if gates and all(gate.get("passed") is True for gate in gates) else "not-certified"
 
 
+def semantic_catalog_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Return candidate content with polling-only source timestamps removed.
+
+    Source-query timestamps remain available in the public record, but they do
+    not describe a scientific or evidentiary change.  Excluding them from the
+    semantic checksum lets the two-minute watcher refresh operational metadata
+    without manufacturing a new catalog release.
+    """
+    semantic = json.loads(json.dumps(candidates))
+    for candidate in semantic:
+        for coverage in candidate.get("source_coverage", []):
+            coverage.pop("checked_at", None)
+            coverage.pop("next_eligible_at", None)
+    return semantic
+
+
+def catalog_semantic_checksum(candidates: list[dict[str, Any]]) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            semantic_catalog_candidates(candidates),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+
+
 def validate(payload: dict[str, Any]) -> list[str]:
     problems = []
     if payload.get("schema_version") != SCHEMA_VERSION:
@@ -1418,6 +1444,10 @@ def main() -> int:
     ap.add_argument("--output-dir", default="ctas/data")
     ap.add_argument("--limit", type=int, default=0,
                     help="optional development cap; 0 (default) exports the complete eligible catalog")
+    ap.add_argument(
+        "--release-base-ref", default="HEAD",
+        help="published Git ref used as the authoritative history and comparison base",
+    )
     ap.add_argument("--dry-run", action="store_true",
                     help="print a summary and sample; write nothing")
     args = ap.parse_args()
@@ -1700,9 +1730,7 @@ def main() -> int:
         )
     ]
     payload["surveys"] = counts["surveys"]
-    payload["catalog_content_checksum_sha256"] = hashlib.sha256(
-        json.dumps(candidates, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    payload["catalog_content_checksum_sha256"] = catalog_semantic_checksum(candidates)
 
     summary_fields = (
         "name", "event_type", "primary_messenger", "messenger_channels",
@@ -1865,20 +1893,29 @@ def main() -> int:
     candidates_raw = (body + "\n").encode()
     site_root = Path(__file__).resolve().parents[1]
     source_universe_raw = (json.dumps(source_universe, indent=2, sort_keys=True) + "\n").encode()
-    release_history_path = out / "release-history.json"
     try:
-        release_history = json.loads(release_history_path.read_text())
-    except (OSError, json.JSONDecodeError):
+        release_history_raw_from_ref = git_blob(
+            site_root, args.release_base_ref, "ctas/data/release-history.json"
+        )
+        release_history = json.loads(release_history_raw_from_ref) if release_history_raw_from_ref else None
+    except (TypeError, json.JSONDecodeError):
+        release_history = None
+    if not isinstance(release_history, dict):
         release_history = {"schema": RELEASE_HISTORY_SCHEMA, "entries": []}
     if release_history.get("schema") != RELEASE_HISTORY_SCHEMA or not isinstance(release_history.get("entries"), list):
         release_history = {"schema": RELEASE_HISTORY_SCHEMA, "entries": []}
 
-    previous_snapshot_raw = git_blob(site_root, "HEAD", "ctas/data/candidates.json")
+    previous_snapshot_raw = git_blob(
+        site_root, args.release_base_ref, "ctas/data/candidates.json"
+    )
     try:
         previous_snapshot = json.loads(previous_snapshot_raw) if previous_snapshot_raw else None
     except (TypeError, json.JSONDecodeError):
         previous_snapshot = None
-    previous_checksum = (previous_snapshot or {}).get("catalog_content_checksum_sha256")
+    previous_checksum = (
+        catalog_semantic_checksum(previous_snapshot.get("candidates", []))
+        if previous_snapshot else None
+    )
     if previous_snapshot and previous_checksum != payload["catalog_content_checksum_sha256"]:
         previous_by_name = {
             str(row.get("name")): row for row in previous_snapshot.get("candidates", []) if row.get("name")
@@ -1917,7 +1954,8 @@ def main() -> int:
             "summary": summary,
             "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
             "previous_catalog_content_checksum_sha256": previous_checksum,
-            "base_commit": git_ref(site_root, "HEAD"),
+            "base_commit": git_ref(site_root, args.release_base_ref),
+            "history_basis": "semantic-diff-from-public-git-base",
         }
         existing_checksums = {
             row.get("catalog_content_checksum_sha256") for row in release_history["entries"]
@@ -2177,13 +2215,21 @@ def main() -> int:
         or -30 <= float(candidate["discovery_magnitude"]) <= 40
         for candidate in candidates
     )
+    release_history_checksums = [
+        row.get("catalog_content_checksum_sha256") for row in release_history.get("entries", [])
+    ]
     release_history_integrity = (
         release_history.get("schema") == RELEASE_HISTORY_SCHEMA
         and isinstance(release_history.get("entries"), list)
+        and len(release_history_checksums) == len(set(release_history_checksums))
         and all(
             row.get("catalog_content_checksum_sha256")
             and isinstance(row.get("added_count"), int)
             and isinstance(row.get("removed_count"), int)
+            and row.get("history_basis") in {
+                "git-verified-public-candidate-count-transition",
+                "semantic-diff-from-public-git-base",
+            }
             for row in release_history["entries"]
         )
     )

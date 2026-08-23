@@ -197,6 +197,33 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertEqual(EXPORTER.certificate_status([{"passed": True}, {"passed": False}]), "not-certified")
         self.assertEqual(EXPORTER.certificate_status([]), "not-certified")
 
+    def test_semantic_catalog_checksum_ignores_source_poll_timestamps(self):
+        first = event(source_coverage=[{
+            "source_id": "tns", "disposition": "searched-no-match",
+            "checked_at": "2026-08-23T18:00:00Z",
+            "next_eligible_at": "2026-08-23T21:00:00Z",
+        }])
+        second = deepcopy(first)
+        second["source_coverage"][0]["checked_at"] = "2026-08-23T21:00:00Z"
+        second["source_coverage"][0]["next_eligible_at"] = "2026-08-24T00:00:00Z"
+        self.assertEqual(
+            EXPORTER.catalog_semantic_checksum([first]),
+            EXPORTER.catalog_semantic_checksum([second]),
+        )
+
+    def test_semantic_catalog_checksum_detects_evidence_changes(self):
+        first = event(source_coverage=[{
+            "source_id": "tns", "disposition": "searched-no-match",
+            "checked_at": "2026-08-23T18:00:00Z",
+        }])
+        second = deepcopy(first)
+        second["source_coverage"][0]["disposition"] = "searched-with-data"
+        second["source_coverage"][0]["retained_record_count"] = 1
+        self.assertNotEqual(
+            EXPORTER.catalog_semantic_checksum([first]),
+            EXPORTER.catalog_semantic_checksum([second]),
+        )
+
     def test_certificate_checksum_and_status_are_self_consistent(self):
         report = deepcopy(self.certificate)
         checksum = report.pop("report_checksum_sha256")
@@ -241,6 +268,9 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn('for bucket_index in {0..31}', publisher)
         self.assertIn('PUBLIC_FILES+=("ctas/data/candidate-chunks/$bucket.json")', publisher)
         self.assertIn('HEARTBEAT_INTERVAL="${CTAS_HEARTBEAT_INTERVAL:-900}"', publisher)
+        self.assertEqual(publisher.count('--release-base-ref origin/main'), 2)
+        self.assertIn('restore --source=HEAD --staged --worktree', publisher)
+        self.assertIn('restore --source=HEAD --worktree', publisher)
         self.assertIn('[ "$HEARTBEAT_INTERVAL" -ge 120 ]', publisher)
         self.assertIn('[ "$HEARTBEAT_INTERVAL" -le 900 ]', publisher)
         self.assertIn("publication_state_checksum_sha256", publisher)
@@ -276,6 +306,18 @@ class CertificateAndArtifactTests(unittest.TestCase):
                 names.add(candidate["name"])
         self.assertEqual(names, {row["name"] for row in self.snapshot["candidates"]})
         self.assertEqual(names, {row["name"] for row in self.index["candidates"]})
+
+    def test_release_history_is_unique_and_git_grounded(self):
+        history = json.loads((self.data_dir / "release-history.json").read_text())
+        checksums = [row["catalog_content_checksum_sha256"] for row in history["entries"]]
+        self.assertEqual(len(checksums), len(set(checksums)))
+        self.assertTrue(all(
+            row.get("history_basis") in {
+                "git-verified-public-candidate-count-transition",
+                "semantic-diff-from-public-git-base",
+            }
+            for row in history["entries"]
+        ))
 
     def test_published_magnitudes_and_names_are_safe_for_scientific_views(self):
         candidates = self.snapshot["candidates"]

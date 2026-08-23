@@ -50,6 +50,7 @@ LOG="$LOG_DIR/publish.log"
 STAMP="$LOG_DIR/.last-publish"
 LOCKDIR="$LOG_DIR/.lock.d"
 PUBLISH_DB=""
+SITE_READY=0
 
 DRY=0; FORCE=0
 for a in "$@"; do
@@ -88,16 +89,22 @@ if ! mkdir "$LOCKDIR" 2>/dev/null; then
   fi
 fi
 cleanup() {
+  status=$?
+  if [ "$status" -ne 0 ] && [ "$SITE_READY" -eq 1 ]; then
+    git -C "$SITE" restore --source=HEAD --staged --worktree -- "${PUBLIC_FILES[@]}" 2>/dev/null || true
+  fi
   if [ -n "$PUBLISH_DB" ] && [ -f "$PUBLISH_DB" ]; then
     rm -f -- "$PUBLISH_DB"
   fi
   rmdir "$LOCKDIR" 2>/dev/null
+  return "$status"
 }
 trap cleanup EXIT
 
 [ -d "$SITE" ] || die "website repo not found: $SITE"
 [ -f "$DB" ]   || die "CTAS database not found: $DB"
 cd "$SITE"     || die "cannot enter $SITE"
+SITE_READY=1
 
 # Freeze one transactionally consistent SQLite view for the whole release.
 # The live pipeline may continue writing to the canonical database while link
@@ -120,14 +127,16 @@ if [ "$FORCE" -eq 0 ] && [ "$MIN_INTERVAL" -gt 0 ] && [ -f "$STAMP" ]; then
 fi
 
 # ----------------------------------------------------------------- export
-python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data >>"$LOG" 2>&1 \
+python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
+  --release-base-ref origin/main >>"$LOG" 2>&1 \
   || die "export failed; nothing committed"
 python3 scripts/check_ctas_links.py --candidates ctas/data/candidates.json \
   --source-universe ctas/data/source-universe.json --output ctas/data/link-health.json >>"$LOG" 2>&1 \
   || die "public link validation failed; nothing committed"
 # Rebuild once so the certificate binds the current link-health artifact and
 # its catalog-content checksum. The exported scientific rows are deterministic.
-python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data >>"$LOG" 2>&1 \
+python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
+  --release-base-ref origin/main >>"$LOG" 2>&1 \
   || die "certificate rebuild failed; nothing committed"
 
 CERT_STATUS=$(python3 -c "import json;print(json.load(open('ctas/data/certification.json'))['status'])" 2>/dev/null || echo "unreadable")
@@ -135,9 +144,10 @@ CERT_STATUS=$(python3 -c "import json;print(json.load(open('ctas/data/certificat
   || die "static-catalog assurance is $CERT_STATUS; refusing publication"
 
 # ------------------------------------------------------------ changed at all?
-# publication_state_checksum_sha256 covers candidate content plus durable
-# source states/counts/limitations. Generated timestamps are intentionally not
-# part of it, so unchanged science does not become a new release every poll.
+# publication_state_checksum_sha256 covers semantic candidate content plus
+# durable source states/counts/limitations. Poll timestamps and generated
+# timestamps are intentionally excluded, so an unchanged source re-check does
+# not become a new release every two minutes.
 CURRENT_STATE=$(python3 -c "import json;print(json.load(open('ctas/data/status.json')).get('publication_state_checksum_sha256',''))" 2>/dev/null || echo "")
 [ -n "$CURRENT_STATE" ] || die "status.json has no publication-state checksum"
 CURRENT_CODE_BINDING=$(python3 -c '
@@ -204,6 +214,7 @@ COUNT=$(python3 -c "import json;print(json.load(open('ctas/data/candidates.json'
 
 if [ "$DRY" -eq 1 ]; then
   say "--dry-run: $COUNT candidates; would commit ${#PUBLIC_FILES[@]} allowlisted public CTAS artifacts and push to $BRANCH"
+  git restore --source=HEAD --worktree -- "${PUBLIC_FILES[@]}" 2>/dev/null || true
   exit 0
 fi
 
