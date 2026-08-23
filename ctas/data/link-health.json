@@ -1,11 +1,344 @@
 {
-  "canonical_tns_link_count": 2116,
-  "catalog_content_checksum_sha256": "3c9374912420d8568bedd7b6d93197a0a65b0a3af145e6741425d5079841a6fd",
-  "checked_at": "2026-08-23T17:05:05Z",
-  "checked_candidate_link_count": 2116,
-  "claim_boundary": "Structural validity is a publication gate. Temporary remote provider failure is degraded link health, not proof that a canonical link is broken.",
+  "audit_version": "2.0.0",
+  "canonical_tns_link_count": 4379,
+  "catalog_content_checksum_sha256": "7c200c74e596ef9dc7a1d3c8cac2254cdb8431401fb336abaf5975f1d0958de6",
+  "checked_at": "2026-08-23T17:54:51Z",
+  "checked_candidate_link_count": 22913,
+  "claim_boundary": "The recursive structural audit classifies every exported candidate/source URL and strictly validates canonical TNS object links. Only the listed TNS object page is sampled live; no live-health claim is made for unsampled providers. Suppressed URLs remain non-clickable provenance rather than structural failures.",
+  "distinct_canonical_tns_object_count": 2063,
+  "live_provider_samples": [
+    {
+      "candidate_name": "AT2026zke",
+      "checked_at": "2026-08-23T16:15:25Z",
+      "dec_deg": -19.735691,
+      "designation": "AT2026zke",
+      "http_status": 200,
+      "object_id": "2026zke",
+      "provider": "TNS",
+      "ra_deg": 12.430784,
+      "reason": "expected object identity appears on the resolved TNS page",
+      "resolved_url": "https://www.wis-tns.org/object/2026zke",
+      "state": "passed",
+      "url": "https://www.wis-tns.org/object/2026zke"
+    }
+  ],
   "live_status": "passed",
-  "report_checksum_sha256": "eb84da764ff81776c35a37ac63be5d2a617e3c6963a124fd8a3c5e3786f9ec25",
+  "live_status_scope": "sampled-provider-only",
+  "recursive_external_link_audit": {
+    "artifact_counts": {
+      "candidate-catalog": {
+        "https-allowlisted-renderable": 22864,
+        "suppressed-insecure": 49,
+        "url_occurrence_count": 22913
+      },
+      "source-universe": {
+        "https-allowlisted-renderable": 61,
+        "url_occurrence_count": 61
+      }
+    },
+    "audit_version": "2.0.0",
+    "checked_candidate_url_occurrence_count": 22913,
+    "checked_source_universe_url_occurrence_count": 61,
+    "distinct_url_count": 4388,
+    "host_occurrence_counts": {
+      "ampelproject.github.io": 2,
+      "antares.noirlab.edu": 2,
+      "api.fink-portal.org": 1,
+      "api.ztf.fink-portal.org": 2599,
+      "apps.aavso.org": 153,
+      "archive.eso.org": 308,
+      "archive.gemini.edu": 2,
+      "archive.stsci.edu": 155,
+      "asas-sn.osu.edu": 308,
+      "babamul.caltech.edu": 2,
+      "blackgem.org": 1,
+      "cgbm.calet.jp": 28,
+      "chime-experiment.ca": 1,
+      "doc.lsst.fink-broker.org": 702,
+      "docs.aavso.org": 308,
+      "ep.bao.ac.cn": 1,
+      "fallingstar-data.com": 308,
+      "gcn.gsfc.nasa.gov": 1451,
+      "gcn.nasa.gov": 3272,
+      "github.com": 308,
+      "goto-observatory.org": 1,
+      "heasarc.gsfc.nasa.gov": 308,
+      "irsa.ipac.caltech.edu": 794,
+      "lasair.readthedocs.io": 308,
+      "mast.stsci.edu": 153,
+      "maxi.riken.jp": 1,
+      "ned.ipac.caltech.edu": 2666,
+      "observ.pereplet.ru": 1,
+      "outerspace.stsci.edu": 1,
+      "pitt-broker.readthedocs.io": 2,
+      "roc-2.icecube.wisc.edu": 7,
+      "roc.icecube.wisc.edu": 45,
+      "rubinobservatory.org": 3,
+      "simbad.cds.unistra.fr": 570,
+      "tom-toolkit.readthedocs.io": 2,
+      "ui.adsabs.harvard.edu": 1,
+      "vizier.cds.unistra.fr": 88,
+      "wfst.bao.ac.cn": 1,
+      "www.aavso.org": 155,
+      "www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca": 2,
+      "www.cosmos.esa.int": 310,
+      "www.ivoa.net": 2,
+      "www.wis-tns.org": 7321,
+      "www.wiserep.org": 317,
+      "yse.ucsc.edu": 1,
+      "ztf.uw.edu": 2
+    },
+    "renderability_counts": {
+      "https-allowlisted-renderable": 22925,
+      "suppressed-insecure": 49
+    },
+    "role_counts": {
+      "artifact": 338,
+      "documentation": 7979,
+      "exact-object": 4533,
+      "exact-record": 2964,
+      "generic-reference": 4016,
+      "query": 3144
+    },
+    "role_definitions": {
+      "artifact": "A direct public data or document artifact URL.",
+      "documentation": "Provider documentation or source-description material.",
+      "exact-object": "A provider URL naming a particular astronomical object.",
+      "exact-record": "A provider URL naming a particular notice, circular, catalog row, or spectrum record.",
+      "generic-reference": "A provider landing page, API root, notice index, or other non-object-specific reference.",
+      "query": "A reproducible provider query; rerunning it may return current rather than frozen results."
+    },
+    "suppressed_sample": [
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-808892684",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_808892684.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-808830079",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_808830079.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-808341387",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_808341387.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-808341387",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_808341387.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-808341387",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_808341387.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-807899059",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_807899059.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-807850307",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_807850307.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-807850307",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_807850307.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-807850307",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_807850307.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-807505634",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_807505634.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-807505634",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_807505634.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-807505634",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_807505634.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-807470931",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_807470931.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-807470931",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_807470931.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-807353993",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_807353993.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-807353993",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_807353993.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-806906226",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_806906226.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-806815055",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_806815055.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-806802294",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_806802294.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-806418971",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_806418971.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-806592752",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_806592752.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-806592752",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_806592752.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-806592752",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_806592752.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-806384210",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_806384210.fits"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-806104130",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_806104130.fits"
+      }
+    ],
+    "suppression_policy": "Insecure, credential-bearing, explicit-port, malformed, and unallowlisted URLs remain provenance text but must not render as clickable public links.",
+    "url_occurrence_count": 22974
+  },
+  "report_checksum_sha256": "3aee39d511d763f701efc22533bb4700db2a4815df0bd8294c6d53f3cbeafc62",
   "representative_tns": {
     "candidate_name": "AT2026zke",
     "checked_at": "2026-08-23T16:15:25Z",
@@ -19,6 +352,7 @@
     "state": "passed",
     "url": "https://www.wis-tns.org/object/2026zke"
   },
+  "sampled_provider_live_status": "passed",
   "schema": "ctas.link-health@1.0.0",
   "structural_problem_count": 0,
   "structural_problems": [],
