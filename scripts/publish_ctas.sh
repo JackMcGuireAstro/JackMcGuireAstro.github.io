@@ -8,7 +8,7 @@
 #
 #   ./scripts/publish_ctas.sh              export; commit and push if changed
 #   ./scripts/publish_ctas.sh --dry-run    export and report; push nothing
-#   ./scripts/publish_ctas.sh --force      ignore the minimum-interval guard
+#   ./scripts/publish_ctas.sh --force      publish a checksum-bound refresh now
 #
 # It commits ONLY the explicit public-artifact allowlist below. Any other work
 # in progress is left untouched.
@@ -139,6 +139,12 @@ CERT_STATUS=$(python3 -c "import json;print(json.load(open('ctas/data/certificat
 # part of it, so unchanged science does not become a new release every poll.
 CURRENT_STATE=$(python3 -c "import json;print(json.load(open('ctas/data/status.json')).get('publication_state_checksum_sha256',''))" 2>/dev/null || echo "")
 [ -n "$CURRENT_STATE" ] || die "status.json has no publication-state checksum"
+CURRENT_CODE_BINDING=$(python3 -c '
+import hashlib, json, sys
+doc = json.load(open(sys.argv[1]))
+rows = {key: value.get("sha256") for key, value in doc.get("files", {}).items() if not key.startswith("ctas/data/")}
+print(hashlib.sha256(json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()).hexdigest())
+' ctas/data/certification.json 2>/dev/null || echo "")
 HEAD_META=$(git show HEAD:ctas/data/status.json 2>/dev/null | python3 -c '
 import datetime, json, sys
 doc = json.load(sys.stdin)
@@ -150,26 +156,42 @@ except (TypeError, ValueError):
     epoch = 0
 print("{}\t{}".format(doc.get("publication_state_checksum_sha256", ""), epoch))
 ' 2>/dev/null || true)
+HEAD_CODE_BINDING=$(git show HEAD:ctas/data/certification.json 2>/dev/null | python3 -c '
+import hashlib, json, sys
+doc = json.load(sys.stdin)
+rows = {key: value.get("sha256") for key, value in doc.get("files", {}).items() if not key.startswith("ctas/data/")}
+print(hashlib.sha256(json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()).hexdigest())
+' 2>/dev/null || echo "")
 HEAD_STATE=${HEAD_META%%$'\t'*}
 HEAD_PUBLISHED_EPOCH=${HEAD_META#*$'\t'}
 NOW_EPOCH=$(date +%s)
+CODE_BINDING_CHANGED=0
+[ -n "$CURRENT_CODE_BINDING" ] && [ "$CURRENT_CODE_BINDING" = "$HEAD_CODE_BINDING" ] \
+  || CODE_BINDING_CHANGED=1
 PENDING_CTAS_COMMIT=0
 if git log -1 --pretty=%s 2>/dev/null | grep -q '^CTAS data: ' \
    && ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
   PENDING_CTAS_COMMIT=1
 fi
 
-if [ "$CURRENT_STATE" = "$HEAD_STATE" ] && [ "$PENDING_CTAS_COMMIT" -eq 0 ]; then
+if [ "$CURRENT_STATE" = "$HEAD_STATE" ] && [ "$PENDING_CTAS_COMMIT" -eq 0 ] \
+   && [ "$CODE_BINDING_CHANGED" -eq 0 ]; then
   case "$HEAD_PUBLISHED_EPOCH" in
     ''|*[!0-9]*) HEARTBEAT_AGE=$HEARTBEAT_INTERVAL ;;
     *) HEARTBEAT_AGE=$((NOW_EPOCH - HEAD_PUBLISHED_EPOCH)) ;;
   esac
-  if [ "$HEARTBEAT_AGE" -ge 0 ] && [ "$HEARTBEAT_AGE" -lt "$HEARTBEAT_INTERVAL" ]; then
+  if [ "$FORCE" -eq 0 ] && [ "$HEARTBEAT_AGE" -ge 0 ] && [ "$HEARTBEAT_AGE" -lt "$HEARTBEAT_INTERVAL" ]; then
     say "publication state unchanged; next freshness heartbeat in $((HEARTBEAT_INTERVAL - HEARTBEAT_AGE))s"
     git checkout -- "${PUBLIC_FILES[@]}" 2>/dev/null || true
     exit 0
   fi
-  say "publication state unchanged; publishing the bounded freshness heartbeat"
+  if [ "$FORCE" -eq 1 ]; then
+    say "publication state unchanged; publishing the requested checksum-bound refresh"
+  else
+    say "publication state unchanged; publishing the bounded freshness heartbeat"
+  fi
+elif [ "$CODE_BINDING_CHANGED" -eq 1 ]; then
+  say "bound public code changed; publishing a matching certificate refresh"
 fi
 
 if git diff --quiet HEAD -- "${PUBLIC_FILES[@]}" 2>/dev/null; then

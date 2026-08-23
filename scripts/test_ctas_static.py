@@ -244,6 +244,10 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn('[ "$HEARTBEAT_INTERVAL" -ge 120 ]', publisher)
         self.assertIn('[ "$HEARTBEAT_INTERVAL" -le 900 ]', publisher)
         self.assertIn("publication_state_checksum_sha256", publisher)
+        self.assertIn("CURRENT_CODE_BINDING", publisher)
+        self.assertIn("HEAD_CODE_BINDING", publisher)
+        self.assertIn("CODE_BINDING_CHANGED", publisher)
+        self.assertIn('if [ "$FORCE" -eq 0 ] && [ "$HEARTBEAT_AGE"', publisher)
         self.assertNotIn("git diff --quiet HEAD -- ctas/data/candidates.json", publisher)
 
     def test_compact_index_and_all_detail_shards_are_checksum_bound(self):
