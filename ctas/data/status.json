@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "73c23bd0103400cfe627247e6be9a07e1eebc47635e0b6b9351dff1bfe25a632"
+      "sha256": "4590be14fae01fd3f78493a2d55b03cbf478fa70dd1e796bf6a1e0023ac761f1"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "c65965cbb381b0003047d9e1a0db2c63ff2b566158928d38951764e00d5e9b2b"
+      "sha256": "c049f0f98a29a2eb82cfab76a6a081ddf922231d969ff097fc77d2f748290f47"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "d2cde8b26932a5afead52b23549b45f5e1e6d211f719844b166cc962814a0092"
+      "sha256": "8bdf41d9f61ed10ed0a626fe3923fbb3921de21fe6110d7cb3e0b521c1bb54b6"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "09bb227985019c6d89cd768667d0b52c75f00d3899714558cf3b627d1db6fb5c"
+      "report_checksum_sha256": "6cb51ab123ad675f6671cf70dd1a64b4691b87a1f7d7b522e33e25efa20c8050"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "5ab4f37a9e796480ebbcb81ae02ec5faa45ccc1ac2df7f09fae56536b10e50e6"
+      "sha256": "abf4654399aed1a6c8a2c81e0133f62812c004d636863c87f57adc8809fbd8b1"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "f3b820c9584629967e7fc817f08fb938c90ba09c838f98578e214491ba4e7954"
+      "sha256": "63343f86f29ac944093445e6788fd2bfe7b3252b6b423790cf607ef6d895e734"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "2e8439cdc56ff6016ca9ab3d1c3d356d78ccad642e0d1739c6a0351231996a20"
+      "sha256": "76e0e94e29af331f2f1f67110332eaddc7e84f1300bbaf26f8db21dcd6a08c32"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2752,
-  "catalog_content_checksum_sha256": "0d9ba3fe91b32e151ed1300b99c41643a2917ee175c1ab5e12d72853299df6c9",
-  "degraded_source_count": 7,
-  "export_checked_at": "2026-08-24T00:03:53Z",
-  "last_successful_update": "2026-08-24T00:03:53Z",
-  "latest_record_update": "2026-08-24T00:02:01Z",
+  "catalog_content_checksum_sha256": "d4c7ebecb4b100b1d2f1c5d8b70384604fd8bbdbe6991ba96a6518e4d2d26652",
+  "degraded_source_count": 5,
+  "export_checked_at": "2026-08-24T00:06:21Z",
+  "last_successful_update": "2026-08-24T00:06:21Z",
+  "latest_record_update": "2026-08-24T00:06:03Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "89d4cdf80cdb5d7dcfeb596cc1c8a36f0109ef8e2c275b2678012638d9c61338",
+  "publication_state_checksum_sha256": "adfa38f43ddbbd92fed392343b835d39acc717476785dd64e292a59e3ce539c7",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "aeb77647a8f48374834a36b8f5b7669615199fb8ac7a0d4865beee2a7457b297",
+    "artifact_checksum_sha256": "368809d66f4a76a4bba13e8bd6aa29f96f23be45f8040e849d7434bf4b726c5d",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 73
   },
@@ -244,7 +244,7 @@
       "public_scope": "ATLAS explicitly provides full public access to forced photometry after registration",
       "rate_or_cadence_limit": "Provider throttling; no bulk requests without contacting ATLAS",
       "record_counts": {
-        "observations": 536
+        "observations": 655
       },
       "source": "atlas",
       "state": "disabled"
@@ -827,8 +827,8 @@
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 1.847903,
-      "last_message_at": "2026-08-23T23:13:35Z",
+      "lag_seconds": 2.503014,
+      "last_message_at": "2026-08-24T00:03:41Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -960,8 +960,8 @@
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 1.847903,
-      "last_message_at": "2026-08-23T23:13:35Z",
+      "lag_seconds": 2.503014,
+      "last_message_at": "2026-08-24T00:03:41Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -1382,11 +1382,11 @@
     }
   ],
   "static_catalog_assurance": {
-    "content_release_id": "df24fef95307d6afed43539fd1f8e9d40591d9653366d7a196eb2d6c566b40a5",
-    "report_checksum_sha256": "09bb227985019c6d89cd768667d0b52c75f00d3899714558cf3b627d1db6fb5c",
+    "content_release_id": "5b8e2d3e129f705408ecafac52182557c3abb2cb239567bc62e63948f7c16450",
+    "report_checksum_sha256": "6cb51ab123ad675f6671cf70dd1a64b4691b87a1f7d7b522e33e25efa20c8050",
     "schema": "ctas.static-catalog-certification@2.0.0",
     "status": "certified-static-catalog",
-    "valid_until": "2026-08-24T00:33:53Z"
+    "valid_until": "2026-08-24T00:36:21Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1419,12 +1419,12 @@
       "radio": 42,
       "x-ray": 34
     },
-    "observations": 3228,
+    "observations": 3347,
     "priority_bands": {
-      "high_50_74": 2328,
+      "high_50_74": 2329,
       "low_0_24": 15,
-      "routine_25_49": 195,
-      "urgent_75_100": 214
+      "routine_25_49": 196,
+      "urgent_75_100": 212
     },
     "public_candidates": 2752,
     "publications": 837,
@@ -1562,5 +1562,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-24T00:33:53Z"
+  "valid_until": "2026-08-24T00:36:21Z"
 }
