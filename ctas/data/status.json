@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "1388badc153c470cdc9458b0bab7b4c21ac19511321a8640e93f818fe8f52ed3"
+      "sha256": "6c0b2d6c14288ca797c5a383657335eef3d120f881317df76245c8a8f8803bf6"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "5c26e5d63435408e27399fbcdd45023a8459a7f36128c9f19ba2d2641d36d0e4"
+      "sha256": "9a200c935bc6598b8329e3573b1a21fc63bfe49dfac3250be4d0ab63178dec27"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "1455fda95a97abfa228cdd000381a533e462948888140818a99f1badfdca81a1"
+      "sha256": "190512a24c09a13cb72f4a498ef9d257e39b6fe0595d0d8bbf632f865c901a2d"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "c77f32a562d7f816d53694c485804de931845418b205ca1866be88ea25e606e9"
+      "report_checksum_sha256": "ef8d1d526027355779f99fa5bb0eb1704466cfa6fcc747c3e5ebdaf283a7d72f"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "18208cf57f8177aa922c3f9386dce2800879104d2a1a4980f4f78a82a9c63458"
+      "sha256": "4da9776d31c330916b8bd5af19863697a4d91b7cdd303104a8fe714492395539"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "dd76474299b4afb8be7884da03f12c9df2bf10846c9acc8e06302f7b0df48617"
+      "sha256": "60b586411dde6523bc8e0fa288180b9a69500323183dd15e9ef97ab1cef1ecb9"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "a0feb3d514e0ee96ee57c28aa0ba1be2acb8cf99c0b8ddc580a961ea19e5559e"
+      "sha256": "aaa7afe301f8d96d33596f78ccab74af45a35324f39f0c796b1eade78f60fce0"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2763,
-  "catalog_content_checksum_sha256": "5d96f51684b91a72b391df793002b4cd5071cd066fc5589b63ecda76b53d7238",
-  "degraded_source_count": 5,
-  "export_checked_at": "2026-08-24T05:04:17Z",
-  "last_successful_update": "2026-08-24T05:04:17Z",
+  "catalog_content_checksum_sha256": "c0819b9fb590f8f18599d7203e6814b1198ee7f12ada76ac036061cf779e41be",
+  "degraded_source_count": 8,
+  "export_checked_at": "2026-08-24T06:00:39Z",
+  "last_successful_update": "2026-08-24T06:00:39Z",
   "latest_record_update": "2026-08-24T05:03:42Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "d79d12bf4a2af3f67d9cefdfc2a0149ff3b7886c2af83128642967bcd1d6038f",
+  "publication_state_checksum_sha256": "abd45b543dbcbd5b8f00718bde4e7002583cf045d08918d11ba5ba3583670b7a",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "a71fae080edc7ec75513fc48adf63660bd5b2b561a847d90dc22600a4055d08a",
+    "artifact_checksum_sha256": "2cc14411ebfc2fa5c85ab3c75e92c0bc6f003e073d16416e841cbe58d31817d4",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 74
   },
@@ -827,8 +827,8 @@
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 2.079365,
-      "last_message_at": "2026-08-24T05:03:40Z",
+      "lag_seconds": 2746.946746,
+      "last_message_at": "2026-08-24T05:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -934,8 +934,8 @@
       "enabled": true,
       "facility": "NASA GCN worldwide author community",
       "label": "NASA GCN Circulars",
-      "lag_seconds": 2.754712,
-      "last_message_at": "2026-08-23T22:49:28Z",
+      "lag_seconds": 2415.669865,
+      "last_message_at": "2026-08-24T05:19:05Z",
       "last_verified": "2026-08-04",
       "mode": "live-and-archive",
       "proprietary_risk": "Circular prose is retained as an attributed author report; values are not promoted to machine measurements without a mission-specific parser",
@@ -943,7 +943,7 @@
       "public_scope": "Released GCN Circular author text, metadata, corrections, and provider-hosted links are publicly distributed",
       "rate_or_cadence_limit": "Persistent Kafka consumer; revisions are checksum-addressed and linked URLs are not bulk-downloaded",
       "record_counts": {
-        "publications": 662
+        "publications": 663
       },
       "source": "gcn-circulars",
       "state": "connected"
@@ -962,8 +962,8 @@
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 2.079365,
-      "last_message_at": "2026-08-24T05:03:40Z",
+      "lag_seconds": 2746.946746,
+      "last_message_at": "2026-08-24T05:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -1261,7 +1261,7 @@
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 179761.417837,
+      "lag_seconds": 184167.312275,
       "last_message_at": "2026-08-22T02:49:50Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1384,11 +1384,11 @@
     }
   ],
   "static_catalog_assurance": {
-    "content_release_id": "a6b82925000a30565d934779bca908e2d23f330ac1c22772bcba217f50cc4f17",
-    "report_checksum_sha256": "c77f32a562d7f816d53694c485804de931845418b205ca1866be88ea25e606e9",
+    "content_release_id": "3b5265711ece5bd47177ab79bdf9d75ac24eb94a5d03e15e6777e8fc4b634ed1",
+    "report_checksum_sha256": "ef8d1d526027355779f99fa5bb0eb1704466cfa6fcc747c3e5ebdaf283a7d72f",
     "schema": "ctas.static-catalog-certification@2.0.0",
     "status": "certified-static-catalog",
-    "valid_until": "2026-08-24T05:34:17Z"
+    "valid_until": "2026-08-24T06:30:39Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1429,7 +1429,7 @@
       "urgent_75_100": 206
     },
     "public_candidates": 2763,
-    "publications": 846,
+    "publications": 847,
     "quality_quarantined_records": 1,
     "real_events": 2765,
     "spectra": 13
@@ -1568,5 +1568,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-24T05:34:17Z"
+  "valid_until": "2026-08-24T06:30:39Z"
 }
