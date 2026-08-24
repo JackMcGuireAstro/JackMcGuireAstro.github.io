@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "e89b8f7ad3a369adea9036a011ccccf547460e41ee9731be07a12fbfb2e9ae70"
+      "sha256": "2e233324af384030816f5aa0bbaee5f155b203f7e6581177f8cfd9fc967bcae5"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "a3427ea3b0747f2f7db1c14712da8d885831cb1c9a30732a2646a3b42d8ebdba"
+      "sha256": "50d638e7eb573c10cd84328b46012e5f52422f29d37b8aa967247ecf5cf16fbc"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "527806da8994f0458fc23d50b0b15e9a8c3b5ab0c17fceb464287b8f0a41ef4c"
+      "sha256": "163b6b247b27b1056fc46a34469de83b5148e5fa75bfa9ebf46983195e1f7c79"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "f841c4d2400650b50d47397cf5b4cca0ddc3790c143abe9bf39b2b562a48bbf2"
+      "report_checksum_sha256": "3d5c4aa22988cc9ac4db8f8ef50671b932025b45968a4edcd51e0f87296727c2"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "cac3a33ca9f104eb0e74213917bcc48f2da2698daf4da0841690d25f5c0fb421"
+      "sha256": "126520ec0ac7e8eaa55e611c7b66076850d3d0c98c32ea0fb01a130d80e9e978"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "2516e9edf25887de82cf698696a323afb168a8aa5b20f79453d197a9cef40a2f"
+      "sha256": "58465a813d2dca2b176115eade2e6723df4619485e0d059f3334167738272d5c"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "0434397b154821ad32b00de043c77b2ec00947bffd47aae20ad5a2f91b054924"
+      "sha256": "2f5aed465ff294025134b9da5e0ed835dc79f8fd5c4930ed088daeb05d2b2e83"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2820,
-  "catalog_content_checksum_sha256": "ba4c26892a09e5ab42e3f2cdfe36ce66fa8213553b6a8dba9cad9a703eb0a006",
-  "degraded_source_count": 4,
-  "export_checked_at": "2026-08-24T23:00:23Z",
-  "last_successful_update": "2026-08-24T23:00:23Z",
+  "catalog_content_checksum_sha256": "56ddc0b21b160d5014eca6392d9fb11c281f12de057e667fe79712dae97970fa",
+  "degraded_source_count": 16,
+  "export_checked_at": "2026-08-24T23:20:07Z",
+  "last_successful_update": "2026-08-24T23:20:07Z",
   "latest_record_update": "2026-08-24T22:18:16Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "7b12962fd6e2cad50789b371d0bc64dfcb4875f8a17553f0ba3dec52a4ed23c0",
+  "publication_state_checksum_sha256": "63e2374688579bdc87b59d3a9e82ea1a0a00b4d399c58db6a4a81ede95dea70b",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "0c74c55ed14c0471825f15be98d8ef2ad14f8a388e0a3671eacf361ba16fa281",
+    "artifact_checksum_sha256": "3e7643a04126f76c666c2aad2e9bcea913e1f6f52789b26fbc97af047093bf7b",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 75
   },
@@ -450,7 +450,7 @@
         "upper limit",
         "science/template/difference cutout"
       ],
-      "detail": "anonymous real-time Rubin/Fink REST polling active \u00b7 0 unique public alerts in bounded lookback",
+      "detail": "ConnectError: [Errno 8] nodename nor servname provided, or not known",
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "enabled": true,
       "facility": "Rubin community broker",
@@ -467,7 +467,7 @@
         "observations": 2500
       },
       "source": "rubin-fink",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "implemented-public-positional-candidates-on-demand",
@@ -684,7 +684,7 @@
         "classification",
         "public-object metadata"
       ],
-      "detail": "processed 0 public rows \u00b7 2026-08-23 22:00:00 - 23:00:00",
+      "detail": "ConnectError: [Errno 8] nodename nor servname provided, or not known",
       "documentation_url": "https://www.wis-tns.org/content/tns-getting-started",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
@@ -702,7 +702,7 @@
         "designations": 2195
       },
       "source": "tns",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "generic-import-supported",
@@ -822,7 +822,7 @@
         "classification",
         "retraction"
       ],
-      "detail": "via NASA GCN: igwn.gwalert",
+      "detail": "NASA GCN subscriptions active: igwn.gwalert",
       "documentation_url": "https://gcn.nasa.gov/missions/lvk",
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
@@ -929,7 +929,7 @@
         "upper limit",
         "observing plan"
       ],
-      "detail": "via NASA GCN: gcn.circulars",
+      "detail": "NASA GCN subscriptions active: gcn.circulars",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA GCN worldwide author community",
@@ -957,7 +957,7 @@
         "follow-up report",
         "retraction"
       ],
-      "detail": "igwn.gwalert",
+      "detail": "gcn.circulars, igwn.gwalert, gcn.notices.icecube.gold_bronze_track_alerts, gcn.notices.icecube.lvk_nu_track_search, gcn.classic.text.SNEWS, gcn.notices.swift.bat.guano, gcn.notices.einstein_probe.wxt.alert, gcn.notices.maxi.gsc.known, gcn.notices.maxi.gsc.unknown, gcn.notices.boom.alert, gcn.notices.chime.frb, gcn.classic.text.FERMI_GBM_ALERT, gcn.classic.text.FERMI_GBM_FLT_POS, gcn.classic.text.FERMI_GBM_GND_POS, gcn.classic.text.FERMI_GBM_FIN_POS, gcn.classic.text.FERMI_GBM_SUBTHRESH, gcn.classic.text.FERMI_LAT_POS_UPD, gcn.classic.text.FERMI_LAT_OFFLINE, gcn.classic.text.FERMI_LAT_MONITOR, gcn.classic.text.SWIFT_BAT_QL_POS, gcn.classic.text.SWIFT_BAT_GRB_POS_ACK, gcn.classic.text.SWIFT_XRT_POSITION, gcn.classic.text.SWIFT_XRT_CENTROID, gcn.classic.text.SWIFT_UVOT_POS, gcn.classic.text.SWIFT_UVOT_POS_NACK, gcn.classic.text.GECAM_FLT, gcn.classic.text.GECAM_GND, gcn.classic.text.CALET_GBM_FLT_LC, gcn.classic.text.HAWC_BURST_MONITOR, gcn.classic.text.KONUS_LC, gcn.classic.text.AMON_NU_EM_COINC, gcn.classic.text.ICECUBE_CASCADE",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA Goddard",
@@ -1256,7 +1256,7 @@
         "classification",
         "follow-up photometry table"
       ],
-      "detail": "Checked 9 released public records before the provider rate limit; retained public data remain available.",
+      "detail": "ConnectError: [Errno 8] nodename nor servname provided, or not known",
       "documentation_url": "https://www.wis-tns.org/astronotes",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
@@ -1384,11 +1384,11 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "bdc30e04d42c017299a5a023a86b73586ea823cac5fec4136cc944adb1b8164b",
-    "report_checksum_sha256": "f841c4d2400650b50d47397cf5b4cca0ddc3790c143abe9bf39b2b562a48bbf2",
+    "content_release_id": "7cbd3f84a159b73f4d83dbcf527dc79b7fa4e27e0ae6692d3dafbbf9c682d8eb",
+    "report_checksum_sha256": "3d5c4aa22988cc9ac4db8f8ef50671b932025b45968a4edcd51e0f87296727c2",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-24T23:30:23Z"
+    "valid_until": "2026-08-24T23:50:07Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1572,5 +1572,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-24T23:30:23Z"
+  "valid_until": "2026-08-24T23:50:07Z"
 }
