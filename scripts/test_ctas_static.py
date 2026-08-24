@@ -193,9 +193,9 @@ class CertificateAndArtifactTests(unittest.TestCase):
         cls.certificate = json.loads((cls.data_dir / "certification.json").read_text())
 
     def test_certificate_pass_and_failure_logic(self):
-        self.assertEqual(EXPORTER.certificate_status([{"passed": True}]), "certified-static-catalog")
-        self.assertEqual(EXPORTER.certificate_status([{"passed": True}, {"passed": False}]), "not-certified")
-        self.assertEqual(EXPORTER.certificate_status([]), "not-certified")
+        self.assertEqual(EXPORTER.certificate_status([{"passed": True}]), "verified-static-snapshot")
+        self.assertEqual(EXPORTER.certificate_status([{"passed": True}, {"passed": False}]), "verification-failed")
+        self.assertEqual(EXPORTER.certificate_status([]), "verification-failed")
 
     def test_semantic_catalog_checksum_ignores_source_poll_timestamps(self):
         first = event(source_coverage=[{
@@ -233,6 +233,16 @@ class CertificateAndArtifactTests(unittest.TestCase):
             self.certificate["status"],
             EXPORTER.certificate_status(self.certificate["gates"]),
         )
+
+    def test_public_copy_calls_it_snapshot_verification_not_certification(self):
+        html = (ROOT / "ctas.html").read_text()
+        app = (ROOT / "ctas/app.js").read_text()
+        self.assertIn("Automated snapshot checks", html)
+        self.assertIn("not scientific certification or human peer review", html)
+        self.assertIn('statusCell("Snapshot integrity"', app)
+        self.assertIn('stale ? "Publisher paused"', app)
+        self.assertNotIn("Certified Static Catalog", html + app)
+        self.assertNotIn("Static release assurance", html + app)
 
     def test_follow_up_counts_reproduce_arrays(self):
         for candidate in self.snapshot["candidates"]:

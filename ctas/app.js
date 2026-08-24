@@ -539,14 +539,17 @@
     var generated = status.last_successful_update || snapshot.generated_at;
     var degraded = status.pipeline_status === "degraded";
     var cached = status.pipeline_status === "cached";
-    var assurance = status.static_catalog_assurance || {};
-    el.status.classList.toggle("is-degraded", degraded || cached);
-    el.status.innerHTML = statusCell("Pipeline", cached ? "Cached snapshot" : "Operational",
-      cached ? "A live refresh failed; the last successfully loaded public snapshot remains usable" : degraded ? "Catalog and automatic updates are active; individual source availability is reported below" : "Catalog and automatic updates are active") +
+    var validUntilMs = status.valid_until ? new Date(status.valid_until).getTime() : NaN;
+    var stale = Number.isFinite(validUntilMs) && Date.now() > validUntilMs;
+    var assurance = status.static_snapshot_verification || status.static_catalog_assurance || {};
+    var snapshotVerified = assurance.status === "verified-static-snapshot" || assurance.status === "certified-static-catalog";
+    el.status.classList.toggle("is-degraded", degraded || cached || stale);
+    el.status.innerHTML = statusCell("Pipeline", cached ? "Cached snapshot" : stale ? "Publisher paused" : "Operational",
+      cached ? "A live refresh failed; the last successfully loaded public snapshot remains usable" : stale ? "The last public snapshot remains usable, but the publishing terminal has not completed a current refresh" : degraded ? "Catalog and automatic updates are active; individual source availability is reported below" : "Catalog and automatic updates are active") +
       statusCell("Last successful public snapshot", esc(relative(generated) || "unavailable"), esc(absolute(generated))) +
       statusCell("Public candidates", Number(status.candidate_count || snapshot.candidate_count || state.candidates.length).toLocaleString(),
         "Positional catalog entries; not all are confirmed discoveries") +
-      statusCell("Static release assurance", esc(humanKey(assurance.status || "pending")), assurance.content_release_id ? "Release " + esc(shortHash(assurance.content_release_id)) + "…" : "Checksum report available below") +
+      statusCell("Snapshot integrity", snapshotVerified ? "Verified" : esc(humanKey(assurance.status || "pending")), assurance.content_release_id ? "Checksums and public-file consistency · Snapshot " + esc(shortHash(assurance.content_release_id)) + "…" : "Checksum report available below") +
       statusCell("Publication cadence", "2-minute change check", "Runs while the publishing host is awake and online; unchanged snapshots receive a periodic freshness heartbeat");
   }
 

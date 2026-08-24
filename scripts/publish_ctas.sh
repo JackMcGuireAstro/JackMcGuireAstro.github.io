@@ -42,7 +42,7 @@ MIN_INTERVAL="${CTAS_MIN_INTERVAL:-0}"
 # The watcher still checks every two minutes. When neither candidate content nor
 # durable source state changed, publish only a bounded freshness heartbeat.
 # This avoids a meaningless 23 MB catalog commit every poll while keeping the
-# public certificate comfortably inside its 30-minute verification window.
+# public snapshot report comfortably inside its 30-minute verification window.
 HEARTBEAT_INTERVAL="${CTAS_HEARTBEAT_INTERVAL:-900}"
 
 LOG_DIR="${CTAS_LOG_DIR:-$HOME/Library/Logs/ctas-mirror}"
@@ -74,6 +74,8 @@ esac
   || die "CTAS_HEARTBEAT_INTERVAL must stay between 120 and 900 seconds"
 
 export GIT_TERMINAL_PROMPT=0        # never hang waiting for a credential
+: "${GIT_SSH_COMMAND:=ssh -o BatchMode=yes -o ConnectTimeout=15 -o ConnectionAttempts=2 -o ServerAliveInterval=10 -o ServerAliveCountMax=2}"
+export GIT_SSH_COMMAND
 
 # ------------------------------------------------------------- single run
 # macOS has no flock(1), so use an atomic mkdir. A lock older than 30 minutes
@@ -133,15 +135,15 @@ python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ct
 python3 scripts/check_ctas_links.py --candidates ctas/data/candidates.json \
   --source-universe ctas/data/source-universe.json --output ctas/data/link-health.json >>"$LOG" 2>&1 \
   || die "public link validation failed; nothing committed"
-# Rebuild once so the certificate binds the current link-health artifact and
+# Rebuild once so the verification report binds the current link-health artifact and
 # its catalog-content checksum. The exported scientific rows are deterministic.
 python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
   --release-base-ref origin/main >>"$LOG" 2>&1 \
-  || die "certificate rebuild failed; nothing committed"
+  || die "verification-report rebuild failed; nothing committed"
 
 CERT_STATUS=$(python3 -c "import json;print(json.load(open('ctas/data/certification.json'))['status'])" 2>/dev/null || echo "unreadable")
-[ "$CERT_STATUS" = "certified-static-catalog" ] \
-  || die "static-catalog assurance is $CERT_STATUS; refusing publication"
+[ "$CERT_STATUS" = "verified-static-snapshot" ] \
+  || die "static-snapshot verification is $CERT_STATUS; refusing publication"
 
 # ------------------------------------------------------------ changed at all?
 # publication_state_checksum_sha256 covers semantic candidate content plus
@@ -202,7 +204,7 @@ if [ "$CURRENT_STATE" = "$HEAD_STATE" ] && [ "$PENDING_CTAS_COMMIT" -eq 0 ] \
     say "publication state unchanged; publishing the bounded freshness heartbeat"
   fi
 elif [ "$CODE_BINDING_CHANGED" -eq 1 ]; then
-  say "bound public code changed; publishing a matching certificate refresh"
+  say "bound public code changed; publishing a matching snapshot-verification refresh"
 fi
 
 if git diff --quiet HEAD -- "${PUBLIC_FILES[@]}" 2>/dev/null; then
@@ -253,7 +255,13 @@ git commit -q $AMEND -m "CTAS data: $COUNT candidates ($(date -u '+%Y-%m-%d %H:%
 SHA=$(git rev-parse --short HEAD)
 
 PUSH_ERR=$(git push origin "$BRANCH" 2>&1)
-if [ $? -eq 0 ]; then
+PUSH_STATUS=$?
+if [ "$PUSH_STATUS" -ne 0 ]; then
+  say "first push attempt failed; retrying once with bounded SSH timeouts"
+  PUSH_ERR=$(git push origin "$BRANCH" 2>&1)
+  PUSH_STATUS=$?
+fi
+if [ "$PUSH_STATUS" -eq 0 ]; then
   date +%s >"$STAMP"
   say "published $SHA  ($COUNT candidates)"
 else

@@ -1308,7 +1308,7 @@ BANNED_KEYS = {"id", "simulation", "priority_factors", "created_at",
 RECURSIVE_BANNED_KEYS = BANNED_KEYS - {"id"}  # public schema component IDs are intentional
 BANNED_TEXT = ("/Users/", ".codex", "BEGIN PRIVATE KEY", "BEGIN OPENSSH PRIVATE KEY")
 CERTIFICATE_CLAIM = (
-    "Automated static-catalog assurance; not peer review, scientific truth, "
+    "Automated checksum and structural verification of one static snapshot; not peer review, scientific truth, "
     "classification validation, discovery authority, or a managed-service deployment claim."
 )
 
@@ -1368,7 +1368,7 @@ def atomic_write(path: Path, raw: bytes) -> None:
 
 
 def certificate_status(gates: list[dict[str, Any]]) -> str:
-    return "certified-static-catalog" if gates and all(gate.get("passed") is True for gate in gates) else "not-certified"
+    return "verified-static-snapshot" if gates and all(gate.get("passed") is True for gate in gates) else "verification-failed"
 
 
 def semantic_catalog_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -2273,7 +2273,7 @@ def main() -> int:
         b"".join(name.encode() + b"\0" + raw for name, raw in sorted(bound_files.items()))
     ).hexdigest()
     certificate = {
-        "schema": "ctas.static-catalog-certification@2.0.0",
+        "schema": "ctas.static-snapshot-verification@1.0.0",
         "generated_at": payload["generated_at"],
         "valid_until": payload["valid_until"],
         "architecture": "local-python-to-static-github-pages",
@@ -2293,7 +2293,7 @@ def main() -> int:
     }
     canonical = (json.dumps(certificate, sort_keys=True, separators=(",", ":")) + "\n").encode()
     certificate["report_checksum_sha256"] = hashlib.sha256(canonical).hexdigest()
-    status["static_catalog_assurance"] = {
+    status["static_snapshot_verification"] = {
         "status": certificate["status"],
         "schema": certificate["schema"],
         "report_checksum_sha256": certificate["report_checksum_sha256"],
@@ -2322,8 +2322,8 @@ def main() -> int:
     atomic_write(out / "source-universe.json", source_universe_raw)
     atomic_write(out / "release-history.json", release_history_raw)
     atomic_write(out / "certification.json", certificate_raw)
-    print(f"\nwrote compact index, {len(chunk_raw)} lazy detail chunks, full download, status, source universe, history, and certificate")
-    print(f"static assurance: {certificate['status']} ({sum(g['passed'] for g in gates)}/{len(gates)} gates)")
+    print(f"\nwrote compact index, {len(chunk_raw)} lazy detail chunks, full download, status, source universe, history, and verification report")
+    print(f"snapshot verification: {certificate['status']} ({sum(g['passed'] for g in gates)}/{len(gates)} checks)")
     return 0
 
 
