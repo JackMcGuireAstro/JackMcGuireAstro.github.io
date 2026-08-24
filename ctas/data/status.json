@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "aca3a2bbb1e52565d1960fc1b540fae9e131def488b655aab78d1abeddb9edc4"
+      "sha256": "070e3011884762940eca70a47970fc3832cc12af647765c20b553c1e5e4dc23e"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "1785371daf28c20380c92d585707c48f8d81a9057fc09e9cdf3969d3459f36d3"
+      "sha256": "60834c4eddbe462916a698eec74cf7cd596cb6c78a69d4d06f7b7b20ec193dca"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "372aee163eaab2bafbac17438fc7bbd068936db3a33c7996a2276a0e61abd130"
+      "sha256": "f4f19d67b4ea40411b13dffa0b27d3dae2a6b02e8f18b793b5139d1563eb7a91"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "9b6d73f6746cc47498ce7cd2af17e6f80929b7c3ef7d4f9155c9d9f5fe0249bb"
+      "report_checksum_sha256": "c4ff712447eda5a9800dd300ff703f2ede5ea5527e6bae04dc889da23cc53f1f"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "f0a92a244e6d4c4ad18424b9a9d2ad81a22929efa92f064e9a4d97fce4690cf2"
+      "sha256": "c72f4f18a63937a4015db88ca137e773d7dcf032bcb60fa3628ee07c9929d1d9"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "7cef09827b8e689fd581c9c9ac5bde0bea03cba36ce7daa77fca31b1f63c878d"
+      "sha256": "be5363d7164d5b549f8163715ecacacfcc84e02a3c4fbaa7a3e8a12c8c054dbb"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "e08ba7058e16761f4022d2a1dec56abe6e427eb9b2dec37a85f35dc724737ac9"
+      "sha256": "6bf882098642f42c6f3c8808e3c1d443216ce35833d09735449148e2782994af"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2820,
-  "catalog_content_checksum_sha256": "2434b6429b4fabf4e8c85d135f03f526b56db1e95d597d7c200b8ac63522eb31",
+  "catalog_content_checksum_sha256": "ef925281464048ea7f00304f954a232ebcff6c9abd7b3f5e0c8e288ec9bd727b",
   "degraded_source_count": 4,
-  "export_checked_at": "2026-08-24T21:55:34Z",
-  "last_successful_update": "2026-08-24T21:55:34Z",
-  "latest_record_update": "2026-08-24T21:44:32Z",
+  "export_checked_at": "2026-08-24T22:00:59Z",
+  "last_successful_update": "2026-08-24T22:00:59Z",
+  "latest_record_update": "2026-08-24T21:58:52Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "8d60d81767444d64d0c45154856005dc474e57f055a9d00c4144754d6d34b3b5",
+  "publication_state_checksum_sha256": "9595912510053550910f5909c9fffba2fb1295f2e77639fa5f752ba1e5e1a34e",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "46835c1e1fe1a296ea4766d915ac6f690756f00e0168bd32ef6ee968a453863b",
+    "artifact_checksum_sha256": "59c7a5fa668aba5ca6587e3edb91a20a6c9bcb8cd33a6cac63e3b64bc05f4de3",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 75
   },
@@ -244,7 +244,7 @@
       "public_scope": "ATLAS explicitly provides full public access to forced photometry after registration",
       "rate_or_cadence_limit": "Provider throttling; no bulk requests without contacting ATLAS",
       "record_counts": {
-        "observations": 1769
+        "observations": 1866
       },
       "source": "atlas",
       "state": "disabled"
@@ -1031,7 +1031,7 @@
       "public_scope": "Allowlisted public AllWISE Source Catalog and 2MASS Point Source Catalog rows",
       "rate_or_cadence_limit": "Two sequential target cone queries, 3 arcsec default radius, 21-row overflow sentinel per catalog",
       "record_counts": {
-        "catalog_counterparts": 70
+        "catalog_counterparts": 72
       },
       "source": "irsa",
       "state": "disabled"
@@ -1135,7 +1135,7 @@
       "public_scope": "SIMBAD documents free access without registration under ODbL with acknowledgment and original-reference citation",
       "rate_or_cadence_limit": "One bounded 30-arcsec target cone per explicit request; 51-row overflow sentinel",
       "record_counts": {
-        "catalog_counterparts": 111
+        "catalog_counterparts": 112
       },
       "source": "simbad",
       "state": "disabled"
@@ -1256,12 +1256,12 @@
         "classification",
         "follow-up photometry table"
       ],
-      "detail": "ReadError: ",
+      "detail": "Checked 9 released public records before the provider rate limit; retained public data remain available.",
       "documentation_url": "https://www.wis-tns.org/astronotes",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 238283.686466,
+      "lag_seconds": 241753.291964,
       "last_message_at": "2026-08-22T02:49:50Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1384,16 +1384,16 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "472d87013dc7571d8d53d10f5711c1bd1113862afb410110a9bce57fbb2c05ed",
-    "report_checksum_sha256": "9b6d73f6746cc47498ce7cd2af17e6f80929b7c3ef7d4f9155c9d9f5fe0249bb",
+    "content_release_id": "d00cd692132852716bdaa9393041d70fde7d6ee34f0ebff87a4ceea3cb23f323",
+    "report_checksum_sha256": "c4ff712447eda5a9800dd300ff703f2ede5ea5527e6bae04dc889da23cc53f1f",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-24T22:25:34Z"
+    "valid_until": "2026-08-24T22:30:59Z"
   },
   "statistics": {
     "archive_products": 0,
-    "candidates_with_follow_up": 1039,
-    "catalog_counterparts": 1116,
+    "candidates_with_follow_up": 1040,
+    "catalog_counterparts": 1120,
     "classification_history": 305,
     "classifications": 978,
     "event_types": {
@@ -1421,7 +1421,7 @@
       "radio": 42,
       "x-ray": 34
     },
-    "observations": 4822,
+    "observations": 4919,
     "priority_bands": {
       "high_50_74": 2393,
       "low_0_24": 18,
@@ -1572,5 +1572,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-24T22:25:34Z"
+  "valid_until": "2026-08-24T22:30:59Z"
 }
