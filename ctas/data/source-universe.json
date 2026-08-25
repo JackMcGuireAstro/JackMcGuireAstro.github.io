@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "d99ed22bee3166e801d82b869a67f8e5b84be142350536034eb1d0d557d973a3",
+  "artifact_checksum_sha256": "15d6c9ebcde87427701e75c80764f6f1436f9c91bd104f706feb891fb139561b",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
   "family_count": 10,
-  "generated_at": "2026-08-25T11:20:49Z",
+  "generated_at": "2026-08-25T11:23:07Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -69,7 +69,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous public access",
       "connector_implementation_state": "implemented-public-reduced-metadata-on-demand",
-      "contract_checksum_sha256": "6785a011a27323b797f00e342c7944fa3c46214a5ab5242fc2d9cfbfc2aa1329",
+      "contract_checksum_sha256": "baf8ec010e51d64c63733478cd5e8abb9c335c18cafc5ef4bddf6684e0182b74",
       "contract_version": "1.0.0",
       "data_types": [
         "released reduced-product metadata",
@@ -80,7 +80,7 @@
       "documentation_url": "https://archive.eso.org/cms/eso-data-access-policy.html",
       "implementation_state": "implemented",
       "known_limitations": "Authenticated TAP can expose PI-authorized proprietary metadata; this adapter sends no credentials, repeats the release-date check locally, and does not download product bytes",
-      "last_attempt_at": "2026-08-25T11:13:34Z",
+      "last_attempt_at": "2026-08-25T11:20:45Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-04",
@@ -92,7 +92,7 @@
       "protocol": "Anonymous IVOA TAP / ObsCore",
       "public_disposition_counts": {
         "provider-failure": 126,
-        "searched-no-match": 2263,
+        "searched-no-match": 2264,
         "temporarily-unavailable": 16
       },
       "public_record_counts": {},
@@ -148,7 +148,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous for public data",
       "connector_implementation_state": "implemented-public-metadata-on-demand",
-      "contract_checksum_sha256": "7a58f69c2481ad475fc8b2fa9c8044f864456ab32448c3fe63040e7bc0b6b4c4",
+      "contract_checksum_sha256": "5940e23297bae71dccecbdebe56f877dfac06789bdb44ff68a848cc6cf83e6f6",
       "contract_version": "1.0.0",
       "data_types": [
         "public X-ray observation metadata",
@@ -157,7 +157,7 @@
       "documentation_url": "https://heasarc.gsfc.nasa.gov/docs/xamin-api.html",
       "implementation_state": "implemented",
       "known_limitations": "Visible master-table rows can still be proprietary or not yet archive-ready; future/blank release dates are excluded, XMM additionally requires data_in_heasarc=Y, and NICER requires VALIDATED",
-      "last_attempt_at": "2026-08-25T11:13:33Z",
+      "last_attempt_at": "2026-08-25T11:20:44Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-04",
@@ -169,7 +169,7 @@
       "protocol": "Xamin HTTPS VOTable API",
       "public_disposition_counts": {
         "provider-failure": 135,
-        "searched-no-match": 2255,
+        "searched-no-match": 2256,
         "temporarily-unavailable": 16
       },
       "public_record_counts": {},
@@ -268,7 +268,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous for metadata and released public files",
       "connector_implementation_state": "implemented-explicit-release-verified-image-metadata-on-demand",
-      "contract_checksum_sha256": "83d5ad7a60bc35f813ec6fe2b9e4ad9e53bc289a8ca3260eb789cfe0acd24bcb",
+      "contract_checksum_sha256": "5cf2243ed72c3a5750f731564642dcf1f2aa4e0d6d592ce342b6c17b03d7c001",
       "contract_version": "1.0.0",
       "data_types": [
         "released image metadata",
@@ -277,7 +277,7 @@
       "documentation_url": "https://github.com/NOAO/nat-nb/blob/master/api-authentication.ipynb",
       "implementation_state": "implemented",
       "known_limitations": "All archive metadata are visible anonymously, including metadata for proprietary files; this adapter stores no unreleased row and downloads no bytes",
-      "last_attempt_at": "2026-08-25T11:13:41Z",
+      "last_attempt_at": "2026-08-25T11:21:03Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
@@ -289,7 +289,7 @@
       "protocol": "Anonymous SIA plus exact Advanced Search release verification",
       "public_disposition_counts": {
         "provider-failure": 218,
-        "searched-no-match": 2145,
+        "searched-no-match": 2146,
         "temporarily-unavailable": 16
       },
       "public_record_counts": {},
@@ -1950,7 +1950,7 @@
       "access_mode": "on-demand-query",
       "authentication_requirement": "Registered forced-photometry API token",
       "connector_implementation_state": "implemented-public-credentials-required",
-      "contract_checksum_sha256": "3d26ed76d8f4f3f7d6d1d0c29ce739af5411969bb84186a192dd96d3ad4388a2",
+      "contract_checksum_sha256": "5f1f6b2b418486931b8fb98836b024cd6a5b86d0bbd049c92879bb83747d5363",
       "contract_version": "1.0.0",
       "data_types": [
         "TNS discovery",
@@ -1959,9 +1959,9 @@
       "documentation_url": "https://fallingstar-data.com/forcedphot/apiguide/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Result URLs are short-lived; requests must remain bounded and attribution/citations are mandatory",
-      "last_attempt_at": "2026-08-25T11:14:03Z",
-      "last_successful_at": "2026-08-25T11:14:03Z",
-      "last_successful_response": "2026-08-25T11:14:03Z",
+      "last_attempt_at": "2026-08-25T11:21:15Z",
+      "last_successful_at": "2026-08-25T11:21:15Z",
+      "last_successful_response": "2026-08-25T11:21:15Z",
       "last_verified": "2026-08-03",
       "name": "ATLAS",
       "operational_state": "scheduled",
@@ -1972,11 +1972,11 @@
       "public_disposition_counts": {
         "credentials-required": 2242,
         "provider-failure": 32,
-        "searched-with-data": 110
+        "searched-with-data": 111
       },
       "public_record_counts": {
         "candidates": 220,
-        "observations": 3051
+        "observations": 3068
       },
       "query_scope": "on-demand-query",
       "rate_or_cadence_limit": "Provider throttling; no bulk requests without contacting ATLAS",
@@ -2827,7 +2827,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "NASA ADS API token",
       "connector_implementation_state": "implemented-public-metadata-credentials-required",
-      "contract_checksum_sha256": "2492aba6e7dc293752e4abd78200e442f670b1fa61b4b3251f1399af87fd1c01",
+      "contract_checksum_sha256": "8bc227fd6330ab3642e1d917b90aa9574ae6fc7f7abca4c9ead9ef8be021460e",
       "contract_version": "1.0.0",
       "data_types": [
         "bibliographic metadata",
@@ -2837,12 +2837,12 @@
       "documentation_url": "https://ui.adsabs.harvard.edu/help/api/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "CTAS retains metadata and provider links only; it does not mirror article full text or infer reuse rights from discoverability",
-      "last_attempt_at": "2026-08-25T11:14:03Z",
-      "last_successful_at": "2026-08-25T10:22:26Z",
-      "last_successful_response": "2026-08-25T10:22:26Z",
+      "last_attempt_at": "2026-08-25T11:21:16Z",
+      "last_successful_at": "2026-08-25T11:21:16Z",
+      "last_successful_response": "2026-08-25T11:21:16Z",
       "last_verified": "2026-08-23",
       "name": "NASA Astrophysics Data System",
-      "operational_state": "temporarily-unavailable",
+      "operational_state": "scheduled",
       "organization_or_facility": "NASA / Smithsonian Astrophysical Observatory",
       "primary_family": "other-declared-sources",
       "product_contracts": [],
@@ -2850,11 +2850,11 @@
       "public_disposition_counts": {
         "provider-failure": 22,
         "searched-no-match": 50,
-        "searched-with-data": 22,
+        "searched-with-data": 23,
         "temporarily-unavailable": 47
       },
       "public_record_counts": {
-        "publications": 20
+        "publications": 21
       },
       "query_scope": "targeted-query",
       "rate_or_cadence_limit": "One exact-name query per watched-target refresh; at most 25 metadata records",
