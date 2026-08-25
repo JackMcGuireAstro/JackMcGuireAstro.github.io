@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "162c8d16706a58d10cad9476b2f33a7c70069daf451679085a2b7c23f509284d"
+      "sha256": "b157d68b76e53d4da508dddac209c59f645394cbd812498cd97a9b8a876724b2"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "c7fb26e51f99530567c6c5595f6b75963d5f471190f639d4d187d8a580e9e19f"
+      "sha256": "86637302959e73e61e4767de46b43e6c9813b4f0f139181f08b50b55df92a501"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "fff18fac956d5e105440e3ca322090b96d35240dbddb3321a69539844e862e89"
+      "sha256": "53845a00d5d737145514a74bdad0f14322e39958243f706c4255af938c89af55"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "e2553ee8cbdb7bed63f25ea8df3ab9e21f93438fe1377b5f72012604572e56ab"
+      "report_checksum_sha256": "5886cd550291dadb754dcab8717fa6b5cd4056890675650a0cecaf5ed6d576db"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "877de637ed1969bb7d57fdf0c95fc7e9f82569ab3870d955066c018f3fdc1965"
+      "sha256": "bfbc04627daae383067976f4fc51f3328b59ae4ed37ca21e9fb45dec0d871b03"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "8d866691007032b906b89db65d6080c5b951e142f8734fbe9dc376c01824c9a4"
+      "sha256": "775d02dfded5068801d73295840e5e4e57c17d5c9df1e1722baa1e2559c58a64"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "b8134bf278c8cb90bc57350abc125791dafae18b6e5770eaccf3082b498bcb6e"
+      "sha256": "35f839e1536f78514d190ce09cf5fb0df8dd9f396bcd37c46c8429d7c29537d9"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2822,
-  "catalog_content_checksum_sha256": "01a16c61ed435994df896f549353d27a6ac71f10e21c7ffe595e368526821e5b",
+  "catalog_content_checksum_sha256": "337d4f98499f06cf99a7eeda441541e64aefd443e0d45cc890a9be0e45b1cb96",
   "degraded_source_count": 4,
-  "export_checked_at": "2026-08-25T05:38:30Z",
-  "last_successful_update": "2026-08-25T05:38:30Z",
-  "latest_record_update": "2026-08-25T05:36:09Z",
+  "export_checked_at": "2026-08-25T05:47:28Z",
+  "last_successful_update": "2026-08-25T05:47:28Z",
+  "latest_record_update": "2026-08-25T05:45:28Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "633f87bca1dae0e3709f1c9044a5e203a0224921ae80647fdd90524c4f18d35c",
+  "publication_state_checksum_sha256": "4c4dbe3ea566b081b2ff36b65b8adbaf60ab08856a721dea813e5ccc75c5836c",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "0420a130c40a72ca6fe277ee48bd1df1b5a5b3ff933150f3ce5fc13d53eb036a",
+    "artifact_checksum_sha256": "191e8e5b11a34eda5f7b54482fa72c8423fc07e9580ef0f94cb2d035b45ba11e",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 75
   },
@@ -929,13 +929,13 @@
         "upper limit",
         "observing plan"
       ],
-      "detail": "NASA GCN subscriptions active: gcn.circulars",
+      "detail": "via NASA GCN: gcn.circulars",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA GCN worldwide author community",
       "label": "NASA GCN Circulars",
-      "lag_seconds": 9270.020447,
-      "last_message_at": "2026-08-24T15:20:24Z",
+      "lag_seconds": 3.25384,
+      "last_message_at": "2026-08-25T05:45:24Z",
       "last_verified": "2026-08-04",
       "mode": "live-and-archive",
       "proprietary_risk": "Circular prose is retained as an attributed author report; values are not promoted to machine measurements without a mission-specific parser",
@@ -943,7 +943,7 @@
       "public_scope": "Released GCN Circular author text, metadata, corrections, and provider-hosted links are publicly distributed",
       "rate_or_cadence_limit": "Persistent Kafka consumer; revisions are checksum-addressed and linked URLs are not bulk-downloaded",
       "record_counts": {
-        "publications": 666
+        "publications": 667
       },
       "source": "gcn-circulars",
       "state": "connected"
@@ -957,13 +957,13 @@
         "follow-up report",
         "retraction"
       ],
-      "detail": "igwn.gwalert",
+      "detail": "gcn.circulars",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 1.426341,
-      "last_message_at": "2026-08-25T05:13:36Z",
+      "lag_seconds": 3.25384,
+      "last_message_at": "2026-08-25T05:45:24Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -1384,11 +1384,11 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "dc4d7e2dafe233c689bb1a22b1cf3d1366f311cf692ebe8aeae7b4b1cd3e4d26",
-    "report_checksum_sha256": "e2553ee8cbdb7bed63f25ea8df3ab9e21f93438fe1377b5f72012604572e56ab",
+    "content_release_id": "f5864206d3e28b0c40549de4558df84f30da5a67fa6af6cb56bda2a763252b38",
+    "report_checksum_sha256": "5886cd550291dadb754dcab8717fa6b5cd4056890675650a0cecaf5ed6d576db",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-25T06:08:30Z"
+    "valid_until": "2026-08-25T06:17:28Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1429,7 +1429,7 @@
       "urgent_75_100": 188
     },
     "public_candidates": 2822,
-    "publications": 859,
+    "publications": 860,
     "quality_quarantined_records": 1,
     "real_events": 2824,
     "spectra": 13
@@ -1572,5 +1572,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-25T06:08:30Z"
+  "valid_until": "2026-08-25T06:17:28Z"
 }
