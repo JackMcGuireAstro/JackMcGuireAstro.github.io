@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "f32ade35efdfb92624e1ae711cacda9f7dedb63ee44843b89158ad5d826af3fd",
+  "artifact_checksum_sha256": "93080ac44c92374caa58152575249d21ebe86a029db51417d9e772df9f759785",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
   "family_count": 10,
-  "generated_at": "2026-08-25T03:15:24Z",
+  "generated_at": "2026-08-25T03:17:50Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -882,7 +882,7 @@
       "access_mode": "on-demand-catalog-query",
       "authentication_requirement": "Anonymous public Gaia release",
       "connector_implementation_state": "implemented-public-gaia-partner-catalog-on-demand",
-      "contract_checksum_sha256": "88733744cbfa02bb8dab2481af332b8e3dfd8e9a60413d43947bc6cd75846179",
+      "contract_checksum_sha256": "59e5cbc2986a35dfe20129ae74dd4e5e01b2fbd39c6093ba6c62e3e2669b8b68",
       "contract_version": "1.0.0",
       "data_types": [
         "public astrometry",
@@ -893,7 +893,7 @@
       "documentation_url": "https://www.cosmos.esa.int/web/gaia/data-access",
       "implementation_state": "implemented",
       "known_limitations": "VizieR hosts many unrelated collections with distinct terms; this adapter cannot select them and does not retrieve Gaia DataLink products",
-      "last_attempt_at": "2026-08-25T01:54:04Z",
+      "last_attempt_at": "2026-08-25T03:16:11Z",
       "last_successful_at": "2026-08-24T08:22:25Z",
       "last_successful_response": "2026-08-24T08:22:25Z",
       "last_verified": "2026-08-04",
@@ -905,7 +905,7 @@
       "protocol": "Anonymous VizieR TAP / ADQL",
       "public_disposition_counts": {
         "provider-failure": 44,
-        "searched-no-match": 100,
+        "searched-no-match": 101,
         "searched-with-data": 29
       },
       "public_record_counts": {
@@ -1062,7 +1062,7 @@
       "access_mode": "on-demand-catalog-query",
       "authentication_requirement": "Anonymous open access",
       "connector_implementation_state": "implemented-open-literature-context-on-demand",
-      "contract_checksum_sha256": "498344ef4f32722ba67cbb9476a16cff9b6498d9565bafa71f4d23ed7a1c6752",
+      "contract_checksum_sha256": "2fa72029e710cfb8606cc2b45e49a45ae0802d1c65a9d3ac28e1ee20bff952ec",
       "contract_version": "1.0.0",
       "data_types": [
         "literature object identity",
@@ -1075,18 +1075,18 @@
       "documentation_url": "https://simbad.cds.unistra.fr/simbad/",
       "implementation_state": "implemented",
       "known_limitations": "SIMBAD is a heterogeneous literature meta-compilation, not a survey catalog; proximity never establishes target identity, host association, or a new detection",
-      "last_attempt_at": "2026-08-25T01:54:02Z",
+      "last_attempt_at": "2026-08-25T03:16:09Z",
       "last_successful_at": "2026-08-24T21:58:29Z",
       "last_successful_response": "2026-08-24T21:58:29Z",
       "last_verified": "2026-08-04",
       "name": "SIMBAD Astronomical Database",
-      "operational_state": "scheduled",
+      "operational_state": "provider-failure",
       "organization_or_facility": "CDS, Strasbourg",
       "primary_family": "host-counterpart-and-catalog-context",
       "product_contracts": [],
       "protocol": "Anonymous SIMBAD TAP / ADQL",
       "public_disposition_counts": {
-        "provider-failure": 23,
+        "provider-failure": 24,
         "searched-no-match": 92,
         "searched-with-data": 59
       },
@@ -1950,7 +1950,7 @@
       "access_mode": "on-demand-query",
       "authentication_requirement": "Registered forced-photometry API token",
       "connector_implementation_state": "implemented-public-credentials-required",
-      "contract_checksum_sha256": "5c7f0edad9e19358a3b4a41c900ff21f7e0ef420f9a291c4ec02f0179661f28c",
+      "contract_checksum_sha256": "907031b656203755ab74549d83bd62ce2c15034e523db358b01577c00cbc698c",
       "contract_version": "1.0.0",
       "data_types": [
         "TNS discovery",
@@ -1959,9 +1959,9 @@
       "documentation_url": "https://fallingstar-data.com/forcedphot/apiguide/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Result URLs are short-lived; requests must remain bounded and attribution/citations are mandatory",
-      "last_attempt_at": "2026-08-25T03:02:45Z",
-      "last_successful_at": "2026-08-25T03:02:45Z",
-      "last_successful_response": "2026-08-25T03:02:45Z",
+      "last_attempt_at": "2026-08-25T03:16:44Z",
+      "last_successful_at": "2026-08-25T03:16:44Z",
+      "last_successful_response": "2026-08-25T03:16:44Z",
       "last_verified": "2026-08-03",
       "name": "ATLAS",
       "operational_state": "scheduled",
@@ -1972,11 +1972,11 @@
       "public_disposition_counts": {
         "credentials-required": 2242,
         "provider-failure": 31,
-        "searched-with-data": 81
+        "searched-with-data": 82
       },
       "public_record_counts": {
         "candidates": 218,
-        "observations": 2372
+        "observations": 2479
       },
       "query_scope": "on-demand-query",
       "rate_or_cadence_limit": "Provider throttling; no bulk requests without contacting ATLAS",
@@ -2827,7 +2827,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "NASA ADS API token",
       "connector_implementation_state": "implemented-public-metadata-credentials-required",
-      "contract_checksum_sha256": "ce3bd04548a6510e8826c166648f30522068f77caa13db12fcce3535478624b0",
+      "contract_checksum_sha256": "46b6925b618f06fb506a0f3a2147c94e6a2a5cb900077ea0f64116b762f6cfde",
       "contract_version": "1.0.0",
       "data_types": [
         "bibliographic metadata",
@@ -2837,7 +2837,7 @@
       "documentation_url": "https://ui.adsabs.harvard.edu/help/api/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "CTAS retains metadata and provider links only; it does not mirror article full text or infer reuse rights from discoverability",
-      "last_attempt_at": "2026-08-25T03:02:46Z",
+      "last_attempt_at": "2026-08-25T03:16:45Z",
       "last_successful_at": "2026-08-25T02:55:24Z",
       "last_successful_response": "2026-08-25T02:55:24Z",
       "last_verified": "2026-08-23",
@@ -2849,7 +2849,7 @@
       "protocol": "NASA ADS Search API JSON",
       "public_disposition_counts": {
         "provider-failure": 22,
-        "searched-no-match": 38,
+        "searched-no-match": 39,
         "searched-with-data": 16,
         "temporarily-unavailable": 35
       },
