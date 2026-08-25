@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "078a585cd4c2231e0ba03d7c729e407e7f70c28500d77d8479827c5eb613d25c"
+      "sha256": "32b337b83466795a5764de39c99eda1ff39347a4d4d0ca01e1a853411bec4668"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "b136c3e9d9c192fdb2eceb0b8c6449cfdecdc196f7bb68821d55ba3fd48238f6"
+      "sha256": "18ac3cc34d7d07df618188b52db1c591bf5ba4af6f2d10be65720cef7c643817"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "7e1e8ec1b7eaae70d625dab2ba631c89c30cdb03ba244647f2341cc58c00cfa5"
+      "sha256": "f5c977e85ae6d0b339de7b71fc1622f22e9b3d8815fc4eecbb7410836f7bc9cd"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "12906a7d0a6c4fdfa90cae2d2f095a41748c881b6f7f995284dc3026834f0b93"
+      "report_checksum_sha256": "3bc702c278f05e548651206208df2e516c673302adcba2148e5def0a7fb128c8"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "523af8a28e20e838c3d6a901daf26cf67254239af5098b30c89b132f48624174"
+      "sha256": "67142fe598a1fb93855c797e093d716b77892a1ce677dd44e74c3283ad9b1bc8"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "76aa2804563706047e5e375f820ebe908bf00b8004453355ec05bde34d917564"
+      "sha256": "bb16e7d0a44910e44072a912a86c8da71abb0117333f3a7ee4cfcaba10439ad0"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "450cd957c9c964b615c532dcb158e6abbdf379de25fd03d52534c29f2cd17341"
+      "sha256": "f1294bc3b20e4373a1c5a1900385e7223bd0ff0275f8c3d81e94f0c36ddbe1de"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2826,
-  "catalog_content_checksum_sha256": "c85f967f6988824cadff691107b998191367b7b9e75bdb404eeff5c10c51ea8a",
-  "degraded_source_count": 6,
-  "export_checked_at": "2026-08-25T11:46:04Z",
-  "last_successful_update": "2026-08-25T11:46:04Z",
-  "latest_record_update": "2026-08-25T11:45:14Z",
+  "catalog_content_checksum_sha256": "c7a583b625ea19140b81ca0d98f926f055611d93bf0fefd8ada7aac9e4f98d6c",
+  "degraded_source_count": 5,
+  "export_checked_at": "2026-08-25T12:01:48Z",
+  "last_successful_update": "2026-08-25T12:01:48Z",
+  "latest_record_update": "2026-08-25T12:01:13Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "63d9df4947d18b0a607999fd6e663194bf8291cad8b90e040486d438b5db0851",
+  "publication_state_checksum_sha256": "885756da18cde520bb844045fe5cdb52149ad84992ac056631eac1f064a70552",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "b5dc3143262b03e475f85ca6b15fc79d187b56a766b2e1878fd5f343a2875211",
+    "artifact_checksum_sha256": "6c1d104b3e5fb2bcef7532296f569153d2e04ad85356b09e3d36b8bc26385eda",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 75
   },
@@ -684,7 +684,7 @@
         "classification",
         "public-object metadata"
       ],
-      "detail": "processed 0 public rows \u00b7 2026-08-25 10:00:00 - 11:00:00",
+      "detail": "processed 2 public rows \u00b7 2026-08-25 11:00:00 - 12:00:00",
       "documentation_url": "https://www.wis-tns.org/content/tns-getting-started",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
@@ -698,7 +698,7 @@
       "public_scope": "Hourly delta files explicitly contain public objects",
       "rate_or_cadence_limit": "Provider quota; connector defaults to one persistent five-minute poll loop",
       "record_counts": {
-        "classifications": 187,
+        "classifications": 188,
         "designations": 2201
       },
       "source": "tns",
@@ -1256,12 +1256,12 @@
         "classification",
         "follow-up photometry table"
       ],
-      "detail": "Checked 9 released public records before the provider rate limit; retained public data remain available.",
+      "detail": "checked 10 released public AstroNotes \u00b7 anonymous public interface",
       "documentation_url": "https://www.wis-tns.org/astronotes",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 290416.842556,
+      "lag_seconds": 292290.588019,
       "last_message_at": "2026-08-22T02:49:50Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1274,7 +1274,7 @@
         "publications": 175
       },
       "source": "tns-astronotes",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-explicit-public-metadata-and-ascii-preview-on-demand-credentials-required",
@@ -1384,18 +1384,18 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "350525930f90e8c854e1435a65e0042fe3f4bea4516b2c008258aeeed5ebf7c1",
-    "report_checksum_sha256": "12906a7d0a6c4fdfa90cae2d2f095a41748c881b6f7f995284dc3026834f0b93",
+    "content_release_id": "32538f9288d6aa523a7704d5a0a794c7b17bb000139a8b8493e358e524a68293",
+    "report_checksum_sha256": "3bc702c278f05e548651206208df2e516c673302adcba2148e5def0a7fb128c8",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-25T12:16:04Z"
+    "valid_until": "2026-08-25T12:31:48Z"
   },
   "statistics": {
     "archive_products": 0,
     "candidates_with_follow_up": 1051,
     "catalog_counterparts": 1151,
     "classification_history": 305,
-    "classifications": 984,
+    "classifications": 985,
     "event_types": {
       "fast-radio-burst": 43,
       "gamma-ray-burst-candidate": 26,
@@ -1572,5 +1572,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-25T12:16:04Z"
+  "valid_until": "2026-08-25T12:31:48Z"
 }
