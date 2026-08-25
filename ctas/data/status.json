@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "3b574172199cead6a7b74f592052ac4fe764f838482926bb042cac7658812936"
+      "sha256": "90b120d5cf3e0437cac1223de41a43714fd008eaef35d3b117bb3eeea2849d34"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "9f9d9ce5a0114356d8463a896db44dae4489881b49177ad5cd89ac86e05921c7"
+      "sha256": "d360428284aa9a5b170888a7272f7fa945eb9d1455b6ed5407c86005baa026f7"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "89f7a6793408fbc8819914097e8577f4b38094f69d182da37b71758909c81e91"
+      "sha256": "8cc3b32a8d7396ae2d944d5a7c4964c1634fc5e513e532ea234fba1e48bcfaf9"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "f505ba8b480ac4d4f68ebd7acbd661cbe60a0c50b3ec96780899a2d8e693c822"
+      "report_checksum_sha256": "55de89dfc1a27b4a97f497161a79dd8bf71aecdfa34b4a158a4f767b7678b8fa"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "a0db6bc098e0550b5481bb01b6c5b946faa151a3536389fedb327fbcf00f8826"
+      "sha256": "67dbf8cd1a3a1df9fd18c5cadec229515503fd52b752e42350a4a0b138c93555"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "6980ea417621de86456c60045eb728b420d31cce95398b10cbf748090fdce437"
+      "sha256": "3a9eaad8336a71571ffd672a5c958056fcb7699fd55f1167fd92f30be8ecb081"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "e2f65f6ee73d6c589552ead9d480c6a381275873aafea5d41fe55e6a433a9f20"
+      "sha256": "6e888481f5873b128f391b8e0f8f0dc93392f805312cd6d293c625992f877a18"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2823,
-  "catalog_content_checksum_sha256": "a7e3f082154693dbae5da1404b497c9eed3bcdfa02a2a6aac95f5b0f798138db",
-  "degraded_source_count": 5,
-  "export_checked_at": "2026-08-25T08:49:08Z",
-  "last_successful_update": "2026-08-25T08:49:08Z",
-  "latest_record_update": "2026-08-25T08:48:50Z",
+  "catalog_content_checksum_sha256": "94afaaae623035ec8778264a83428486697e0f0906184fbafa4e3d26170643cd",
+  "degraded_source_count": 3,
+  "export_checked_at": "2026-08-25T08:51:26Z",
+  "last_successful_update": "2026-08-25T08:51:26Z",
+  "latest_record_update": "2026-08-25T08:50:04Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "21abde6780bf476c23ef3958a8313fa90ae2353a8aa5921a11ddeeeab0c971ee",
+  "publication_state_checksum_sha256": "6790fb369fe178599755c878a976f3bf045937861dd7d427643c0c57b0aa11c8",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "22086ced0a3eb6b1e59c74da7ea7919d889e647d3a0bbf3ab7734edca1a863e7",
+    "artifact_checksum_sha256": "1cd65b0d60f6142882f4b3ffe9258bb76332a664670a6531d9c3ce3f172083a5",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 75
   },
@@ -244,7 +244,7 @@
       "public_scope": "ATLAS explicitly provides full public access to forced photometry after registration",
       "rate_or_cadence_limit": "Provider throttling; no bulk requests without contacting ATLAS",
       "record_counts": {
-        "observations": 2888
+        "observations": 2960
       },
       "source": "atlas",
       "state": "disabled"
@@ -571,7 +571,7 @@
       "public_scope": "Exact allowlist to the public Gaia DR3 source catalog I/355/gaiadr3 served by ESA's official CDS partner",
       "rate_or_cadence_limit": "One bounded 3-arcsec target cone per explicit request; 21-row overflow sentinel",
       "record_counts": {
-        "catalog_counterparts": 31
+        "catalog_counterparts": 32
       },
       "source": "gaia-dr3",
       "state": "disabled"
@@ -1031,7 +1031,7 @@
       "public_scope": "Allowlisted public AllWISE Source Catalog and 2MASS Point Source Catalog rows",
       "rate_or_cadence_limit": "Two sequential target cone queries, 3 arcsec default radius, 21-row overflow sentinel per catalog",
       "record_counts": {
-        "catalog_counterparts": 72
+        "catalog_counterparts": 74
       },
       "source": "irsa",
       "state": "disabled"
@@ -1135,7 +1135,7 @@
       "public_scope": "SIMBAD documents free access without registration under ODbL with acknowledgment and original-reference citation",
       "rate_or_cadence_limit": "One bounded 30-arcsec target cone per explicit request; 51-row overflow sentinel",
       "record_counts": {
-        "catalog_counterparts": 112
+        "catalog_counterparts": 113
       },
       "source": "simbad",
       "state": "disabled"
@@ -1384,16 +1384,16 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "dac7e271f6ce95657980fe549631dd3ea5f28ca553a46692e01ed151937b0dd3",
-    "report_checksum_sha256": "f505ba8b480ac4d4f68ebd7acbd661cbe60a0c50b3ec96780899a2d8e693c822",
+    "content_release_id": "b43198f456c89498dbb145005ab8a9ee805101c9c3df1e0dd8375e3ed4fcb228",
+    "report_checksum_sha256": "55de89dfc1a27b4a97f497161a79dd8bf71aecdfa34b4a158a4f767b7678b8fa",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-25T09:19:08Z"
+    "valid_until": "2026-08-25T09:21:26Z"
   },
   "statistics": {
     "archive_products": 0,
     "candidates_with_follow_up": 1049,
-    "catalog_counterparts": 1141,
+    "catalog_counterparts": 1145,
     "classification_history": 305,
     "classifications": 983,
     "event_types": {
@@ -1421,7 +1421,7 @@
       "radio": 43,
       "x-ray": 34
     },
-    "observations": 5945,
+    "observations": 6017,
     "priority_bands": {
       "high_50_74": 2407,
       "low_0_24": 18,
@@ -1572,5 +1572,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-25T09:19:08Z"
+  "valid_until": "2026-08-25T09:21:26Z"
 }
