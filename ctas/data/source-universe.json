@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "fb0be8e46b77b5824d099d4b5d7438da138f1299aa5ed31ca4000af3f95a8a73",
+  "artifact_checksum_sha256": "e9095e67d87f375e550e2ab03fc9f96d0266af37ca6061e0a82cd000dc40a885",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
   "family_count": 10,
-  "generated_at": "2026-08-26T22:32:17Z",
+  "generated_at": "2026-08-26T22:41:41Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -583,7 +583,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "287a85a2bbd560a05922bdb7e5a7e591540c61821906ead7e5e55ccf1b6d8e2d",
+      "contract_checksum_sha256": "1b9443611f1e51b5450a1a78f42506e38844f0d7818b7228d399240c31365b53",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -598,9 +598,9 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-08-26T22:30:57Z",
-      "last_successful_at": "2026-08-26T22:30:57Z",
-      "last_successful_response": "2026-08-26T22:30:57Z",
+      "last_attempt_at": "2026-08-26T22:40:58Z",
+      "last_successful_at": "2026-08-26T22:40:58Z",
+      "last_successful_response": "2026-08-26T22:40:58Z",
       "last_verified": "2026-08-08",
       "name": "Fink",
       "operational_state": "active-returning-data",
@@ -611,7 +611,7 @@
       "public_disposition_counts": {
         "provider-failure": 111,
         "searched-no-match": 2978,
-        "searched-with-data": 112
+        "searched-with-data": 113
       },
       "public_record_counts": {
         "observations": 2667
@@ -3073,7 +3073,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "TNS bot marker and API key",
       "connector_implementation_state": "implemented-explicit-public-metadata-and-ascii-preview-on-demand-credentials-required",
-      "contract_checksum_sha256": "fac8ad9edc958bfb728c8bdd35dd4e38d58664dd1aadfd3c439f280a6243c273",
+      "contract_checksum_sha256": "34d8ba0d9417fef0346c2a301e6d8ac74cd9b3d618618c144fea7b86b80b992d",
       "contract_version": "1.0.0",
       "data_types": [
         "public object detail",
@@ -3084,9 +3084,9 @@
       "documentation_url": "https://www.wis-tns.org/sites/default/files/api/tns2_manuals/TNS2.0_APIs_manual.pdf",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "A credential can expose group-proprietary records. Object and spectrum public flags are mandatory; current photometry rows lack per-row visibility and are refused",
-      "last_attempt_at": "2026-08-26T22:26:41Z",
-      "last_successful_at": "2026-08-26T22:26:41Z",
-      "last_successful_response": "2026-08-26T22:26:41Z",
+      "last_attempt_at": "2026-08-26T22:40:56Z",
+      "last_successful_at": "2026-08-26T22:40:56Z",
+      "last_successful_response": "2026-08-26T22:40:56Z",
       "last_verified": "2026-08-07",
       "name": "TNS Public Object Details and Spectra",
       "operational_state": "scheduled",
@@ -3096,7 +3096,7 @@
       "protocol": "TNS 2.0 Get Object API + provider-hosted public file",
       "public_disposition_counts": {
         "provider-failure": 69,
-        "searched-with-data": 760,
+        "searched-with-data": 761,
         "temporarily-unavailable": 1753
       },
       "public_record_counts": {
@@ -3120,7 +3120,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "None for public spectra",
       "connector_implementation_state": "implemented-explicit-public-anonymous-spectra-on-demand",
-      "contract_checksum_sha256": "124827cb9a183c8daea6c35a6546795560c12d5164671c53a5b77f82f8d4a7f6",
+      "contract_checksum_sha256": "13b873606c6e20c4a58755d7f7212283635e4490aa5730aa54e8dd349b9509ab",
       "contract_version": "1.0.0",
       "data_types": [
         "public spectrum metadata",
@@ -3130,7 +3130,7 @@
       "documentation_url": "https://www.wiserep.org/content/wiserep-getting-started",
       "implementation_state": "implemented",
       "known_limitations": "Private scripted access requires a personal API key; this adapter sends no credentials, refuses any row without public=1, and never treats repository membership as a new detection",
-      "last_attempt_at": "2026-08-26T22:26:45Z",
+      "last_attempt_at": "2026-08-26T22:41:01Z",
       "last_successful_at": "2026-08-26T20:50:34Z",
       "last_successful_response": "2026-08-26T20:50:34Z",
       "last_verified": "2026-08-08",
@@ -3142,7 +3142,7 @@
       "protocol": "Anonymous exact-name ZIP export with JSON metadata and ASCII spectra",
       "public_disposition_counts": {
         "provider-failure": 79,
-        "searched-no-match": 600,
+        "searched-no-match": 601,
         "searched-with-data": 125,
         "temporarily-unavailable": 1756
       },
