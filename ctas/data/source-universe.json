@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "acf40d14fdb3036697a1bd3dd8baff500c18ab17f6c0edbc4812c5fcfd2c1b22",
+  "artifact_checksum_sha256": "f7c4239533bcd93d9b63e09778a84689f3d29d3013bd0749c4865e8cc7515a56",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
   "family_count": 10,
-  "generated_at": "2026-08-26T21:01:01Z",
+  "generated_at": "2026-08-26T21:03:22Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -69,7 +69,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous public access",
       "connector_implementation_state": "implemented-public-reduced-metadata-on-demand",
-      "contract_checksum_sha256": "dbf8e99f2ba463166cb21ed53bb88a061def04bd7883591644a05e41be9682d6",
+      "contract_checksum_sha256": "13437803cd4d48be4ecfd893671255819e57849de0b4d000efdb752ac0228198",
       "contract_version": "1.0.0",
       "data_types": [
         "released reduced-product metadata",
@@ -80,7 +80,7 @@
       "documentation_url": "https://archive.eso.org/cms/eso-data-access-policy.html",
       "implementation_state": "implemented",
       "known_limitations": "Authenticated TAP can expose PI-authorized proprietary metadata; this adapter sends no credentials, repeats the release-date check locally, and does not download product bytes",
-      "last_attempt_at": "2026-08-26T20:59:16Z",
+      "last_attempt_at": "2026-08-26T21:02:58Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-04",
@@ -92,7 +92,7 @@
       "protocol": "Anonymous IVOA TAP / ObsCore",
       "public_disposition_counts": {
         "provider-failure": 146,
-        "searched-no-match": 2376,
+        "searched-no-match": 2377,
         "temporarily-unavailable": 18
       },
       "public_record_counts": {},
@@ -148,7 +148,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous for public data",
       "connector_implementation_state": "implemented-public-metadata-on-demand",
-      "contract_checksum_sha256": "f65777a24f5a2f083ff3947d277b4b2c5bcb78692f977217542683429a114995",
+      "contract_checksum_sha256": "828eabc0788e765e6a8f6a1debd60169ce9c610c31201e47e3af21a454176674",
       "contract_version": "1.0.0",
       "data_types": [
         "public X-ray observation metadata",
@@ -157,7 +157,7 @@
       "documentation_url": "https://heasarc.gsfc.nasa.gov/docs/xamin-api.html",
       "implementation_state": "implemented",
       "known_limitations": "Visible master-table rows can still be proprietary or not yet archive-ready; future/blank release dates are excluded, XMM additionally requires data_in_heasarc=Y, and NICER requires VALIDATED",
-      "last_attempt_at": "2026-08-26T20:59:15Z",
+      "last_attempt_at": "2026-08-26T21:02:56Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-04",
@@ -169,7 +169,7 @@
       "protocol": "Xamin HTTPS VOTable API",
       "public_disposition_counts": {
         "provider-failure": 154,
-        "searched-no-match": 2369,
+        "searched-no-match": 2370,
         "temporarily-unavailable": 18
       },
       "public_record_counts": {},
@@ -228,7 +228,7 @@
       "access_mode": "archive",
       "authentication_requirement": "Anonymous for public data",
       "connector_implementation_state": "implemented-public-metadata-on-demand",
-      "contract_checksum_sha256": "b7428906e19bd9d7c48f16efc66999c1609d47e26754f68e71cf991ecdcdfc30",
+      "contract_checksum_sha256": "81e08a0c6dfcb558892b6c1ecdd870a18f3e9485457fc5d2f38f7844dc53a8e1",
       "contract_version": "1.0.0",
       "data_types": [
         "public imaging",
@@ -238,7 +238,7 @@
       "documentation_url": "https://archive.stsci.edu/publishing/data-use",
       "implementation_state": "implemented",
       "known_limitations": "MAST also exposes EXCLUSIVE_ACCESS metadata and some copyrighted collections; only PUBLIC rows may pass",
-      "last_attempt_at": "2026-08-26T20:59:04Z",
+      "last_attempt_at": "2026-08-26T21:02:47Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-03",
@@ -249,7 +249,7 @@
       "product_contracts": [],
       "protocol": "MAST API / ObsCore / S3 public mirror",
       "public_disposition_counts": {
-        "provider-failure": 175,
+        "provider-failure": 176,
         "searched-no-match": 2372
       },
       "public_record_counts": {},
@@ -673,7 +673,7 @@
       "access_mode": "poll",
       "authentication_requirement": "TNS bot marker and API key",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "7a4c087e49551604da1cb4827e83d11541416ba46b8e9e1466922847c0d8b3bc",
+      "contract_checksum_sha256": "8ae807078e9f3b0bb3c66c62e148ab4a022d0ba7c747277d4fcac64714694feb",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery",
@@ -696,7 +696,7 @@
       "public_disposition_counts": {},
       "public_record_counts": {
         "classifications": 190,
-        "designations": 2247
+        "designations": 2248
       },
       "query_scope": "poll",
       "rate_or_cadence_limit": "Provider quota; connector defaults to one persistent five-minute poll loop",
@@ -2784,7 +2784,7 @@
       "access_mode": "live-and-archive",
       "authentication_requirement": "Broker or archive dependent",
       "connector_implementation_state": "represented-through-brokers",
-      "contract_checksum_sha256": "ae329616057f5ce4bff159d5f81f05de6459de4831c4b090cbe5a05fe33fb620",
+      "contract_checksum_sha256": "feae772ecd25f243f3dbcc95902b73e03e3463fcddc63648c29d3d914c9659d0",
       "contract_version": "1.0.0",
       "data_types": [
         "alert",
@@ -2806,7 +2806,7 @@
       "protocol": "Official archive / community brokers",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 435
+        "candidates": 436
       },
       "query_scope": "live-and-archive",
       "rate_or_cadence_limit": "Provider-defined",
