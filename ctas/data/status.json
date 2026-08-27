@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "1f92fe71a152d031bdfabe34d2d398cc9046ce101623fbe9fb6fe47ff8d332fe"
+      "sha256": "78ba0a9530a31f0d7426b131c657c11c453f1e535460cae3061a1777716bebc2"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "14afb1f151eff6dc0d95736f89216807bb95219980e1f5a1d4cae6797414f439"
+      "sha256": "f0af59a4b76f5b3ff89fedc4e0de205882a3cdd9b6bef26487ba0543b1885b00"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "1938fe6363d9e8bd505b1ed4da37395dbeb911fdca542e3ff7622ac6430411ef"
+      "sha256": "91a0bd3d8065f7b5c499463e9565c5b4e6ad1f330ba22bb16f904007797d4272"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "8613143da8a72ede42782aaccbf59593d86a8f00e4176d0f8ebae97c8b270d06"
+      "report_checksum_sha256": "3a418d70502c9b8bbd1464e2767382a91e37e148d8e4de1790795a8b1debf775"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "3b1d7bf39bd0dd5e5ada43ccf13c6e63474bf01cad09f63db1375f9ad99c21bf"
+      "sha256": "09c5177179857e87057962874c84d5737ff32add4aeb31a918fb876c42a3bdbd"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "ce913fe7e75f65147b48351fba5c77c5b242f2b684e5956eae5763b42d30f179"
+      "sha256": "766f3bd35e39e25bdeb28e9e3bc860479b6ac44a721b775d1c067605dbab8ac6"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "c4d1755f7fbec0d834a58f0f235ffcd6381bf4090faa151109de7b033dac170e"
+      "sha256": "c4cb9662703f4709ab0b61205aa72f6282c1b447429ba71605ef772cc0a4fd09"
     }
   },
   "cadence": "about every 2 minutes",
-  "candidate_count": 2960,
-  "catalog_content_checksum_sha256": "1e038515601454917bd174ea2472673a816fe7d56dfdf80a41440146e58860c2",
-  "degraded_source_count": 17,
-  "export_checked_at": "2026-08-27T19:05:12Z",
-  "last_successful_update": "2026-08-27T19:05:12Z",
-  "latest_record_update": "2026-08-27T19:01:52Z",
+  "candidate_count": 2962,
+  "catalog_content_checksum_sha256": "1587e4d94818d6d67f049f1b02f5573790352575ea1296cf5f5eb1fc6a91bef6",
+  "degraded_source_count": 16,
+  "export_checked_at": "2026-08-27T20:14:54Z",
+  "last_successful_update": "2026-08-27T20:14:54Z",
+  "latest_record_update": "2026-08-27T19:44:59Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "49516d72b8ba9b0418f3127dfad821a9311d9afc4fc05b101ea2072ad70f6edc",
+  "publication_state_checksum_sha256": "055491a4711b59830036a3fb5041ff30f7c466c2617f034e477078b383a98046",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "951051c46a93f2e5d7c51629dd3cae125e76b10ada83901d99c9543080dcad92",
+    "artifact_checksum_sha256": "b659d12747d8a77d039f64a1d9cf7160fff72265fa1d0d9fbca569a97bb910d9",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -131,7 +131,7 @@
         "HAWC transit time window",
         "update or retraction"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.AMON_NU_EM_COINC",
       "documentation_url": "https://gcn.nasa.gov/missions/icecube",
       "enabled": true,
       "facility": "AMON / IceCube Collaboration / HAWC Collaboration / NASA GCN",
@@ -146,7 +146,7 @@
       "rate_or_cadence_limit": "Persistent Kafka consumer for new notices; mission documentation describes roughly seven-hour latency and four to eight alerts per year",
       "record_counts": {},
       "source": "nuem-gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "documented-interface-review-required",
@@ -244,7 +244,7 @@
       "public_scope": "ATLAS explicitly provides full public access to forced photometry after registration",
       "rate_or_cadence_limit": "Provider throttling; no bulk requests without contacting ATLAS",
       "record_counts": {
-        "observations": 6141
+        "observations": 6234
       },
       "source": "atlas",
       "state": "disabled"
@@ -338,7 +338,7 @@
         "energy band and participating detectors",
         "provider-hosted lightcurve link"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.CALET_GBM_FLT_LC",
       "documentation_url": "https://gcn.nasa.gov/missions/calet",
       "enabled": true,
       "facility": "JAXA / ASI / NASA CALET on the ISS / NASA GCN",
@@ -353,7 +353,7 @@
       "rate_or_cadence_limit": "Persistent Kafka consumer; minutes-scale flight latency and roughly 140-150 triggers per year",
       "record_counts": {},
       "source": "calet-gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "blocked-pending-collection-specific-policy",
@@ -420,13 +420,13 @@
         "LAT offline detection",
         "LAT monitored-source flare"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "via NASA GCN: gcn.classic.text.FERMI_GBM_ALERT",
       "documentation_url": "https://gcn.nasa.gov/missions/fermi",
       "enabled": true,
       "facility": "NASA Fermi / GBM / LAT / NASA GCN",
       "label": "Fermi GBM and LAT Public Notices",
-      "lag_seconds": 10577.148564,
-      "last_message_at": "2026-08-27T10:53:15Z",
+      "lag_seconds": 196.705284,
+      "last_message_at": "2026-08-27T19:41:16Z",
       "last_verified": "2026-08-04",
       "mode": "live",
       "proprietary_risk": "Internal, team-only initial/diagnostic, pointing, and test topics are excluded; a high-energy trigger or localization is not an optical counterpart or a confirmed GRB classification",
@@ -435,7 +435,7 @@
       "rate_or_cadence_limit": "Persistent Kafka consumer; mission-documented latency ranges from about five seconds to six hours by notice type",
       "record_counts": {},
       "source": "fermi-gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
@@ -450,7 +450,7 @@
         "upper limit",
         "science/template/difference cutout"
       ],
-      "detail": "anonymous real-time Rubin/Fink REST polling active \u00b7 0 unique public alerts in bounded lookback",
+      "detail": "ConnectTimeout: ",
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "enabled": true,
       "facility": "Rubin community broker",
@@ -464,10 +464,10 @@
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
       "record_counts": {
-        "observations": 2779
+        "observations": 2780
       },
       "source": "rubin-fink",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "implemented-public-positional-candidates-on-demand",
@@ -505,7 +505,7 @@
         "upper limit",
         "external coincidence"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: gcn.notices.swift.bat.guano, gcn.notices.einstein_probe.wxt.alert, gcn.notices.maxi.gsc.known, gcn.notices.maxi.gsc.unknown, gcn.notices.boom.alert, gcn.notices.chime.frb",
       "documentation_url": "https://gcn.nasa.gov/notices",
       "enabled": true,
       "facility": "NASA GCN participating missions",
@@ -520,7 +520,7 @@
       "rate_or_cadence_limit": "Topic and mission dependent",
       "record_counts": {},
       "source": "gcn-high-energy",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-classic-parser-live",
@@ -531,7 +531,7 @@
         "ground localization update",
         "source-class candidate"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.GECAM_FLT, gcn.classic.text.GECAM_GND",
       "documentation_url": "https://gcn.nasa.gov/missions/gecam",
       "enabled": true,
       "facility": "Chinese Academy of Sciences GECAM-B / NASA GCN",
@@ -546,7 +546,7 @@
       "rate_or_cadence_limit": "Persistent Kafka consumer; public broker currently retains no historical tail for these topics",
       "record_counts": {},
       "source": "gecam-gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-gaia-partner-catalog-on-demand",
@@ -571,7 +571,7 @@
       "public_scope": "Exact allowlist to the public Gaia DR3 source catalog I/355/gaiadr3 served by ESA's official CDS partner",
       "rate_or_cadence_limit": "One bounded 3-arcsec target cone per explicit request; 21-row overflow sentinel",
       "record_counts": {
-        "catalog_counterparts": 46
+        "catalog_counterparts": 48
       },
       "source": "gaia-dr3",
       "state": "disabled"
@@ -635,7 +635,7 @@
         "source-reported false-alarm rate",
         "update or retraction"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.HAWC_BURST_MONITOR",
       "documentation_url": "https://gcn.nasa.gov/missions/hawc",
       "enabled": true,
       "facility": "HAWC Collaboration / AMON / NASA GCN",
@@ -650,7 +650,7 @@
       "rate_or_cadence_limit": "Persistent Kafka consumer; mission-documented latency is approximately 0.5-1 minute, while the public broker currently retains no historical tail",
       "record_counts": {},
       "source": "hawc-gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-metadata-on-demand",
@@ -684,7 +684,7 @@
         "classification",
         "public-object metadata"
       ],
-      "detail": "processed 1 public rows \u00b7 2026-08-27 18:00:00 - 19:00:00",
+      "detail": "ConnectError: [Errno 8] nodename nor servname provided, or not known",
       "documentation_url": "https://www.wis-tns.org/content/tns-getting-started",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
@@ -702,7 +702,7 @@
         "designations": 2323
       },
       "source": "tns",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "generic-import-supported",
@@ -742,7 +742,7 @@
         "energy, signalness, and false-alarm rate",
         "update or retraction"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.ICECUBE_CASCADE",
       "documentation_url": "https://gcn.nasa.gov/missions/icecube",
       "enabled": true,
       "facility": "IceCube Collaboration / AMON / NASA GCN",
@@ -757,7 +757,7 @@
       "rate_or_cadence_limit": "Persistent Kafka consumer for new notices; mission documentation describes about 0.5 to 1 minute nominal latency and roughly eight alerts per year",
       "record_counts": {},
       "source": "icecube-cascade-gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-schema-aware-live-history-populated",
@@ -769,7 +769,7 @@
         "energy, p_astro, and false-alarm rate",
         "LVK coincidence follow-up"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: gcn.notices.icecube.gold_bronze_track_alerts, gcn.notices.icecube.lvk_nu_track_search, gcn.classic.text.ICECUBE_CASCADE",
       "documentation_url": "https://gcn.nasa.gov/missions/icecube",
       "enabled": true,
       "facility": "IceCube Collaboration / NSF / AMON",
@@ -784,7 +784,7 @@
       "rate_or_cadence_limit": "Long-running JSON consumer; bounded retained-tail replay; bounded public Circular identity search plus exact Classic file retrieval",
       "record_counts": {},
       "source": "icecube-gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-classic-parser-live",
@@ -796,7 +796,7 @@
         "provider-hosted lightcurve reference",
         "source-reported temporal coincidence flag"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.KONUS_LC",
       "documentation_url": "https://gcn.nasa.gov/missions/konus",
       "enabled": true,
       "facility": "Ioffe Institute / NASA Wind / IPN / NASA GCN",
@@ -811,7 +811,7 @@
       "rate_or_cadence_limit": "Persistent Kafka consumer; mission-documented downlink/notice latency is typically about one day",
       "record_counts": {},
       "source": "konus-gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-topic-credentials-required",
@@ -822,13 +822,13 @@
         "classification",
         "retraction"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "via NASA GCN: igwn.gwalert",
       "documentation_url": "https://gcn.nasa.gov/missions/lvk",
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 250.372908,
-      "last_message_at": "2026-08-27T18:13:35Z",
+      "lag_seconds": 1859.684057,
+      "last_message_at": "2026-08-27T19:13:35Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -837,7 +837,7 @@
       "rate_or_cadence_limit": "Long-running Kafka consumer; provider-defined archive limits",
       "record_counts": {},
       "source": "lvk-public-alerts",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-targeted-token-required",
@@ -914,7 +914,7 @@
       "public_scope": "Public bibliographic metadata returned by the ADS API",
       "rate_or_cadence_limit": "One exact-name query per watched-target refresh; at most 25 metadata records",
       "record_counts": {
-        "publications": 53
+        "publications": 54
       },
       "source": "ads",
       "state": "disabled"
@@ -929,7 +929,7 @@
         "upper limit",
         "observing plan"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: gcn.circulars",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA GCN worldwide author community",
@@ -946,7 +946,7 @@
         "publications": 683
       },
       "source": "gcn-circulars",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-credentials-required",
@@ -957,13 +957,13 @@
         "follow-up report",
         "retraction"
       ],
-      "detail": "RuntimeError: KafkaError{code=_AUTHENTICATION,val=-169,str=\"JoinGroup failed: Local: Authentication failure\"}",
+      "detail": "igwn.gwalert",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 250.372908,
-      "last_message_at": "2026-08-27T18:13:35Z",
+      "lag_seconds": 1859.684057,
+      "last_message_at": "2026-08-27T19:13:35Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -972,12 +972,12 @@
       "rate_or_cadence_limit": "Long-running consumer required; no cron-style reconnect polling",
       "record_counts": {
         "classification_history": 305,
-        "classifications": 805,
-        "messenger_signals": 867,
+        "classifications": 808,
+        "messenger_signals": 871,
         "observations": 415
       },
       "source": "gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-on-demand",
@@ -1031,7 +1031,7 @@
       "public_scope": "Allowlisted public AllWISE Source Catalog and 2MASS Point Source Catalog rows",
       "rate_or_cadence_limit": "Two sequential target cone queries, 3 arcsec default radius, 21-row overflow sentinel per catalog",
       "record_counts": {
-        "catalog_counterparts": 96
+        "catalog_counterparts": 98
       },
       "source": "irsa",
       "state": "disabled"
@@ -1203,7 +1203,7 @@
         "broad localization",
         "update"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.SNEWS",
       "documentation_url": "https://gcn.nasa.gov/missions/snews",
       "enabled": true,
       "facility": "SNEWS detector network / NASA GCN",
@@ -1218,7 +1218,7 @@
       "rate_or_cadence_limit": "Persistent Kafka consumer; approximately one weekly test and 0.03 real alerts per year are documented",
       "record_counts": {},
       "source": "snews-gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-classic-parser-live",
@@ -1230,7 +1230,7 @@
         "UVOT counterpart photometry or limiting magnitude",
         "instrument-specific update or retraction"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.SWIFT_BAT_QL_POS, gcn.classic.text.SWIFT_BAT_GRB_POS_ACK, gcn.classic.text.SWIFT_XRT_POSITION, gcn.classic.text.SWIFT_XRT_CENTROID, gcn.classic.text.SWIFT_UVOT_POS, gcn.classic.text.SWIFT_UVOT_POS_NACK",
       "documentation_url": "https://gcn.nasa.gov/missions/swift",
       "enabled": true,
       "facility": "NASA Neil Gehrels Swift Observatory / NASA GCN",
@@ -1245,7 +1245,7 @@
       "rate_or_cadence_limit": "Persistent Kafka consumer; mission-documented latency is 13-30 seconds for BAT, 30-80 seconds for XRT, and 1-3 hours for UVOT positions",
       "record_counts": {},
       "source": "swift-gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-anonymous-with-photometry-tables",
@@ -1256,12 +1256,12 @@
         "classification",
         "follow-up photometry table"
       ],
-      "detail": "Checked 9 released public records before the provider rate limit; retained public data remain available.",
+      "detail": "ConnectError: [Errno 8] nodename nor servname provided, or not known",
       "documentation_url": "https://www.wis-tns.org/astronotes",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 170963.431979,
+      "lag_seconds": 174603.097109,
       "last_message_at": "2026-08-25T19:05:50Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1384,27 +1384,27 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "d060773b0a37815cd8e74321c07b0e7e425747834ddf333f117c7c984cbf547a",
-    "report_checksum_sha256": "8613143da8a72ede42782aaccbf59593d86a8f00e4176d0f8ebae97c8b270d06",
+    "content_release_id": "5998a28fa26a1bfd0464b5be694692730f2e3610b540d45775690416af3bf283",
+    "report_checksum_sha256": "3a418d70502c9b8bbd1464e2767382a91e37e148d8e4de1790795a8b1debf775",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-27T19:35:12Z"
+    "valid_until": "2026-08-27T20:44:54Z"
   },
   "statistics": {
     "archive_products": 0,
-    "candidates_with_follow_up": 1103,
-    "catalog_counterparts": 1297,
+    "candidates_with_follow_up": 1106,
+    "catalog_counterparts": 1302,
     "classification_history": 305,
-    "classifications": 1009,
+    "classifications": 1012,
     "event_types": {
-      "fast-radio-burst": 46,
+      "fast-radio-burst": 47,
       "gamma-ray-burst-candidate": 28,
       "gamma-ray-transient": 88,
       "high-energy-count-rate-trigger": 15,
       "high-energy-neutrino": 1,
       "high-energy-neutrino-cascade": 45,
       "high-energy-neutrino-track": 175,
-      "high-energy-trigger": 70,
+      "high-energy-trigger": 71,
       "neutrino-gamma-coincidence-candidate": 28,
       "optical-transient": 2417,
       "solar-flare": 1,
@@ -1413,26 +1413,26 @@
     },
     "host_context": 13,
     "magnitude_values_excluded": 4,
-    "messenger_signals": 867,
+    "messenger_signals": 871,
     "messengers": {
       "electromagnetic": 2417,
-      "gamma-ray": 213,
+      "gamma-ray": 214,
       "multimessenger": 28,
       "neutrino": 221,
-      "radio": 46,
+      "radio": 47,
       "x-ray": 35
     },
-    "observations": 9689,
+    "observations": 9783,
     "priority_bands": {
       "high_50_74": 2467,
       "low_0_24": 18,
-      "routine_25_49": 306,
-      "urgent_75_100": 169
+      "routine_25_49": 307,
+      "urgent_75_100": 170
     },
-    "public_candidates": 2960,
-    "publications": 912,
+    "public_candidates": 2962,
+    "publications": 913,
     "quality_quarantined_records": 1,
-    "real_events": 2962,
+    "real_events": 2964,
     "spectra": 20
   },
   "surveys": [
@@ -1461,7 +1461,7 @@
       "survey": "IceCube Bronze Track Alert"
     },
     {
-      "candidate_count": 97,
+      "candidate_count": 98,
       "survey": "Fermi"
     },
     {
@@ -1478,11 +1478,11 @@
     },
     {
       "candidate_count": 46,
-      "survey": "LAST"
+      "survey": "Chime"
     },
     {
-      "candidate_count": 45,
-      "survey": "Chime"
+      "candidate_count": 46,
+      "survey": "LAST"
     },
     {
       "candidate_count": 45,
@@ -1577,5 +1577,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-27T19:35:12Z"
+  "valid_until": "2026-08-27T20:44:54Z"
 }
