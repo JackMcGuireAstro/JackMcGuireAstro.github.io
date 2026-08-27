@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "202d81468e59ea0644f6485c96c53d5d6a77f6696a86886a85a12c1fb4a13b30"
+      "sha256": "d4280aa48fa1a6581cde4e05ec4c6b99f5881d57949e125f8e24d2b1a1924ac2"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "cba337ed1923d9cd8e5e81bdca119ee46390091067cab4166df02f20a52f81a8"
+      "sha256": "e7a641d06247a872511459fc6e30da6cd3cd9a0ccb310de799a4ecbb2e9abdf9"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "64ac2d4fb5b7adcc761994c5fbfc5a714f1207ae410039aa518a7f92e19ed8f6"
+      "sha256": "0324dd462d78aa8a0d5e2b72728c847d00e8f5b775032def880000888baceedf"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "d733f1db034e96646ef0ab9da79f5b48fc9e1035713124d6fc4fcd39b30d017b"
+      "report_checksum_sha256": "735e47600f9c8c0c9b2bf33483fcc092751c28192cf42f9affb3eaca2c8ea623"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "e45f1c2b32452e62698bb43490afd91fcb6386ef2e816cc4eeb44a28e9c384eb"
+      "sha256": "d303a4fcc96c41d36a2b0da8235312a24defdcacb220dd8bcf0dbdb1a34268d8"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "58a5b38590066c60eda180b5db4fcb748d3dc49924d99cce109cad9817e21ec6"
+      "sha256": "1cfc385e6651abe55cd7e259e247c613a4867947d9f249bf4c24e81cf244ce3c"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "3d137495eaec8d8f4353f560c94b81522a389bd25dda9ec2291750b645e57ed5"
+      "sha256": "de77f84314dcb2054ee238b3d5a673de97b9523832a83cff1a7e602c2a46b485"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2951,
-  "catalog_content_checksum_sha256": "ac99d76bcb21d028b46b2fbcedf138be73f557c9b9e487dc266afa69f51b7897",
-  "degraded_source_count": 4,
-  "export_checked_at": "2026-08-27T09:51:37Z",
-  "last_successful_update": "2026-08-27T09:51:37Z",
-  "latest_record_update": "2026-08-27T09:41:14Z",
+  "catalog_content_checksum_sha256": "98198338c9e01d32f1a4f531867a6abc3ae15b4d6bc6dcba8bf702b16209052e",
+  "degraded_source_count": 9,
+  "export_checked_at": "2026-08-27T10:03:07Z",
+  "last_successful_update": "2026-08-27T10:03:07Z",
+  "latest_record_update": "2026-08-27T10:02:33Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "0ebe2d6de2ce0014f307d4656bcd9e8f31734f5b944eea5e747688c6ab30756d",
+  "publication_state_checksum_sha256": "1ca270423e1975c9cd37af4f050716c7213bcb86143c7a840346545173034774",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "d8c89675fb5648204571aaa478cfcb54db5a48b4973ac04f4a64837624263581",
+    "artifact_checksum_sha256": "f1bae88295328f85a3aeabb2380b77c65114d47ccdb439875009cad6f8173bbc",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -244,7 +244,7 @@
       "public_scope": "ATLAS explicitly provides full public access to forced photometry after registration",
       "rate_or_cadence_limit": "Provider throttling; no bulk requests without contacting ATLAS",
       "record_counts": {
-        "observations": 5195
+        "observations": 5360
       },
       "source": "atlas",
       "state": "disabled"
@@ -914,7 +914,7 @@
       "public_scope": "Public bibliographic metadata returned by the ADS API",
       "rate_or_cadence_limit": "One exact-name query per watched-target refresh; at most 25 metadata records",
       "record_counts": {
-        "publications": 46
+        "publications": 47
       },
       "source": "ads",
       "state": "disabled"
@@ -1004,7 +1004,7 @@
       "public_scope": "Public NED API responses with required NED acknowledgment retained",
       "rate_or_cadence_limit": "Single target per request; at most 50 cone rows; single-threaded population backfill with at most one request start per second",
       "record_counts": {
-        "host_context": 11
+        "host_context": 12
       },
       "source": "ned",
       "state": "disabled"
@@ -1135,7 +1135,7 @@
       "public_scope": "SIMBAD documents free access without registration under ODbL with acknowledgment and original-reference citation",
       "rate_or_cadence_limit": "One bounded 30-arcsec target cone per explicit request; 51-row overflow sentinel",
       "record_counts": {
-        "catalog_counterparts": 122
+        "catalog_counterparts": 125
       },
       "source": "simbad",
       "state": "disabled"
@@ -1261,7 +1261,7 @@
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 137790.714048,
+      "lag_seconds": 139605.63552,
       "last_message_at": "2026-08-25T19:05:50Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1299,8 +1299,8 @@
       "public_scope": "Only objects explicitly marked public=1 and spectrum rows explicitly marked public=1",
       "rate_or_cadence_limit": "Provider quota; one bounded exact-object query and at most ten public ASCII preview downloads per explicit target enrichment",
       "record_counts": {
-        "classifications": 12,
-        "spectra": 14
+        "classifications": 13,
+        "spectra": 15
       },
       "source": "tns-public-reports",
       "state": "disabled"
@@ -1384,18 +1384,18 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "ef21182377e2565cca9621b99d7f523aef7291b675a3f42c10d5e6a7788cf70c",
-    "report_checksum_sha256": "d733f1db034e96646ef0ab9da79f5b48fc9e1035713124d6fc4fcd39b30d017b",
+    "content_release_id": "991e9ceae4dbf17b73b428c6709c73b0e07672b9e4dff601198320fd3eed78bb",
+    "report_checksum_sha256": "735e47600f9c8c0c9b2bf33483fcc092751c28192cf42f9affb3eaca2c8ea623",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-27T10:21:37Z"
+    "valid_until": "2026-08-27T10:33:07Z"
   },
   "statistics": {
     "archive_products": 0,
     "candidates_with_follow_up": 1092,
-    "catalog_counterparts": 1255,
+    "catalog_counterparts": 1270,
     "classification_history": 305,
-    "classifications": 1001,
+    "classifications": 1002,
     "event_types": {
       "fast-radio-burst": 46,
       "gamma-ray-burst-candidate": 27,
@@ -1411,7 +1411,7 @@
       "terrestrial-gamma-ray-flash": 11,
       "x-ray-transient": 35
     },
-    "host_context": 11,
+    "host_context": 12,
     "magnitude_values_excluded": 4,
     "messenger_signals": 860,
     "messengers": {
@@ -1422,18 +1422,18 @@
       "radio": 46,
       "x-ray": 35
     },
-    "observations": 8702,
+    "observations": 8867,
     "priority_bands": {
-      "high_50_74": 2463,
+      "high_50_74": 2462,
       "low_0_24": 18,
-      "routine_25_49": 300,
+      "routine_25_49": 301,
       "urgent_75_100": 170
     },
     "public_candidates": 2951,
-    "publications": 903,
+    "publications": 904,
     "quality_quarantined_records": 1,
     "real_events": 2953,
-    "spectra": 18
+    "spectra": 19
   },
   "surveys": [
     {
@@ -1577,5 +1577,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-27T10:21:37Z"
+  "valid_until": "2026-08-27T10:33:07Z"
 }
