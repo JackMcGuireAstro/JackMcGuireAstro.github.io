@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "f40aa0dae707f1ddcb9a578442aa6f93f79aa0948c8d4d5bd7e8261bccd1a1fe",
+  "artifact_checksum_sha256": "c60f57825a319a73d38e2e45789d27886daf1d1f010eb0a3e6906e3619247592",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
   "family_count": 10,
-  "generated_at": "2026-08-27T00:52:41Z",
+  "generated_at": "2026-08-27T01:02:11Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -25,7 +25,7 @@
     "none"
   ],
   "schema": "ctas.public-source-universe@1.0.0",
-  "source_count": 75,
+  "source_count": 76,
   "sources": [
     {
       "access_mode": "archive",
@@ -583,7 +583,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "896887f248f2a075720081dbd19954b5dd91db2d66d247d70e5a2ff8e3112289",
+      "contract_checksum_sha256": "153bce3d5d6e504f2f7a7cd1057ef761eeabe1060835fd1b1f8c6a334b1a2f14",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -598,9 +598,9 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-08-27T00:51:14Z",
-      "last_successful_at": "2026-08-27T00:41:13Z",
-      "last_successful_response": "2026-08-27T00:41:13Z",
+      "last_attempt_at": "2026-08-27T01:01:16Z",
+      "last_successful_at": "2026-08-27T01:01:16Z",
+      "last_successful_response": "2026-08-27T01:01:16Z",
       "last_verified": "2026-08-08",
       "name": "Fink",
       "operational_state": "active-returning-data",
@@ -611,10 +611,10 @@
       "public_disposition_counts": {
         "provider-failure": 111,
         "searched-no-match": 2998,
-        "searched-with-data": 116
+        "searched-with-data": 117
       },
       "public_record_counts": {
-        "observations": 2672
+        "observations": 2674
       },
       "query_scope": "live-and-targeted-query",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
@@ -673,7 +673,7 @@
       "access_mode": "poll",
       "authentication_requirement": "TNS bot marker and API key",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "8ae807078e9f3b0bb3c66c62e148ab4a022d0ba7c747277d4fcac64714694feb",
+      "contract_checksum_sha256": "7526d89042b2672bff99981bf452d768754c1ea2752f8d090db942c30e0c18f1",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery",
@@ -696,7 +696,7 @@
       "public_disposition_counts": {},
       "public_record_counts": {
         "classifications": 190,
-        "designations": 2248
+        "designations": 2314
       },
       "query_scope": "poll",
       "rate_or_cadence_limit": "Provider quota; connector defaults to one persistent five-minute poll loop",
@@ -2607,6 +2607,47 @@
       "secondary_families": [],
       "source_family": "optical-and-time-domain-surveys",
       "source_key": "represented-survey-tessellate",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "638a83af25d7c07b6df2a71ab60b076edd8d112e58cc3192588a1deb7c86ece6",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "TSST_COSMOS_3D",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "TSST_COSMOS_3D",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 66
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-tsst-cosmos-3d",
       "topic_contracts": []
     },
     {
