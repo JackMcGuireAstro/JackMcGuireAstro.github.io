@@ -1,9 +1,9 @@
 {
   "audit_version": "2.0.0",
   "canonical_tns_link_count": 4799,
-  "catalog_content_checksum_sha256": "e7c20dcd6c642886b4cd4c35e56bbfc46ffc037e3eebb5b20a66ed355af83d30",
-  "checked_at": "2026-08-27T13:49:08Z",
-  "checked_candidate_link_count": 32854,
+  "catalog_content_checksum_sha256": "723215cbea9889ccd4998968618c104dd27dc96c905c8c30c68b67f875594167",
+  "checked_at": "2026-08-27T13:51:30Z",
+  "checked_candidate_link_count": 32974,
   "claim_boundary": "The recursive structural audit classifies every exported candidate/source URL and strictly validates canonical TNS object links. Only the listed TNS object page is sampled live; no live-health claim is made for unsampled providers. Suppressed URLs remain non-clickable provenance rather than structural failures.",
   "distinct_canonical_tns_object_count": 2259,
   "live_provider_samples": [
@@ -25,10 +25,10 @@
   "recursive_external_link_audit": {
     "artifact_counts": {
       "candidate-catalog": {
-        "https-allowlisted-renderable": 32509,
-        "suppressed-insecure": 51,
+        "https-allowlisted-renderable": 32627,
+        "suppressed-insecure": 53,
         "suppressed-unallowlisted": 294,
-        "url_occurrence_count": 32854
+        "url_occurrence_count": 32974
       },
       "source-universe": {
         "https-allowlisted-renderable": 61,
@@ -36,9 +36,9 @@
       }
     },
     "audit_version": "2.0.0",
-    "checked_candidate_url_occurrence_count": 32854,
+    "checked_candidate_url_occurrence_count": 32974,
     "checked_source_universe_url_occurrence_count": 61,
-    "distinct_url_count": 4876,
+    "distinct_url_count": 4879,
     "host_occurrence_counts": {
       "ampelproject.github.io": 2,
       "antares.noirlab.edu": 2,
@@ -56,9 +56,9 @@
       "doc.lsst.fink-broker.org": 973,
       "docs.aavso.org": 412,
       "ep.bao.ac.cn": 1,
-      "fallingstar-data.com": 5933,
-      "gcn.gsfc.nasa.gov": 1471,
-      "gcn.nasa.gov": 3264,
+      "fallingstar-data.com": 6034,
+      "gcn.gsfc.nasa.gov": 1483,
+      "gcn.nasa.gov": 3269,
       "github.com": 412,
       "goto-observatory.org": 1,
       "heasarc.gsfc.nasa.gov": 412,
@@ -76,7 +76,7 @@
       "rubinobservatory.org": 3,
       "simbad.cds.unistra.fr": 728,
       "tom-toolkit.readthedocs.io": 2,
-      "ui.adsabs.harvard.edu": 314,
+      "ui.adsabs.harvard.edu": 316,
       "vizier.cds.unistra.fr": 122,
       "wfst.bao.ac.cn": 1,
       "www.aavso.org": 207,
@@ -89,17 +89,17 @@
       "ztf.uw.edu": 2
     },
     "renderability_counts": {
-      "https-allowlisted-renderable": 32570,
-      "suppressed-insecure": 51,
+      "https-allowlisted-renderable": 32688,
+      "suppressed-insecure": 53,
       "suppressed-unallowlisted": 294
     },
     "role_counts": {
-      "artifact": 400,
-      "documentation": 9733,
+      "artifact": 402,
+      "documentation": 9737,
       "exact-object": 4988,
-      "exact-record": 2958,
-      "generic-reference": 10772,
-      "query": 4064
+      "exact-record": 2970,
+      "generic-reference": 10873,
+      "query": 4065
     },
     "role_definitions": {
       "artifact": "A direct public data or document artifact URL.",
@@ -112,21 +112,21 @@
     "suppressed_sample": [
       {
         "artifact": "candidate-catalog",
-        "candidate_name": "AT2026zxh",
-        "json_path": "candidates.[].follow_up.observations.[].source_url",
-        "reason": "origin is not in the public render allowlist",
-        "source_key": "rubin-lasair",
-        "state": "suppressed-unallowlisted",
-        "url": "https://lasair-ztf.lsst.ac.uk/object/ZTF26abqzkkl"
+        "candidate_name": "Fermi-GBM-809520184",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_809520184.fits"
       },
       {
         "artifact": "candidate-catalog",
-        "candidate_name": "AT2026zxh",
-        "json_path": "candidates.[].follow_up.observations.[].source_url",
-        "reason": "origin is not in the public render allowlist",
-        "source_key": "rubin-lasair",
-        "state": "suppressed-unallowlisted",
-        "url": "https://lasair-ztf.lsst.ac.uk/object/ZTF26abqzkkl"
+        "candidate_name": "Fermi-GBM-809520184",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].skymap_url",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://gcn.gsfc.nasa.gov/notices_f/gbm_gnd_loc_map_809520184.fits"
       },
       {
         "artifact": "candidate-catalog",
@@ -337,9 +337,9 @@
       }
     ],
     "suppression_policy": "Insecure, credential-bearing, explicit-port, malformed, and unallowlisted URLs remain provenance text but must not render as clickable public links.",
-    "url_occurrence_count": 32915
+    "url_occurrence_count": 33035
   },
-  "report_checksum_sha256": "9dcb062ed895ca6b45d40f7dc2dc479418a4b023ace08e127e92b1ff0512fd5a",
+  "report_checksum_sha256": "d4afaa7fdc578dafc54370ed2ef8a254b2e21c07d84a2c2b42c9f28ea46a94f1",
   "representative_tns": {
     "candidate_name": "AT2026zke",
     "checked_at": "2026-08-27T08:44:19Z",
