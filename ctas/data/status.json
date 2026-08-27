@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "dc1ba9897475a093f510ac9210c3d961cbd58bd6cafae06f1a22705e7c0546a4"
+      "sha256": "64584a11a8598ded2f104f39bfaf312ff78d7db386524bacb2070185d7a6defc"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "a0962ba095c4ff8ebe6a09b4ceaae701c18916f89f05176e0e40b57c0cd9b0e5"
+      "sha256": "0507a8f6329144c7a2d64968bda2e5dea4ebc1c16f5292b476c29f3f03aba595"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "594516cf1e639346e98bfb791a9367cfa00d131a1c5f971fa3cb66cb7ca1d0bc"
+      "sha256": "9de5b622668b9d3b7d30c4d3d9053aa03632cfb60fdbc8c38651ab06edd9ddca"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "1f424cfea44fb188d815111c44b3459d8e0499cd124b0c5a6337a6c3a4469ed9"
+      "report_checksum_sha256": "60f151207a97ee6ce3175db173aa4808373910347629fe9619ea3ee81f6bf76b"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "80559f03db4447a8460c8401770d91520010318328c2cf1c46ccebbb8ad0ff35"
+      "sha256": "5d78af76b752898689f06ab003b9d9d6228ed40a974d78e336b305ebb06fd418"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "af673baa3dde4def69d88b84cdf74291365e7e95bfd7255b1e7af00b4ceccd2d"
+      "sha256": "8d08d541bd19dffc4137b1ad6dfa716c28a1ea70b861e59a06126e67f681fcf0"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "5830406bb48c38c8e02daa4bb40543ea93ccf4b6fb8ee2dce7b4cbd6f663d8ce"
+      "sha256": "e09d06c0e6986cb16da553b984f1bad88ad21b751f298ed5f1d70c948c17d59f"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2946,
-  "catalog_content_checksum_sha256": "db8c638c3108906927d66b57322fc88305eb2abee6654f1a6f38bff5a146f18f",
-  "degraded_source_count": 7,
-  "export_checked_at": "2026-08-27T01:49:00Z",
-  "last_successful_update": "2026-08-27T01:49:00Z",
-  "latest_record_update": "2026-08-27T01:01:44Z",
+  "catalog_content_checksum_sha256": "151c640e8e78f40eaa627650f7283d21869c66182ef567787686f56083251011",
+  "degraded_source_count": 5,
+  "export_checked_at": "2026-08-27T02:00:33Z",
+  "last_successful_update": "2026-08-27T02:00:33Z",
+  "latest_record_update": "2026-08-27T01:58:35Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "8044a8c7e281d5b949e41105da32dec53600e60dc233743779ba2973a4a639e3",
+  "publication_state_checksum_sha256": "6ba20cea4fd74affecc2c44a56517e196507e31d90b2b3d04302f8a8918b7f6c",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "6a9a7084d497628360a4edf050becc9d22feb8b1daba32e14d2a033f50cd1d8c",
+    "artifact_checksum_sha256": "de41ba25666e2588f466d733e110631f941a45cf9a2a2f1942c6632a14ad5adb",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -464,7 +464,7 @@
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
       "record_counts": {
-        "observations": 2674
+        "observations": 2727
       },
       "source": "rubin-fink",
       "state": "connected"
@@ -862,7 +862,7 @@
       "public_scope": "Public ZTF broker object/light-curve output accessed through the user's account",
       "rate_or_cadence_limit": "One exact retained ZTF alias per target refresh; provider documents 100 calls/hour for a standard user token",
       "record_counts": {
-        "observations": 232
+        "observations": 285
       },
       "source": "rubin-lasair",
       "state": "disabled"
@@ -1031,7 +1031,7 @@
       "public_scope": "Allowlisted public AllWISE Source Catalog and 2MASS Point Source Catalog rows",
       "rate_or_cadence_limit": "Two sequential target cone queries, 3 arcsec default radius, 21-row overflow sentinel per catalog",
       "record_counts": {
-        "catalog_counterparts": 91
+        "catalog_counterparts": 93
       },
       "source": "irsa",
       "state": "disabled"
@@ -1384,16 +1384,16 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "95e5e01298188147b7be6a90b89a600a9d446a60ff4504f1f5c51f62c8cb1fd1",
-    "report_checksum_sha256": "1f424cfea44fb188d815111c44b3459d8e0499cd124b0c5a6337a6c3a4469ed9",
+    "content_release_id": "820cd0277ef3f4d35a60b5caf4d2f00fdfb120f7f11e07e70bc8943cd748cc70",
+    "report_checksum_sha256": "60f151207a97ee6ce3175db173aa4808373910347629fe9619ea3ee81f6bf76b",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-27T02:19:00Z"
+    "valid_until": "2026-08-27T02:30:33Z"
   },
   "statistics": {
     "archive_products": 0,
-    "candidates_with_follow_up": 1086,
-    "catalog_counterparts": 1246,
+    "candidates_with_follow_up": 1087,
+    "catalog_counterparts": 1249,
     "classification_history": 305,
     "classifications": 1001,
     "event_types": {
@@ -1422,12 +1422,12 @@
       "radio": 46,
       "x-ray": 34
     },
-    "observations": 8046,
+    "observations": 8152,
     "priority_bands": {
-      "high_50_74": 2456,
+      "high_50_74": 2457,
       "low_0_24": 18,
       "routine_25_49": 298,
-      "urgent_75_100": 174
+      "urgent_75_100": 173
     },
     "public_candidates": 2946,
     "publications": 898,
@@ -1577,5 +1577,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-27T02:19:00Z"
+  "valid_until": "2026-08-27T02:30:33Z"
 }
