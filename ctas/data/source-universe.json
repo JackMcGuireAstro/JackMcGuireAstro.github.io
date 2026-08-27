@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "de41ba25666e2588f466d733e110631f941a45cf9a2a2f1942c6632a14ad5adb",
+  "artifact_checksum_sha256": "041811be2cbac4fc0b7815829d5db4db4f686b123dc8e8ba1dcb2cb0a4774928",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
   "family_count": 10,
-  "generated_at": "2026-08-27T02:00:33Z",
+  "generated_at": "2026-08-27T02:03:05Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -583,7 +583,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "0925a940540f2699a563187e1a7469139d6a0fe770cdf9ab2a20d236b6207890",
+      "contract_checksum_sha256": "dc15e269bf6f2d1ebdbef9837b5e1621139b0b74dc791934c0624d568a3f6f6e",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -598,7 +598,7 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-08-27T01:58:36Z",
+      "last_attempt_at": "2026-08-27T02:01:25Z",
       "last_successful_at": "2026-08-27T01:58:36Z",
       "last_successful_response": "2026-08-27T01:58:36Z",
       "last_verified": "2026-08-08",
@@ -610,7 +610,7 @@
       "protocol": "Anonymous real-time Fink/LSST REST polling, exact-object Rubin source/forced history, plus anonymous targeted Fink/ZTF archive",
       "public_disposition_counts": {
         "provider-failure": 111,
-        "searched-no-match": 3002,
+        "searched-no-match": 3003,
         "searched-with-data": 119
       },
       "public_record_counts": {
@@ -1950,7 +1950,7 @@
       "access_mode": "on-demand-query",
       "authentication_requirement": "Registered forced-photometry API token",
       "connector_implementation_state": "implemented-public-credentials-required",
-      "contract_checksum_sha256": "a5175339b940836ffe6aec4378686032b35ec506928cd57d41f3c42f0f9dc598",
+      "contract_checksum_sha256": "b4c8e9cf4a8c60982c93b6a692add9ef704a7ac48171ee4f9f24ce85ccd7753f",
       "contract_version": "1.0.0",
       "data_types": [
         "TNS discovery",
@@ -1959,12 +1959,12 @@
       "documentation_url": "https://fallingstar-data.com/forcedphot/apiguide/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Result URLs are short-lived; requests must remain bounded and attribution/citations are mandatory",
-      "last_attempt_at": "2026-08-27T00:10:24Z",
-      "last_successful_at": "2026-08-26T23:51:04Z",
-      "last_successful_response": "2026-08-26T23:51:04Z",
+      "last_attempt_at": "2026-08-27T02:00:42Z",
+      "last_successful_at": "2026-08-27T02:00:42Z",
+      "last_successful_response": "2026-08-27T02:00:42Z",
       "last_verified": "2026-08-03",
       "name": "ATLAS",
-      "operational_state": "provider-failure",
+      "operational_state": "scheduled",
       "organization_or_facility": "University of Hawai\u02bbi",
       "primary_family": "optical-and-time-domain-surveys",
       "product_contracts": [],
@@ -1972,11 +1972,11 @@
       "public_disposition_counts": {
         "credentials-required": 2242,
         "provider-failure": 73,
-        "searched-with-data": 218
+        "searched-with-data": 219
       },
       "public_record_counts": {
         "candidates": 223,
-        "observations": 4677
+        "observations": 4720
       },
       "query_scope": "on-demand-query",
       "rate_or_cadence_limit": "Provider throttling; no bulk requests without contacting ATLAS",
@@ -2868,7 +2868,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "NASA ADS API token",
       "connector_implementation_state": "implemented-public-metadata-credentials-required",
-      "contract_checksum_sha256": "ffa75d165e5941bf752269cb8aef172e0e4542875386f8c4d2b9acee19c57c65",
+      "contract_checksum_sha256": "c807eddaf42f5f279982d80bd726069831e196caa82a254334a96d0dd089c8ed",
       "contract_version": "1.0.0",
       "data_types": [
         "bibliographic metadata",
@@ -2878,19 +2878,19 @@
       "documentation_url": "https://ui.adsabs.harvard.edu/help/api/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "CTAS retains metadata and provider links only; it does not mirror article full text or infer reuse rights from discoverability",
-      "last_attempt_at": "2026-08-27T00:10:24Z",
+      "last_attempt_at": "2026-08-27T02:00:43Z",
       "last_successful_at": "2026-08-26T21:06:30Z",
       "last_successful_response": "2026-08-26T21:06:30Z",
       "last_verified": "2026-08-23",
       "name": "NASA Astrophysics Data System",
-      "operational_state": "temporarily-unavailable",
+      "operational_state": "scheduled",
       "organization_or_facility": "NASA / Smithsonian Astrophysical Observatory",
       "primary_family": "other-declared-sources",
       "product_contracts": [],
       "protocol": "NASA ADS Search API JSON",
       "public_disposition_counts": {
         "provider-failure": 28,
-        "searched-no-match": 97,
+        "searched-no-match": 98,
         "searched-with-data": 50,
         "temporarily-unavailable": 115
       },
