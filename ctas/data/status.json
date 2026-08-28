@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "16ce9cdbe70f35b0a4b9bf343fda1d4ca80a862cb24d3c9d8eb26632f50a209c"
+      "sha256": "8f92bb8fad352c7c6c1e6d4be6bc1d9436041e20cac12d2f7bdff222d0170fa4"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "5615b16452f9210a5a11c5b762ca0a08c9351e27faf47c38da85321359240639"
+      "sha256": "12c6386610ce1a84f8566f9774fd38f73736d6931c7416fc8932ccb11dc8b6a3"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "0b4206872de16f57a99638e773ffbaf6dcaa647be8a2853d0ea49ccd6bee98de"
+      "sha256": "059ef9bb2e0c3c87d63706a4f1d7f6a23997a027f3b57e13bc5cea37224fe61d"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "4f7f13eaa051e56357138b83e5b23a14cffdf0009201ce4b999fe5609832229e"
+      "report_checksum_sha256": "5ba2f2ae9a0ca3350542fa1d6fe5567d13ef85d62e7472fd5d8c35278a6e57e2"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "70f7b0409a6ec045e310751f790d8587f802c54d3ea367164ca5112099c662b9"
+      "sha256": "5752b88ebcbddae3787366e9e3b674f5628dab34ae1e67eac6e0c749ecb61c7f"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "8fcaea806a88a4fd190b4a86b69a4020ad2529648ec877389424b7ff4cd3aeaa"
+      "sha256": "53a91e90ee9b9d633e70d977b55a77ff83bcff3a85b4856a8c53c9f23a59cbc8"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "aafe0cde7eac6c78467ce524dc6ef787759a93e6b53c361701f6045d68ea5224"
+      "sha256": "68ae4dc3e6e28889547066f585e47c2cb86b2320f0ee1adb39b58a08fa2bafc1"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2993,
-  "catalog_content_checksum_sha256": "f953d2cf69f917fe89c287995731e806af7c0456e0b2a6f3fbb84a51a82ec07d",
-  "degraded_source_count": 10,
-  "export_checked_at": "2026-08-28T17:34:34Z",
-  "last_successful_update": "2026-08-28T17:34:34Z",
-  "latest_record_update": "2026-08-28T17:30:19Z",
+  "catalog_content_checksum_sha256": "5b92fd4bb33a415edc36fe07f749c26ec848d5bf818b34d37dbaf4d825bc366c",
+  "degraded_source_count": 5,
+  "export_checked_at": "2026-08-28T17:37:07Z",
+  "last_successful_update": "2026-08-28T17:37:07Z",
+  "latest_record_update": "2026-08-28T17:36:48Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "34704d4ecb5806d9b701456adc70d2a3595e4f89b491f128731757f83db64c42",
+  "publication_state_checksum_sha256": "77a686e99371a5c8ccd64dec58c36b3ec3aecae88912a43929b65c325dbc8a45",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "26a31ab2625fa74d59a9ef471b03046921a6fc0175e2e2b0fa51592df051a246",
+    "artifact_checksum_sha256": "6f74077627b7e787ffe2f64c1354f717877449a058be7c438ba4fa8c77cd628a",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -244,7 +244,7 @@
       "public_scope": "ATLAS explicitly provides full public access to forced photometry after registration",
       "rate_or_cadence_limit": "Provider throttling; no bulk requests without contacting ATLAS",
       "record_counts": {
-        "observations": 6569
+        "observations": 6620
       },
       "source": "atlas",
       "state": "disabled"
@@ -571,7 +571,7 @@
       "public_scope": "Exact allowlist to the public Gaia DR3 source catalog I/355/gaiadr3 served by ESA's official CDS partner",
       "rate_or_cadence_limit": "One bounded 3-arcsec target cone per explicit request; 21-row overflow sentinel",
       "record_counts": {
-        "catalog_counterparts": 49
+        "catalog_counterparts": 50
       },
       "source": "gaia-dr3",
       "state": "disabled"
@@ -862,7 +862,7 @@
       "public_scope": "Public ZTF broker object/light-curve output accessed through the user's account",
       "rate_or_cadence_limit": "One exact retained ZTF alias per target refresh; provider documents 100 calls/hour for a standard user token",
       "record_counts": {
-        "observations": 367
+        "observations": 401
       },
       "source": "rubin-lasair",
       "state": "disabled"
@@ -1031,7 +1031,7 @@
       "public_scope": "Allowlisted public AllWISE Source Catalog and 2MASS Point Source Catalog rows",
       "rate_or_cadence_limit": "Two sequential target cone queries, 3 arcsec default radius, 21-row overflow sentinel per catalog",
       "record_counts": {
-        "catalog_counterparts": 100
+        "catalog_counterparts": 101
       },
       "source": "irsa",
       "state": "disabled"
@@ -1135,7 +1135,7 @@
       "public_scope": "SIMBAD documents free access without registration under ODbL with acknowledgment and original-reference citation",
       "rate_or_cadence_limit": "One bounded 30-arcsec target cone per explicit request; 51-row overflow sentinel",
       "record_counts": {
-        "catalog_counterparts": 133
+        "catalog_counterparts": 136
       },
       "source": "simbad",
       "state": "disabled"
@@ -1384,16 +1384,16 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "938e84614ea8454f058d9cb17111facd57fbb3835797973d9521c9f16edbaa0e",
-    "report_checksum_sha256": "4f7f13eaa051e56357138b83e5b23a14cffdf0009201ce4b999fe5609832229e",
+    "content_release_id": "5dea1549dafb9a69a3878d481bdb5583bab215b3375b00383189af9441d63db2",
+    "report_checksum_sha256": "5ba2f2ae9a0ca3350542fa1d6fe5567d13ef85d62e7472fd5d8c35278a6e57e2",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-28T18:04:34Z"
+    "valid_until": "2026-08-28T18:07:07Z"
   },
   "statistics": {
     "archive_products": 0,
     "candidates_with_follow_up": 1120,
-    "catalog_counterparts": 1314,
+    "catalog_counterparts": 1319,
     "classification_history": 305,
     "classifications": 1020,
     "event_types": {
@@ -1422,7 +1422,7 @@
       "radio": 51,
       "x-ray": 37
     },
-    "observations": 10277,
+    "observations": 10362,
     "priority_bands": {
       "high_50_74": 2486,
       "low_0_24": 20,
@@ -1577,5 +1577,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-28T18:04:34Z"
+  "valid_until": "2026-08-28T18:07:07Z"
 }
