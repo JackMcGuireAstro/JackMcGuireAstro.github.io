@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "620176da11fdc1e92d073f72f524fc52aa5ff5c2fee0750a1bfe4637d925e22d"
+      "sha256": "98b4a25653407bfd2ca3e7ece59dbd9cc463fce5f921f5f31d3dbf7531c3b222"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "849d17b8e132fc170932aaed02318aceaa35cb462b75aebe397122a1aca90394"
+      "sha256": "90b85ee32a4bee43d388d9454479b15c9cd2951052d58bb0ca867a512550f8dc"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "ba23ad8e7a372ec735978ccd9fa9467d3e7e925349f26b611d94de888d03fbb4"
+      "sha256": "9ad60752faf91aa967d831b1b819b7b89475ffefa333ec26c0e186375b8d746d"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "bf21d4653655c0886019d58cd7d05e717f413c00baa6e60635730f0b911d2277"
+      "report_checksum_sha256": "f88a8d646a0bdef870672b7dac57f1b6a0ed4684caace6a6e82b71560ee2237a"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "ea12800bb6729ba6cadb6ccdb4a4878d85cbd2f0547b6bc813c9d8e32445bf16"
+      "sha256": "d44f5815283752d0a09f12e1a941666d263bea41fd667b6ec18f1d1aef1c4ace"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "8c9ef3967bda3b1ed90d97c9952062055069ce8723e038a922744f71d9b7554b"
+      "sha256": "48bbe019c1afc98baa2519e470f5200f992ba40e20bf64ee389aa11de2e9f5ec"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "9cbc668650c79d202e4c6a95c6ef9d7e6ccfe3a9ab51ca13439ddcb55a00e245"
+      "sha256": "fe4ae8409b1484889ceec658efd1a0a95f85763919d4df15bff60ae3a7870e2c"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2972,
-  "catalog_content_checksum_sha256": "f1a314301e4ce547821f2acf86c5d064cef3b21075cc134ea6a5c920a1f15c19",
-  "degraded_source_count": 7,
-  "export_checked_at": "2026-08-28T05:06:46Z",
-  "last_successful_update": "2026-08-28T05:06:46Z",
-  "latest_record_update": "2026-08-28T05:02:31Z",
+  "catalog_content_checksum_sha256": "9054f1dc06c49aaf491fd8a14b7c419f18ec9a66312a9a5ff406e80af581b65e",
+  "degraded_source_count": 8,
+  "export_checked_at": "2026-08-28T06:00:22Z",
+  "last_successful_update": "2026-08-28T06:00:22Z",
+  "latest_record_update": "2026-08-28T05:22:46Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "a1646bdf43f09f349488c9e6a899a4a7ce128e3cb2600f7d93c62d4a4cc423c7",
+  "publication_state_checksum_sha256": "0becf65a30c2f47c13fdf43fdfa11d5b1af067cc2fe5cd3d6f772ddd7ef4fbe5",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "bf12ff286e688308c1e39116a7ac1c2c4523daa69e9b23d538db21303f8a3bae",
+    "artifact_checksum_sha256": "7cd0987722bf3dd2777724183187774e4bece654382eba29426b8e7f3d1d7f5d",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -420,7 +420,7 @@
         "LAT offline detection",
         "LAT monitored-source flare"
       ],
-      "detail": "via NASA GCN: gcn.classic.text.FERMI_GBM_ALERT",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.FERMI_GBM_ALERT, gcn.classic.text.FERMI_GBM_FLT_POS, gcn.classic.text.FERMI_GBM_GND_POS, gcn.classic.text.FERMI_GBM_FIN_POS, gcn.classic.text.FERMI_GBM_SUBTHRESH, gcn.classic.text.FERMI_LAT_POS_UPD, gcn.classic.text.FERMI_LAT_OFFLINE, gcn.classic.text.FERMI_LAT_MONITOR",
       "documentation_url": "https://gcn.nasa.gov/missions/fermi",
       "enabled": true,
       "facility": "NASA Fermi / GBM / LAT / NASA GCN",
@@ -464,7 +464,7 @@
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
       "record_counts": {
-        "observations": 2780
+        "observations": 2781
       },
       "source": "rubin-fink",
       "state": "connected"
@@ -505,7 +505,7 @@
         "upper limit",
         "external coincidence"
       ],
-      "detail": "via NASA GCN: gcn.notices.maxi.gsc.unknown",
+      "detail": "NASA GCN subscriptions active: gcn.notices.swift.bat.guano, gcn.notices.einstein_probe.wxt.alert, gcn.notices.maxi.gsc.known, gcn.notices.maxi.gsc.unknown, gcn.notices.boom.alert, gcn.notices.chime.frb",
       "documentation_url": "https://gcn.nasa.gov/notices",
       "enabled": true,
       "facility": "NASA GCN participating missions",
@@ -827,8 +827,8 @@
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 2.032033,
-      "last_message_at": "2026-08-28T05:03:42Z",
+      "lag_seconds": 2728.928333,
+      "last_message_at": "2026-08-28T05:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -929,7 +929,7 @@
         "upper limit",
         "observing plan"
       ],
-      "detail": "via NASA GCN: gcn.circulars",
+      "detail": "NASA GCN subscriptions active: gcn.circulars",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA GCN worldwide author community",
@@ -962,8 +962,8 @@
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 2.032033,
-      "last_message_at": "2026-08-28T05:03:42Z",
+      "lag_seconds": 2728.928333,
+      "last_message_at": "2026-08-28T05:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -1261,7 +1261,7 @@
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 208090.125183,
+      "lag_seconds": 210654.756224,
       "last_message_at": "2026-08-25T19:05:50Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1384,11 +1384,11 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "3a502acd864823ca9f699ed2cdc566515bd061e1c69ce9d3797c170b1cb8f20f",
-    "report_checksum_sha256": "bf21d4653655c0886019d58cd7d05e717f413c00baa6e60635730f0b911d2277",
+    "content_release_id": "d8424ec960eab48aa463588ab9af37cef9e6eeff163f2997af8f597d6ce6d114",
+    "report_checksum_sha256": "f88a8d646a0bdef870672b7dac57f1b6a0ed4684caace6a6e82b71560ee2237a",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-28T05:36:46Z"
+    "valid_until": "2026-08-28T06:30:22Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1422,7 +1422,7 @@
       "radio": 50,
       "x-ray": 36
     },
-    "observations": 9840,
+    "observations": 9841,
     "priority_bands": {
       "high_50_74": 2476,
       "low_0_24": 18,
@@ -1577,5 +1577,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-28T05:36:46Z"
+  "valid_until": "2026-08-28T06:30:22Z"
 }
