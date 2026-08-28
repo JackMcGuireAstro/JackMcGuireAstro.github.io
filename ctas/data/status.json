@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "50f226be8fde788342a40bc7f516579a0ec0bd7c837ad11e8398a7821b50935a"
+      "sha256": "6d9c4c37a8a33209f52863d37b7f5d086bb66a8e888f9e60a1d7dbf77cc9d442"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "409bc60da3895dcf345ce2dad53380563a0fa9c33dec8bdecda2b582d9e91c1e"
+      "sha256": "ab29edbf5bd9889f6dff1be3b6b5989136c6007fbc01edf49a0d7ba2a1127e52"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "0ec60226b0613dc46bb044f1f715c8857ab038aeb1a11fa75b3cc9a41610eed6"
+      "sha256": "2e8af809740fb843b84533e1a78198a0955d7e5919083d0ab49e4c96eeb55f92"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "5199b24b68fc9bca4e5580c4c98bd52779664ae061c5474d18c7c482873d5b2a"
+      "report_checksum_sha256": "c0e811137339a5edeb562a2aff370ff9e01696b1e89b8a5e063601fdc332a1f8"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "4ab48f642424207ae8c5fd621c9ed89d44a4f8f9fa643dc7b804ec24694f23a1"
+      "sha256": "e160cdeff53ca0b8274964d6f4b9e384b63f20be526e73700b9d536ff60d95e9"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "fb78c0ef47e7fca5b517cc32221204e73f4c49bd0ec877e356412547982d8644"
+      "sha256": "31103d3846c8c4969f0216fdbd5e38b55e45dfb44acf512ccdb9835e952928c3"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "3af583313e661dbfcab7b32820d66599aae09cd2e33289f6b9a7c5a7119053c3"
+      "sha256": "68990f7f7e5fba654c26b5de48299ed8f61ad35a2c5d208f1344a4fa8e06dfc9"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2979,
-  "catalog_content_checksum_sha256": "c51a0983be4b16c6ea246488f3acc8128ad672ac7ae0b42dbbdaece2f145b05e",
+  "catalog_content_checksum_sha256": "31b1ea8b809f43c8e29be745a056d171e066f2ed28375b84746ad493d9741180",
   "degraded_source_count": 7,
-  "export_checked_at": "2026-08-28T14:55:36Z",
-  "last_successful_update": "2026-08-28T14:55:36Z",
-  "latest_record_update": "2026-08-28T14:18:46Z",
+  "export_checked_at": "2026-08-28T14:57:59Z",
+  "last_successful_update": "2026-08-28T14:57:59Z",
+  "latest_record_update": "2026-08-28T14:56:09Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "c62482c5ef6fd4dd1b2e16acb4c1fdde7214bc908a15ab40b5b3ed9db6fc6182",
+  "publication_state_checksum_sha256": "bfbbe99792d852dcacf743be7d7ef1e231efa474436c38b931cbf5b60ce01e9f",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "b594de971906f8f341e00626cc92eaf9f36d37475267065402214d050de7b5d4",
+    "artifact_checksum_sha256": "256c42d55e5a121d035093a87a0c0d9f3e9ecf9a44253bc09444dba688a36b55",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -929,13 +929,13 @@
         "upper limit",
         "observing plan"
       ],
-      "detail": "NASA GCN subscriptions active: gcn.circulars",
+      "detail": "via NASA GCN: gcn.circulars",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA GCN worldwide author community",
       "label": "NASA GCN Circulars",
-      "lag_seconds": 106271.62684,
-      "last_message_at": "2026-08-27T06:21:49Z",
+      "lag_seconds": 3.936383,
+      "last_message_at": "2026-08-28T14:56:05Z",
       "last_verified": "2026-08-04",
       "mode": "live-and-archive",
       "proprietary_risk": "Circular prose is retained as an attributed author report; values are not promoted to machine measurements without a mission-specific parser",
@@ -943,7 +943,7 @@
       "public_scope": "Released GCN Circular author text, metadata, corrections, and provider-hosted links are publicly distributed",
       "rate_or_cadence_limit": "Persistent Kafka consumer; revisions are checksum-addressed and linked URLs are not bulk-downloaded",
       "record_counts": {
-        "publications": 685
+        "publications": 686
       },
       "source": "gcn-circulars",
       "state": "connected"
@@ -957,13 +957,13 @@
         "follow-up report",
         "retraction"
       ],
-      "detail": "gcn.circulars, igwn.gwalert, gcn.notices.icecube.gold_bronze_track_alerts, gcn.notices.icecube.lvk_nu_track_search, gcn.classic.text.SNEWS, gcn.notices.swift.bat.guano, gcn.notices.einstein_probe.wxt.alert, gcn.notices.maxi.gsc.known, gcn.notices.maxi.gsc.unknown, gcn.notices.boom.alert, gcn.notices.chime.frb, gcn.classic.text.FERMI_GBM_ALERT, gcn.classic.text.FERMI_GBM_FLT_POS, gcn.classic.text.FERMI_GBM_GND_POS, gcn.classic.text.FERMI_GBM_FIN_POS, gcn.classic.text.FERMI_GBM_SUBTHRESH, gcn.classic.text.FERMI_LAT_POS_UPD, gcn.classic.text.FERMI_LAT_OFFLINE, gcn.classic.text.FERMI_LAT_MONITOR, gcn.classic.text.SWIFT_BAT_QL_POS, gcn.classic.text.SWIFT_BAT_GRB_POS_ACK, gcn.classic.text.SWIFT_XRT_POSITION, gcn.classic.text.SWIFT_XRT_CENTROID, gcn.classic.text.SWIFT_UVOT_POS, gcn.classic.text.SWIFT_UVOT_POS_NACK, gcn.classic.text.GECAM_FLT, gcn.classic.text.GECAM_GND, gcn.classic.text.CALET_GBM_FLT_LC, gcn.classic.text.HAWC_BURST_MONITOR, gcn.classic.text.KONUS_LC, gcn.classic.text.AMON_NU_EM_COINC, gcn.classic.text.ICECUBE_CASCADE",
+      "detail": "gcn.circulars",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 1.816517,
-      "last_message_at": "2026-08-28T14:13:35Z",
+      "lag_seconds": 3.936383,
+      "last_message_at": "2026-08-28T14:56:05Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -1384,11 +1384,11 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "e842435af68359fe93b910bb702708fc3a236792c8d3656dde206f6e228e8ab1",
-    "report_checksum_sha256": "5199b24b68fc9bca4e5580c4c98bd52779664ae061c5474d18c7c482873d5b2a",
+    "content_release_id": "e8ce8351399ac1c47aabce02c3d5eeee78075fa33f199827ddb0acf99efd1462",
+    "report_checksum_sha256": "c0e811137339a5edeb562a2aff370ff9e01696b1e89b8a5e063601fdc332a1f8",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-28T15:25:36Z"
+    "valid_until": "2026-08-28T15:27:59Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1430,7 +1430,7 @@
       "urgent_75_100": 172
     },
     "public_candidates": 2979,
-    "publications": 915,
+    "publications": 916,
     "quality_quarantined_records": 1,
     "real_events": 2981,
     "spectra": 20
@@ -1577,5 +1577,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-28T15:25:36Z"
+  "valid_until": "2026-08-28T15:27:59Z"
 }
