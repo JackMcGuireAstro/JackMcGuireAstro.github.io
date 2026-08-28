@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "515ebca45712bd783503676fe9566645d2791012e5cb4620d77232ea56c49107"
+      "sha256": "dbed9eee33a2c79e2e57729c3c693c18787bd7b651466f1b218c86a0eb3666d8"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "e566b952e19a34bc65ec9e38f23b4b4604d276fa762edb8d00a18d9d36ce9de3"
+      "sha256": "c504772cf2ddf9c0e005cb43dca0d8099ddb893a12272d774abe390815301b1d"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "7f505d73d8d5f8c2872f0f58d2d9c19ff57c492c371d5bd296d4372f17764ee0"
+      "sha256": "2b8b6fc5a254f03bf275374bc31dc66adc1336839d4cb68a7b9fb2a3f7c2b41f"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "cfa90598c56781f9d90a7d891103f2ad01d7f9ce0508bee3c72081c2d7bf5f14"
+      "report_checksum_sha256": "fbbd5efae6a1a9163d396465aac421915cd8190508887795dd50660ee4dbc569"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "71f498be5b279f35743b3dd98ba74bd4a2973ec5f09e8768b0ae72eed18bdf03"
+      "sha256": "9123f409e4f6fc226a2559746b85ea441c4ee2e91b1ea28718ba47a76f0e0074"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "05f440faed215c226317a81c2a7a99631a9efd5c037f1c5e701f87abe8eec59e"
+      "sha256": "8af1ddc973e0a9b4106343d628e27b6ce3bfac407022378105f8afef81d90fbf"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "e59a0774abcace1b118aa578d38a4dddec96416be5204d22b412b4334b268701"
+      "sha256": "ea62d740ce034e72e2cf71464da5b4a6d0c250a26c79083650852c0d69ad1fa6"
     }
   },
   "cadence": "about every 2 minutes",
-  "candidate_count": 2973,
-  "catalog_content_checksum_sha256": "810a544ce6e89375e6648f909b0ff2c0a4b7d8b2918d3146a1b6775b8208c21f",
-  "degraded_source_count": 6,
-  "export_checked_at": "2026-08-28T08:37:36Z",
-  "last_successful_update": "2026-08-28T08:37:36Z",
-  "latest_record_update": "2026-08-28T08:04:10Z",
+  "candidate_count": 2977,
+  "catalog_content_checksum_sha256": "342df37cba660463fcc47dc03e79e24cd5e4e699efc997f9211d07d3ffe87397",
+  "degraded_source_count": 9,
+  "export_checked_at": "2026-08-28T11:09:39Z",
+  "last_successful_update": "2026-08-28T11:09:39Z",
+  "latest_record_update": "2026-08-28T10:16:18Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "a982f56904afd4c5af804cbca7bae4ebb969cd92585b159c3935f40eb60b1dc7",
+  "publication_state_checksum_sha256": "3e3b2eeb576bb60ccf6c850ad4c08d3d749a15065661776935e977a68cf10d57",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "c0973c3e9ac39350d6c613e06973c4315449696bb1c0f1e5e22e40863b259ec1",
+    "artifact_checksum_sha256": "6c37c3bd5dbe170018e3fcfa02d6a0f8906acb329d26367cb792ec9d84cca3fd",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -464,7 +464,7 @@
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
       "record_counts": {
-        "observations": 2781
+        "observations": 2815
       },
       "source": "rubin-fink",
       "state": "connected"
@@ -684,7 +684,7 @@
         "classification",
         "public-object metadata"
       ],
-      "detail": "processed 1 public rows \u00b7 2026-08-28 07:00:00 - 08:00:00",
+      "detail": "processed 0 public rows \u00b7 2026-08-28 10:00:00 - 11:00:00",
       "documentation_url": "https://www.wis-tns.org/content/tns-getting-started",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
@@ -699,7 +699,7 @@
       "rate_or_cadence_limit": "Provider quota; connector defaults to one persistent five-minute poll loop",
       "record_counts": {
         "classifications": 190,
-        "designations": 2329
+        "designations": 2332
       },
       "source": "tns",
       "state": "connected"
@@ -827,8 +827,8 @@
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 47.968219,
-      "last_message_at": "2026-08-28T08:03:40Z",
+      "lag_seconds": 163.753338,
+      "last_message_at": "2026-08-28T10:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -929,13 +929,13 @@
         "upper limit",
         "observing plan"
       ],
-      "detail": "NASA GCN subscriptions active: gcn.circulars",
+      "detail": "via NASA GCN: gcn.circulars",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA GCN worldwide author community",
       "label": "NASA GCN Circulars",
-      "lag_seconds": 3.847384,
-      "last_message_at": "2026-08-28T03:34:33Z",
+      "lag_seconds": 398.385652,
+      "last_message_at": "2026-08-28T10:09:39Z",
       "last_verified": "2026-08-04",
       "mode": "live-and-archive",
       "proprietary_risk": "Circular prose is retained as an attributed author report; values are not promoted to machine measurements without a mission-specific parser",
@@ -943,7 +943,7 @@
       "public_scope": "Released GCN Circular author text, metadata, corrections, and provider-hosted links are publicly distributed",
       "rate_or_cadence_limit": "Persistent Kafka consumer; revisions are checksum-addressed and linked URLs are not bulk-downloaded",
       "record_counts": {
-        "publications": 684
+        "publications": 685
       },
       "source": "gcn-circulars",
       "state": "connected"
@@ -962,8 +962,8 @@
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 47.968219,
-      "last_message_at": "2026-08-28T08:03:40Z",
+      "lag_seconds": 163.753338,
+      "last_message_at": "2026-08-28T10:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -972,8 +972,8 @@
       "rate_or_cadence_limit": "Long-running consumer required; no cron-style reconnect polling",
       "record_counts": {
         "classification_history": 305,
-        "classifications": 811,
-        "messenger_signals": 875,
+        "classifications": 812,
+        "messenger_signals": 876,
         "observations": 417
       },
       "source": "gcn",
@@ -1256,12 +1256,12 @@
         "classification",
         "follow-up photometry table"
       ],
-      "detail": "Checked 9 released public records before the provider rate limit; retained public data remain available.",
+      "detail": null,
       "documentation_url": "https://www.wis-tns.org/astronotes",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 218475.715039,
+      "lag_seconds": 227441.431633,
       "last_message_at": "2026-08-25T19:05:50Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1274,7 +1274,7 @@
         "publications": 176
       },
       "source": "tns-astronotes",
-      "state": "degraded"
+      "state": "connecting"
     },
     {
       "adapter_status": "implemented-explicit-public-metadata-and-ascii-preview-on-demand-credentials-required",
@@ -1384,20 +1384,20 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "45801384e898e0db58efba97d2e6a9b18623fb4c860ac9eea801ce56104ad429",
-    "report_checksum_sha256": "cfa90598c56781f9d90a7d891103f2ad01d7f9ce0508bee3c72081c2d7bf5f14",
+    "content_release_id": "ae9a514153ed9530df911f31dd44cf560e58541323b92dcf0eed3c9b4a8d8713",
+    "report_checksum_sha256": "fbbd5efae6a1a9163d396465aac421915cd8190508887795dd50660ee4dbc569",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-28T09:07:36Z"
+    "valid_until": "2026-08-28T11:39:39Z"
   },
   "statistics": {
     "archive_products": 0,
-    "candidates_with_follow_up": 1111,
+    "candidates_with_follow_up": 1113,
     "catalog_counterparts": 1309,
     "classification_history": 305,
-    "classifications": 1015,
+    "classifications": 1016,
     "event_types": {
-      "fast-radio-burst": 50,
+      "fast-radio-burst": 51,
       "gamma-ray-burst-candidate": 28,
       "gamma-ray-transient": 89,
       "high-energy-count-rate-trigger": 15,
@@ -1406,33 +1406,33 @@
       "high-energy-neutrino-track": 175,
       "high-energy-trigger": 71,
       "neutrino-gamma-coincidence-candidate": 28,
-      "optical-transient": 2423,
+      "optical-transient": 2426,
       "solar-flare": 1,
       "terrestrial-gamma-ray-flash": 11,
       "x-ray-transient": 36
     },
     "host_context": 13,
     "magnitude_values_excluded": 4,
-    "messenger_signals": 875,
+    "messenger_signals": 876,
     "messengers": {
-      "electromagnetic": 2423,
+      "electromagnetic": 2426,
       "gamma-ray": 215,
       "multimessenger": 28,
       "neutrino": 221,
-      "radio": 50,
+      "radio": 51,
       "x-ray": 36
     },
-    "observations": 9894,
+    "observations": 9928,
     "priority_bands": {
-      "high_50_74": 2477,
+      "high_50_74": 2481,
       "low_0_24": 18,
       "routine_25_49": 307,
       "urgent_75_100": 171
     },
-    "public_candidates": 2973,
-    "publications": 914,
+    "public_candidates": 2977,
+    "publications": 915,
     "quality_quarantined_records": 1,
-    "real_events": 2975,
+    "real_events": 2979,
     "spectra": 20
   },
   "surveys": [
@@ -1453,7 +1453,7 @@
       "survey": "GOTO"
     },
     {
-      "candidate_count": 225,
+      "candidate_count": 228,
       "survey": "ATLAS"
     },
     {
@@ -1473,7 +1473,7 @@
       "survey": "IceCube Gold Track Alert"
     },
     {
-      "candidate_count": 49,
+      "candidate_count": 50,
       "survey": "Chime"
     },
     {
@@ -1577,5 +1577,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-28T09:07:36Z"
+  "valid_until": "2026-08-28T11:39:39Z"
 }

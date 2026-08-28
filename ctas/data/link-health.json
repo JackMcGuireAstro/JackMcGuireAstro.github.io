@@ -1,34 +1,33 @@
 {
   "audit_version": "2.0.0",
-  "canonical_tns_link_count": 4824,
-  "catalog_content_checksum_sha256": "810a544ce6e89375e6648f909b0ff2c0a4b7d8b2918d3146a1b6775b8208c21f",
-  "checked_at": "2026-08-28T08:37:35Z",
-  "checked_candidate_link_count": 34786,
+  "canonical_tns_link_count": 4830,
+  "catalog_content_checksum_sha256": "342df37cba660463fcc47dc03e79e24cd5e4e699efc997f9211d07d3ffe87397",
+  "checked_at": "2026-08-28T11:09:37Z",
+  "checked_candidate_link_count": 34842,
   "claim_boundary": "The recursive structural audit classifies every exported candidate/source URL and strictly validates canonical TNS object links. Only the listed TNS object page is sampled live; no live-health claim is made for unsampled providers. Suppressed URLs remain non-clickable provenance rather than structural failures.",
-  "distinct_canonical_tns_object_count": 2270,
+  "distinct_canonical_tns_object_count": 2273,
   "live_provider_samples": [
     {
       "candidate_name": "AT2026zke",
-      "checked_at": "2026-08-28T03:58:50Z",
-      "http_status": 200,
+      "checked_at": "2026-08-28T11:09:37Z",
+      "http_status": 429,
       "json_path": "candidates.[].links.[].url",
       "object_id": "2026zke",
       "provider": "TNS",
-      "reason": "expected object identity appears on the resolved TNS page",
-      "resolved_url": "https://www.wis-tns.org/object/2026zke",
-      "state": "passed",
+      "reason": "HTTPError",
+      "state": "degraded-provider-unavailable",
       "url": "https://www.wis-tns.org/object/2026zke"
     }
   ],
-  "live_status": "passed",
+  "live_status": "degraded-provider-unavailable",
   "live_status_scope": "sampled-provider-only",
   "recursive_external_link_audit": {
     "artifact_counts": {
       "candidate-catalog": {
-        "https-allowlisted-renderable": 34417,
+        "https-allowlisted-renderable": 34473,
         "suppressed-insecure": 53,
         "suppressed-unallowlisted": 316,
-        "url_occurrence_count": 34786
+        "url_occurrence_count": 34842
       },
       "source-universe": {
         "https-allowlisted-renderable": 61,
@@ -36,14 +35,14 @@
       }
     },
     "audit_version": "2.0.0",
-    "checked_candidate_url_occurrence_count": 34786,
+    "checked_candidate_url_occurrence_count": 34842,
     "checked_source_universe_url_occurrence_count": 61,
-    "distinct_url_count": 4954,
+    "distinct_url_count": 4958,
     "host_occurrence_counts": {
       "ampelproject.github.io": 2,
       "antares.noirlab.edu": 2,
       "api.fink-portal.org": 1,
-      "api.ztf.fink-portal.org": 3436,
+      "api.ztf.fink-portal.org": 3474,
       "apps.aavso.org": 223,
       "archive.eso.org": 448,
       "archive.gemini.edu": 2,
@@ -53,12 +52,12 @@
       "blackgem.org": 1,
       "cgbm.calet.jp": 28,
       "chime-experiment.ca": 1,
-      "doc.lsst.fink-broker.org": 1040,
+      "doc.lsst.fink-broker.org": 1044,
       "docs.aavso.org": 448,
       "ep.bao.ac.cn": 1,
       "fallingstar-data.com": 6908,
       "gcn.gsfc.nasa.gov": 1485,
-      "gcn.nasa.gov": 3309,
+      "gcn.nasa.gov": 3314,
       "github.com": 448,
       "goto-observatory.org": 1,
       "heasarc.gsfc.nasa.gov": 448,
@@ -83,22 +82,22 @@
       "www.cadc-ccda.hia-iha.nrc-cnrc.gc.ca": 2,
       "www.cosmos.esa.int": 450,
       "www.ivoa.net": 2,
-      "www.wis-tns.org": 8124,
+      "www.wis-tns.org": 8133,
       "www.wiserep.org": 460,
       "yse.ucsc.edu": 1,
       "ztf.uw.edu": 2
     },
     "renderability_counts": {
-      "https-allowlisted-renderable": 34478,
+      "https-allowlisted-renderable": 34534,
       "suppressed-insecure": 53,
       "suppressed-unallowlisted": 316
     },
     "role_counts": {
       "artifact": 422,
-      "documentation": 10228,
-      "exact-object": 5022,
-      "exact-record": 2988,
-      "generic-reference": 11842,
+      "documentation": 10236,
+      "exact-object": 5028,
+      "exact-record": 2989,
+      "generic-reference": 11883,
       "query": 4345
     },
     "role_definitions": {
@@ -337,21 +336,20 @@
       }
     ],
     "suppression_policy": "Insecure, credential-bearing, explicit-port, malformed, and unallowlisted URLs remain provenance text but must not render as clickable public links.",
-    "url_occurrence_count": 34847
+    "url_occurrence_count": 34903
   },
-  "report_checksum_sha256": "b4232719693e9ac3316fece9bb54cef632ff97826667aed7aedb75819d446cfa",
+  "report_checksum_sha256": "797cff88f24e2808aad0b6d24fe7f28fa9615379f5821422da5b662601397e4d",
   "representative_tns": {
     "candidate_name": "AT2026zke",
-    "checked_at": "2026-08-28T03:58:50Z",
-    "http_status": 200,
+    "checked_at": "2026-08-28T11:09:37Z",
+    "http_status": 429,
     "json_path": "candidates.[].links.[].url",
     "object_id": "2026zke",
-    "reason": "expected object identity appears on the resolved TNS page",
-    "resolved_url": "https://www.wis-tns.org/object/2026zke",
-    "state": "passed",
+    "reason": "HTTPError",
+    "state": "degraded-provider-unavailable",
     "url": "https://www.wis-tns.org/object/2026zke"
   },
-  "sampled_provider_live_status": "passed",
+  "sampled_provider_live_status": "degraded-provider-unavailable",
   "schema": "ctas.link-health@1.0.0",
   "structural_problem_count": 0,
   "structural_problems": [],
