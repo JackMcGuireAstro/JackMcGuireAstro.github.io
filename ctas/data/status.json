@@ -6,19 +6,19 @@
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "03581bf00767239e70e56f0a7be6397e7a3ebb3b47e0f8381e9e6c5804a6e75e"
+      "sha256": "baabf9b607ee9b997ead9a1a4712c32dffb83f1b371377de8f2d149f5e13813e"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "236e4760d8286b55b24a44d37988c1a0562869fc1a034d7fa77cc3699deed8c3"
+      "sha256": "2a276df3e04125bd124e52206ecc13dc1e90f54f75ccb00042ff04622714eece"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "d3ceda9c721210302523b9e78deb5718622c29feacc70398a3ba2d95cd4109f7"
+      "report_checksum_sha256": "07976a19899d733ab6458c043543b0b03c2fca1f6189c082e03a8ead26b5210b"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "8b8b7cde0aa1f9ebaf308b1aceedeae09f924874a827f36c9eca2c92d28f2d0f"
+      "sha256": "5eb2deb4c8ac1823a8cc24ffca7c2b576589e95b664c14d0ec41f2ac0ba4bb5e"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
@@ -26,23 +26,23 @@
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "b5d24e624d1da6b32906df6c7c14b832a2ed9cbbd53a60a9298b4d5d46775f5f"
+      "sha256": "bffc4e6f752e13da33826b27e57619254a2be3c5cb8e85c7b9b512dd79882815"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2992,
   "catalog_content_checksum_sha256": "3d7286ec7392087453f73757908bcf129f0acde50299806fa86248fbcdf5743f",
-  "degraded_source_count": 11,
-  "export_checked_at": "2026-08-28T16:11:14Z",
-  "last_successful_update": "2026-08-28T16:11:14Z",
+  "degraded_source_count": 12,
+  "export_checked_at": "2026-08-28T16:15:52Z",
+  "last_successful_update": "2026-08-28T16:15:52Z",
   "latest_record_update": "2026-08-28T16:07:31Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "44469ded200186f1673cf0f3168a85c8f038e6b9aa23091651d4cde0540d3d97",
+  "publication_state_checksum_sha256": "4e88402870bf20c9c618b45e6c1b648011170b471b495c107c2e98a960fe4f63",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "2ff0d8a8e557517da579978a98bc730e6911219f0f41c4da4303b33756ed99de",
+    "artifact_checksum_sha256": "84235f3aa94c7bb1f3f8dc296c25f1c8f3939b46ca8a03ccec8047849cf5475f",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -450,7 +450,7 @@
         "upper limit",
         "science/template/difference cutout"
       ],
-      "detail": "anonymous real-time Rubin/Fink REST polling active \u00b7 0 unique public alerts in bounded lookback",
+      "detail": "ValueError: Fink/LSST public tag API returned HTTP 502",
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "enabled": true,
       "facility": "Rubin community broker",
@@ -467,7 +467,7 @@
         "observations": 2876
       },
       "source": "rubin-fink",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "implemented-public-positional-candidates-on-demand",
@@ -827,8 +827,8 @@
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 1.917237,
-      "last_message_at": "2026-08-28T16:08:14Z",
+      "lag_seconds": 0.703647,
+      "last_message_at": "2026-08-28T16:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -962,8 +962,8 @@
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 1.917237,
-      "last_message_at": "2026-08-28T16:08:14Z",
+      "lag_seconds": 0.703647,
+      "last_message_at": "2026-08-28T16:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -1384,11 +1384,11 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "90079bf6d47d611f2b28f9f24789fb7cd055a86ee3a5ae5d4d58fe08af311f75",
-    "report_checksum_sha256": "d3ceda9c721210302523b9e78deb5718622c29feacc70398a3ba2d95cd4109f7",
+    "content_release_id": "69b38d3de25a9a6f8fa378ec93569536a410c3ec7fc1444f3df4edb73edda556",
+    "report_checksum_sha256": "07976a19899d733ab6458c043543b0b03c2fca1f6189c082e03a8ead26b5210b",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-28T16:41:14Z"
+    "valid_until": "2026-08-28T16:45:52Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1577,5 +1577,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-28T16:41:14Z"
+  "valid_until": "2026-08-28T16:45:52Z"
 }
