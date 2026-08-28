@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "1dacc6925c9f3b25c62852c391b224b289312444bbae35135187f179fbd329fa",
+  "artifact_checksum_sha256": "f930a707a43a43563e93ff01faf14d3ae46a65f28b8b72b652ab8641d2217bfd",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
   "family_count": 10,
-  "generated_at": "2026-08-28T18:00:30Z",
+  "generated_at": "2026-08-28T18:02:51Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -69,7 +69,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous public access",
       "connector_implementation_state": "implemented-public-reduced-metadata-on-demand",
-      "contract_checksum_sha256": "112a0ee5c13a415aa24b12c6075a7d0017798f51a6aa8504975e135969913c0e",
+      "contract_checksum_sha256": "8944b7d117a26e1e2d10f0c319f2a929aa7e20411cf4c64d9e8f6bc155efb397",
       "contract_version": "1.0.0",
       "data_types": [
         "released reduced-product metadata",
@@ -80,7 +80,7 @@
       "documentation_url": "https://archive.eso.org/cms/eso-data-access-policy.html",
       "implementation_state": "implemented",
       "known_limitations": "Authenticated TAP can expose PI-authorized proprietary metadata; this adapter sends no credentials, repeats the release-date check locally, and does not download product bytes",
-      "last_attempt_at": "2026-08-28T17:55:12Z",
+      "last_attempt_at": "2026-08-28T18:00:56Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-04",
@@ -92,7 +92,7 @@
       "protocol": "Anonymous IVOA TAP / ObsCore",
       "public_disposition_counts": {
         "provider-failure": 181,
-        "searched-no-match": 2534,
+        "searched-no-match": 2535,
         "temporarily-unavailable": 19
       },
       "public_record_counts": {},
@@ -148,7 +148,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous for public data",
       "connector_implementation_state": "implemented-public-metadata-on-demand",
-      "contract_checksum_sha256": "2b296d1a70cd562878ef32b6cb61954a9d46f9a844b3a7866ace86cbfeb25c44",
+      "contract_checksum_sha256": "a98fcf1f0cf40608dcfc02892d67392adbc4dab1e5a88df423208b3c6c32fe2b",
       "contract_version": "1.0.0",
       "data_types": [
         "public X-ray observation metadata",
@@ -157,7 +157,7 @@
       "documentation_url": "https://heasarc.gsfc.nasa.gov/docs/xamin-api.html",
       "implementation_state": "implemented",
       "known_limitations": "Visible master-table rows can still be proprietary or not yet archive-ready; future/blank release dates are excluded, XMM additionally requires data_in_heasarc=Y, and NICER requires VALIDATED",
-      "last_attempt_at": "2026-08-28T17:55:11Z",
+      "last_attempt_at": "2026-08-28T18:00:56Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-04",
@@ -169,7 +169,7 @@
       "protocol": "Xamin HTTPS VOTable API",
       "public_disposition_counts": {
         "provider-failure": 194,
-        "searched-no-match": 2522,
+        "searched-no-match": 2523,
         "temporarily-unavailable": 19
       },
       "public_record_counts": {},
@@ -228,7 +228,7 @@
       "access_mode": "archive",
       "authentication_requirement": "Anonymous for public data",
       "connector_implementation_state": "implemented-public-metadata-on-demand",
-      "contract_checksum_sha256": "6d9629b4a8dc78f80b57fd05eb1ab5e7904ac80a145844ec6836451f93bd75f6",
+      "contract_checksum_sha256": "2f2f94fc0ef29db00ff0097a72377d91735639eb2f56db0dc1b81053301945b0",
       "contract_version": "1.0.0",
       "data_types": [
         "public imaging",
@@ -238,7 +238,7 @@
       "documentation_url": "https://archive.stsci.edu/publishing/data-use",
       "implementation_state": "implemented",
       "known_limitations": "MAST also exposes EXCLUSIVE_ACCESS metadata and some copyrighted collections; only PUBLIC rows may pass",
-      "last_attempt_at": "2026-08-28T17:55:02Z",
+      "last_attempt_at": "2026-08-28T18:00:46Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-03",
@@ -250,7 +250,7 @@
       "protocol": "MAST API / ObsCore / S3 public mirror",
       "public_disposition_counts": {
         "provider-failure": 221,
-        "searched-no-match": 2520
+        "searched-no-match": 2521
       },
       "public_record_counts": {},
       "query_scope": "archive",
@@ -3034,7 +3034,7 @@
       "access_mode": "poll",
       "authentication_requirement": "None for released public notes",
       "connector_implementation_state": "implemented-public-anonymous-with-photometry-tables",
-      "contract_checksum_sha256": "1767d2fcfe9ffefe7f93000f35bf3eef3b08be23ebb60ce29d27aecbcd23f846",
+      "contract_checksum_sha256": "777b24d4700ef933e2ca928b02801c2e54d5fc5864f5cc35bb58db45750a5105",
       "contract_version": "1.0.0",
       "data_types": [
         "public notice",
@@ -3046,8 +3046,8 @@
       "implementation_state": "implemented",
       "known_limitations": "Draft, private, ambiguous, authenticated-only, non-text, or unsupported table material is refused; only source-linked bounded public photometry text is parsed",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-28T16:06:43Z",
-      "last_successful_response": "2026-08-28T16:06:43Z",
+      "last_successful_at": "2026-08-28T17:31:45Z",
+      "last_successful_response": "2026-08-28T17:31:45Z",
       "last_verified": "2026-08-10",
       "name": "TNS AstroNotes",
       "operational_state": "temporarily-unavailable",
