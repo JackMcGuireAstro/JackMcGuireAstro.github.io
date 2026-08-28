@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "f6ffae46fec00980aa804a210cf064aafcf5e89ab661805890d8641b50f3b19d"
+      "sha256": "7fc646cc05c5d854668128b6086ed761808adb90b297a49f10adac1ff39044ef"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "6abf5a5dba5c333d88aefe619fc4d374d8b7832346661d939abbbabef5acac01"
+      "sha256": "1f52fda919c32b338d3e8ad1b7a18f483ee40be8bb8519a114c253384191f664"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "1a7566ee5731df7527edb0ba03008799b4c8a2eb47ee94f625663b22151de214"
+      "sha256": "0a44ff7224fe26c22686e3fadd6a184bd6289fd17a9327902d8227ff1bd340a8"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "e7cf1143303f81651f367e763f9d77cda9cb77bcc4badee1e9ef56ef4b554478"
+      "report_checksum_sha256": "b2c56246ceb3d06644b6527abdf04fbd74256e1859af998eb64756396d6380b0"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "dede19031f90415c644da6953153e183e242b8fb8934a7a04be5aa9f32e134ed"
+      "sha256": "b40bdd4d6e151d7740fba6812235da8c890181b58942e3f3b5134f0787399f3b"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "a70cff117e6a319947043b202d185681bec0426a590e491749a9606fc22981a3"
+      "sha256": "7eb21ab1d621f5d000a8dced900e9f3c2c09fb646f86764a0a9f2518de8dea3c"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "bc2ff59798c84912408d30be5eeead3cb905643983e43966e30d59aa54862288"
+      "sha256": "a0ff10c4241ce70de8e1deb01f80fb51eb57e342a7a7ace854a6481b5790b614"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2965,
-  "catalog_content_checksum_sha256": "0c06e279390f10e322562882fb6406e50388953c0a3d7274ff1aa62ff1fc2d65",
-  "degraded_source_count": 6,
-  "export_checked_at": "2026-08-27T21:57:37Z",
-  "last_successful_update": "2026-08-27T21:57:37Z",
+  "catalog_content_checksum_sha256": "764ebd65219a23b79a687febed1a20dad1f70dbe7db12625393d5eec2dab5635",
+  "degraded_source_count": 20,
+  "export_checked_at": "2026-08-28T01:12:29Z",
+  "last_successful_update": "2026-08-28T01:12:29Z",
   "latest_record_update": "2026-08-27T21:10:26Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "d26c8d8f7217bc63938b8fd7ccf12115bf7e513dccb5548b4e7142293da5f35a",
+  "publication_state_checksum_sha256": "013b24f68bc26d0598730fe4c2fcd324683395d7f34c2cd4cc5d882954c56611",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "9ae8698e47d4e4e82de97e4c6d30f6ebd9a24a48fe472c6aadbf5ad1b739e2e9",
+    "artifact_checksum_sha256": "6d6a67d5b95b24a2c6ac8309445b3b92df05fc4d139dc133db32fef8784defad",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -450,7 +450,7 @@
         "upper limit",
         "science/template/difference cutout"
       ],
-      "detail": "anonymous real-time Rubin/Fink REST polling active \u00b7 0 unique public alerts in bounded lookback",
+      "detail": "ConnectError: [Errno 8] nodename nor servname provided, or not known",
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "enabled": true,
       "facility": "Rubin community broker",
@@ -467,7 +467,7 @@
         "observations": 2780
       },
       "source": "rubin-fink",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "implemented-public-positional-candidates-on-demand",
@@ -684,7 +684,7 @@
         "classification",
         "public-object metadata"
       ],
-      "detail": "processed 1 public rows \u00b7 2026-08-27 20:00:00 - 21:00:00",
+      "detail": "ConnectError: [Errno 8] nodename nor servname provided, or not known",
       "documentation_url": "https://www.wis-tns.org/content/tns-getting-started",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
@@ -702,7 +702,7 @@
         "designations": 2324
       },
       "source": "tns",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "generic-import-supported",
@@ -827,8 +827,8 @@
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 792.499209,
-      "last_message_at": "2026-08-27T21:13:35Z",
+      "lag_seconds": 671.158367,
+      "last_message_at": "2026-08-27T22:03:43Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -962,8 +962,8 @@
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 792.499209,
-      "last_message_at": "2026-08-27T21:13:35Z",
+      "lag_seconds": 671.158367,
+      "last_message_at": "2026-08-27T22:03:43Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -1256,7 +1256,7 @@
         "classification",
         "follow-up photometry table"
       ],
-      "detail": "checked 10 released public AstroNotes \u00b7 anonymous public interface",
+      "detail": "ConnectError: [Errno 8] nodename nor servname provided, or not known",
       "documentation_url": "https://www.wis-tns.org/astronotes",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
@@ -1274,7 +1274,7 @@
         "publications": 176
       },
       "source": "tns-astronotes",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "implemented-explicit-public-metadata-and-ascii-preview-on-demand-credentials-required",
@@ -1384,11 +1384,11 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "5aa02a6cc8632fead1fcc808b68cdb82e2cf08bb2e8abf86ab279e27d2193a27",
-    "report_checksum_sha256": "e7cf1143303f81651f367e763f9d77cda9cb77bcc4badee1e9ef56ef4b554478",
+    "content_release_id": "4c24d999c32c21650eea3ca130e5c66866c8c7969d88ef0b3862ce1e063d9ab1",
+    "report_checksum_sha256": "b2c56246ceb3d06644b6527abdf04fbd74256e1859af998eb64756396d6380b0",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-27T22:27:37Z"
+    "valid_until": "2026-08-28T01:42:29Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1577,5 +1577,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-27T22:27:37Z"
+  "valid_until": "2026-08-28T01:42:29Z"
 }
