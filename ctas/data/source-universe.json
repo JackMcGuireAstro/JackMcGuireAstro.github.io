@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "6d6a67d5b95b24a2c6ac8309445b3b92df05fc4d139dc133db32fef8784defad",
+  "artifact_checksum_sha256": "53c6fbc4e20e713938ef1c304a4b3798485642b6b9491bac72bc254dcac83cc4",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
   "family_count": 10,
-  "generated_at": "2026-08-28T01:12:29Z",
+  "generated_at": "2026-08-28T01:23:48Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -583,7 +583,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "96ed473c311073946d9346d924ef91626c8477138c9589e326546482e7367167",
+      "contract_checksum_sha256": "5799ba9d05c7993d3f60cc0532572ecd850475a4ef6a3f993a644b1d614561a0",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -598,19 +598,19 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-08-28T01:09:10Z",
+      "last_attempt_at": "2026-08-28T01:22:00Z",
       "last_successful_at": "2026-08-27T21:26:48Z",
       "last_successful_response": "2026-08-27T21:26:48Z",
       "last_verified": "2026-08-08",
       "name": "Fink",
-      "operational_state": "temporarily-unavailable",
+      "operational_state": "active-returning-data",
       "organization_or_facility": "Rubin community broker",
       "primary_family": "discovery-and-alert-brokers",
       "product_contracts": [],
       "protocol": "Anonymous real-time Fink/LSST REST polling, exact-object Rubin source/forced history, plus anonymous targeted Fink/ZTF archive",
       "public_disposition_counts": {
         "provider-failure": 128,
-        "searched-no-match": 3146,
+        "searched-no-match": 3147,
         "searched-with-data": 131
       },
       "public_record_counts": {
@@ -673,7 +673,7 @@
       "access_mode": "poll",
       "authentication_requirement": "TNS bot marker and API key",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "49a401a8257e59f697dee4609cd7fff729a616cf49f2f5c568ca8fc18d92b254",
+      "contract_checksum_sha256": "2cd1e46389a318bece546a1e182875b88ef23cb1af819d3084e846946cbcb5f1",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery",
@@ -688,7 +688,7 @@
       "last_successful_response": null,
       "last_verified": "2026-07-21",
       "name": "IAU Transient Name Server",
-      "operational_state": "temporarily-unavailable",
+      "operational_state": "active-returning-data",
       "organization_or_facility": "IAU / Weizmann Institute",
       "primary_family": "discovery-and-alert-brokers",
       "product_contracts": [],
@@ -1193,7 +1193,7 @@
       "access_mode": "GCN and represented event metadata",
       "authentication_requirement": "Provider-dependent",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "40eaa664a99af7694afb96170983d3b5c99f3638cce50725713453f20bfb89f4",
+      "contract_checksum_sha256": "f33d9af49d4bba1faf4719a8c173ff0d47e0a61f57ab15392f421606cc50bbe6",
       "contract_version": "1.0.0",
       "data_types": [
         "radio transient notices",
@@ -1217,7 +1217,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 48
+        "candidates": 49
       },
       "query_scope": "GCN and represented event metadata",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
@@ -1577,7 +1577,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN public-consumer OAuth client",
       "connector_implementation_state": "implemented-public-topic-credentials-required",
-      "contract_checksum_sha256": "bfdf7736b3fbfe0cbeccc1c4eeae61f19fd15562ec9814d4802b2bacd55abd88",
+      "contract_checksum_sha256": "74f4c902f4fdc57423035c44045f54ab3e85aa16e4f4c83d71b7e4a747fcf287",
       "contract_version": "1.0.0",
       "data_types": [
         "gravitational-wave notice",
@@ -1589,8 +1589,8 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-27T22:03:43Z",
-      "last_successful_response": "2026-08-27T22:03:43Z",
+      "last_successful_at": "2026-08-28T01:13:36Z",
+      "last_successful_response": "2026-08-28T01:13:36Z",
       "last_verified": "2026-07-21",
       "name": "LIGO/Virgo/KAGRA Public Alerts",
       "operational_state": "active-no-recent-messages",
@@ -1659,7 +1659,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN public-consumer OAuth client",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "1e976ab4621a7cc6da20bc3ad275f252d25e18e1f7f09032192f1a9b02ecc42f",
+      "contract_checksum_sha256": "99562824f92193bc0ca11dc90dd7c4ce9b1949d2e8a16edc3f57055e08cde2f8",
       "contract_version": "1.0.0",
       "data_types": [
         "notice",
@@ -1671,8 +1671,8 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "No proprietary topic is configured; topic authorization does not itself change rights policy",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-27T22:03:43Z",
-      "last_successful_response": "2026-08-27T22:03:43Z",
+      "last_successful_at": "2026-08-28T01:13:36Z",
+      "last_successful_response": "2026-08-28T01:13:36Z",
       "last_verified": "2026-07-21",
       "name": "NASA General Coordinates Network",
       "operational_state": "active-returning-data",
@@ -1683,8 +1683,8 @@
       "public_disposition_counts": {},
       "public_record_counts": {
         "classification_history": 305,
-        "classifications": 810,
-        "messenger_signals": 873,
+        "classifications": 811,
+        "messenger_signals": 874,
         "observations": 415
       },
       "query_scope": "live",
