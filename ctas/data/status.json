@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "e68712aa8959cb8d47cc82c88a10b3747132fd6f8b75baf2eea54fe50f30922a"
+      "sha256": "8ed3b5e85d3e18f35355bf0ffb38f4d940266c43ff31e7c22242dd23d0b53777"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "533dbdfda3572bcafcb22eb1c28491be406eec0c6fa21768ba9bea1a3d08e542"
+      "sha256": "91da2eca047628ed5802b1c127fbc2db5a267fd5ded2ace6f323f8680a2a93cf"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "ff10bf71eb86bddfb126699256659e88c9b18f28abe286c793dbaf04c6d2beee"
+      "sha256": "1e1fefbfbbb72674d0492265a9911cd581bc1002fdb9f76c1ff7795329b7799a"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "bd1aaef7632b63d35236c8d4195823a159bd03ec8a4c7de858002752ac6568aa"
+      "report_checksum_sha256": "e5cfd9e4916f4bc85ee5b7ca7518db521d2ba69970dd6194d3071a50bab9400d"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "7c0be88c6464a3cb4a5fc2265f53c763f052c978a67669956d750b9263ceec92"
+      "sha256": "72a4e365f2b5504f776cb43678c7608fdf51312283b0462a21cd25a62f503878"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "7c54032436895102c3bb0743bd6c7c79459859911260ff82883b4c48449840a9"
+      "sha256": "acad02ec53c88f5468ab9d8cc9bc3f9eb398f789741d967651605c58dbe8d65c"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "8da5828fa409685ca6729fb68be5d250b74cc2cd9444c3b383104b2e4442b026"
+      "sha256": "fe34b573a31f43ed9f0a82fa32fba7e73401fca187eb70d2b1ecabefb4fa83ff"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 2993,
-  "catalog_content_checksum_sha256": "bd0bc4d397d55bef30fdc29def1a2245ad2bba9f103d18452ae32a237b19da2a",
-  "degraded_source_count": 3,
-  "export_checked_at": "2026-08-28T18:02:51Z",
-  "last_successful_update": "2026-08-28T18:02:51Z",
-  "latest_record_update": "2026-08-28T18:00:15Z",
+  "catalog_content_checksum_sha256": "02cb578df5a5ee7fa75f480630d7bb65acedbd4e64cd241898432cbd40c3e763",
+  "degraded_source_count": 4,
+  "export_checked_at": "2026-08-28T18:05:17Z",
+  "last_successful_update": "2026-08-28T18:05:17Z",
+  "latest_record_update": "2026-08-28T18:03:16Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "d5c87d02a5b2c06c4b7624425751400d4c203b4da5c68e000643ef3fb44da354",
+  "publication_state_checksum_sha256": "fd1d92b95caf0a6a319edf8346fc050e1adf403f31a9e30fe193e3df4c2535db",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "f930a707a43a43563e93ff01faf14d3ae46a65f28b8b72b652ab8641d2217bfd",
+    "artifact_checksum_sha256": "7bbc41d31106167943b5ecab339a11c23668275e98a46afeb5cc29c148344eae",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -244,7 +244,7 @@
       "public_scope": "ATLAS explicitly provides full public access to forced photometry after registration",
       "rate_or_cadence_limit": "Provider throttling; no bulk requests without contacting ATLAS",
       "record_counts": {
-        "observations": 6620
+        "observations": 6665
       },
       "source": "atlas",
       "state": "disabled"
@@ -827,8 +827,8 @@
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 789.085231,
-      "last_message_at": "2026-08-28T17:13:34Z",
+      "lag_seconds": 2.20657,
+      "last_message_at": "2026-08-28T18:03:40Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -957,13 +957,13 @@
         "follow-up report",
         "retraction"
       ],
-      "detail": "gcn.circulars",
+      "detail": "igwn.gwalert",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 2.776466,
-      "last_message_at": "2026-08-28T17:30:16Z",
+      "lag_seconds": 2.20657,
+      "last_message_at": "2026-08-28T18:03:40Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -1135,7 +1135,7 @@
       "public_scope": "SIMBAD documents free access without registration under ODbL with acknowledgment and original-reference citation",
       "rate_or_cadence_limit": "One bounded 30-arcsec target cone per explicit request; 51-row overflow sentinel",
       "record_counts": {
-        "catalog_counterparts": 136
+        "catalog_counterparts": 137
       },
       "source": "simbad",
       "state": "disabled"
@@ -1384,16 +1384,16 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "94e1b42a07fa26ddc489a4138d1f9d3845b28e8719cd97ce77f755f5aedb2a0e",
-    "report_checksum_sha256": "bd1aaef7632b63d35236c8d4195823a159bd03ec8a4c7de858002752ac6568aa",
+    "content_release_id": "f8f4fe41d539507f86869746267afca1482dccf07ccc79f1a1563156ad0bcab3",
+    "report_checksum_sha256": "e5cfd9e4916f4bc85ee5b7ca7518db521d2ba69970dd6194d3071a50bab9400d",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-28T18:32:51Z"
+    "valid_until": "2026-08-28T18:35:17Z"
   },
   "statistics": {
     "archive_products": 0,
     "candidates_with_follow_up": 1123,
-    "catalog_counterparts": 1320,
+    "catalog_counterparts": 1321,
     "classification_history": 305,
     "classifications": 1020,
     "event_types": {
@@ -1422,7 +1422,7 @@
       "radio": 51,
       "x-ray": 37
     },
-    "observations": 10363,
+    "observations": 10408,
     "priority_bands": {
       "high_50_74": 2486,
       "low_0_24": 20,
@@ -1577,5 +1577,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-28T18:32:51Z"
+  "valid_until": "2026-08-28T18:35:17Z"
 }
