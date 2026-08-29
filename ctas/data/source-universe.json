@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "bb8daae630288da760cfa9073a1097c06e90bec8a1d40e2b708bd368188da6d5",
+  "artifact_checksum_sha256": "7fbfec9da67d9334188a80640706f1a4692bead663263e2ae9cfdc5e261d846a",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
   "family_count": 10,
-  "generated_at": "2026-08-29T16:45:54Z",
+  "generated_at": "2026-08-29T16:48:20Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -69,7 +69,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous public access",
       "connector_implementation_state": "implemented-public-reduced-metadata-on-demand",
-      "contract_checksum_sha256": "6212e5706692c4937eecfcf80b789350cef9e22ea0fb32354bafe26aa42e354b",
+      "contract_checksum_sha256": "e2684ce1d92e0bb1e5a96e0bfc2d65aee741afa804a1aebb346e53c17316363e",
       "contract_version": "1.0.0",
       "data_types": [
         "released reduced-product metadata",
@@ -80,7 +80,7 @@
       "documentation_url": "https://archive.eso.org/cms/eso-data-access-policy.html",
       "implementation_state": "implemented",
       "known_limitations": "Authenticated TAP can expose PI-authorized proprietary metadata; this adapter sends no credentials, repeats the release-date check locally, and does not download product bytes",
-      "last_attempt_at": "2026-08-29T16:44:12Z",
+      "last_attempt_at": "2026-08-29T16:47:12Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-04",
@@ -92,7 +92,7 @@
       "protocol": "Anonymous IVOA TAP / ObsCore",
       "public_disposition_counts": {
         "provider-failure": 184,
-        "searched-no-match": 2632,
+        "searched-no-match": 2633,
         "temporarily-unavailable": 19
       },
       "public_record_counts": {},
@@ -148,7 +148,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous for public data",
       "connector_implementation_state": "implemented-public-metadata-on-demand",
-      "contract_checksum_sha256": "61afbae5681e24650fe3191a04a040f411e67d5d28f599199dabc6d0acb6c642",
+      "contract_checksum_sha256": "3d27bfde4563c63361211662d6356a856d50be0b302aff765a4b607553d5d786",
       "contract_version": "1.0.0",
       "data_types": [
         "public X-ray observation metadata",
@@ -157,7 +157,7 @@
       "documentation_url": "https://heasarc.gsfc.nasa.gov/docs/xamin-api.html",
       "implementation_state": "implemented",
       "known_limitations": "Visible master-table rows can still be proprietary or not yet archive-ready; future/blank release dates are excluded, XMM additionally requires data_in_heasarc=Y, and NICER requires VALIDATED",
-      "last_attempt_at": "2026-08-29T16:44:11Z",
+      "last_attempt_at": "2026-08-29T16:47:11Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-04",
@@ -169,7 +169,7 @@
       "protocol": "Xamin HTTPS VOTable API",
       "public_disposition_counts": {
         "provider-failure": 200,
-        "searched-no-match": 2617,
+        "searched-no-match": 2618,
         "temporarily-unavailable": 19
       },
       "public_record_counts": {},
@@ -228,7 +228,7 @@
       "access_mode": "archive",
       "authentication_requirement": "Anonymous for public data",
       "connector_implementation_state": "implemented-public-metadata-on-demand",
-      "contract_checksum_sha256": "165dcf7b98e446e2c7d93529bb2e7102ddafe40ffd8fc05405b9d0460c730473",
+      "contract_checksum_sha256": "24c831d90b7bcf86821355483ee7044ff07e493cbbf001b9136356420d5d574f",
       "contract_version": "1.0.0",
       "data_types": [
         "public imaging",
@@ -238,7 +238,7 @@
       "documentation_url": "https://archive.stsci.edu/publishing/data-use",
       "implementation_state": "implemented",
       "known_limitations": "MAST also exposes EXCLUSIVE_ACCESS metadata and some copyrighted collections; only PUBLIC rows may pass",
-      "last_attempt_at": "2026-08-29T16:44:02Z",
+      "last_attempt_at": "2026-08-29T16:47:03Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-03",
@@ -250,7 +250,7 @@
       "protocol": "MAST API / ObsCore / S3 public mirror",
       "public_disposition_counts": {
         "provider-failure": 234,
-        "searched-no-match": 2608
+        "searched-no-match": 2609
       },
       "public_record_counts": {},
       "query_scope": "archive",
@@ -268,7 +268,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous for metadata and released public files",
       "connector_implementation_state": "implemented-explicit-release-verified-image-metadata-on-demand",
-      "contract_checksum_sha256": "9f97d043a676696882c145851291a077fd14ac21227c168d4b91e14a7427327e",
+      "contract_checksum_sha256": "cd5529d9a0c72fb46aefe51b14af2a62f27528fa6242a0e598c79eaeee37e2e3",
       "contract_version": "1.0.0",
       "data_types": [
         "released image metadata",
@@ -277,7 +277,7 @@
       "documentation_url": "https://github.com/NOAO/nat-nb/blob/master/api-authentication.ipynb",
       "implementation_state": "implemented",
       "known_limitations": "All archive metadata are visible anonymously, including metadata for proprietary files; this adapter stores no unreleased row and downloads no bytes",
-      "last_attempt_at": "2026-08-29T16:44:23Z",
+      "last_attempt_at": "2026-08-29T16:47:13Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
@@ -289,7 +289,7 @@
       "protocol": "Anonymous SIA plus exact Advanced Search release verification",
       "public_disposition_counts": {
         "provider-failure": 285,
-        "searched-no-match": 2505,
+        "searched-no-match": 2506,
         "temporarily-unavailable": 19
       },
       "public_record_counts": {},
@@ -583,7 +583,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "442988a42c10ea0faae8806aa321a1159518d1bff68bc878c8577fc292c0dccb",
+      "contract_checksum_sha256": "b6be809f5e35c32ade4a5385e8bd305ad39bc9bf9e1f98de0502f375809ef99d",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -598,7 +598,7 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-08-29T16:43:41Z",
+      "last_attempt_at": "2026-08-29T16:46:46Z",
       "last_successful_at": "2026-08-29T14:42:46Z",
       "last_successful_response": "2026-08-29T14:42:46Z",
       "last_verified": "2026-08-08",
@@ -610,7 +610,7 @@
       "protocol": "Anonymous real-time Fink/LSST REST polling, exact-object Rubin source/forced history, plus anonymous targeted Fink/ZTF archive",
       "public_disposition_counts": {
         "provider-failure": 139,
-        "searched-no-match": 3426,
+        "searched-no-match": 3427,
         "searched-with-data": 166
       },
       "public_record_counts": {
@@ -633,7 +633,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "None",
       "connector_implementation_state": "implemented-public-positional-candidates-on-demand",
-      "contract_checksum_sha256": "3332ee296605db149e434f3c31821c7781b29b71cfae455533f487e357595d42",
+      "contract_checksum_sha256": "aa4c455bbef8a834fddfd20f630677253f40ab0493f95122da06b748e9fdadb0",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin diaObject positional candidate",
@@ -643,7 +643,7 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/api/conesearch/",
       "implementation_state": "implemented",
       "known_limitations": "Coordinate and first-detection proximity do not establish identity; candidates remain catalog context until explicitly reviewed",
-      "last_attempt_at": "2026-08-29T16:43:41Z",
+      "last_attempt_at": "2026-08-29T16:46:47Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
@@ -655,7 +655,7 @@
       "protocol": "Anonymous Fink/LSST REST cone search",
       "public_disposition_counts": {
         "provider-failure": 537,
-        "searched-no-match": 2311
+        "searched-no-match": 2312
       },
       "public_record_counts": {},
       "query_scope": "targeted-query",
@@ -713,7 +713,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "Lasair account token",
       "connector_implementation_state": "implemented-public-targeted-token-required",
-      "contract_checksum_sha256": "e8a09a9fcc7f25cb5f9ea4e906cead64da30200a2fa14f4776f2b23370317a84",
+      "contract_checksum_sha256": "8623deaeea55f9b19b51cf8fb9a91ea9c5179dbab3e307f05a8fa246f415647c",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin alert",
@@ -724,7 +724,7 @@
       "documentation_url": "https://lasair.readthedocs.io/en/main/core_functions/rest-api.html",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "The token is private; user annotations/watchlists are not ingested; negative difference flux is excluded from fitting",
-      "last_attempt_at": "2026-08-29T16:43:41Z",
+      "last_attempt_at": "2026-08-29T16:46:47Z",
       "last_successful_at": "2026-08-29T05:35:08Z",
       "last_successful_response": "2026-08-29T05:35:08Z",
       "last_verified": "2026-08-08",
@@ -738,7 +738,7 @@
         "credentials-required": 2272,
         "provider-failure": 45,
         "searched-with-data": 15,
-        "temporarily-unavailable": 511
+        "temporarily-unavailable": 512
       },
       "public_record_counts": {
         "observations": 695
@@ -1867,7 +1867,7 @@
       "access_mode": "manual-on-demand-query",
       "authentication_requirement": "None for legacy manual query; reCAPTCHA required",
       "connector_implementation_state": "manual-on-demand-secure-automation-withheld",
-      "contract_checksum_sha256": "ad61b600777a9f03719e6d165e4e9f5f4e0d732d62e48bdcc51fa60d2f1d5f59",
+      "contract_checksum_sha256": "54f90bbdc84bd726bc37b1335c4d66983b3a20c9800f0a182afcd9e76fbd6415",
       "contract_version": "1.0.0",
       "data_types": [
         "light curve",
@@ -1876,7 +1876,7 @@
       "documentation_url": "https://asas-sn.osu.edu/",
       "implementation_state": "manual-only",
       "known_limitations": "The legacy form says to contact ASAS-SN for more than 100 light curves. The published V2 machine client uses unencrypted HTTP, while the linked HTTPS V2 host/repository are unavailable; automatic ingestion is withheld without implying that the public data are proprietary",
-      "last_attempt_at": "2026-08-29T16:43:40Z",
+      "last_attempt_at": "2026-08-29T16:46:45Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
@@ -1887,7 +1887,7 @@
       "product_contracts": [],
       "protocol": "HTTPS manual coordinate form; V2 Python/HTTP API withheld",
       "public_disposition_counts": {
-        "temporarily-unavailable": 2852
+        "temporarily-unavailable": 2853
       },
       "public_record_counts": {
         "candidates": 1
@@ -1950,7 +1950,7 @@
       "access_mode": "on-demand-query",
       "authentication_requirement": "Registered forced-photometry API token",
       "connector_implementation_state": "implemented-public-credentials-required",
-      "contract_checksum_sha256": "ceeec0275ee30be10d3e934815e1119438560e7891d4d7bb8dbd071ebed9de33",
+      "contract_checksum_sha256": "6d1583b8b21f693f373dc96f40b36ff42f27a1353a35065fe218108133b5fdf7",
       "contract_version": "1.0.0",
       "data_types": [
         "TNS discovery",
@@ -1959,9 +1959,9 @@
       "documentation_url": "https://fallingstar-data.com/forcedphot/apiguide/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Result URLs are short-lived; requests must remain bounded and attribution/citations are mandatory",
-      "last_attempt_at": "2026-08-29T16:44:45Z",
-      "last_successful_at": "2026-08-29T16:44:45Z",
-      "last_successful_response": "2026-08-29T16:44:45Z",
+      "last_attempt_at": "2026-08-29T16:47:35Z",
+      "last_successful_at": "2026-08-29T16:47:35Z",
+      "last_successful_response": "2026-08-29T16:47:35Z",
       "last_verified": "2026-08-03",
       "name": "ATLAS",
       "operational_state": "scheduled",
@@ -1972,7 +1972,7 @@
       "public_disposition_counts": {
         "credentials-required": 2242,
         "provider-failure": 178,
-        "searched-with-data": 393,
+        "searched-with-data": 394,
         "temporarily-unavailable": 1
       },
       "public_record_counts": {
@@ -2869,7 +2869,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "NASA ADS API token",
       "connector_implementation_state": "implemented-public-metadata-credentials-required",
-      "contract_checksum_sha256": "277e3b23542722e26b551600b9e21f88ac70160e369c2de400ba9f66e5cd74d1",
+      "contract_checksum_sha256": "d65ab6aad47b8b1663c82ac9f9c57ea4aae245304ec1c647fc2afab0f5f09b49",
       "contract_version": "1.0.0",
       "data_types": [
         "bibliographic metadata",
@@ -2879,7 +2879,7 @@
       "documentation_url": "https://ui.adsabs.harvard.edu/help/api/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "CTAS retains metadata and provider links only; it does not mirror article full text or infer reuse rights from discoverability",
-      "last_attempt_at": "2026-08-29T16:44:45Z",
+      "last_attempt_at": "2026-08-29T16:47:35Z",
       "last_successful_at": "2026-08-29T14:02:38Z",
       "last_successful_response": "2026-08-29T14:02:38Z",
       "last_verified": "2026-08-23",
@@ -2893,7 +2893,7 @@
         "provider-failure": 44,
         "searched-no-match": 150,
         "searched-with-data": 81,
-        "temporarily-unavailable": 296
+        "temporarily-unavailable": 297
       },
       "public_record_counts": {
         "publications": 55
@@ -2913,7 +2913,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "AAVSO API token",
       "connector_implementation_state": "implemented-public-photometry-on-demand-credentials-required",
-      "contract_checksum_sha256": "7ba66c3cd67e94db4b179f0e171347aef314aa72d05f0816926312f3fd4fb2a8",
+      "contract_checksum_sha256": "fe3d259ce81799f0eb9620c414378e2176ffcec06afab44aeca53ed9eb8206e5",
       "contract_version": "1.0.0",
       "data_types": [
         "observer-contributed optical/NIR photometry",
@@ -2922,7 +2922,7 @@
       "documentation_url": "https://docs.aavso.org/observations",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "The API is authenticated and every observer contribution, AUID, band, observation type, uncertainty, upper-limit flag, and required credit must remain source-native",
-      "last_attempt_at": "2026-08-29T16:43:40Z",
+      "last_attempt_at": "2026-08-29T16:46:45Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
@@ -2934,7 +2934,7 @@
       "protocol": "AAVSO v2 JSON API",
       "public_disposition_counts": {
         "credentials-required": 2283,
-        "provider-failure": 568,
+        "provider-failure": 569,
         "temporarily-unavailable": 3
       },
       "public_record_counts": {},
@@ -2953,7 +2953,7 @@
       "access_mode": "public-release-archive",
       "authentication_requirement": "None for the latest public release",
       "connector_implementation_state": "implemented-public-release-photometry-on-demand",
-      "contract_checksum_sha256": "17704bfd880a3d6ab5e45ebbf06aba55e16442acc078f0cdb28b89ed3614db4b",
+      "contract_checksum_sha256": "641e19662a9b7f724b61b3165db3050efdf4b98876f64c870841595fad7c950a",
       "contract_version": "1.0.0",
       "data_types": [
         "released catalog photometry",
@@ -2963,7 +2963,7 @@
       "documentation_url": "https://irsa.ipac.caltech.edu/docs/program_interface/ztf_lightcurve_api.html",
       "implementation_state": "implemented",
       "known_limitations": "Release photometry may lag real time and is neither alert difference photometry nor forced photometry; coordinate association does not assert identity",
-      "last_attempt_at": "2026-08-29T16:43:54Z",
+      "last_attempt_at": "2026-08-29T16:46:51Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
@@ -2975,7 +2975,7 @@
       "protocol": "Anonymous IRSA ZTF-LC-API CSV",
       "public_disposition_counts": {
         "provider-failure": 229,
-        "searched-no-match": 2608
+        "searched-no-match": 2609
       },
       "public_record_counts": {},
       "query_scope": "public-release-archive",
@@ -3075,7 +3075,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "None for published observations",
       "connector_implementation_state": "implemented-public-anonymous-on-demand",
-      "contract_checksum_sha256": "26e2c03ede348e8a45a623aecececfd68b04fe436f990cb194e057fc6de6466b",
+      "contract_checksum_sha256": "a8ca3e69320be094f5e356fbef7716445896642080911200a4b78fa905494bb7",
       "contract_version": "1.0.0",
       "data_types": [
         "published spectrum metadata",
@@ -3084,7 +3084,7 @@
       "documentation_url": "https://www.aavso.org/search-and-download-data/",
       "implementation_state": "implemented",
       "known_limitations": "Observer credit, AAVSO acknowledgment/facility keyword, validation state, and current usage guidance must be retained; anonymous availability is verified per record",
-      "last_attempt_at": "2026-08-29T16:43:40Z",
+      "last_attempt_at": "2026-08-29T16:46:45Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
@@ -3096,7 +3096,7 @@
       "protocol": "Anonymous AVSpec HTML search + public ZIP/FITS download",
       "public_disposition_counts": {
         "provider-failure": 164,
-        "searched-no-match": 2671,
+        "searched-no-match": 2672,
         "temporarily-unavailable": 19
       },
       "public_record_counts": {},
@@ -3115,7 +3115,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "TNS bot marker and API key",
       "connector_implementation_state": "implemented-explicit-public-metadata-and-ascii-preview-on-demand-credentials-required",
-      "contract_checksum_sha256": "1dae3efd4df675103d80d747d7a8a5cee81d8f2985e181f90ab76fda9dfe4e8a",
+      "contract_checksum_sha256": "2a60724dcb64460d03a0f5b63620e28621859cbbbcc0fa92fa99574e2f0df036",
       "contract_version": "1.0.0",
       "data_types": [
         "public object detail",
@@ -3126,7 +3126,7 @@
       "documentation_url": "https://www.wis-tns.org/sites/default/files/api/tns2_manuals/TNS2.0_APIs_manual.pdf",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "A credential can expose group-proprietary records. Object and spectrum public flags are mandatory; current photometry rows lack per-row visibility and are refused",
-      "last_attempt_at": "2026-08-29T16:43:39Z",
+      "last_attempt_at": "2026-08-29T16:46:45Z",
       "last_successful_at": "2026-08-29T14:23:40Z",
       "last_successful_response": "2026-08-29T14:23:40Z",
       "last_verified": "2026-08-07",
@@ -3139,7 +3139,7 @@
       "public_disposition_counts": {
         "provider-failure": 86,
         "searched-with-data": 845,
-        "temporarily-unavailable": 1942
+        "temporarily-unavailable": 1943
       },
       "public_record_counts": {
         "classifications": 14,
@@ -3162,7 +3162,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "None for public spectra",
       "connector_implementation_state": "implemented-explicit-public-anonymous-spectra-on-demand",
-      "contract_checksum_sha256": "af3262ef48537260c33705710120e89e2c2e245a15c84ad439d5befe9f7cb9d5",
+      "contract_checksum_sha256": "18d44596860c8b9f3ce3687b11489a29cf0cc588629f2b16121ceccb5b8a8f14",
       "contract_version": "1.0.0",
       "data_types": [
         "public spectrum metadata",
@@ -3172,7 +3172,7 @@
       "documentation_url": "https://www.wiserep.org/content/wiserep-getting-started",
       "implementation_state": "implemented",
       "known_limitations": "Private scripted access requires a personal API key; this adapter sends no credentials, refuses any row without public=1, and never treats repository membership as a new detection",
-      "last_attempt_at": "2026-08-29T16:43:39Z",
+      "last_attempt_at": "2026-08-29T16:46:45Z",
       "last_successful_at": "2026-08-29T11:42:57Z",
       "last_successful_response": "2026-08-29T11:42:57Z",
       "last_verified": "2026-08-08",
@@ -3186,7 +3186,7 @@
         "provider-failure": 100,
         "searched-no-match": 664,
         "searched-with-data": 141,
-        "temporarily-unavailable": 1946
+        "temporarily-unavailable": 1947
       },
       "public_record_counts": {
         "spectra": 4
