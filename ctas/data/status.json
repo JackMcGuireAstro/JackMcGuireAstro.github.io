@@ -2,23 +2,23 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "142fa4363e6f81cdbafb1efde6617414f043ae5592330085e3a0b8a307906e38"
+      "sha256": "ec432a704425c6562ea09b4da4cefef7bcb44a1a095a3ddf5cc0b5c18a9223a8"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "ef56becabaf42d98a35bec8c30e8777c7c3361215be01d3a26cb693a38754ed0"
+      "sha256": "b4f204d7b83f583d9bdeebd2444e508cbd8b6c3466f7031a59496be137a1d175"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "26ee27daf73833214d8b150a82056348bb33ea87dfef5402446b99588ed327ba"
+      "sha256": "cf5871a65eae97c510d362bf5dbb230573ced2a9a1dd63f4efed6a1615232bf4"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "a0d60713884304eda91a7f412993c84eac4d03ccb52f32c6c869820f98f39ed2"
+      "report_checksum_sha256": "04292ec4559a8b2cc0c69a50f454273ceecf59d66b70af66cf60800ea1beba4c"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "3aa9d272bfcd8b1c97b283d240ec34e784593640687b80cfcd473bff55f498a3"
+      "sha256": "293172ad053cbd4b1508f4ec640188f79e731e9b998d12bc5cc8e86a2d7aa605"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
@@ -26,23 +26,23 @@
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "4159847eb2d33aa48ad6027ef86cc4dd56d2883c8b7d45952cd24069448decd6"
+      "sha256": "254c3413e9821145ca26fda5f5df6b18c0adda14dde483dc35afaa6bad7e55ad"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 3027,
   "catalog_content_checksum_sha256": "757e56b3623f054250bddaa284250ed881d4f9a414047c23d9f62ec1f5d0b080",
-  "degraded_source_count": 6,
-  "export_checked_at": "2026-08-29T22:12:04Z",
-  "last_successful_update": "2026-08-29T22:12:04Z",
+  "degraded_source_count": 7,
+  "export_checked_at": "2026-08-29T22:14:30Z",
+  "last_successful_update": "2026-08-29T22:14:30Z",
   "latest_record_update": "2026-08-29T22:01:22Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "461106b81f242af4bf60fe5faf3235dcb9dc7d11fe831f86d770c298d942ac9e",
+  "publication_state_checksum_sha256": "5c63f5d58598b65bab215a668f7cafd36c6f6fa8263a40ff06181bd1cd036f47",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "d56ba6b15e374b724accb9fc390492cccc417b6cdf0764ef3a8954b5606c76ec",
+    "artifact_checksum_sha256": "673e972e9d97127d5bfc124da34eb70a37fbc58483c52deceff40aff8a4e7eee",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -450,7 +450,7 @@
         "upper limit",
         "science/template/difference cutout"
       ],
-      "detail": "anonymous real-time Rubin/Fink REST polling active \u00b7 0 unique public alerts in bounded lookback",
+      "detail": "ValueError: Fink/LSST public tag API returned HTTP 502",
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "enabled": true,
       "facility": "Rubin community broker",
@@ -467,7 +467,7 @@
         "observations": 3125
       },
       "source": "rubin-fink",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "implemented-public-positional-candidates-on-demand",
@@ -827,8 +827,8 @@
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 1.588586,
-      "last_message_at": "2026-08-29T22:08:15Z",
+      "lag_seconds": 0.691381,
+      "last_message_at": "2026-08-29T22:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -962,8 +962,8 @@
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 1.588586,
-      "last_message_at": "2026-08-29T22:08:15Z",
+      "lag_seconds": 0.691381,
+      "last_message_at": "2026-08-29T22:13:34Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -1384,11 +1384,11 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "c864242dbb80decc2d6dc0898ade5367e83d8ac76b931fb57f34cc9ce8f01c01",
-    "report_checksum_sha256": "a0d60713884304eda91a7f412993c84eac4d03ccb52f32c6c869820f98f39ed2",
+    "content_release_id": "55dffa393a3a540f751166c35598583b5fe15bffa37301a74f103ae12fcbb900",
+    "report_checksum_sha256": "04292ec4559a8b2cc0c69a50f454273ceecf59d66b70af66cf60800ea1beba4c",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-29T22:42:04Z"
+    "valid_until": "2026-08-29T22:44:30Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1577,5 +1577,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-29T22:42:04Z"
+  "valid_until": "2026-08-29T22:44:30Z"
 }
