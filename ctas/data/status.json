@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "48e3cde7006f53710679e56b9843337ba3d7f8467fd221023e1fffd902f8d62a"
+      "sha256": "17e454228cd165a72f93b7124ee80ca68f8d04135f95f43a2a19d5d0da6aef4a"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "d8a0f15a6b2ca572a5068d6df5f1eb2962f4a8ee7616cf0892149e8450117fd3"
+      "sha256": "4d74eaeaa92042c73be3613076fbbdea927e044b8b23e7a61810151ce1e115c4"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "bc9cb49a6610cababac48014f51d2b30f96290de07d0577955adc048f5618e98"
+      "sha256": "98a0ebf39f770668e5733a535399e51655db664ef6b0c94abcb0285fe830e5ba"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "39bcb7da731d3fa625876d257f8b1380fae35b51bb8317a32837a3a69fc836da"
+      "report_checksum_sha256": "63fcc7679afdcad46df4b4bc5e6a1013e6dbd464105f4ca83e2e780a4f78b728"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "23ffcb5a1c9007e323fd3322dcf04fae51b663e39cbe8a8a0a0a1d30fae1a528"
+      "sha256": "ef5ff3ea00ecee2dbb656d2e8a45e0c1089029bf006654c390bc4031ecafa9f1"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "5b04940fce6183fb74ccf745f06ed463bfc57fd8b111c79d57c0551d24f6bbe7"
+      "sha256": "cc252c56574b564c25cae22f23f146c4b5709334517d74c093a578dbe9032f12"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "2c4fff2ed931c52b0b1168250a4102fdf9f6d9b5e1be68170bec1cc906e14762"
+      "sha256": "9c5b5180fa2bdde5863ed5bb56415565b14692830103ecba1d5fbf006008c2a7"
     }
   },
   "cadence": "about every 2 minutes",
-  "candidate_count": 2993,
-  "catalog_content_checksum_sha256": "86099af764409d565e71d0a38fcda01cea087d70d513b28e514808b5b46b81cc",
-  "degraded_source_count": 16,
-  "export_checked_at": "2026-08-29T00:01:08Z",
-  "last_successful_update": "2026-08-29T00:01:08Z",
-  "latest_record_update": "2026-08-28T22:38:49Z",
+  "candidate_count": 2994,
+  "catalog_content_checksum_sha256": "de9d6b4bc7ddacab4a52e81156ad5a2438486086fdde5687b70b0ef361af6eef",
+  "degraded_source_count": 6,
+  "export_checked_at": "2026-08-29T01:07:30Z",
+  "last_successful_update": "2026-08-29T01:07:30Z",
+  "latest_record_update": "2026-08-29T00:35:27Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "74344735e3bd77dab3c7b1070a8a0eba3c4e821b0a7dd2e05ddbc68e4d78d598",
+  "publication_state_checksum_sha256": "c146d8fa29b0638a6d9dc4407c639a638472b0d14b645a7ab7ca20d35f9b4928",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "9781caa9ec58ab749db9309de8dbe543b77a8912a8ec1825cabf5fc79396ab89",
+    "artifact_checksum_sha256": "490bf694461d3a82d2debacd5b665e81013fbe9b08d127ec6fba43f7a85f9f3b",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -450,7 +450,7 @@
         "upper limit",
         "science/template/difference cutout"
       ],
-      "detail": "ConnectError: [Errno 8] nodename nor servname provided, or not known",
+      "detail": "anonymous real-time Rubin/Fink REST polling active \u00b7 0 unique public alerts in bounded lookback",
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "enabled": true,
       "facility": "Rubin community broker",
@@ -467,7 +467,7 @@
         "observations": 3114
       },
       "source": "rubin-fink",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-positional-candidates-on-demand",
@@ -684,7 +684,7 @@
         "classification",
         "public-object metadata"
       ],
-      "detail": "ConnectError: [Errno 8] nodename nor servname provided, or not known",
+      "detail": "processed 0 public rows \u00b7 2026-08-29 00:00:00 - 01:00:00",
       "documentation_url": "https://www.wis-tns.org/content/tns-getting-started",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
@@ -702,7 +702,7 @@
         "designations": 2345
       },
       "source": "tns",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "generic-import-supported",
@@ -827,8 +827,8 @@
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 889.458494,
-      "last_message_at": "2026-08-28T23:13:35Z",
+      "lag_seconds": 165.80852,
+      "last_message_at": "2026-08-29T01:03:40Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -962,8 +962,8 @@
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 889.458494,
-      "last_message_at": "2026-08-28T23:13:35Z",
+      "lag_seconds": 165.80852,
+      "last_message_at": "2026-08-29T01:03:40Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -972,8 +972,8 @@
       "rate_or_cadence_limit": "Long-running consumer required; no cron-style reconnect polling",
       "record_counts": {
         "classification_history": 305,
-        "classifications": 816,
-        "messenger_signals": 881,
+        "classifications": 817,
+        "messenger_signals": 882,
         "observations": 417
       },
       "source": "gcn",
@@ -1261,7 +1261,7 @@
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 19864.387724,
+      "lag_seconds": 27283.785589,
       "last_message_at": "2026-08-28T17:31:45Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1384,20 +1384,20 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "231ce4ac0e0d7e6a573dce5f416f24e29818aa79a1d4f1c45b3800aff8a34c1e",
-    "report_checksum_sha256": "39bcb7da731d3fa625876d257f8b1380fae35b51bb8317a32837a3a69fc836da",
+    "content_release_id": "fc102773d35bde3cca8134825488e3521c654d020acc0b77c4ff3375934710f1",
+    "report_checksum_sha256": "63fcc7679afdcad46df4b4bc5e6a1013e6dbd464105f4ca83e2e780a4f78b728",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-29T00:31:08Z"
+    "valid_until": "2026-08-29T01:37:30Z"
   },
   "statistics": {
     "archive_products": 0,
-    "candidates_with_follow_up": 1127,
+    "candidates_with_follow_up": 1128,
     "catalog_counterparts": 1335,
     "classification_history": 305,
-    "classifications": 1020,
+    "classifications": 1021,
     "event_types": {
-      "fast-radio-burst": 51,
+      "fast-radio-burst": 52,
       "gamma-ray-burst-candidate": 28,
       "gamma-ray-transient": 89,
       "high-energy-count-rate-trigger": 15,
@@ -1413,26 +1413,26 @@
     },
     "host_context": 13,
     "magnitude_values_excluded": 4,
-    "messenger_signals": 881,
+    "messenger_signals": 882,
     "messengers": {
       "electromagnetic": 2439,
       "gamma-ray": 217,
       "multimessenger": 28,
       "neutrino": 221,
-      "radio": 51,
+      "radio": 52,
       "x-ray": 37
     },
     "observations": 11178,
     "priority_bands": {
-      "high_50_74": 2487,
+      "high_50_74": 2488,
       "low_0_24": 20,
       "routine_25_49": 313,
       "urgent_75_100": 173
     },
-    "public_candidates": 2993,
+    "public_candidates": 2994,
     "publications": 920,
     "quality_quarantined_records": 1,
-    "real_events": 2995,
+    "real_events": 2996,
     "spectra": 20
   },
   "surveys": [
@@ -1473,7 +1473,7 @@
       "survey": "IceCube Gold Track Alert"
     },
     {
-      "candidate_count": 50,
+      "candidate_count": 51,
       "survey": "Chime"
     },
     {
@@ -1577,5 +1577,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-29T00:31:08Z"
+  "valid_until": "2026-08-29T01:37:30Z"
 }
