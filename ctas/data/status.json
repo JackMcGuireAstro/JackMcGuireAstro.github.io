@@ -2,47 +2,47 @@
   "artifacts": {
     "candidate_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "5794ae509f0c6ebb23f3ec1bffe5fa15882c051abd4d78fcf39b6b163b10833a"
+      "sha256": "cebbac73a64a155d4f3b874f2b711e633c41221b231d3efdfa074c7d09352a3b"
     },
     "candidates": {
       "path": "ctas/data/candidates.json",
-      "sha256": "11b8078139772e802b2c93b3f0c0471b9da490da12edaf5351afd001b86f841d"
+      "sha256": "a2bcc817eb0cb6cd1f8998e6aeeca34dc6d65efa0fdee2c54817a17e03195d44"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "098f8047551333a8c809967f54e64d55a1402ed592706f7e04f6f6bb223291b2"
+      "sha256": "0c75e9edc92953275fd1cb3008e13c39b72744b62694c4097aa72ad1592ac74c"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "0c64bb9a036043b9b8f7154d17c18de315a7d737e5b824b85f05d94d1a1cae00"
+      "report_checksum_sha256": "421b8049c625bd2656228621cebedb2407760ef8140fadf4f94c343a98899adf"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "a4eff2ff804db07c252e977c5a0a182baa1c4392c3929b0634a265142baebee4"
+      "sha256": "a6de65c488b35c5530c46edab1c0ff37f7a2c186406066d255d0e8f9334455ee"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "9bf10cfdcdc480f3c881fae959dcbd3b727c085a3ae91ea2cd046904c0ec7a97"
+      "sha256": "a0ddf679e01ce435ff6bea5e50cd381db280f688241bb8cc93441fd0d2987900"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "ad520b252121b54e321cf7100c91e6e497d2de1e051af4a12ba3641d98f83757"
+      "sha256": "7d7ca92da6f4f349397c2c1f223f0d40e3ec9b7d82d0163804d0f554ebf5615a"
     }
   },
   "cadence": "about every 2 minutes",
-  "candidate_count": 3007,
-  "catalog_content_checksum_sha256": "10aeca01b24a93a423104709d7c58c2349c4049db87413cfc473e10a38682c18",
+  "candidate_count": 3008,
+  "catalog_content_checksum_sha256": "8abdb8d928eb11022fdc0f74c8ffc813bdc41241e2d4530367ec8d7cd703ce55",
   "degraded_source_count": 3,
-  "export_checked_at": "2026-08-29T14:43:36Z",
-  "last_successful_update": "2026-08-29T14:43:36Z",
-  "latest_record_update": "2026-08-29T14:25:06Z",
+  "export_checked_at": "2026-08-29T14:50:38Z",
+  "last_successful_update": "2026-08-29T14:50:38Z",
+  "latest_record_update": "2026-08-29T14:49:01Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "269f93440c3ad2bb4fd4140cbc0517a2dd7be55e5e584dc216ee3ccf60aa3431",
+  "publication_state_checksum_sha256": "dabc4d7e548ae76db1e9cea2b9ee266de5632ef1b5db6981d879ac0573975ac4",
   "schema_version": 2,
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "artifact_checksum_sha256": "24bcf58ca9bbdfe5d4c492380f3d5449ba8e3c836b9e225856bc66b5d62513ab",
+    "artifact_checksum_sha256": "c5387568f307294cddc68074230ffe972244af84f2d9dbfc265fdbfeddbf5a9e",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -420,13 +420,13 @@
         "LAT offline detection",
         "LAT monitored-source flare"
       ],
-      "detail": "NASA GCN subscriptions active: gcn.classic.text.FERMI_GBM_ALERT, gcn.classic.text.FERMI_GBM_FLT_POS, gcn.classic.text.FERMI_GBM_GND_POS, gcn.classic.text.FERMI_GBM_FIN_POS, gcn.classic.text.FERMI_GBM_SUBTHRESH, gcn.classic.text.FERMI_LAT_POS_UPD, gcn.classic.text.FERMI_LAT_OFFLINE, gcn.classic.text.FERMI_LAT_MONITOR",
+      "detail": "via NASA GCN: gcn.classic.text.FERMI_GBM_FLT_POS",
       "documentation_url": "https://gcn.nasa.gov/missions/fermi",
       "enabled": true,
       "facility": "NASA Fermi / GBM / LAT / NASA GCN",
       "label": "Fermi GBM and LAT Public Notices",
-      "lag_seconds": 1103.870958,
-      "last_message_at": "2026-08-29T06:44:32Z",
+      "lag_seconds": 0.915257,
+      "last_message_at": "2026-08-29T14:49:00Z",
       "last_verified": "2026-08-04",
       "mode": "live",
       "proprietary_risk": "Internal, team-only initial/diagnostic, pointing, and test topics are excluded; a high-energy trigger or localization is not an optical counterpart or a confirmed GRB classification",
@@ -957,13 +957,13 @@
         "follow-up report",
         "retraction"
       ],
-      "detail": "igwn.gwalert",
+      "detail": "gcn.classic.text.FERMI_GBM_FLT_POS",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 1.577009,
-      "last_message_at": "2026-08-29T14:13:35Z",
+      "lag_seconds": 0.915257,
+      "last_message_at": "2026-08-29T14:49:00Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -972,8 +972,8 @@
       "rate_or_cadence_limit": "Long-running consumer required; no cron-style reconnect polling",
       "record_counts": {
         "classification_history": 305,
-        "classifications": 863,
-        "messenger_signals": 915,
+        "classifications": 865,
+        "messenger_signals": 917,
         "observations": 417
       },
       "source": "gcn",
@@ -1261,7 +1261,7 @@
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 74495.437251,
+      "lag_seconds": 76315.111683,
       "last_message_at": "2026-08-28T17:31:45Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1384,18 +1384,18 @@
     }
   ],
   "static_snapshot_verification": {
-    "content_release_id": "2ae0745cce77d7aa0f2750828db3c071305b12ee64f387a94ae50003092c6e0a",
-    "report_checksum_sha256": "0c64bb9a036043b9b8f7154d17c18de315a7d737e5b824b85f05d94d1a1cae00",
+    "content_release_id": "6fdcdd0070655545ae9b5496cf54e6c967325cb47795891b9f6639d14e2e86de",
+    "report_checksum_sha256": "421b8049c625bd2656228621cebedb2407760ef8140fadf4f94c343a98899adf",
     "schema": "ctas.static-snapshot-verification@1.0.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-29T15:13:36Z"
+    "valid_until": "2026-08-29T15:20:38Z"
   },
   "statistics": {
     "archive_products": 0,
-    "candidates_with_follow_up": 1140,
+    "candidates_with_follow_up": 1141,
     "catalog_counterparts": 1349,
     "classification_history": 305,
-    "classifications": 1069,
+    "classifications": 1071,
     "event_types": {
       "fast-radio-burst": 53,
       "gamma-ray-burst-candidate": 31,
@@ -1408,15 +1408,15 @@
       "neutrino-gamma-coincidence-candidate": 28,
       "optical-transient": 2446,
       "solar-flare": 1,
-      "terrestrial-gamma-ray-flash": 13,
+      "terrestrial-gamma-ray-flash": 14,
       "x-ray-transient": 37
     },
     "host_context": 13,
     "magnitude_values_excluded": 4,
-    "messenger_signals": 915,
+    "messenger_signals": 917,
     "messengers": {
       "electromagnetic": 2446,
-      "gamma-ray": 222,
+      "gamma-ray": 223,
       "multimessenger": 28,
       "neutrino": 221,
       "radio": 53,
@@ -1427,12 +1427,12 @@
       "high_50_74": 2491,
       "low_0_24": 20,
       "routine_25_49": 318,
-      "urgent_75_100": 178
+      "urgent_75_100": 179
     },
-    "public_candidates": 3007,
+    "public_candidates": 3008,
     "publications": 927,
     "quality_quarantined_records": 1,
-    "real_events": 3009,
+    "real_events": 3010,
     "spectra": 20
   },
   "surveys": [
@@ -1461,7 +1461,7 @@
       "survey": "IceCube Bronze Track Alert"
     },
     {
-      "candidate_count": 104,
+      "candidate_count": 105,
       "survey": "Fermi"
     },
     {
@@ -1577,5 +1577,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-29T15:13:36Z"
+  "valid_until": "2026-08-29T15:20:38Z"
 }
