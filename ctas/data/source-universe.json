@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "0c2b99e4cdcbc75a7604c76d4159f9ed83952df4d5d76408035e4a20a4697997",
+  "artifact_checksum_sha256": "e31924421f64cc79af0210c943250592f83b7990bdf8a5cc300fbee7e4a3d5b5",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
   "family_count": 10,
-  "generated_at": "2026-08-29T03:08:21Z",
+  "generated_at": "2026-08-29T03:26:07Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -583,7 +583,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "b3cc032cca7325f21d80a3a1c9392b86bb17097566561bbcecafc0362853b4fa",
+      "contract_checksum_sha256": "3bf8c308a78e72726012ee44b251047e79a87044d916637c27e6f68cc5cad664",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -598,7 +598,7 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-08-29T03:06:25Z",
+      "last_attempt_at": "2026-08-29T03:16:26Z",
       "last_successful_at": "2026-08-29T02:16:19Z",
       "last_successful_response": "2026-08-29T02:16:19Z",
       "last_verified": "2026-08-08",
@@ -610,7 +610,7 @@
       "protocol": "Anonymous real-time Fink/LSST REST polling, exact-object Rubin source/forced history, plus anonymous targeted Fink/ZTF archive",
       "public_disposition_counts": {
         "provider-failure": 138,
-        "searched-no-match": 3326,
+        "searched-no-match": 3327,
         "searched-with-data": 155
       },
       "public_record_counts": {
@@ -1281,7 +1281,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN public-consumer OAuth client with the eight Fermi GBM/LAT topics selected",
       "connector_implementation_state": "implemented-public-classic-parser-live",
-      "contract_checksum_sha256": "117ca14d23a9c7c160a66a6a4c139f826cb8854c88ea2ea0c82ea58c889cf12e",
+      "contract_checksum_sha256": "e494318d3312936493fa929d97b4e48ccb2bd2bb0ce13522f30029d3d30b7843",
       "contract_version": "1.0.0",
       "data_types": [
         "gamma-ray trigger",
@@ -1297,8 +1297,8 @@
       "implementation_state": "implemented",
       "known_limitations": "Internal, team-only initial/diagnostic, pointing, and test topics are excluded; a high-energy trigger or localization is not an optical counterpart or a confirmed GRB classification",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-28T16:07:30Z",
-      "last_successful_response": "2026-08-28T16:07:30Z",
+      "last_successful_at": "2026-08-29T03:25:09Z",
+      "last_successful_response": "2026-08-29T03:25:09Z",
       "last_verified": "2026-08-04",
       "name": "Fermi GBM and LAT Public Notices",
       "operational_state": "active-returning-data",
@@ -1308,7 +1308,7 @@
       "protocol": "GCN Kafka Classic text notice types 110, 111, 112, 115, 121, 125, 128, and 131",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 100
+        "candidates": 101
       },
       "query_scope": "live",
       "rate_or_cadence_limit": "Persistent Kafka consumer; mission-documented latency ranges from about five seconds to six hours by notice type",
@@ -1577,7 +1577,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN public-consumer OAuth client",
       "connector_implementation_state": "implemented-public-topic-credentials-required",
-      "contract_checksum_sha256": "3ef98f8fddf58efed7dd771c6b098ae9b2a23ecc0df570de14524ed9530a7578",
+      "contract_checksum_sha256": "c07f56a67b7f80e813bd0bd6d63930c06f7e50b7a886715e6216452f38f7b793",
       "contract_version": "1.0.0",
       "data_types": [
         "gravitational-wave notice",
@@ -1589,8 +1589,8 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-29T03:03:41Z",
-      "last_successful_response": "2026-08-29T03:03:41Z",
+      "last_successful_at": "2026-08-29T03:13:35Z",
+      "last_successful_response": "2026-08-29T03:13:35Z",
       "last_verified": "2026-07-21",
       "name": "LIGO/Virgo/KAGRA Public Alerts",
       "operational_state": "active-no-recent-messages",
@@ -1659,7 +1659,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN public-consumer OAuth client",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "61d47dc6a4b82b12a3949f9407e949bf250fe9771e59326c5241650a7e7b2767",
+      "contract_checksum_sha256": "32c2fdcc5d2dcd94a827be8809cc2218b721b57a4c20e551ddae4d6bc90a7b38",
       "contract_version": "1.0.0",
       "data_types": [
         "notice",
@@ -1671,8 +1671,8 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "No proprietary topic is configured; topic authorization does not itself change rights policy",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-29T03:03:41Z",
-      "last_successful_response": "2026-08-29T03:03:41Z",
+      "last_successful_at": "2026-08-29T03:25:09Z",
+      "last_successful_response": "2026-08-29T03:25:09Z",
       "last_verified": "2026-07-21",
       "name": "NASA General Coordinates Network",
       "operational_state": "active-returning-data",
@@ -1683,8 +1683,8 @@
       "public_disposition_counts": {},
       "public_record_counts": {
         "classification_history": 305,
-        "classifications": 817,
-        "messenger_signals": 882,
+        "classifications": 830,
+        "messenger_signals": 891,
         "observations": 417
       },
       "query_scope": "live",
