@@ -1,8 +1,8 @@
 {
-  "artifact_checksum_sha256": "aa993e7743d3842f4fe3214b4479ba540f2d9878ceeb92c082ca4f80a4232ca2",
+  "artifact_checksum_sha256": "d0dd881f8a017005e9937a8499c750f8224925119f65717e7a8cdb7cb348175d",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
   "family_count": 10,
-  "generated_at": "2026-08-29T22:16:52Z",
+  "generated_at": "2026-08-29T22:19:24Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -268,7 +268,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous for metadata and released public files",
       "connector_implementation_state": "implemented-explicit-release-verified-image-metadata-on-demand",
-      "contract_checksum_sha256": "a2fda1a539a768ff91d3c68361293c80a47bbaad7f1bd4edd297f39f8be860a0",
+      "contract_checksum_sha256": "1150a4edd475dc041dc7d506dfd4017fd16f6be666cd86749d3f26832cc27999",
       "contract_version": "1.0.0",
       "data_types": [
         "released image metadata",
@@ -277,7 +277,7 @@
       "documentation_url": "https://github.com/NOAO/nat-nb/blob/master/api-authentication.ipynb",
       "implementation_state": "implemented",
       "known_limitations": "All archive metadata are visible anonymously, including metadata for proprietary files; this adapter stores no unreleased row and downloads no bytes",
-      "last_attempt_at": "2026-08-29T22:09:20Z",
+      "last_attempt_at": "2026-08-29T22:16:44Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
@@ -289,7 +289,7 @@
       "protocol": "Anonymous SIA plus exact Advanced Search release verification",
       "public_disposition_counts": {
         "provider-failure": 287,
-        "searched-no-match": 2537,
+        "searched-no-match": 2538,
         "temporarily-unavailable": 19
       },
       "public_record_counts": {},
@@ -583,7 +583,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "3f4d6914751a0e2b6952776de05f5807c8170c0f494a758eedba7a8de14d3f2c",
+      "contract_checksum_sha256": "7f215884bd33920c609a54cf5c9cfe6d6d270c50e5a20959942b9cb9e2ed514a",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -603,7 +603,7 @@
       "last_successful_response": "2026-08-29T21:33:37Z",
       "last_verified": "2026-08-08",
       "name": "Fink",
-      "operational_state": "temporarily-unavailable",
+      "operational_state": "active-returning-data",
       "organization_or_facility": "Rubin community broker",
       "primary_family": "discovery-and-alert-brokers",
       "product_contracts": [],
@@ -1950,7 +1950,7 @@
       "access_mode": "on-demand-query",
       "authentication_requirement": "Registered forced-photometry API token",
       "connector_implementation_state": "implemented-public-credentials-required",
-      "contract_checksum_sha256": "95998d3248afec201147264a21b0f7c91dca344e006ba912004c8c109bcb323a",
+      "contract_checksum_sha256": "5b6533d10a2b6d1febf4ebdcc55c6a1cf108171046118d0dc57a007a00757de0",
       "contract_version": "1.0.0",
       "data_types": [
         "TNS discovery",
@@ -1959,19 +1959,19 @@
       "documentation_url": "https://fallingstar-data.com/forcedphot/apiguide/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Result URLs are short-lived; requests must remain bounded and attribution/citations are mandatory",
-      "last_attempt_at": "2026-08-29T22:09:42Z",
+      "last_attempt_at": "2026-08-29T22:16:55Z",
       "last_successful_at": "2026-08-29T22:09:42Z",
       "last_successful_response": "2026-08-29T22:09:42Z",
       "last_verified": "2026-08-03",
       "name": "ATLAS",
-      "operational_state": "scheduled",
+      "operational_state": "provider-failure",
       "organization_or_facility": "University of Hawai\u02bbi",
       "primary_family": "optical-and-time-domain-surveys",
       "product_contracts": [],
       "protocol": "TNS / forced-photometry REST API",
       "public_disposition_counts": {
         "credentials-required": 2242,
-        "provider-failure": 184,
+        "provider-failure": 185,
         "searched-with-data": 421,
         "temporarily-unavailable": 1
       },
@@ -2869,7 +2869,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "NASA ADS API token",
       "connector_implementation_state": "implemented-public-metadata-credentials-required",
-      "contract_checksum_sha256": "1ad5c2fff78def44e59585b09bcd45d00072e3b34678a9d987f3f997efdf19af",
+      "contract_checksum_sha256": "b729ef986fd589e266ab57030e352ef8641ee454b2421063ce634938bae443ef",
       "contract_version": "1.0.0",
       "data_types": [
         "bibliographic metadata",
@@ -2879,7 +2879,7 @@
       "documentation_url": "https://ui.adsabs.harvard.edu/help/api/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "CTAS retains metadata and provider links only; it does not mirror article full text or infer reuse rights from discoverability",
-      "last_attempt_at": "2026-08-29T22:09:42Z",
+      "last_attempt_at": "2026-08-29T22:16:55Z",
       "last_successful_at": "2026-08-29T17:45:05Z",
       "last_successful_response": "2026-08-29T17:45:05Z",
       "last_verified": "2026-08-23",
@@ -2893,7 +2893,7 @@
         "provider-failure": 44,
         "searched-no-match": 160,
         "searched-with-data": 83,
-        "temporarily-unavailable": 318
+        "temporarily-unavailable": 319
       },
       "public_record_counts": {
         "publications": 55
