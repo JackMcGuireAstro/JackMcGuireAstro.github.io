@@ -591,7 +591,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertEqual(html.count('class="ctas-navigation__menu"'), 2)
         self.assertIn('id="ctas-reference"', html)
         self.assertIn('class="ctas-filter-drawer"', html)
-        self.assertNotIn('id="celestial-sphere" open', html)
+        self.assertIn('id="celestial-sphere" open', html)
 
         for element_id in (
             "about-ctas", "catalog-overview", "active-sources", "recent-stream",
