@@ -2,57 +2,57 @@
   "artifacts": {
     "alias_index": {
       "path": "ctas/data/alias-index.json",
-      "sha256": "290e8e5fb8dfa8f53c8b5cf9d23099f2eb4cbd33fb983f41254c6e71fb5153f1"
+      "sha256": "6208f815e64a5b52aa0670fc64859f237f76316e282e72ab51720295b6ebcdaa"
     },
     "catalog_bootstrap": {
       "path": "ctas/data/catalog-bootstrap.json",
-      "sha256": "ab897b28b4c63103abe8e391337c04478c99f8e7ff5836df7b3bf651d39e0034"
+      "sha256": "e6c676915d206ac450862bac9be9a4192ce1fd31c084250857731675a44d11a6"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "ab897b28b4c63103abe8e391337c04478c99f8e7ff5836df7b3bf651d39e0034"
+      "sha256": "e6c676915d206ac450862bac9be9a4192ce1fd31c084250857731675a44d11a6"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "f51be15134bb254de36bfcdcdc2977eab5ee6eb630b2d241085bc95659fbe5bf"
+      "report_checksum_sha256": "6f50c2e1ccda0d079ad5d31811ad7d99559e0bd72acf717c9a3dc69e91692528"
     },
     "complete_catalog_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "1360cd44c2ddc4134e1845a6c6754b58d654924122a7c8ce6dda89d68092a07a"
+      "sha256": "3a4075ef68a910bf6a6e5843765026ddb1b536468603c1acec190aee02cf354b"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "c165511680b84ef82943a568df64b0c81d228a34453ebabb8b100783479d54bc"
+      "sha256": "58cbbf45347bc8d1cb6f01d347aa7ff3baa08047ed64bf83c7e47f01d4e6229a"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "8daeb948f8d0f41dd16708d81ea1ec3d52b8ef61caf71142a15d044c17c37dfc"
+      "sha256": "ff2d22fd1c6e1915f5d733826b7c7cda046c018a49aef2360d8a581860f2001e"
     },
     "research_tables": {
       "path": "ctas/data/research/manifest.json",
-      "sha256": "92286e8095fe9ac064544b04a35d48600f5ea0c9a86d151f08f4fdad2abcc29e"
+      "sha256": "232e89dce5667aa7c8eceae976d12662b39407ed42fbcca9d5b9461918637f17"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "9a7b6981a3aea56321fd74248d99560d18d17284cc920d2c14be6e5b7a75d53d"
+      "sha256": "e85e4583266bee39cc4ece5d90a63ee0e73469d1686280ea471ab0bbf462f647"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 3037,
-  "catalog_content_checksum_sha256": "4bb4c16ad17fe660c7a436ccf7ea48bb641b76548aa8ee5d39b751a8e537d3da",
-  "degraded_source_count": 7,
-  "export_checked_at": "2026-08-30T05:32:54Z",
-  "last_successful_update": "2026-08-30T05:32:54Z",
-  "latest_record_update": "2026-08-30T04:40:17.669167Z",
+  "catalog_content_checksum_sha256": "b1e79b883edb4d0b1aca2d3eb1099a6119de00675aa7106c30371e6635338b14",
+  "degraded_source_count": 3,
+  "export_checked_at": "2026-08-30T05:41:39Z",
+  "last_successful_update": "2026-08-30T05:41:39Z",
+  "latest_record_update": "2026-08-30T05:35:13.674539Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "f85a080e8ddcc12ef8c1a75dc1c1a8a1dc0649f21ee9ffb8ea19227a6897cb9d",
+  "publication_state_checksum_sha256": "d100791233150995e6e78e3d42b70932eb5a6fb489024993a2d2e8faf3fbce7e",
   "schema_version": 2,
   "source_accounting": {
     "applicableSourceEvaluations": 155762,
     "dataBearingSourceEvaluations": 4207,
     "declaredSources": 76,
-    "executedQueryReceipts": 28936,
+    "executedQueryReceipts": 28951,
     "outcomeCounts": {
       "AMBIGUOUS": 111,
       "DATA_RETURNED": 831,
@@ -61,13 +61,13 @@
       "NOT_QUERIED": 42789,
       "PARTIAL_RESULT": 5,
       "QUERY_BLOCKED": 404,
-      "QUERY_FAILED": 454,
-      "SEARCHED_NO_MATCH": 2866
+      "QUERY_FAILED": 455,
+      "SEARCHED_NO_MATCH": 2865
     }
   },
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "contract_set_checksum_sha256": "2d42315c8002ce1ccb55f572420448a6b07bf2270ad70b0f824a986df27ec6f3",
+    "contract_set_checksum_sha256": "bb87bbecf8e2826e124bba7632f8d111ba89958646e7cba79e49b57885224304",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -489,7 +489,7 @@
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
       "record_counts": {
-        "observations": 3184
+        "observations": 3185
       },
       "source": "rubin-fink",
       "state": "connected"
@@ -887,7 +887,7 @@
       "public_scope": "Public ZTF broker object/light-curve output accessed through the user's account",
       "rate_or_cadence_limit": "One exact retained ZTF alias per target refresh; provider documents 100 calls/hour for a standard user token",
       "record_counts": {
-        "observations": 801
+        "observations": 834
       },
       "source": "rubin-lasair",
       "state": "disabled"
@@ -1413,13 +1413,13 @@
   ],
   "static_snapshot_verification": {
     "check_count": 36,
-    "content_release_id": "512c7818c0d6aa80f0989d2d296e3cf53faf7d6415d86a0e5712961f85568f83",
+    "content_release_id": "06d5b5046a8f7b6a7bebc182ee8d98b5592ec88dec4b4253ea3fa6e67ccacc4e",
     "failed_gate_ids": [],
     "passed_check_count": 36,
-    "report_checksum_sha256": "f51be15134bb254de36bfcdcdc2977eab5ee6eb630b2d241085bc95659fbe5bf",
+    "report_checksum_sha256": "6f50c2e1ccda0d079ad5d31811ad7d99559e0bd72acf717c9a3dc69e91692528",
     "schema": "ctas.static-snapshot-verification@1.1.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-30T06:02:54Z"
+    "valid_until": "2026-08-30T06:11:39Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1453,7 +1453,7 @@
       "radio": 56,
       "x-ray": 37
     },
-    "observations": 12407,
+    "observations": 12441,
     "priority_bands": {
       "high_50_74": 2502,
       "low_0_24": 20,
@@ -1468,7 +1468,7 @@
       "applicableSourceEvaluations": 155762,
       "dataBearingSourceEvaluations": 4207,
       "declaredSources": 76,
-      "executedQueryReceipts": 28936,
+      "executedQueryReceipts": 28951,
       "outcomeCounts": {
         "AMBIGUOUS": 111,
         "DATA_RETURNED": 831,
@@ -1477,8 +1477,8 @@
         "NOT_QUERIED": 42789,
         "PARTIAL_RESULT": 5,
         "QUERY_BLOCKED": 404,
-        "QUERY_FAILED": 454,
-        "SEARCHED_NO_MATCH": 2866
+        "QUERY_FAILED": 455,
+        "SEARCHED_NO_MATCH": 2865
       }
     },
     "spectra": 20
@@ -1625,5 +1625,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-30T06:02:54Z"
+  "valid_until": "2026-08-30T06:11:39Z"
 }
