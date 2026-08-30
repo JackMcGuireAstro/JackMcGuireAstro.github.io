@@ -12,7 +12,8 @@ Mac is awake, online, and the user is logged in. It:
 
 1. refreshes the dedicated public-site checkout from `origin/main`;
 2. runs every implemented ExoNexus provider monitor locally;
-3. rejects quarantined or failed provider runs;
+3. publishes typed quarantined provider outcomes as status only, while rejecting
+   monitor crashes that cannot produce a valid receipt;
 4. runs ExoNexus type checking, tests, lint, production build, and atlas build;
 5. creates and validates the GitHub-native static release;
 6. stages only the explicit WorldsIndex data allowlist; and
@@ -37,7 +38,8 @@ permission to mix unreviewed upstream rows into the public catalog. The monitor
 receipt updates automatically, while measurements stay on the last reconciled
 snapshot until that source's fetch, normalization, identity reconciliation,
 provenance, and regression gates pass. Failed and quarantined runs leave the
-last-good public release unchanged.
+last-good catalog measurements unchanged; their typed failure state remains
+publicly visible instead of being mistaken for freshness.
 
 The publisher can stage only:
 

@@ -68,12 +68,14 @@ export GIT_TERMINAL_PROMPT=0
 export GIT_SSH_COMMAND
 
 say "checking all declared provider monitors locally"
-(cd "$SOURCE" && ./scripts/run-source-monitor-noninteractive.sh) >>"$LOG" 2>&1 \
-  || die "provider monitor failed or was quarantined; public last-good release remains unchanged"
+MONITOR_EXIT=0
+(cd "$SOURCE" && ./scripts/run-source-monitor-noninteractive.sh) >>"$LOG" 2>&1 || MONITOR_EXIT=$?
+[ "$MONITOR_EXIT" -eq 0 ] || [ "$MONITOR_EXIT" -eq 2 ] \
+  || die "provider monitor failed before producing a typed receipt; public last-good release remains unchanged"
 
 MONITOR_STATE=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("state","UNKNOWN"))' "$SOURCE/outputs/sync/latest-attempt.json" 2>/dev/null || echo "UNREADABLE")
 case "$MONITOR_STATE" in
-  VALIDATED_UNCHANGED|VALIDATED_CHANGED) ;;
+  VALIDATED_UNCHANGED|VALIDATED_CHANGED|QUARANTINED) ;;
   *) die "monitor state is $MONITOR_STATE; refusing publication" ;;
 esac
 
@@ -84,6 +86,9 @@ print(",".join(sorted(str(row.get("sourceId")) for row in doc.get("observations"
 ' "$SOURCE/outputs/sync/latest-attempt.json" 2>/dev/null || true)
 if [ "$MONITOR_STATE" = "VALIDATED_CHANGED" ]; then
   say "upstream change markers detected: ${CHANGED_SOURCES:-unspecified}; publishing the receipt but retaining the reconciled catalog until its source-specific promotion gate passes"
+fi
+if [ "$MONITOR_STATE" = "QUARANTINED" ]; then
+  say "one or more providers failed; publishing the typed failure receipt while retaining every catalog measurement from the last-good reconciled snapshots"
 fi
 
 say "running ExoNexus scientific and production gates"
