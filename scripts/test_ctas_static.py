@@ -609,6 +609,12 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn('research.open = false', workbench)
         self.assertIn('MODE_COPY[requested] ? requested : "explore"', workbench)
         self.assertNotIn('loadLocal(MODE_KEY, "explore")', workbench)
+        self.assertIn("Top 100 CTAS-ranked candidates", html)
+        self.assertIn("Reported in the last 24 hours", html)
+        self.assertIn("Browse the complete retained catalog", app)
+        self.assertIn("var PAGE = 100;", app)
+        self.assertIn("discovery >= cutoff", app)
+        self.assertIn("maintained contracts—not every astronomical source", app)
 
         self.assertIn('data-dossier-view="brief"', app)
         dossier = app[app.index("function renderDetails"):app.index("function statusCell")]

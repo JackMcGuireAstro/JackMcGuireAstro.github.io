@@ -3,7 +3,7 @@
   "use strict";
 
   var DATA_DIR = "ctas/data/";
-  var PAGE = 25;
+  var PAGE = 100;
   var CACHE_KEY = "ctas-public-bootstrap-v4";
   var PUBLIC_LINK_HOSTS = {
     "api.fink-portal.org": 1, "api.ztf.fink-portal.org": 1, "fink-portal.org": 1,
@@ -1023,12 +1023,13 @@
 
   function renderStream() {
     if (!el.stream) return;
-    var stream = filteredRows().slice().sort(function (a, b) {
-      var model = window.CTASCatalogModel;
-      return (model ? model.latestMeaningful(b) : 0) - (model ? model.latestMeaningful(a) : 0);
-    }).slice(0, 3);
+    var cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    var stream = filteredRows().filter(function (candidate) {
+      var discovery = Date.parse(candidate.discovery_time || "");
+      return Number.isFinite(discovery) && discovery >= cutoff;
+    }).sort(function (a, b) { return Date.parse(b.discovery_time) - Date.parse(a.discovery_time); });
     var title = document.getElementById("ctas-stream-title");
-    if (title) title.textContent = "Latest matching updates";
+    if (title) title.textContent = "Reported in the last 24 hours (" + stream.length.toLocaleString() + ")";
     el.stream.innerHTML = stream.map(function (candidate, index) {
       var counts = candidate.follow_up_counts || {};
       var evidence = [counts.observations ? counts.observations + " obs" : "", counts.spectra ? counts.spectra + " spectra" : "",
@@ -1037,7 +1038,7 @@
         esc(candidate.classification || "Unclassified") + " · " + esc(candidate.primary_messenger || "messenger unavailable") +
         "</p><small>" + esc(absolute(candidate.updated_at || candidate.discovery_time)) + " · " + esc(evidence) +
         '</small><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></div><strong class="ctas-stream__score">' + esc(num(candidate.ctas_score, 1)) + "<span>CTAS score</span></strong></li>";
-    }).join("") || '<li><div><strong>No candidates match the linked filters.</strong><p>Clear or broaden the scientific filters to restore the stream.</p></div></li>';
+    }).join("") || '<li><div><strong>No matching candidates have a reported discovery time in the last 24 hours.</strong><p>Clear linked filters or use the leaderboard and complete catalog below.</p></div></li>';
   }
 
   function safeCatalogDownloadPath(value) {
@@ -1099,7 +1100,13 @@
       (groups[family] = groups[family] || []).push(row);
       states[row.operational_state || "unknown"] = (states[row.operational_state || "unknown"] || 0) + 1;
     });
-    el.sourceUniverseSummary.innerHTML = '<span><strong>' + universe.source_count + "</strong> source contracts</span>" +
+    var representation = {};
+    universe.sources.forEach(function (row) { representation[row.representation_state || "none"] = (representation[row.representation_state || "none"] || 0) + 1; });
+    el.sourceUniverseSummary.innerHTML = '<span><strong>' + universe.source_count + "</strong> maintained contracts—not every astronomical source</span>" +
+      '<span><strong>' + Number(representation.direct || 0) + "</strong> directly represented</span>" +
+      '<span><strong>' + Number(representation["through-provider"] || 0) + "</strong> represented through providers</span>" +
+      '<span><strong>' + Number(representation["dispositions-only"] || 0) + "</strong> checked without retained records</span>" +
+      '<span><strong>' + Number(representation.none || 0) + "</strong> not represented in this snapshot</span>" +
       '<span><strong>' + universe.family_count + "</strong> source families</span>" + Object.keys(states).sort().map(function (key) {
         return "<span><strong>" + states[key] + "</strong> " + esc(humanKey(key).toLowerCase()) + "</span>";
       }).join("");
@@ -1183,8 +1190,13 @@
   ];
   function renderTable() {
     var rows = visible(), shown = rows.slice(0, state.shown);
-    el.count.textContent = "Showing " + shown.length.toLocaleString() + " of " + rows.length.toLocaleString() +
-      (rows.length === state.candidates.length ? " candidates" : " matching candidates (" + state.candidates.length.toLocaleString() + " total)");
+    var defaultLeaderboard = state.preset === "all" && !state.q && !state.cls && !state.msg && !state.stat && !state.survey &&
+      !state.from && !state.to && state.scoreMin === null && state.scoreMax === null && state.magMax === null &&
+      !state.spectrum && !state.conflict && !state.richness && state.coneRa === null && state.coneDec === null && state.coneRadius === null;
+    el.count.textContent = defaultLeaderboard && state.shown <= PAGE
+      ? "Top " + shown.length.toLocaleString() + " of " + rows.length.toLocaleString() + " retained candidates"
+      : "Showing " + shown.length.toLocaleString() + " of " + rows.length.toLocaleString() +
+        (rows.length === state.candidates.length ? " retained candidates" : " matching candidates (" + state.candidates.length.toLocaleString() + " retained total)");
     if (!state.candidates.length) {
       el.results.innerHTML = '<div class="ctas-empty"><h3>No current candidates</h3><p>The next automatic two-minute check will preserve or update this state.</p></div>'; return;
     }
@@ -1213,7 +1225,9 @@
     }).join("");
     el.results.innerHTML = '<div class="ctas-table-wrap"><table class="ctas-table"><caption>Public CTAS candidates. Positions are ICRS; source-reported discovery magnitudes may use heterogeneous bands and systems.</caption><thead><tr>' +
       head + "</tr></thead><tbody>" + body + "</tbody></table></div>" + (rows.length > state.shown
-        ? '<p class="ctas-more"><button type="button" id="ctas-more">Show ' + Math.min(PAGE, rows.length - state.shown) + " more</button></p>" : "");
+        ? '<p class="ctas-more"><button type="button" id="ctas-more">' + (defaultLeaderboard && state.shown <= PAGE
+          ? "Browse the complete retained catalog (" + rows.length.toLocaleString() + "; 100 at a time)"
+          : "Show the next " + Math.min(PAGE, rows.length - state.shown).toLocaleString()) + "</button></p>" : "");
     if (window.CTASWorkbench && window.CTASWorkbench.refreshActions) window.CTASWorkbench.refreshActions();
   }
 

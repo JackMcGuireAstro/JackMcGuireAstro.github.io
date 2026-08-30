@@ -698,6 +698,10 @@ select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .ctas-sky__accessible { width: min(100%, 38rem); min-height: 44px; margin-top: .35rem; padding: .55rem .7rem; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-2); color: var(--ink); }
 
 .ctas-ranked { margin-top: 2rem; }
+.ctas-use-guide { margin: 0 0 .8rem; border: 1px solid var(--border); background: rgba(255,255,255,.018); }
+.ctas-use-guide > summary { min-height: 44px; padding: .65rem .75rem; cursor: pointer; color: var(--ink-2); font-weight: 750; }
+.ctas-use-guide > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .55rem; padding: 0 .75rem .75rem; }
+.ctas-use-guide p { margin: 0; color: var(--ink-2); font-size: .78rem; }
 .ctas-workspace {
   margin: 0 0 1.25rem;
   padding: clamp(1rem, 2.5vw, 1.75rem);
@@ -1261,6 +1265,7 @@ body[data-ctas-mode="research"] .ctas-research-workbench { box-shadow: 0 0 0 1px
   .ctas-compare-grid { grid-template-columns: 1fr; overflow: visible; }
   .ctas-observability__controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ctas-sky-context__grid { grid-template-columns: 1fr; }
+  .ctas-use-guide > div { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
   .ctas-mode-switcher,

@@ -243,8 +243,8 @@
 
       <section class="ctas-stream" id="recent-stream" aria-labelledby="ctas-stream-title">
         <div class="ctas-section-heading">
-          <div><p class="eyebrow">Incoming stream</p><h3 id="ctas-stream-title">Latest updates</h3></div>
-          <p>Open any candidate for its complete public record.</p>
+          <div><p class="eyebrow">Incoming transients</p><h3 id="ctas-stream-title">Reported in the last 24 hours</h3></div>
+          <p>Every matching record with a source-reported discovery time in the rolling 24-hour window appears here. Open one for its evidence and sky context.</p>
         </div>
         <ol class="ctas-stream__list" id="ctas-stream"></ol>
       </section>
@@ -284,16 +284,20 @@
 
       <section class="ctas-ranked" id="ranked-candidates" aria-labelledby="ranked-title">
         <div class="ctas-section-heading">
-          <div><p class="eyebrow">Public catalog</p><h3 id="ranked-title">Candidates</h3></div>
-          <p>Ranked by CTAS score. Open a candidate for its complete evidence.</p>
+          <div><p class="eyebrow">Follow-up leaderboard</p><h3 id="ranked-title">Top 100 CTAS-ranked candidates</h3></div>
+          <p>A focused starting point for citizen scientists and researchers. CTAS score orders review; it is not a discovery claim, probability, or scientific importance rating. The complete retained catalog appears only after you request it.</p>
         </div>
+        <details class="ctas-use-guide">
+          <summary>New to transient astronomy? Start here</summary>
+          <div><p><strong>1.</strong> Review the last-24-hour stream for newly reported events.</p><p><strong>2.</strong> Use the leaderboard to find records CTAS suggests reviewing first.</p><p><strong>3.</strong> Open a record for plain-language context, original-source links, the sky image, score factors, and optional research evidence.</p></div>
+        </details>
 
         <article id="candidate-workspace" class="ctas-workspace" aria-label="Candidate dossier" hidden></article>
 
         <div class="ctas-toolbar" id="ctas-toolbar" hidden>
           <div class="ctas-presets" role="group" aria-label="Primary candidate views">
             <span>Quick views</span>
-            <button type="button" class="is-active" data-preset="all" aria-pressed="true">All</button>
+            <button type="button" class="is-active" data-preset="all" aria-pressed="true">Leaderboard</button>
             <button type="button" data-preset="newest" aria-pressed="false">Newest</button>
             <button type="button" data-preset="priority" aria-pressed="false">Highest priority</button>
           </div>
