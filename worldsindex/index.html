@@ -6,21 +6,21 @@
   <meta name="description" content="WorldsIndex: a multi-source exoplanet and candidate atlas with inspectable measurements, provenance, methods, and scientific exports.">
   <meta name="theme-color" content="#07111d">
   <link rel="canonical" href="https://jackmcguireastro.github.io/worldsindex/">
-  <link rel="stylesheet" href="assets/app.css?v=20260830-ux4">
+  <link rel="stylesheet" href="assets/app.css?v=20260830-ux5">
   <title>WorldsIndex · Exoplanet evidence atlas</title>
 </head>
-<body>
+<body data-active-page="atlas">
   <a class="skip-link" href="#main">Skip to WorldsIndex</a>
   <header class="topbar">
-    <a class="brand" href="../index.html" aria-label="Jack McGuire home"><span class="brand-mark">WI</span><span>WorldsIndex<small>Powered by ExoNexus</small></span></a>
-    <nav aria-label="WorldsIndex sections">
-      <a href="#atlas">Atlas</a><a href="#object-evidence">Object evidence</a><a href="#compare">Compare</a><a href="#methods">Methods</a><a href="#coverage">Sources</a><a href="#downloads">Downloads</a>
+    <a class="brand" href="?section=atlas" data-app-section="atlas" aria-label="WorldsIndex Atlas"><span class="brand-mark">WI</span><span>WorldsIndex<small>Powered by ExoNexus</small></span></a>
+    <nav class="app-tabs" aria-label="WorldsIndex views" role="tablist">
+      <a href="?section=atlas" data-app-section="atlas" role="tab" aria-selected="true" aria-current="page" tabindex="0">Atlas</a><a href="?section=object" data-app-section="object" role="tab" aria-selected="false" tabindex="-1">Object</a><a href="?section=compare" data-app-section="compare" role="tab" aria-selected="false" tabindex="-1">Compare</a><a href="?section=methods" data-app-section="methods" role="tab" aria-selected="false" tabindex="-1">Methods</a><a href="?section=sources" data-app-section="sources" role="tab" aria-selected="false" tabindex="-1">Sources</a><a href="?section=downloads" data-app-section="downloads" role="tab" aria-selected="false" tabindex="-1">Downloads</a>
     </nav>
     <a class="portfolio-link" href="../index.html">Jack McGuire ↗</a>
   </header>
 
   <main id="main">
-    <section class="hero">
+    <section class="hero app-page" data-page="atlas">
       <div>
         <p class="eyebrow">Powered by ExoNexus · an evidence-aware exoplanet atlas</p>
         <h1>Every value has<br><em>a history.</em></h1>
@@ -35,7 +35,7 @@
       </aside>
     </section>
 
-    <section class="workspace" id="atlas" aria-labelledby="atlas-title">
+    <section class="workspace app-page" data-page="atlas" id="atlas" aria-labelledby="atlas-title">
       <div class="section-heading"><div><p class="eyebrow">Interactive celestial sphere</p><h2 id="atlas-title">The declared detection universe on one sky</h2></div><p id="atlas-count" class="count-badge">Loading atlas…</p></div>
       <div class="search-panel">
         <label for="object-search">Find any retained planet, candidate, host, or source identifier</label>
@@ -61,7 +61,7 @@
       <details class="accessible-list"><summary>Keyboard-accessible filtered object browser</summary><div id="object-list" class="object-list"></div></details>
     </section>
 
-    <section class="workspace accent" id="object-evidence" aria-labelledby="evidence-title">
+    <section class="workspace accent app-page" data-page="object" id="object-evidence" aria-labelledby="evidence-title" hidden>
       <div class="section-heading"><div><p class="eyebrow">Object dossier</p><h2 id="evidence-title">Best display values with alternatives still visible</h2></div><span id="object-status" class="status-pill">No object selected</span></div>
       <div id="object-empty" class="empty-state"><p>Choose an object from the sky, search, or population plot to open its dossier.</p></div>
       <div id="object-dossier" hidden>
@@ -74,7 +74,7 @@
       </div>
     </section>
 
-    <section class="workspace" id="compare" aria-labelledby="compare-title">
+    <section class="workspace app-page" data-page="compare" id="compare" aria-labelledby="compare-title" hidden>
       <div class="section-heading"><div><p class="eyebrow">Compare &amp; learn</p><h2 id="compare-title">See how detection methods shape the planets we find</h2></div><button id="download-plot" class="button" type="button">Download plotted data</button></div>
       <div id="plot-guide" class="plot-guide"></div>
       <div class="plot-controls">
@@ -87,21 +87,21 @@
       <section class="direct-compare" aria-labelledby="direct-compare-title"><div><p class="eyebrow">Object-to-object comparison</p><h3 id="direct-compare-title">Choose two or more worlds</h3><p class="muted">Search and add up to four objects. Each column uses the same display rules, units, and source labels.</p></div><div class="compare-picker"><label>Find a planet or candidate<input id="compare-search" type="search" autocomplete="off" placeholder="Try TRAPPIST-1 e…"></label><div id="compare-results" class="compare-results" role="listbox" hidden></div></div><div id="compare-selected" class="compare-selected"></div><div id="comparison-table" class="comparison-table"></div></section>
     </section>
 
-    <section class="workspace accent" id="methods" aria-labelledby="methods-title">
+    <section class="workspace accent app-page" data-page="methods" id="methods" aria-labelledby="methods-title" hidden>
       <div class="section-heading"><div><p class="eyebrow">Detection methods &amp; concept labs</p><h2 id="methods-title">What each method measures—and where it can mislead</h2></div></div>
       <input id="learning-depth" type="hidden" value="research">
       <div id="method-tabs" class="method-tabs" role="tablist"></div>
       <article id="method-detail" class="method-detail"></article>
     </section>
 
-    <section class="workspace" id="coverage" aria-labelledby="coverage-title">
+    <section class="workspace app-page" data-page="sources" id="coverage" aria-labelledby="coverage-title" hidden>
       <div class="section-heading"><div><p class="eyebrow">Source coverage</p><h2 id="coverage-title">Active data first; inactive contracts remain auditable</h2></div><label>Sources shown<select id="source-state-filter"><option value="active">Active sources</option><option value="inactive">Inactive contracts only</option><option value="all">All declared sources</option></select></label></div>
       <div id="source-summary" class="summary-grid"></div>
       <div id="source-list" class="source-list"></div>
       <aside class="boundary"><h3>Scientific and automation boundary</h3><p>The laptop updater can repeatedly query structured catalogs, validate changes, quarantine unsafe releases, and publish a last-known-good static release. No website can honestly guarantee every future paper or provider forever: services change schemas, restrict access, disappear, or publish measurements only in unstructured literature. Every declared provider therefore remains visible with its exact implementation and latest-query state instead of being silently counted as complete.</p><ul><li>A catalog row is not independent confirmation.</li><li>An archive holding is not itself a planet detection.</li><li>Confidence describes evidence fitness and provenance, not the probability that a value is true.</li><li>Source-composite values may come from different papers and are not a self-consistent physical solution.</li><li>“All” means the validated records inside the versioned declared source universe shown here.</li></ul></aside>
     </section>
 
-    <section class="workspace accent" id="downloads" aria-labelledby="downloads-title">
+    <section class="workspace accent app-page" data-page="downloads" id="downloads" aria-labelledby="downloads-title" hidden>
       <div class="section-heading"><div><p class="eyebrow">Scientist-ready artifacts</p><h2 id="downloads-title">Download, cite, and reproduce this evidence state</h2></div></div>
       <div class="download-grid">
         <a href="data/sky-detections.json.gz" download><strong>Complete atlas JSON.gz</strong><span>All retained objects, coordinates, statuses, method claims, source membership, and population projections.</span></a>
@@ -113,6 +113,6 @@
   </main>
   <footer><p><strong>WorldsIndex</strong> · ExoNexus provenance-aware catalog union · <a href="../index.html">Jack McGuire</a></p><p>No ChatGPT-hosted application dependency. Public data and interface are served from this GitHub repository.</p></footer>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="assets/app.js?v=20260830-ux4"></script>
+  <script type="module" src="assets/app.js?v=20260830-ux5"></script>
 </body>
 </html>
