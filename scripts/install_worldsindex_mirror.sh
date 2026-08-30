@@ -91,11 +91,11 @@ echo "Refreshing the launchd-readable ExoNexus mirror"
 SOURCE_WAS_PRESENT=0
 [ -f "$RUNTIME_SOURCE/package.json" ] && SOURCE_WAS_PRESENT=1
 RSYNC_EXCLUDES=(
-  --exclude='.git/'
-  --exclude='.next/'
-  --exclude='.vinext/'
-  --exclude='.wrangler/'
-  --exclude='dist/'
+  --exclude='/.git/'
+  --exclude='/.next/'
+  --exclude='/.vinext/'
+  --exclude='/.wrangler/'
+  --exclude='/dist/'
   --exclude='* 2.*'
 )
 if [ "$SOURCE_WAS_PRESENT" -eq 1 ]; then
@@ -108,6 +108,7 @@ mkdir -p "$RUNTIME_SOURCE"
 rsync -a --delete "${RSYNC_EXCLUDES[@]}" "$AUTHORING_SOURCE/" "$RUNTIME_SOURCE/" \
   || { bad "could not refresh $RUNTIME_SOURCE"; exit 1; }
 [ -f "$RUNTIME_SOURCE/package.json" ] || { bad "operational source mirror is incomplete"; exit 1; }
+[ -f "$RUNTIME_SOURCE/node_modules/tsx/dist/loader.mjs" ] || { bad "operational Node dependencies are incomplete"; exit 1; }
 if [ -f "$RUNTIME_SOURCE/.env.local" ]; then
   chmod 600 "$RUNTIME_SOURCE/.env.local" || { bad "could not protect the local credential file"; exit 1; }
 fi
