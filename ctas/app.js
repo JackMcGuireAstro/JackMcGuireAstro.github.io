@@ -984,7 +984,7 @@
       statusCell("Update check", localPreview ? "Public site only" : state.autoRefreshPaused ? "Paused" : "Every 2 minutes") +
       '</div><details class="ctas-status__details"><summary>Status details</summary><div><p>' + esc(pipelineDetail) +
       '</p><p><strong>Last successful snapshot:</strong> ' + esc(absolute(generated)) + '</p><p><strong>Integrity:</strong> ' + integrityDetail +
-      (localPreview ? '</p><p><a href="https://jackmcguireastro.github.io/ctas.html?mode=explore">Open the current public CTAS catalog</a>' : "") +
+      (localPreview ? '</p><p><a href="https://jackmcguireastro.github.io/ctas.html">Open the current public CTAS catalog</a>' : "") +
       '</p><button type="button" class="ctas-refresh-toggle" data-toggle-refresh aria-pressed="' + (state.autoRefreshPaused ? "true" : "false") + '">' +
       (state.autoRefreshPaused ? "Resume 2-minute checks" : "Pause 2-minute checks") + "</button></div></details>";
   }

@@ -1,17 +1,11 @@
-/* CTAS scientist workspace: browser-local modes, comparison, replay, planning and reuse. */
+/* CTAS unified public workspace: comparison, replay, planning and reuse. */
 (function () {
   "use strict";
 
-  var MODE_COPY = {
-    learn: "New here provides guided real examples, a plain-language glossary, and interpretation without hiding uncertainty.",
-    explore: "Live catalog shows today’s reports, the interactive sky, and the top-100 leaderboard. Every path uses the same source-attributed evidence.",
-    research: "Research tools keep the complete catalog, scientific filters, comparison, receipts, exports, and source coverage within reach."
-  };
   var MAX_COMPARE = 5;
   var WATCH_KEY = "ctas-browser-watchlist-v1";
-  var MODE_KEY = "ctas-browser-mode-v1";
   var state = {
-    mode: "explore", candidates: [], snapshot: null, sourceUniverse: null,
+    candidates: [], snapshot: null, sourceUniverse: null,
     compareIds: [], watchIds: [], detailById: {}, replayTimers: {}, observatories: null,
     comparisonOpen: false
   };
@@ -45,36 +39,11 @@
     history[replace === false ? "pushState" : "replaceState"](null, "", url.pathname + (url.searchParams.toString() ? "?" + url.searchParams.toString() : "") + url.hash);
   }
 
-  function setMode(mode, options) {
-    options = options || {};
-    if (!MODE_COPY[mode]) mode = "explore";
-    state.mode = mode; document.body.setAttribute("data-ctas-mode", mode);
-    Array.prototype.forEach.call(document.querySelectorAll("[data-ctas-mode]"), function (button) {
-      button.setAttribute("aria-pressed", button.getAttribute("data-ctas-mode") === mode ? "true" : "false");
-    });
-    var description = document.getElementById("ctas-mode-description");
-    if (description) description.textContent = MODE_COPY[mode];
-    var learn = document.getElementById("ctas-learn"), research = document.getElementById("ctas-research-tools");
-    var stream = document.getElementById("recent-stream"), sky = document.getElementById("celestial-sphere");
-    var ranked = document.getElementById("ranked-candidates");
-    if (learn) { learn.hidden = mode !== "learn"; learn.open = mode === "learn"; }
-    if (research) { research.hidden = mode !== "research"; research.open = false; }
-    if (stream) stream.hidden = mode !== "explore";
-    if (sky) { sky.hidden = mode !== "explore"; sky.open = false; }
-    if (ranked) ranked.hidden = mode === "learn";
-    saveLocal(MODE_KEY, mode);
-    if (!options.fromHistory) updateUrl({mode: mode}, true);
-    if (options.focus) {
-      var target = mode === "learn" ? learn : mode === "research" ? ranked : document.getElementById("recent-stream");
-      if (target) target.scrollIntoView({behavior: window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start"});
-    }
-  }
-
-  function restoreMode() {
-    var url = new URL(window.location.href), requested = url.searchParams.get("mode");
-    var fragment = String(url.hash || "").replace(/^#/, "");
-    var fragmentMode = fragment === "ctas-learn" ? "learn" : ["recent-stream", "celestial-sphere"].indexOf(fragment) !== -1 ? "explore" : null;
-    setMode(fragmentMode || (MODE_COPY[requested] ? requested : "explore"), {fromHistory: true});
+  function normalizeLegacyModeUrl() {
+    var url = new URL(window.location.href);
+    if (!url.searchParams.has("mode")) return;
+    url.searchParams.delete("mode");
+    history.replaceState(null, "", url.pathname + (url.searchParams.toString() ? "?" + url.searchParams.toString() : "") + url.hash);
   }
 
   function restoreCompareIds() {
@@ -395,15 +364,13 @@
 
   function afterCandidateRender(candidate) {
     state.detailById[candidate.event_id] = candidate;
-    var brief = document.querySelector('[data-dossier-view="brief"]'); if (brief) brief.open = state.mode !== "research";
+    var brief = document.querySelector('[data-dossier-view="brief"]'); if (brief) brief.open = true;
     initializeReplay(candidate); updateActionStates();
   }
 
   function bind() {
     document.addEventListener("click", function (event) {
-      var mode = event.target.closest("[data-ctas-mode]"); if (mode) { setMode(mode.getAttribute("data-ctas-mode"), {focus: true}); return; }
-      var switcher = event.target.closest("[data-switch-mode]"); if (switcher) { setMode(switcher.getAttribute("data-switch-mode"), {focus: true}); return; }
-      var named = event.target.closest("[data-open-name]"); if (named && window.CTASApp) { setMode("explore", {}); window.CTASApp.openByName(named.getAttribute("data-open-name")); return; }
+      var named = event.target.closest("[data-open-name]"); if (named && window.CTASApp) { window.CTASApp.openByName(named.getAttribute("data-open-name")); return; }
       var compare = event.target.closest("[data-compare-event]"); if (compare) { toggleCompare(compare.getAttribute("data-compare-event")); return; }
       var remove = event.target.closest("[data-remove-compare]"); if (remove) { toggleCompare(remove.getAttribute("data-remove-compare")); return; }
       var watch = event.target.closest("[data-watch-event]"); if (watch) { toggleWatch(watch.getAttribute("data-watch-event")); return; }
@@ -468,15 +435,14 @@
       updateActionStates();
       if (state.comparisonOpen) renderComparison();
     });
-    window.addEventListener("popstate", function () { restoreMode(); restoreCompareIds(); });
+    window.addEventListener("popstate", restoreCompareIds);
   }
 
-  restoreMode(); bind();
+  normalizeLegacyModeUrl(); bind();
   window.CTASWorkbench = {
     afterCandidateRender: afterCandidateRender,
     candidatePanels: candidatePanels,
     skyContextPanel: skyContextPanel,
-    setMode: setMode,
     refreshActions: updateActionStates
   };
 }());
