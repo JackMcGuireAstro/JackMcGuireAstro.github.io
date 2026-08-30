@@ -106,10 +106,15 @@ ok "agent loaded"
 
 echo
 echo "Starting the first supervised run"
-launchctl kickstart -k "$DOMAIN/$LABEL" 2>/dev/null \
-  || { bad "could not start the agent"; exit 1; }
-sleep 2
-AGENT_STATE=$(launchctl print "$DOMAIN/$LABEL" 2>/dev/null || true)
+AGENT_STATE=""
+for _ in {1..10}; do
+  AGENT_STATE=$(launchctl print "$DOMAIN/$LABEL" 2>/dev/null || true)
+  if printf '%s\n' "$AGENT_STATE" | grep -q 'state = running' \
+     || printf '%s\n' "$AGENT_STATE" | grep -q 'last exit code = 0'; then
+    break
+  fi
+  sleep 1
+done
 if printf '%s\n' "$AGENT_STATE" | grep -q 'state = running'; then
   ok "first launchd run is active"
 elif printf '%s\n' "$AGENT_STATE" | grep -q 'last exit code = 0'; then
