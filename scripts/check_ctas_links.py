@@ -19,7 +19,7 @@ import urllib.request
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Iterator
+from typing import Any, Iterator
 from urllib.parse import unquote, urlparse
 
 UTC = timezone.utc
@@ -38,6 +38,7 @@ ALLOWED_HOSTS = {
     "docs.aavso.org", "ep.bao.ac.cn", "fallingstar-data.com", "fink-portal.org",
     "gcn.gsfc.nasa.gov", "gcn.nasa.gov", "github.com", "goto-observatory.org",
     "heasarc.gsfc.nasa.gov", "irsa.ipac.caltech.edu", "lasair.readthedocs.io",
+    "lasair-ztf.lsst.ac.uk",
     "mast.stsci.edu", "maxi.riken.jp", "ned.ipac.caltech.edu",
     "observ.pereplet.ru", "outerspace.stsci.edu", "roc-2.icecube.wisc.edu",
     "roc.icecube.wisc.edu", "rubinobservatory.org", "simbad.cds.unistra.fr",
@@ -106,7 +107,13 @@ def iter_urls(
             value.get("source_key") or value.get("source_id") or
             value.get("provider") or source_key or ""
         ) or None
-        local_designation = str(value.get("designation") or designation or "") or None
+        # A nested related-object record may intentionally name a different
+        # TNS object than the enclosing candidate.  Preserve that nearest
+        # provider identifier so the URL is checked against the related
+        # object itself, rather than incorrectly against the parent event.
+        local_designation = str(
+            value.get("designation") or value.get("external_id") or designation or ""
+        ) or None
         for key, child in value.items():
             yield from iter_urls(
                 child,
@@ -149,6 +156,9 @@ def renderability(url: str) -> tuple[str, str | None]:
         return "suppressed-malformed", "credentials and explicit ports are not rendered publicly"
     if parsed.hostname.lower() not in ALLOWED_HOSTS:
         return "suppressed-unallowlisted", "origin is not in the public render allowlist"
+    if parsed.hostname.lower() == "www.wis-tns.org" and parsed.path.startswith("/object"):
+        if parsed.query or parsed.fragment or not TNS_OBJECT_PATH.fullmatch(parsed.path):
+            return "suppressed-malformed", "TNS object URL is not an exact canonical public object path"
     return "https-allowlisted-renderable", None
 
 
@@ -176,6 +186,8 @@ def link_role(occurrence: dict) -> str:
     if host == "www.wis-tns.org" and TNS_OBJECT_PATH.fullmatch(path):
         return "exact-object"
     if host == "fink-portal.org" and re.fullmatch(r"/ZTF\d{2}[a-z]+/?", path, re.IGNORECASE):
+        return "exact-object"
+    if host == "lasair-ztf.lsst.ac.uk" and re.fullmatch(r"/object/ZTF\d{2}[a-z]+/?", path, re.IGNORECASE):
         return "exact-object"
     if host == "simbad.cds.unistra.fr" and path.startswith("/simbad/sim-id") and parsed.query:
         return "exact-object"
@@ -242,7 +254,11 @@ def validate_tns_object(occurrence: dict) -> tuple[dict | None, str | None]:
         if not designation_match or designation_match.group(1).lower() != object_id:
             return None, "TNS object link does not match its declared designation"
     candidate_name = occurrence.get("candidate_name")
-    if candidate_name:
+    # An explicit nearest-record designation is more specific than the
+    # enclosing candidate name (for example a publication's related_objects
+    # list).  Only fall back to the candidate identity when no such binding is
+    # retained on the URL-bearing record.
+    if candidate_name and not declared_designation:
         candidate_match = TNS_DESIGNATION.fullmatch(str(candidate_name))
         # A candidate can legitimately use a non-TNS preferred name, so only
         # enforce identity when that name itself is a canonical TNS designation.
@@ -286,7 +302,10 @@ def audit_links(snapshot: dict, universe: dict | None) -> tuple[dict, list[dict]
                 "state": state,
                 "reason": reason,
             })
-        if is_declared_tns_object(occurrence):
+        # Only links that survive the fail-closed rendering policy are eligible
+        # to become clickable canonical TNS objects. Noncanonical source-native
+        # URL strings remain counted as suppressed provenance.
+        if state == "https-allowlisted-renderable" and is_declared_tns_object(occurrence):
             canonical, problem = validate_tns_object(occurrence)
             if problem:
                 identity = occurrence.get("candidate_name") or occurrence.get("json_path")
@@ -375,9 +394,110 @@ def atomic_write(path: Path, raw: bytes) -> None:
     os.replace(temporary, path)
 
 
+def public_artifact_path(manifest_path: Path, public_path: str) -> Path:
+    """Resolve a manifest's repository-relative path without allowing escape."""
+
+    manifest_path = manifest_path.resolve()
+    if manifest_path.parent.name != "candidate-chunks":
+        raise ValueError("candidate manifest must live in a candidate-chunks directory")
+    data_dir = manifest_path.parent.parent
+    published = Path(public_path)
+    try:
+        relative = published.relative_to(Path("ctas/data"))
+    except ValueError as exc:
+        raise ValueError(f"public artifact is outside ctas/data: {public_path}") from exc
+    if relative.is_absolute() or any(part in {"", ".", ".."} for part in relative.parts):
+        raise ValueError(f"unsafe public artifact path: {public_path}")
+    target = (data_dir / relative).resolve()
+    if data_dir != target and data_dir not in target.parents:
+        raise ValueError(f"public artifact escapes output root: {public_path}")
+    return target
+
+
+def load_partitioned_catalog(index_path: Path, manifest_path: Path) -> dict[str, Any]:
+    """Verify and reconstruct every complete record from the public shards."""
+
+    manifest_raw = manifest_path.read_bytes()
+    manifest = json.loads(manifest_raw)
+    if manifest.get("schema") != "ctas.public-complete-catalog-manifest@1.0.0":
+        raise ValueError("unsupported complete-catalog manifest schema")
+    index_meta = manifest.get("catalog_index") or {}
+    declared_index = public_artifact_path(manifest_path, str(index_meta.get("path") or ""))
+    if declared_index != index_path.resolve():
+        raise ValueError("catalog-index path does not match the complete-catalog manifest")
+    index_raw = index_path.read_bytes()
+    if index_meta.get("bytes") != len(index_raw):
+        raise ValueError("catalog-index byte length does not match the manifest")
+    if index_meta.get("sha256") != hashlib.sha256(index_raw).hexdigest():
+        raise ValueError("catalog-index checksum does not match the manifest")
+    index = json.loads(index_raw)
+    index_rows = index.get("candidates")
+    if not isinstance(index_rows, list):
+        columns = index.get("candidate_columns")
+        values = index.get("candidate_rows")
+        if not isinstance(columns, list) or not isinstance(values, list) or "event_id" not in columns:
+            raise ValueError("catalog index has no candidate table")
+        if len(columns) != len(set(columns)):
+            raise ValueError("catalog index candidate columns are not unique")
+        index_rows = []
+        for row in values:
+            if not isinstance(row, list) or len(row) != len(columns):
+                raise ValueError("catalog index candidate row width is invalid")
+            index_rows.append(dict(zip(columns, row)))
+
+    chunks = manifest.get("chunks")
+    if not isinstance(chunks, list) or len(chunks) != manifest.get("chunk_count"):
+        raise ValueError("complete-catalog chunk count is inconsistent")
+    paths = [str(row.get("path") or "") for row in chunks if isinstance(row, dict)]
+    if len(paths) != len(chunks) or paths != sorted(paths) or len(paths) != len(set(paths)):
+        raise ValueError("complete-catalog chunk paths are not unique and ordered")
+
+    complete_by_id: dict[str, dict[str, Any]] = {}
+    for metadata in chunks:
+        path = str(metadata["path"])
+        chunk_path = public_artifact_path(manifest_path, path)
+        raw = chunk_path.read_bytes()
+        if metadata.get("bytes") != len(raw):
+            raise ValueError(f"chunk byte length mismatch: {path}")
+        if metadata.get("sha256") != hashlib.sha256(raw).hexdigest():
+            raise ValueError(f"chunk checksum mismatch: {path}")
+        document = json.loads(raw)
+        candidates = document.get("candidates")
+        if not isinstance(candidates, list) or document.get("candidate_count") != len(candidates):
+            raise ValueError(f"chunk candidate count mismatch: {path}")
+        if metadata.get("candidate_count") != len(candidates):
+            raise ValueError(f"manifest candidate count mismatch: {path}")
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                raise ValueError(f"chunk contains a non-object candidate: {path}")
+            event_id = str(candidate.get("event_id") or "")
+            if not event_id or event_id in complete_by_id:
+                raise ValueError(f"chunk contains a missing or duplicate event_id: {path}")
+            complete_by_id[event_id] = candidate
+
+    index_ids = [str(row.get("event_id") or "") for row in index_rows if isinstance(row, dict)]
+    if (
+        len(index_ids) != len(index_rows)
+        or "" in index_ids
+        or len(index_ids) != len(set(index_ids))
+        or set(index_ids) != set(complete_by_id)
+        or len(index_ids) != manifest.get("candidate_count")
+        or len(index_ids) != index.get("candidate_count")
+    ):
+        raise ValueError("catalog-index and complete-chunk UUID sets do not match")
+    ordered = [complete_by_id[event_id] for event_id in index_ids]
+    canonical = (json.dumps(ordered, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    if manifest.get("assembled_candidates_checksum_sha256") != hashlib.sha256(canonical).hexdigest():
+        raise ValueError("reconstructed complete-catalog checksum does not match the manifest")
+    return {**index, "candidates": ordered}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--candidates", default="ctas/data/candidates.json")
+    parser.add_argument("--catalog-index", default="ctas/data/catalog-index.json")
+    parser.add_argument(
+        "--candidate-manifest", default="ctas/data/candidate-chunks/manifest.json",
+    )
     parser.add_argument("--source-universe", default="ctas/data/source-universe.json")
     parser.add_argument("--output", default="ctas/data/link-health.json")
     parser.add_argument("--live-if-stale-hours", type=float, default=6.0)
@@ -385,10 +505,10 @@ def main() -> int:
     parser.add_argument("--no-live", action="store_true")
     args = parser.parse_args()
 
-    candidates_path, universe_path, output_path = map(
-        Path, (args.candidates, args.source_universe, args.output)
+    index_path, manifest_path, universe_path, output_path = map(
+        Path, (args.catalog_index, args.candidate_manifest, args.source_universe, args.output)
     )
-    snapshot = json.loads(candidates_path.read_text())
+    snapshot = load_partitioned_catalog(index_path, manifest_path)
     universe = json.loads(universe_path.read_text()) if universe_path.exists() else None
     recursive_audit, tns_links, problems = audit_links(snapshot, universe)
     previous = None

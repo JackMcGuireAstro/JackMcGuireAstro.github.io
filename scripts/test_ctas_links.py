@@ -4,6 +4,9 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
+import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -65,6 +68,17 @@ class RecursiveAuditTests(unittest.TestCase):
         self.assertEqual(state, "https-allowlisted-renderable")
         self.assertIsNone(reason)
 
+    def test_lasair_human_object_pages_are_allowlisted_and_object_specific(self):
+        url = "https://lasair-ztf.lsst.ac.uk/object/ZTF26abcdef"
+        state, reason = LINKS.renderability(url)
+        self.assertEqual(state, "https-allowlisted-renderable")
+        self.assertIsNone(reason)
+        self.assertEqual(LINKS.link_role({"field": "source_url", "url": url}), "exact-object")
+
+    def test_lasair_non_object_paths_are_not_promoted_to_object_pages(self):
+        url = "https://lasair-ztf.lsst.ac.uk/object/not-a-ztf-id"
+        self.assertEqual(LINKS.link_role({"field": "source_url", "url": url}), "generic-reference")
+
     def test_tns_object_identity_is_strict(self):
         snapshot = self.snapshot()
         snapshot["candidates"][0]["links"][0]["url"] = "https://www.wis-tns.org/object/2026xyz"
@@ -78,6 +92,24 @@ class RecursiveAuditTests(unittest.TestCase):
         _, _, problems = LINKS.audit_links(snapshot, None)
         self.assertTrue(any("declared designation" in problem for problem in problems))
 
+    def test_related_tns_object_is_bound_to_its_own_external_id(self):
+        snapshot = self.snapshot()
+        snapshot["candidates"][0]["follow_up"]["publication_revisions"] = [{
+            "related_objects": [{
+                "external_id": "2026xyz",
+                "source_url": "https://www.wis-tns.org/object/2026xyz",
+            }],
+        }]
+        _, tns, problems = LINKS.audit_links(snapshot, None)
+        self.assertFalse(problems)
+        self.assertIn("2026xyz", {row["object_id"] for row in tns})
+
+        snapshot["candidates"][0]["follow_up"]["publication_revisions"][0][
+            "related_objects"
+        ][0]["source_url"] = "https://www.wis-tns.org/object/2026wrong"
+        _, _, problems = LINKS.audit_links(snapshot, None)
+        self.assertTrue(any("declared designation" in problem for problem in problems))
+
     def test_tns_query_fragment_is_not_canonical(self):
         occurrence = {
             "url": "https://www.wis-tns.org/object/2026abc?download=1",
@@ -86,6 +118,76 @@ class RecursiveAuditTests(unittest.TestCase):
         canonical, problem = LINKS.validate_tns_object(occurrence)
         self.assertIsNone(canonical)
         self.assertEqual(problem, "malformed TNS object link")
+
+    def test_noncanonical_tns_object_url_is_suppressed_not_rendered(self):
+        malformed = "https://www.wis-tns.org/object/At%202026abc"
+        state, reason = LINKS.renderability(malformed)
+        self.assertEqual(state, "suppressed-malformed")
+        self.assertIn("canonical public object path", reason)
+
+        snapshot = self.snapshot()
+        snapshot["candidates"][0]["follow_up"]["publication_revisions"] = [{
+            "related_objects": [{
+                "external_id": "2026abc",
+                "source_url": malformed,
+            }],
+        }]
+        audit, _, problems = LINKS.audit_links(snapshot, None)
+        self.assertFalse(problems)
+        self.assertEqual(audit["renderability_counts"]["suppressed-malformed"], 1)
+
+    def test_partitioned_catalog_is_checksum_verified_and_reordered_by_index(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            data = root / "ctas/data"
+            chunks = data / "candidate-chunks"
+            chunks.mkdir(parents=True)
+            first = {"event_id": "first", "name": "AT2026first", "links": []}
+            second = {"event_id": "second", "name": "AT2026second", "links": []}
+            documents = {
+                "ctas/data/candidate-chunks/00.json": {
+                    "schema": "ctas.public-candidate-chunk@1.0.0", "bucket": "00",
+                    "candidate_count": 1, "candidates": [first],
+                },
+                "ctas/data/candidate-chunks/01.json": {
+                    "schema": "ctas.public-candidate-chunk@1.0.0", "bucket": "01",
+                    "candidate_count": 1, "candidates": [second],
+                },
+            }
+            chunk_rows = []
+            for relative, document in documents.items():
+                raw = (json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n").encode()
+                (root / relative).write_bytes(raw)
+                chunk_rows.append({
+                    "path": relative, "candidate_count": 1, "bytes": len(raw),
+                    "sha256": hashlib.sha256(raw).hexdigest(),
+                })
+            index = {"candidate_count": 2, "candidates": [
+                {"event_id": "second"}, {"event_id": "first"},
+            ]}
+            index_raw = (json.dumps(index, sort_keys=True, separators=(",", ":")) + "\n").encode()
+            index_path = data / "catalog-index.json"
+            index_path.write_bytes(index_raw)
+            ordered = [second, first]
+            canonical = (json.dumps(ordered, sort_keys=True, separators=(",", ":")) + "\n").encode()
+            manifest = {
+                "schema": "ctas.public-complete-catalog-manifest@1.0.0",
+                "candidate_count": 2, "chunk_count": 2,
+                "catalog_index": {
+                    "path": "ctas/data/catalog-index.json", "bytes": len(index_raw),
+                    "sha256": hashlib.sha256(index_raw).hexdigest(),
+                },
+                "assembled_candidates_checksum_sha256": hashlib.sha256(canonical).hexdigest(),
+                "chunks": chunk_rows,
+            }
+            manifest_path = chunks / "manifest.json"
+            manifest_path.write_text(json.dumps(manifest))
+            reconstructed = LINKS.load_partitioned_catalog(index_path, manifest_path)
+            self.assertEqual(reconstructed["candidates"], ordered)
+
+            (root / chunk_rows[0]["path"]).write_bytes(b"tampered\n")
+            with self.assertRaisesRegex(ValueError, "byte length mismatch"):
+                LINKS.load_partitioned_catalog(index_path, manifest_path)
 
 
 if __name__ == "__main__":

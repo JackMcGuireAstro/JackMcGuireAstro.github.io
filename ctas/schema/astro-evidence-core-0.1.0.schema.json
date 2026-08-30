@@ -1,0 +1,554 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:jackmcguireastro:schemas:astro-evidence-core:0.1.0",
+  "title": "AstroEvidence Core",
+  "description": "Language-neutral evidence, query coverage, conflict, and analysis interchange contract for CTAS and WorldsIndex.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaName",
+    "schemaVersion",
+    "generatedAt",
+    "sourceUniverseVersion",
+    "target",
+    "sourceContracts",
+    "queryReceipts",
+    "measurements",
+    "conflictSets",
+    "selections",
+    "dataProducts",
+    "analysisRuns"
+  ],
+  "properties": {
+    "schemaName": { "const": "astro-evidence-core" },
+    "schemaVersion": { "const": "0.1.0" },
+    "generatedAt": { "$ref": "#/$defs/dateTime" },
+    "sourceUniverseVersion": { "$ref": "#/$defs/nonEmptyString" },
+    "target": { "$ref": "#/$defs/target" },
+    "sourceContracts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/sourceContract" }
+    },
+    "queryReceipts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/queryReceipt" }
+    },
+    "measurements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/measurement" }
+    },
+    "conflictSets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/conflictSet" }
+    },
+    "selections": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/selection" }
+    },
+    "dataProducts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/dataProduct" }
+    },
+    "analysisRuns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/analysisRun" }
+    },
+    "bundleChecksumSha256": { "$ref": "#/$defs/nullableSha256" }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "dateTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "nullableSha256": {
+      "oneOf": [
+        { "$ref": "#/$defs/sha256" },
+        { "type": "null" }
+      ]
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "nullableUrl": {
+      "oneOf": [
+        { "$ref": "#/$defs/url" },
+        { "type": "null" }
+      ]
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetId", "targetKind", "preferredName", "aliases", "identityState"],
+      "properties": {
+        "targetId": { "$ref": "#/$defs/nonEmptyString" },
+        "targetKind": {
+          "enum": [
+            "TRANSIENT_EVENT",
+            "MESSENGER_EVENT",
+            "ASTRONOMICAL_SYSTEM",
+            "STELLAR_COMPONENT",
+            "PLANETARY_OBJECT",
+            "SURVEY_CANDIDATE"
+          ]
+        },
+        "preferredName": { "$ref": "#/$defs/nonEmptyString" },
+        "aliases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/alias" }
+        },
+        "identityState": {
+          "enum": ["RESOLVED", "AMBIGUOUS", "CONFLICTING", "UNREVIEWED"]
+        },
+        "parentTargetId": {
+          "type": ["string", "null"]
+        },
+        "raDeg": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 360
+        },
+        "decDeg": {
+          "type": ["number", "null"],
+          "minimum": -90,
+          "maximum": 90
+        },
+        "coordinateFrame": {
+          "type": ["string", "null"]
+        },
+        "coordinateEpoch": {
+          "type": ["string", "null"]
+        },
+        "coordinateUncertaintyArcsec": {
+          "type": ["number", "null"],
+          "minimum": 0
+        }
+      }
+    },
+    "alias": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "sourceContractId", "isPreferred", "linkState"],
+      "properties": {
+        "value": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceContractId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceRecordId": { "type": ["string", "null"] },
+        "isPreferred": { "type": "boolean" },
+        "linkState": {
+          "enum": ["ASSERTED_BY_SOURCE", "POSITIONAL_CANDIDATE", "REVIEWED_MATCH", "AMBIGUOUS", "REJECTED"]
+        },
+        "assertedAt": {
+          "oneOf": [
+            { "$ref": "#/$defs/dateTime" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "sourceContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceContractId",
+        "sourceName",
+        "authority",
+        "documentationUrl",
+        "scientificRole",
+        "productTypes",
+        "accessMode",
+        "implementationState",
+        "rightsState",
+        "queryScope",
+        "applicabilityRule",
+        "parserVersion",
+        "schemaVersion",
+        "identityPolicyVersion",
+        "reconciliationPolicyVersion",
+        "lastVerifiedAt"
+      ],
+      "properties": {
+        "sourceContractId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceName": { "$ref": "#/$defs/nonEmptyString" },
+        "authority": { "$ref": "#/$defs/nonEmptyString" },
+        "documentationUrl": { "$ref": "#/$defs/url" },
+        "scientificRole": { "$ref": "#/$defs/nonEmptyString" },
+        "productTypes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "accessMode": {
+          "enum": ["STREAM", "BULK_SNAPSHOT", "PER_TARGET_QUERY", "HYBRID", "MANUAL", "LINK_ONLY"]
+        },
+        "implementationState": {
+          "enum": [
+            "INGESTED",
+            "QUERYABLE",
+            "REPRESENTED_THROUGH_PROVIDER",
+            "LINK_ONLY",
+            "CREDENTIAL_REQUIRED",
+            "AUTHORIZATION_REQUIRED",
+            "BLOCKED_POLICY",
+            "NOT_IMPLEMENTED"
+          ]
+        },
+        "rightsState": {
+          "enum": ["PUBLIC", "PUBLIC_WITH_ATTRIBUTION", "CREDENTIALLED_PUBLIC", "AUTHORIZED_PRIVATE", "BLOCKED", "UNRESOLVED"]
+        },
+        "requiredAttribution": { "type": ["string", "null"] },
+        "queryScope": { "$ref": "#/$defs/nonEmptyString" },
+        "applicabilityRule": { "$ref": "#/$defs/nonEmptyString" },
+        "freshnessSloSeconds": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "rateLimitPolicy": { "type": ["string", "null"] },
+        "authenticationRequirement": { "type": ["string", "null"] },
+        "parserVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "schemaVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "identityPolicyVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "reconciliationPolicyVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "knownLimitations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "lastVerifiedAt": { "$ref": "#/$defs/dateTime" }
+      }
+    },
+    "queryReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receiptId",
+        "targetId",
+        "sourceContractId",
+        "queryKind",
+        "applicabilityState",
+        "outcome",
+        "scope",
+        "startedAt",
+        "completedAt",
+        "requestFingerprintSha256",
+        "responseChecksumSha256",
+        "recordsSeen",
+        "recordsRetained",
+        "recordsRejected",
+        "paginationComplete",
+        "parserVersion",
+        "schemaVersion",
+        "isCurrent"
+      ],
+      "properties": {
+        "receiptId": { "$ref": "#/$defs/nonEmptyString" },
+        "targetId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceContractId": { "$ref": "#/$defs/nonEmptyString" },
+        "queryKind": {
+          "enum": ["STREAM_RECEIPT", "SNAPSHOT_LOOKUP", "PER_TARGET_QUERY", "LITERATURE_QUERY", "PRODUCT_DISCOVERY", "MANUAL_CHECK", "LINK_HANDOFF"]
+        },
+        "applicabilityState": {
+          "enum": ["APPLICABLE", "NOT_APPLICABLE", "UNRESOLVED"]
+        },
+        "outcome": {
+          "enum": [
+            "DATA_RETURNED",
+            "SEARCHED_NO_MATCH",
+            "PARTIAL_RESULT",
+            "QUERY_FAILED",
+            "QUERY_BLOCKED",
+            "NOT_CONFIGURED",
+            "NOT_APPLICABLE",
+            "AMBIGUOUS",
+            "STALE_LAST_GOOD_RETAINED",
+            "LINK_ONLY_NOT_QUERIED",
+            "NOT_QUERIED"
+          ]
+        },
+        "scope": { "$ref": "#/$defs/nonEmptyString" },
+        "startedAt": { "$ref": "#/$defs/dateTime" },
+        "completedAt": {
+          "oneOf": [
+            { "$ref": "#/$defs/dateTime" },
+            { "type": "null" }
+          ]
+        },
+        "requestFingerprintSha256": { "$ref": "#/$defs/nullableSha256" },
+        "responseChecksumSha256": { "$ref": "#/$defs/nullableSha256" },
+        "recordsSeen": { "type": ["integer", "null"], "minimum": 0 },
+        "recordsRetained": { "type": ["integer", "null"], "minimum": 0 },
+        "recordsRejected": { "type": ["integer", "null"], "minimum": 0 },
+        "paginationComplete": { "type": ["boolean", "null"] },
+        "parserVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "schemaVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "isCurrent": { "type": "boolean" },
+        "evidenceUrl": { "$ref": "#/$defs/nullableUrl" },
+        "errorCode": { "type": ["string", "null"] },
+        "errorDetail": { "type": ["string", "null"] },
+        "nextEligibleAt": {
+          "oneOf": [
+            { "$ref": "#/$defs/dateTime" },
+            { "type": "null" }
+          ]
+        },
+        "staleReceiptId": { "type": ["string", "null"] }
+      }
+    },
+    "timeCoordinate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["originalValue", "format", "scale", "referencePosition", "uncertainty", "normalizedMjd"],
+      "properties": {
+        "originalValue": { "type": ["string", "number", "null"] },
+        "format": { "type": ["string", "null"] },
+        "scale": { "type": ["string", "null"] },
+        "referencePosition": { "type": ["string", "null"] },
+        "uncertainty": { "type": ["number", "null"], "minimum": 0 },
+        "normalizedMjd": { "type": ["number", "null"] }
+      }
+    },
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "url", "bibcode", "doi", "table", "row"],
+      "properties": {
+        "label": { "type": ["string", "null"] },
+        "url": { "$ref": "#/$defs/nullableUrl" },
+        "bibcode": { "type": ["string", "null"] },
+        "doi": { "type": ["string", "null"] },
+        "table": { "type": ["string", "null"] },
+        "row": { "type": ["string", "null"] }
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "measurementId",
+        "targetId",
+        "sourceContractId",
+        "sourceRecordId",
+        "propertyCode",
+        "label",
+        "valueKind",
+        "originalValue",
+        "originalUnit",
+        "normalizedValue",
+        "normalizedUnit",
+        "uncertaintyPositive",
+        "uncertaintyNegative",
+        "covarianceState",
+        "time",
+        "referenceFrame",
+        "method",
+        "facility",
+        "instrument",
+        "bandpass",
+        "qualityFlags",
+        "sourceStatus",
+        "citation",
+        "transformationRecipe",
+        "parserVersion",
+        "activeState"
+      ],
+      "properties": {
+        "measurementId": { "$ref": "#/$defs/nonEmptyString" },
+        "targetId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceContractId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceRecordId": { "$ref": "#/$defs/nonEmptyString" },
+        "solutionId": { "type": ["string", "null"] },
+        "propertyCode": { "$ref": "#/$defs/nonEmptyString" },
+        "ucd": { "type": ["string", "null"] },
+        "label": { "$ref": "#/$defs/nonEmptyString" },
+        "valueKind": {
+          "enum": ["MEASUREMENT", "UPPER_LIMIT", "LOWER_LIMIT", "INTERVAL", "QUALITATIVE", "MISSING"]
+        },
+        "originalValue": { "type": ["string", "number", "boolean", "null"] },
+        "originalUnit": { "type": ["string", "null"] },
+        "normalizedValue": { "type": ["number", "string", "boolean", "null"] },
+        "normalizedUnit": { "type": ["string", "null"] },
+        "uncertaintyPositive": { "type": ["number", "null"], "minimum": 0 },
+        "uncertaintyNegative": { "type": ["number", "null"], "minimum": 0 },
+        "intervalLower": { "type": ["number", "null"] },
+        "intervalUpper": { "type": ["number", "null"] },
+        "posteriorProductId": { "type": ["string", "null"] },
+        "covarianceState": {
+          "enum": ["PROVIDED", "NOT_PROVIDED", "NOT_APPLICABLE", "UNKNOWN"]
+        },
+        "covarianceGroupId": { "type": ["string", "null"] },
+        "time": { "$ref": "#/$defs/timeCoordinate" },
+        "referenceFrame": { "type": ["string", "null"] },
+        "method": { "type": ["string", "null"] },
+        "facility": { "type": ["string", "null"] },
+        "instrument": { "type": ["string", "null"] },
+        "bandpass": { "type": ["string", "null"] },
+        "calibration": { "type": ["string", "null"] },
+        "qualityFlags": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "sourceStatus": { "type": ["string", "null"] },
+        "citation": { "$ref": "#/$defs/citation" },
+        "transformationRecipe": { "type": ["string", "null"] },
+        "parserVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "activeState": {
+          "enum": ["ACTIVE", "SUPERSEDED", "RETRACTED", "REJECTED"]
+        }
+      }
+    },
+    "conflictSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["conflictSetId", "targetId", "propertyCode", "measurementIds", "relations", "assessmentState", "explanation"],
+      "properties": {
+        "conflictSetId": { "$ref": "#/$defs/nonEmptyString" },
+        "targetId": { "$ref": "#/$defs/nonEmptyString" },
+        "propertyCode": { "$ref": "#/$defs/nonEmptyString" },
+        "measurementIds": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "relations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "STATISTICALLY_INCONSISTENT",
+              "METHOD_INCOMPATIBLE",
+              "DEFINITION_INCOMPATIBLE",
+              "EPOCH_DEPENDENT",
+              "IDENTITY_AMBIGUOUS",
+              "STATUS_CONFLICT",
+              "SOURCE_REVISION",
+              "UNASSESSED"
+            ]
+          }
+        },
+        "assessmentState": {
+          "enum": ["AUTOMATED_SCREEN", "HUMAN_REVIEWED", "UNRESOLVED"]
+        },
+        "significanceSigma": { "type": ["number", "null"], "minimum": 0 },
+        "explanation": { "$ref": "#/$defs/nonEmptyString" },
+        "selectionId": { "type": ["string", "null"] }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selectionId", "targetId", "purpose", "measurementIds", "rule", "methodVersion", "reviewState", "selectedAt"],
+      "properties": {
+        "selectionId": { "$ref": "#/$defs/nonEmptyString" },
+        "targetId": { "$ref": "#/$defs/nonEmptyString" },
+        "purpose": {
+          "enum": ["DISPLAY_DEFAULT", "ANALYSIS_INPUT", "SOURCE_DEFAULT", "HUMAN_ADOPTED"]
+        },
+        "measurementIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "rule": { "$ref": "#/$defs/nonEmptyString" },
+        "methodVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "reviewState": {
+          "enum": ["SOURCE_REPORTED", "MACHINE_SELECTED", "HUMAN_REVIEWED", "HUMAN_ADOPTED"]
+        },
+        "selectedAt": { "$ref": "#/$defs/dateTime" }
+      }
+    },
+    "dataProduct": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["productId", "targetId", "sourceContractId", "productType", "accessUrl", "contentType", "checksumSha256", "rightsState", "calibrationState"],
+      "properties": {
+        "productId": { "$ref": "#/$defs/nonEmptyString" },
+        "targetId": { "$ref": "#/$defs/nonEmptyString" },
+        "sourceContractId": { "$ref": "#/$defs/nonEmptyString" },
+        "productType": {
+          "enum": ["LIGHT_CURVE", "SPECTRUM", "IMAGE", "PIXEL_DATA", "RV_SERIES", "TIMING_SERIES", "ASTROMETRY", "SKYMAP", "POSTERIOR", "TABLE", "OTHER"]
+        },
+        "accessUrl": { "$ref": "#/$defs/nullableUrl" },
+        "contentType": { "type": ["string", "null"] },
+        "checksumSha256": { "$ref": "#/$defs/nullableSha256" },
+        "rightsState": {
+          "enum": ["PUBLIC", "PUBLIC_WITH_ATTRIBUTION", "CREDENTIALLED_PUBLIC", "AUTHORIZED_PRIVATE", "BLOCKED", "UNRESOLVED"]
+        },
+        "calibrationState": { "type": ["string", "null"] },
+        "observedStart": {
+          "oneOf": [
+            { "$ref": "#/$defs/timeCoordinate" },
+            { "type": "null" }
+          ]
+        },
+        "observedEnd": {
+          "oneOf": [
+            { "$ref": "#/$defs/timeCoordinate" },
+            { "type": "null" }
+          ]
+        },
+        "requiredAttribution": { "type": ["string", "null"] }
+      }
+    },
+    "analysisRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "analysisRunId",
+        "targetId",
+        "analysisType",
+        "methodName",
+        "methodVersion",
+        "status",
+        "inputRecordIds",
+        "inputChecksumSha256",
+        "parameters",
+        "softwareVersions",
+        "result",
+        "resultChecksumSha256",
+        "warnings",
+        "reviewState",
+        "createdAt"
+      ],
+      "properties": {
+        "analysisRunId": { "$ref": "#/$defs/nonEmptyString" },
+        "targetId": { "$ref": "#/$defs/nonEmptyString" },
+        "analysisType": { "$ref": "#/$defs/nonEmptyString" },
+        "methodName": { "$ref": "#/$defs/nonEmptyString" },
+        "methodVersion": { "$ref": "#/$defs/nonEmptyString" },
+        "status": {
+          "enum": ["COMPLETE", "INSUFFICIENT_DATA", "FAILED", "BLOCKED_RIGHTS", "NOT_APPLICABLE"]
+        },
+        "inputRecordIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "inputChecksumSha256": { "$ref": "#/$defs/sha256" },
+        "parameters": { "type": "object" },
+        "softwareVersions": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "randomSeed": { "type": ["integer", "string", "null"] },
+        "result": { "type": "object" },
+        "resultChecksumSha256": { "$ref": "#/$defs/nullableSha256" },
+        "warnings": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/nonEmptyString" }
+        },
+        "reviewState": {
+          "enum": ["MACHINE", "HUMAN_REVIEWED", "HUMAN_ADOPTED", "REJECTED"]
+        },
+        "createdAt": { "$ref": "#/$defs/dateTime" }
+      }
+    }
+  }
+}

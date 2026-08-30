@@ -4,7 +4,7 @@
 
   var DATA_DIR = "ctas/data/";
   var PAGE = 35;
-  var CACHE_KEY = "ctas-public-index-v1";
+  var CACHE_KEY = "ctas-public-bootstrap-v4";
   var PUBLIC_LINK_HOSTS = {
     "api.fink-portal.org": 1, "api.ztf.fink-portal.org": 1, "fink-portal.org": 1,
     "apps.aavso.org": 1, "archive.eso.org": 1, "archive.gemini.edu": 1,
@@ -13,7 +13,8 @@
     "docs.aavso.org": 1, "ep.bao.ac.cn": 1, "fallingstar-data.com": 1,
     "gcn.gsfc.nasa.gov": 1, "gcn.nasa.gov": 1, "github.com": 1,
     "goto-observatory.org": 1, "heasarc.gsfc.nasa.gov": 1,
-    "irsa.ipac.caltech.edu": 1, "lasair.readthedocs.io": 1, "mast.stsci.edu": 1,
+    "irsa.ipac.caltech.edu": 1, "lasair.readthedocs.io": 1, "lasair-ztf.lsst.ac.uk": 1,
+    "mast.stsci.edu": 1,
     "maxi.riken.jp": 1, "ned.ipac.caltech.edu": 1, "observ.pereplet.ru": 1,
     "outerspace.stsci.edu": 1, "roc-2.icecube.wisc.edu": 1,
     "roc.icecube.wisc.edu": 1, "rubinobservatory.org": 1,
@@ -28,10 +29,15 @@
 
   var state = {
     candidates: [], snapshot: null, status: null, sourceUniverse: null, releaseHistory: null,
+    catalogManifest: null, aliasIndex: null, aliasPromise: null,
     chunks: {}, activeSummary: null, activeDetail: null, cachedSnapshot: false,
     sortKey: "ctas_score", sortDir: -1, preset: "all", q: "", cls: "", msg: "",
-    stat: "", shown: PAGE, skyDays: 7, skyPoints: [], skySelected: null,
-    skyKeyboardIndex: -1, photBand: {}
+    stat: "", survey: "", from: "", to: "", magMin: null, magMax: null,
+    scoreMin: null, scoreMax: null, spectrum: "", conflict: "", richness: "",
+    coneRa: null, coneDec: null, coneRadius: null,
+    shown: PAGE, skyDays: 7, skyPoints: [], skySelected: null,
+    skyKeyboardIndex: -1, photBand: {}, activeOpener: null,
+    autoRefreshPaused: false, exportBusy: false
   };
 
   var el = {
@@ -48,6 +54,8 @@
     sourceUniverseSummary: document.getElementById("ctas-source-universe-summary"),
     sourceUniverseGroups: document.getElementById("ctas-source-universe-groups"),
     releaseHistory: document.getElementById("ctas-release-history"),
+    downloadStatus: document.getElementById("ctas-download-status"),
+    downloadParts: document.getElementById("ctas-download-parts"),
     toolbar: document.getElementById("ctas-toolbar"),
     results: document.getElementById("ctas-results"),
     workspace: document.getElementById("candidate-workspace"),
@@ -57,6 +65,18 @@
     cls: document.getElementById("ctas-class"),
     msg: document.getElementById("ctas-messenger"),
     stat: document.getElementById("ctas-statusfilter"),
+    survey: document.getElementById("ctas-survey"),
+    from: document.getElementById("ctas-from"),
+    to: document.getElementById("ctas-to"),
+    scoreMin: document.getElementById("ctas-score-min"),
+    scoreMax: document.getElementById("ctas-score-max"),
+    magMax: document.getElementById("ctas-mag-max"),
+    spectrum: document.getElementById("ctas-spectrum-filter"),
+    conflict: document.getElementById("ctas-conflict-filter"),
+    richness: document.getElementById("ctas-richness-filter"),
+    coneRa: document.getElementById("ctas-cone-ra"),
+    coneDec: document.getElementById("ctas-cone-dec"),
+    coneRadius: document.getElementById("ctas-cone-radius"),
     skyStage: document.getElementById("ctas-sky-stage"),
     sky: document.getElementById("ctas-sky-canvas"),
     skyTip: document.getElementById("ctas-sky-tooltip"),
@@ -112,6 +132,30 @@
     return text(value).replace(/[_-]+/g, " ").replace(/\b\w/g, function (letter) { return letter.toUpperCase(); });
   }
   function shortHash(value) { return text(value).slice(0, 12); }
+  function reducedMotion() {
+    return Boolean(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+  function qualityText(value) {
+    if (!Array.isArray(value)) return text(value);
+    return value.map(function (item) {
+      if (!item || typeof item !== "object") return text(item);
+      return Object.keys(item).sort().map(function (key) { return humanKey(key) + ": " + text(item[key]); }).join("; ");
+    }).filter(Boolean).join(" · ");
+  }
+  function parsedValue(value, fallback) {
+    if (value === null || value === undefined || value === "") return fallback;
+    if (typeof value === "object") return value;
+    try { return JSON.parse(value); } catch (_) { return fallback; }
+  }
+  function structuredText(value, emptyLabel) {
+    if (value === null || value === undefined || value === "") return emptyLabel || "Not retained";
+    var parsed = parsedValue(value, value);
+    return typeof parsed === "string" ? parsed : JSON.stringify(parsed, null, 2);
+  }
+  function retainedRecordDetails(label, row) {
+    return '<details class="ctas-record-details"><summary>' + esc(label || "Complete retained record") +
+      '</summary><pre>' + esc(structuredText(row, "No retained fields")) + '</pre></details>';
+  }
   function sourceObjectId(row) {
     var match = text(row && row.summary).match(/\b(ZTF\d{2}[a-z]+)\b/i);
     return match ? match[1] : null;
@@ -134,6 +178,12 @@
     var kind = "reference";
     if (host === "www.wis-tns.org" && /^\/object\/\d{4}[a-z]+$/i.test(path)) {
       label = "Open TNS object record"; kind = "object";
+    } else if (host === "www.wis-tns.org" && path.indexOf("/object") === 0) {
+      return {unavailable: true, label: "Original TNS link unavailable (not an exact public object path)"};
+    } else if (host === "lasair-ztf.lsst.ac.uk" && /^\/object\/ZTF\d{2}[a-z]+\/?$/i.test(path)) {
+      label = "Open Lasair object record"; kind = "object";
+    } else if (host === "lasair-ztf.lsst.ac.uk") {
+      return {unavailable: true, label: "Original Lasair link unavailable (not an exact public object path)"};
     } else if (host === "fink-portal.org" && /^\/ZTF\d{2}[a-z]+\/?$/i.test(path)) {
       label = "Open Fink object record"; kind = "object";
     } else if (host.indexOf("fink-portal.org") !== -1) {
@@ -243,18 +293,29 @@
       observation_gap_points: "Observation-age term", multimessenger_points: "Messenger-diversity term",
       status: "Status override"
     };
-    var factors = candidate.score_factors || {};
-    var rows = Object.keys(labels).filter(function (key) { return factors[key] !== undefined && factors[key] !== null; })
-      .map(function (key) {
-        var value = factors[key];
-        if (key !== "status" && isFinite(Number(value))) {
-          value = (key === "coverage_reduction" ? "−" : Number(value) > 0 ? "+" : "") + Math.abs(Number(value)).toFixed(2);
-        }
-        return "<div><dt>" + esc(labels[key]) + "</dt><dd>" + esc(value) + "</dd></div>";
-      }).join("");
-    return '<details class="ctas-score-factors"><summary>Why this candidate has this CTAS score</summary><p>' +
+    var factors = candidate.score_factors || {}, model = candidate.score_model || {};
+    var terms = Array.isArray(model.terms) ? model.terms : Object.keys(labels).filter(function (key) {
+      return key !== "status" && factors[key] !== undefined && factors[key] !== null;
+    }).map(function (key) {
+      return {code: key, label: labels[key], points: (key === "coverage_reduction" ? -1 : 1) * Number(factors[key] || 0), basis: "persisted score factor"};
+    });
+    var visualRows = [{code: "baseline", label: "Baseline", points: Number(model.baseline === undefined ? 35 : model.baseline), basis: "CTAS score model"}].concat(terms);
+    if (Number(model.multimessenger_bonus || 0)) visualRows.push({code: "multimessenger_bonus", label: "Messenger diversity", points: Number(model.multimessenger_bonus), basis: "retained messenger channels"});
+    if (Number(model.persisted_factor_rounding_residual || 0)) visualRows.push({code: "persisted_factor_rounding_residual", label: "Persisted-factor rounding", points: Number(model.persisted_factor_rounding_residual), basis: "explicit ≤0.01 residual from independently rounded persisted terms"});
+    var bars = visualRows.map(function (row) {
+      var negative = Number(row.points) < 0, size = Math.min(50, Math.abs(Number(row.points) || 0) / 100 * 100).toFixed(2) + "%";
+      return '<div class="ctas-score-waterfall__row' + (negative ? " is-negative" : "") + '"><span>' + esc(row.label) + '<small class="ctas-table-sub">' + esc(row.basis || "") + '</small></span><span class="ctas-score-waterfall__track" aria-hidden="true"><i style="--size:' + size + '"></i></span><strong>' + (negative ? "−" : "+") + Math.abs(Number(row.points || 0)).toFixed(2) + '</strong></div>';
+    }).join("");
+    var arithmetic = '<div class="ctas-score-waterfall__row"><span>Core before clipping</span><span></span><strong>' + esc(num(model.core_preclip, 2) || "—") + '</strong></div><div class="ctas-score-waterfall__row"><span>Core after 0–100 clipping</span><span></span><strong>' + esc(num(model.core_postclip, 2) || "—") + '</strong></div><div class="ctas-score-waterfall__row"><span>Final before clipping</span><span></span><strong>' + esc(num(model.final_preclip, 2) || "—") + '</strong></div>' +
+      (model.status_override ? '<div class="ctas-score-waterfall__row is-negative"><span>Terminal status override: ' + esc(humanKey(model.status_override)) + '</span><span></span><strong>0.00</strong></div>' : "") +
+      '<div class="ctas-score-waterfall__row"><span><strong>Published CTAS score</strong></span><span></span><strong>' + esc(num(candidate.ctas_score, 2)) + '</strong></div>';
+    var tableRows = visualRows.map(function (row) { return '<tr><th scope="row">' + esc(row.label) + '</th><td>' + esc(row.code) + '</td><td>' + (Number(row.points) < 0 ? "−" : "+") + Math.abs(Number(row.points || 0)).toFixed(2) + '</td><td>' + esc(row.basis || "") + '</td></tr>'; }).join("");
+    var sandbox = '<details class="ctas-score-sandbox"><summary>Try an educational what-if scenario</summary><p>These controls demonstrate the arithmetic only. They never alter ranking, the URL event score, the retained dossier, or any export.</p><div class="ctas-score-sandbox__controls">' + terms.map(function (row) {
+      return '<label>' + esc(row.label) + '<input type="range" min="-20" max="25" step=".5" value="' + esc(Number(row.points || 0)) + '" data-score-sandbox="' + esc(row.code) + '"></label>';
+    }).join("") + '</div><p>Scenario result: <output data-score-sandbox-output>' + esc(num(candidate.ctas_score, 2)) + '</output></p><button type="button" data-reset-score-sandbox>Reset scenario</button></details>';
+    return '<details class="ctas-score-factors" data-dossier-view="score"><summary>Why this candidate has this CTAS score <small>' + (model.reconciled ? "arithmetic reconciled" : "reconciliation unavailable") + '</small></summary><p>' +
       esc(candidate.score_explanation || "The displayed terms reproduce the public follow-up ordering score.") +
-      "</p><dl>" + rows + "</dl></details>";
+      '</p><p class="ctas-claim-boundary">Operational follow-up ordering aid only—not probability, confidence, or scientific importance.</p><div class="ctas-score-waterfall" aria-label="CTAS score waterfall">' + bars + arithmetic + '</div><details><summary>Exact score arithmetic table</summary><div class="ctas-evidence-table-wrap"><table class="ctas-evidence-table"><caption>Signed persisted terms in evaluation order; any ≤0.01 factor-rounding residual, clipping, and terminal override are explicit.</caption><thead><tr><th>Term</th><th>Code</th><th>Points</th><th>Basis</th></tr></thead><tbody>' + tableRows + '</tbody></table></div></details>' + sandbox + '</details>';
   }
 
   function renderCompleteness(candidate) {
@@ -270,25 +331,83 @@
       }).join("") + "</ul>" : "") + "</details>";
   }
 
+  function renderReceiptDetails(receipt, extension) {
+    var nullableExtension = {
+      receiptId: receipt.receiptId,
+      sourceContractId: receipt.sourceContractId,
+      targetIdentity: null,
+      providerRelease: null,
+      normalizedRequest: null,
+      responseStatus: null,
+      pagination: null,
+      caps: null,
+      immutableArtifactReference: null,
+      latencyMs: null,
+      retryCount: null,
+      errorCategory: null,
+      metadataCompleteness: "LEGACY_NULLABLE",
+      executionState: null
+    };
+    var completeExtension = Object.assign(nullableExtension, extension || {});
+    return '<details class="ctas-receipt-detail"><summary>Complete receipt details</summary>' +
+      '<p>Core receipt and compatibility extension are joined by the stable receipt ID. Null means the value was not retained; it is not inferred.</p>' +
+      '<div class="ctas-code-grid"><div><h4>Core persisted receipt</h4><pre>' +
+      esc(JSON.stringify(receipt, null, 2)) + '</pre></div><div><h4>Receipt provenance extension</h4><pre>' +
+      esc(JSON.stringify(completeExtension, null, 2)) + '</pre></div></div></details>';
+  }
+
   function renderSourceCoverage(candidate) {
-    var rows = Array.isArray(candidate.source_coverage) ? candidate.source_coverage : [];
-    if (!rows.length) return '<details class="ctas-source-coverage"><summary>Source-by-source coverage</summary>' +
-      "<p>No bounded target-specific searches are recorded. This means not searched—not no match.</p></details>";
-    return '<details class="ctas-source-coverage"><summary>Source-by-source provenance <small>' + rows.length +
-      " recorded evaluations</small></summary><p>Provider failure, unavailability, and unperformed searches remain distinct from a searched-no-match result.</p><ul>" +
+    var accounting = candidate.source_accounting || {}, rows = Array.isArray(candidate.source_matrix) ? candidate.source_matrix : [];
+    var universeRows = ((state.sourceUniverse || {}).sources || []), sourceById = {};
+    universeRows.forEach(function (row) { sourceById[row.source_key] = row; });
+    var receiptRows = ((candidate.astro_evidence || {}).persistedQueryReceipts || []);
+    var compatibility = candidate.compatibility_provenance || {};
+    var receiptExtensions = compatibility.receiptExtensions || compatibility.receiptProvenance ||
+      ((candidate.astro_evidence || {}).receiptExtensions || []), extensionByReceiptId = {};
+    receiptExtensions.forEach(function (row) { if (row && row.receiptId) extensionByReceiptId[row.receiptId] = row; });
+    var counts = [
+      ["Declared", accounting.declaredSources, "contracts in this source-universe version"],
+      ["Applicable", accounting.applicableSources, "contracts whose event rule applies"],
+      ["Executed", accounting.executedQueryReceipts, "persisted query-attempt receipts"],
+      ["Data-bearing", accounting.dataBearingSources, "providers with retained public evidence"]
+    ];
+    var metricHtml = '<div class="ctas-source-denominators">' + counts.map(function (item) {
+      return '<div><strong>' + Number(item[1] || 0).toLocaleString() + '</strong><span>' + esc(item[0]) +
+        '</span><small>' + esc(item[2]) + '</small></div>';
+    }).join("") + "</div>";
+    if (!rows.length) return '<details class="ctas-source-coverage" data-dossier-view="sources"><summary>Source accounting and receipts</summary>' +
+      metricHtml + "<p>No applicable-source matrix is retained. This means not assessed—not searched with no match.</p></details>";
+    var table = '<div class="ctas-evidence-table-wrap" role="region" aria-label="Applicable source coverage matrix" tabindex="0"><table class="ctas-evidence-table ctas-source-matrix">' +
+      '<caption>Every applicable source has an explicit current terminal state. Query health and retained evidence are separate columns.</caption>' +
+      '<thead><tr><th scope="col">Source</th><th scope="col">Current query health</th><th scope="col">Persisted attempts</th>' +
+      '<th scope="col">Retained evidence</th><th scope="col">Evidence age / state</th><th scope="col">Contract</th></tr></thead><tbody>' +
       rows.map(function (row) {
-        var sought = Array.isArray(row.data_types_sought) ? row.data_types_sought.slice(0, 5).join(", ") : "";
-        var references = renderReferences([row], [
-          ["object_specific_result_url", null], ["query_evidence_url", "Open source query or evidence"],
-          ["documentation_url", "Open provider documentation"]
-        ]);
-        return "<li><div><strong>" + esc(row.source_name || row.source_id) + '</strong><span class="pill">' +
-          esc(humanKey(row.disposition || "unknown")) + "</span></div>" + (sought ? "<p>Sought: " + esc(sought) + "</p>" : "") +
-          "<small>" + esc(row.checked_at ? absolute(row.checked_at) : "No explicit query clock") +
-          (row.reason_code ? " · " + esc(humanKey(row.reason_code)) : "") + "</small><p><strong>" +
-          esc(Number(row.retained_record_count || 0).toLocaleString()) + "</strong> retained public record" +
-          (Number(row.retained_record_count || 0) === 1 ? "" : "s") + "</p>" + references + "</li>";
-      }).join("") + "</ul></details>";
+        var source = sourceById[row.sourceContractId] || {name: row.sourceContractId};
+        var types = Object.keys(row.retainedRecordTypes || {}).map(function (key) {
+          return Number(row.retainedRecordTypes[key]).toLocaleString() + " " + humanKey(key).toLowerCase();
+        }).join(" · ");
+        var age = row.retainedEvidenceLatestAt ? relative(row.retainedEvidenceLatestAt) + " (" + absolute(row.retainedEvidenceLatestAt) + ")" : "No retained evidence clock";
+        return '<tr><th scope="row"><strong>' + esc(source.name || row.sourceContractId) + '</strong><small>' + esc(row.sourceContractId) +
+          '</small></th><td><span class="pill">' + esc(humanKey(row.currentQueryOutcome || "NOT_QUERIED")) + '</span><small>' +
+          esc(row.currentQueryCheckedAt ? absolute(row.currentQueryCheckedAt) : "No event-specific query clock") + '</small></td><td class="num">' +
+          Number(row.executedReceiptCount || 0).toLocaleString() + '</td><td><strong>' + Number(row.retainedRecordCount || 0).toLocaleString() +
+          '</strong><small>' + esc(types || "No retained rows") + '</small></td><td><span class="ctas-evidence-state">' +
+          esc(humanKey(row.retainedEvidenceState || "NO_RETAINED_EVIDENCE")) + '</span><small>' + esc(age) + '</small></td><td>' +
+          renderReferences([source], [["documentation_url", "Open provider documentation"]]) + '<details class="ctas-inline-rule"><summary>Why applicable</summary><p>' +
+          esc(row.applicabilityRule || "Referenced by the declared event rule.") + '</p></details></td></tr>';
+      }).join("") + "</tbody></table></div>";
+    var history = receiptRows.length ? '<details class="ctas-receipt-history"><summary>Append-only persisted receipt history <small>' + receiptRows.length +
+      ' receipts</small></summary><div class="ctas-evidence-table-wrap" role="region" aria-label="Persisted source-query receipt history" tabindex="0"><table class="ctas-evidence-table"><caption>Legacy receipts retain null fields where the original provider release, latency, pagination, or response checksum was not stored.</caption>' +
+      '<thead><tr><th scope="col">Completed</th><th scope="col">Source</th><th scope="col">Query</th><th scope="col">Outcome</th><th scope="col">Rows seen / retained / rejected</th><th scope="col">Response checksum</th><th scope="col">Full receipt</th></tr></thead><tbody>' +
+      receiptRows.map(function (row) { return '<tr><td>' + esc(absolute(row.completedAt)) + '</td><td>' + esc(row.sourceContractId) +
+        '</td><td>' + esc(humanKey(row.queryKind)) + '</td><td><span class="pill">' + esc(humanKey(row.outcome)) + '</span></td><td>' +
+        esc([row.recordsSeen, row.recordsRetained, row.recordsRejected].map(function (value) { return value === null || value === undefined ? "unknown" : Number(value).toLocaleString(); }).join(" / ")) +
+        '</td><td><code>' + esc(row.responseChecksumSha256 ? shortHash(row.responseChecksumSha256) + "…" : "not retained") + '</code></td><td>' +
+        renderReceiptDetails(row, extensionByReceiptId[row.receiptId]) + '</td></tr>'; }).join("") +
+      '</tbody></table></div></details>' : '<p>No persisted event-specific query receipt exists; applicable sources still retain explicit not-queried or link-only states.</p>';
+    return '<details class="ctas-source-coverage" data-dossier-view="sources"><summary>Source accounting and receipts <small>' + rows.length +
+      " applicable source contracts</small></summary>" + metricHtml +
+      '<p>Provider failure, blockage, and unperformed searches are not “no match.” A failed current check does not erase an older rights-cleared measurement.</p>' + table + history + "</details>";
   }
 
   function candidateSummary(candidate) {
@@ -305,6 +424,63 @@
     return {intro: intro, details: details};
   }
 
+  function renderScienceBrief(candidate) {
+    var brief = candidate.science_brief;
+    if (!brief || typeof brief !== "object") return candidateSummary(candidate).details;
+    function listRows(rows, renderer, empty) {
+      return rows && rows.length ? "<ul>" + rows.slice(0, 4).map(renderer).join("") + "</ul>" : "<p>" + esc(empty) + "</p>";
+    }
+    var known = listRows(brief.confidently_known, function (row) { return "<li><strong>" + esc(row.label) + ":</strong> " + esc(row.value) + "</li>"; }, "No summary fact is promoted beyond the retained source record.");
+    var uncertain = listRows(brief.uncertain_or_conflicting, function (row) { return "<li><strong>" + esc(humanKey(row.label)) + ":</strong> " + esc(humanKey(row.state)) + "</li>"; }, "No explicit conflict state is retained.");
+    var missing = listRows(brief.missing_information, function (row) { return "<li>" + esc(row.label) + " <small>(" + esc(humanKey(row.state)) + ")</small></li>"; }, "No applicable component is marked missing or not assessed.");
+    var changed = brief.most_recent_change ? "<p><strong>" + esc(humanKey(brief.most_recent_change.evidence_type)) + ":</strong> " + esc(brief.most_recent_change.title || "Retained evidence update") + "</p><p>" + esc([brief.most_recent_change.provider, brief.most_recent_change.public_available_at ? absolute(brief.most_recent_change.public_available_at) : "availability clock unavailable"].filter(Boolean).join(" · ")) + "</p>" : "<p>No provider change is retained.</p>";
+    var visibility = "<p><strong>INSUFFICIENT_DATA:</strong> valid coordinates are not retained.</p>";
+    if (window.CTASObservability && finiteNumber(candidate.ra_deg) && finiteNumber(candidate.dec_deg)) {
+      var planning = window.CTASObservability.evaluate(candidate, {date: new Date().toISOString().slice(0, 10), latitude_deg: 41.0983,
+        longitude_deg: -105.976, min_altitude_deg: 30, max_airmass: 3, max_sun_altitude_deg: -12, min_moon_separation_deg: 20});
+      visibility = planning.intervals && planning.intervals.length
+        ? "<p><strong>" + planning.intervals.length + " geometric window" + (planning.intervals.length === 1 ? "" : "s") + "</strong> pass the default WIR constraints today (UTC).</p><p>Open the observability planner to inspect or change the assumptions.</p>"
+        : "<p>No interval passes the default WIR geometric constraints today (UTC).</p><p>This is not a weather or telescope-availability claim.</p>";
+    }
+    return '<section class="ctas-science-brief" aria-labelledby="ctas-science-brief-title"><h4 id="ctas-science-brief-title">Candidate science brief</h4><div class="ctas-science-brief__grid"><section><h5>What happened</h5><p>' + esc((brief.what_happened || {}).text || "Public CTAS event record.") + '</p></section><section><h5>Known in this snapshot</h5>' + known + '</section><section><h5>Uncertain or conflicting</h5>' + uncertain + '</section><section><h5>Missing information</h5>' + missing + '</section><section><h5>Most recent retained change</h5>' + changed + '</section><section><h5>Visible from WIR today?</h5>' + visibility + '</section></div><p class="ctas-claim-boundary">' + esc(brief.claim_boundary) + '</p></section>';
+  }
+
+  function messengerProperties(row) {
+    var parsed = parsedValue(row && row.properties, {});
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  }
+  function messengerRevision(row) {
+    var properties = messengerProperties(row), explicit = properties.revision;
+    if (explicit === undefined || explicit === null || explicit === "") explicit = row && row.revision;
+    if (explicit !== undefined && explicit !== null && explicit !== "") return text(explicit).replace(/^r/i, "");
+    var match = text(row && row.provider_signal_id).match(/:r(\d+)$/i);
+    return match ? match[1] : "";
+  }
+  function messengerBaseId(row) {
+    return text(row && row.provider_signal_id).replace(/:r\d+$/i, "");
+  }
+  function messengerRole(row) {
+    var role = text(row && (row.role || row.alert_type)).toLowerCase();
+    if (/retract|withdraw|cancel/.test(role)) return "Retraction";
+    var revision = messengerRevision(row);
+    return revision !== "" && Number(revision) > 0 ? "Revision" : humanKey(row && (row.alert_type || row.role) || "Notice");
+  }
+  function messengerLineage(row, rows) {
+    var properties = messengerProperties(row), base = messengerBaseId(row), revision = messengerRevision(row);
+    var family = (rows || []).filter(function (candidate) { return base && messengerBaseId(candidate) === base; }).sort(function (a, b) {
+      return Number(messengerRevision(a) || 0) - Number(messengerRevision(b) || 0);
+    });
+    var index = family.indexOf(row), previous = index > 0 ? family[index - 1] : null, next = index >= 0 && index < family.length - 1 ? family[index + 1] : null;
+    return {
+      revision: revision,
+      supersedes: properties.supersedes || properties.supersedes_notice || row.supersedes || (previous && previous.provider_signal_id) || null,
+      supersededBy: properties.superseded_by || properties.supersededBy || row.superseded_by || (next && next.provider_signal_id) || null,
+      role: messengerRole(row),
+      basis: (properties.supersedes || properties.supersedes_notice || properties.superseded_by || properties.supersededBy || row.supersedes || row.superseded_by)
+        ? "provider-retained lineage" : family.length > 1 ? "provider identifier revision sequence" : "no linked revision retained"
+    };
+  }
+
   function renderTimeline(candidate) {
     var follow = candidate.follow_up || {}, entries = [];
     function add(rows, kind, timeKey, title, summary) {
@@ -317,11 +493,11 @@
     add((follow.classifications || []).concat(follow.classification_history || []), function (row) {
       return row.retracted ? "Classification retraction" : row.superseded ? "Classification revision" : "Reported classification";
     }, "asserted_at", function (row) { return row.classification || "Unclassified"; }, function (row) {
-      return [row.subtype, row.method, row.probability === undefined ? "" : num(100 * row.probability, 1) + "% reported probability"].filter(Boolean).join(" · ");
+      return [row.subtype, row.method, finiteNumber(row.probability) ? num(100 * row.probability, 1) + "% reported probability" : ""].filter(Boolean).join(" · ");
     });
     add(follow.spectra, "Spectrum", "observed_at", function (row) { return row.file_name || row.provider_spectrum_id || "Spectrum metadata"; },
       function (row) { return [row.telescope, row.instrument, row.calibration_state].filter(Boolean).join(" · "); });
-    add(follow.messenger_signals, "Messenger notice", "observed_at", function (row) {
+    add(follow.messenger_signals, function (row) { return messengerRole(row); }, "observed_at", function (row) {
       return [row.messenger, row.alert_type || row.role].filter(Boolean).join(" · ") || "Messenger notice";
     }, function (row) { return row.summary || row.measurement || "Provider notice"; });
     add(follow.publications, "Public report", "published_at", function (row) { return row.title || row.publication_type || "Public report"; },
@@ -333,14 +509,13 @@
       var at = parseDate(a.time), bt = parseDate(b.time);
       return (bt ? bt.getTime() : 0) - (at ? at.getTime() : 0);
     });
-    var shown = entries.slice(0, 12);
-    return '<details class="ctas-timeline"><summary>Concise scientific timeline <small>' + entries.length +
-      " entries; 12 shown initially</small></summary><ol>" + shown.map(function (entry) {
+    return '<details class="ctas-timeline" data-dossier-view="timeline"><summary>Concise scientific timeline <small>' + entries.length +
+      " entries</small></summary><ol>" + entries.map(function (entry) {
         return '<li><div class="ctas-timeline__clocks"><span>' + esc(entry.time ? absolute(entry.time) : "Time not recorded") +
           '</span></div><div><span class="pill">' + esc(entry.kind) + "</span><strong>" + esc(entry.title) +
           "</strong><small>" + esc(entry.provider || "Provider not recorded") + "</small>" +
           (entry.summary ? "<p>" + esc(entry.summary) + "</p>" : "") + (entry.row ? renderReferences([entry.row], undefined, false) : "") + "</div></li>";
-      }).join("") + "</ol>" + (entries.length > shown.length ? "<p>Download the candidate JSON for all timeline-bearing rows.</p>" : "") + "</details>";
+      }).join("") + "</ol></details>";
   }
 
   function photometrySvg(rows) {
@@ -392,106 +567,332 @@
   function renderPhotometry(candidate) {
     var rows = (candidate.follow_up || {}).observations || [];
     if (!rows.length) return "";
-    var bands = {}, selected = state.photBand[candidate.name] || "*";
+    var bands = {}, selected = state.photBand[candidate.event_id] || "*";
     rows.forEach(function (row) { if (row.band) bands[row.band] = true; });
     var filtered = selected === "*" ? rows : rows.filter(function (row) { return text(row.band) === selected; });
-    var tableRows = filtered.slice(0, 40);
-    return '<details class="ctas-evidence-panel" data-phot-panel><summary>Photometry <small>' + rows.length.toLocaleString() +
+    return '<details class="ctas-evidence-panel" data-phot-panel data-dossier-view="photometry"><summary>Photometry <small>' + rows.length.toLocaleString() +
       ' retained rows</small></summary><div class="ctas-evidence-panel__body"><div class="ctas-evidence-tools"><label>Band <select data-phot-band>' +
       '<option value="*">All bands</option>' + Object.keys(bands).sort().map(function (band) {
         return '<option value="' + esc(band) + '"' + (selected === band ? " selected" : "") + ">" + esc(band) + "</option>";
       }).join("") + '</select></label><button type="button" data-download-evidence="observations" data-format="csv">Download CSV</button>' +
       '<button type="button" data-download-evidence="observations" data-format="json">Download JSON</button></div>' +
-      photometrySvg(filtered) + renderReferences(rows.slice(0, 20)) +
-      '<div class="ctas-evidence-table-wrap"><table class="ctas-evidence-table"><caption>First ' + tableRows.length + " of " + filtered.length +
-      ' matching rows; downloads contain all retained rows.</caption><thead><tr><th>Observed</th><th>Band</th><th>Magnitude / limit</th><th>System</th><th>Facility</th><th>Source</th></tr></thead><tbody>' +
-      tableRows.map(function (row) {
+      photometrySvg(filtered) + renderReferences(rows) +
+      '<div class="ctas-evidence-table-wrap ctas-evidence-table-wrap--tall" role="region" aria-label="Complete source-native photometry table" tabindex="0"><table class="ctas-evidence-table"><caption>All ' + filtered.length.toLocaleString() +
+      " matching rows are inspectable here" + (selected === "*" ? "." : "; the candidate retains " + rows.length.toLocaleString() + " rows across all bands.") +
+      '</caption><thead><tr><th scope="col">Observed</th><th scope="col">Band</th><th scope="col">Detection / limit</th><th scope="col">Source-native value</th><th scope="col">System · method</th><th scope="col">Facility</th><th scope="col">Assertion / source</th></tr></thead><tbody>' +
+      filtered.map(function (row) {
         var measure = finiteNumber(row.magnitude) ? num(row.magnitude, 3) + (finiteNumber(row.magnitude_error) ? " ± " + num(row.magnitude_error, 3) : "") :
-          finiteNumber(row.limiting_magnitude) ? "&gt; " + esc(num(row.limiting_magnitude, 3)) : "not reported";
-        return "<tr><td>" + esc(absolute(row.observed_at)) + "</td><td>" + esc(row.band || "—") + "</td><td>" + measure +
-          "</td><td>" + esc(row.magnitude_system || "—") + "</td><td>" + esc(row.telescope || row.instrument || "—") +
-          "</td><td>" + renderReferences([row]) + "</td></tr>";
+          finiteNumber(row.flux) ? num(row.flux, 6) + (finiteNumber(row.flux_error) ? " ± " + num(row.flux_error, 6) : "") + " " + esc(row.flux_unit || "") :
+          finiteNumber(row.limiting_magnitude) ? "magnitude &gt; " + esc(num(row.limiting_magnitude, 3)) :
+          finiteNumber(row.limiting_flux) ? "flux ≤ " + esc(num(row.limiting_flux, 6)) + " " + esc(row.flux_unit || "") : "not reported";
+        var semantics = row.detection ? "Detection" : finiteNumber(row.limiting_flux) ? "Nondetection · flux upper limit" : finiteNumber(row.limiting_magnitude) ? "Nondetection · magnitude lower bound" : "Nondetection reported";
+        if (row.superseded) semantics += " · superseded by revision " + text(row.superseded_by_revision || "not identified");
+        return "<tr><td>" + esc(absolute(row.observed_at)) + "</td><td>" + esc(row.band || row.original_band || "—") + "</td><td><strong>" + esc(semantics) +
+          "</strong></td><td>" + measure + "</td><td>" + esc([row.magnitude_system, row.photometry_method || row.pipeline,
+            row.difference_photometry ? "difference photometry" : "direct/unspecified"].filter(Boolean).join(" · ") || "—") + "</td><td>" +
+          esc(row.telescope || row.observatory || row.instrument || "—") + "</td><td><code>" + esc(shortHash(row.assertion_id || row.provider_observation_id || "not retained")) +
+          (row.assertion_id || row.provider_observation_id ? "…" : "") + "</code>" + renderReferences([row]) + "</td></tr>";
       }).join("") + "</tbody></table></div></div></details>";
   }
 
+  function spectrumPreviewPoints(row) {
+    var raw = parsedValue(row && row.preview_points, []);
+    if (!Array.isArray(raw)) return [];
+    return raw.map(function (point, index) {
+      var wavelength, flux;
+      if (Array.isArray(point)) { wavelength = point[0]; flux = point[1]; }
+      else if (point && typeof point === "object") {
+        wavelength = point.wavelength;
+        if (wavelength === undefined) wavelength = point.wavelength_value;
+        if (wavelength === undefined) wavelength = point.wavelength_angstrom;
+        if (wavelength === undefined) wavelength = point.lambda;
+        flux = point.flux;
+        if (flux === undefined) flux = point.flux_value;
+        if (flux === undefined) flux = point.flux_density;
+      }
+      return {index: index + 1, wavelength: Number(wavelength), flux: Number(flux)};
+    }).filter(function (point) { return isFinite(point.wavelength) && isFinite(point.flux); });
+  }
+  function spectrumNumber(value) {
+    var number = Number(value), absoluteValue = Math.abs(number);
+    if (!isFinite(number)) return "";
+    return absoluteValue && (absoluteValue < 0.001 || absoluteValue >= 100000) ? number.toExponential(6) : Number(number.toPrecision(8)).toString();
+  }
+  function spectrumSvg(row, points, index) {
+    if (!points.length) return '<p class="ctas-link-empty">No rights-cleared numerical preview points are retained for this spectrum.</p>';
+    var cap = 900, plotted = points.length <= cap ? points : Array.from({length: cap}, function (_, pointIndex) {
+      return points[Math.floor(pointIndex * (points.length - 1) / (cap - 1))];
+    });
+    var minX = points[0].wavelength, maxX = points[0].wavelength, minY = points[0].flux, maxY = points[0].flux;
+    points.forEach(function (point) {
+      minX = Math.min(minX, point.wavelength); maxX = Math.max(maxX, point.wavelength);
+      minY = Math.min(minY, point.flux); maxY = Math.max(maxY, point.flux);
+    });
+    if (minX === maxX) { minX -= 0.5; maxX += 0.5; }
+    if (minY === maxY) { minY -= Math.abs(minY || 1) * 0.05; maxY += Math.abs(maxY || 1) * 0.05; }
+    var yPadding = (maxY - minY) * 0.04; minY -= yPadding; maxY += yPadding;
+    var width = 820, height = 310, left = 76, right = 22, top = 24, bottom = 52;
+    function x(point) { return left + (point.wavelength - minX) / (maxX - minX) * (width - left - right); }
+    function y(point) { return top + (maxY - point.flux) / (maxY - minY) * (height - top - bottom); }
+    var path = plotted.map(function (point, pointIndex) {
+      return (pointIndex ? "L" : "M") + num(x(point), 2) + " " + num(y(point), 2);
+    }).join(" ");
+    var titleId = "ctas-spectrum-title-" + index, descriptionId = "ctas-spectrum-description-" + index;
+    var wavelengthUnit = row.wavelength_unit || "source-native wavelength units", fluxUnit = row.flux_unit || "source-native flux units";
+    return '<figure class="ctas-spectrum-preview"><svg viewBox="0 0 ' + width + " " + height + '" role="img" aria-labelledby="' +
+      titleId + " " + descriptionId + '"><title id="' + titleId + '">Spectrum preview for ' +
+      esc(row.file_name || row.provider_spectrum_id || "retained spectrum") + '</title><desc id="' + descriptionId + '">' +
+      esc(points.length.toLocaleString() + " retained wavelength and flux pairs, spanning " + spectrumNumber(minX) + " to " + spectrumNumber(maxX) + " " + wavelengthUnit + ". The complete numerical table follows the plot.") +
+      '</desc><rect x="' + left + '" y="' + top + '" width="' + (width - left - right) + '" height="' + (height - top - bottom) + '" class="ctas-plot-bg"/>' +
+      '<line x1="' + left + '" y1="' + top + '" x2="' + left + '" y2="' + (height - bottom) + '" class="ctas-axis"/>' +
+      '<line x1="' + left + '" y1="' + (height - bottom) + '" x2="' + (width - right) + '" y2="' + (height - bottom) + '" class="ctas-axis"/>' +
+      '<path d="' + path + '" class="ctas-spectrum-line"/><text x="12" y="' + (height / 2) + '" transform="rotate(-90 12 ' + (height / 2) + ')" class="ctas-axis-label">Flux (' + esc(fluxUnit) + ')</text>' +
+      '<text x="' + (width / 2) + '" y="' + (height - 12) + '" text-anchor="middle" class="ctas-axis-label">Wavelength (' + esc(wavelengthUnit) + ')</text>' +
+      '<text x="' + left + '" y="' + (height - 31) + '" class="ctas-axis-label">' + esc(spectrumNumber(minX)) + '</text><text x="' + (width - right) + '" y="' + (height - 31) + '" text-anchor="end" class="ctas-axis-label">' + esc(spectrumNumber(maxX)) + '</text>' +
+      '<text x="' + (left - 8) + '" y="' + (top + 4) + '" text-anchor="end" class="ctas-axis-label">' + esc(spectrumNumber(maxY)) + '</text><text x="' + (left - 8) + '" y="' + (height - bottom) + '" text-anchor="end" class="ctas-axis-label">' + esc(spectrumNumber(minY)) + '</text></svg>' +
+      '<figcaption>' + esc(plotted.length.toLocaleString()) + " of " + esc(points.length.toLocaleString()) +
+      ' retained points drawn for browser performance; every point is available in the table and downloads below.</figcaption></figure>';
+  }
+  function renderSpectrumPreview(row, index) {
+    var points = spectrumPreviewPoints(row);
+    if (!points.length) return '<p class="ctas-link-empty">Metadata-only record: no rights-cleared numerical preview points are retained.</p>';
+    return spectrumSvg(row, points, index) + '<div class="ctas-evidence-tools"><button type="button" data-download-spectrum="' + index +
+      '" data-format="csv">Download preview CSV</button><button type="button" data-download-spectrum="' + index +
+      '" data-format="json">Download preview JSON</button></div><details class="ctas-spectrum-points"><summary>Inspect all ' +
+      points.length.toLocaleString() + ' numerical preview points</summary><div class="ctas-evidence-table-wrap ctas-evidence-table-wrap--tall" role="region" aria-label="Complete retained spectrum preview point table" tabindex="0"><table class="ctas-evidence-table ctas-spectrum-table"><caption>All rights-cleared numerical points retained in this public preview.</caption>' +
+      '<thead><tr><th scope="col">Point</th><th scope="col">Wavelength (' + esc(row.wavelength_unit || "source-native units") +
+      ')</th><th scope="col">Flux (' + esc(row.flux_unit || "source-native units") + ')</th></tr></thead><tbody>' + points.map(function (point) {
+        return '<tr><th scope="row">' + point.index.toLocaleString() + '</th><td>' + esc(spectrumNumber(point.wavelength)) +
+          '</td><td>' + esc(spectrumNumber(point.flux)) + '</td></tr>';
+      }).join("") + '</tbody></table></div></details>';
+  }
   function renderSpectra(candidate) {
     var rows = (candidate.follow_up || {}).spectra || [];
     if (!rows.length) return "";
-    return '<details class="ctas-evidence-panel"><summary>Spectra <small>' + rows.length +
-      " public metadata record" + (rows.length === 1 ? "" : "s") +
-      '</small></summary><div class="ctas-evidence-panel__body"><p>CTAS plots a spectrum only when rights-cleared numerical arrays are exported. The current rows may be metadata-only; record and download links remain distinct.</p>' +
-      '<div class="ctas-evidence-tools"><button type="button" data-download-evidence="spectra" data-format="json">Download metadata JSON</button></div><ul class="ctas-record-list">' +
-      rows.slice(0, 40).map(function (row) {
-        return "<li><strong>" + esc(row.file_name || row.provider_spectrum_id || "Spectrum") + "</strong><span>" +
+    return '<details class="ctas-evidence-panel" data-dossier-view="spectra"><summary>Spectra <small>' + rows.length +
+      " public record" + (rows.length === 1 ? "" : "s") +
+      '</small></summary><div class="ctas-evidence-panel__body"><p>Numerical previews appear only when rights-cleared wavelength and flux pairs are retained. Metadata-only records remain explicit, and provider record links are distinct from downloadable artifacts.</p>' +
+      '<div class="ctas-evidence-tools"><button type="button" data-download-evidence="spectra" data-format="json">Download all spectra JSON</button></div><ul class="ctas-record-list ctas-spectrum-list">' +
+      rows.map(function (row, index) {
+        return '<li><details class="ctas-spectrum-record"><summary><span><strong>' + esc(row.file_name || row.provider_spectrum_id || "Spectrum") + '</strong><small>' +
           esc([row.observed_at ? absolute(row.observed_at) : "time unavailable", row.telescope, row.instrument,
-            row.wavelength_unit, row.calibration_state].filter(Boolean).join(" · ")) + "</span>" +
-          (row.checksum_sha256 ? "<small>SHA-256 " + esc(shortHash(row.checksum_sha256)) + "…</small>" : "") +
-          renderReferences([row], [["source_url", null], ["public_download_url", "Download source artifact"]]) + "</li>";
+            row.wavelength_unit, row.calibration_state].filter(Boolean).join(" · ")) + '</small></span></summary><div class="ctas-spectrum-record__body">' +
+          (row.file_checksum || row.checksum_sha256 ? "<p><strong>File SHA-256:</strong> <code>" + esc(row.file_checksum || row.checksum_sha256) + "</code></p>" : "") +
+          renderReferences([row], [["source_url", null], ["public_download_url", "Download source artifact"]]) +
+          renderSpectrumPreview(row, index) + retainedRecordDetails("Inspect complete retained spectrum record", row) + '</div></details></li>';
       }).join("") + "</ul></div></details>";
   }
 
   function renderMessenger(candidate) {
     var rows = (candidate.follow_up || {}).messenger_signals || [];
     if (!rows.length) return "";
-    return '<details class="ctas-evidence-panel"><summary>Messenger notices <small>' + rows.length +
+    return '<details class="ctas-evidence-panel" data-dossier-view="messenger"><summary>Messenger notices <small>' + rows.length +
       '</small></summary><div class="ctas-evidence-panel__body"><div class="ctas-evidence-tools"><button type="button" data-download-evidence="messenger_signals" data-format="csv">Download CSV</button><button type="button" data-download-evidence="messenger_signals" data-format="json">Download JSON</button></div>' +
-      '<div class="ctas-evidence-table-wrap"><table class="ctas-evidence-table"><thead><tr><th>Scientific time</th><th>Messenger / role</th><th>Significance</th><th>False-alarm rate</th><th>Localization</th><th>Source</th></tr></thead><tbody>' +
-      rows.slice(0, 40).map(function (row) {
-        return "<tr><td>" + esc(absolute(row.observed_at || row.event_time)) + "</td><td>" +
-          esc([row.messenger, row.alert_type || row.role].filter(Boolean).join(" · ")) + "</td><td>" +
-          esc(row.significance === undefined ? "—" : text(row.significance)) + "</td><td>" +
-          esc(row.false_alarm_rate === undefined ? (row.far === undefined ? "—" : text(row.far)) : text(row.false_alarm_rate)) + "</td><td>" +
-          esc([row.localization_area_sq_deg ? num(row.localization_area_sq_deg, 2) + " deg²" : "", row.coordinate_error_deg ? num(row.coordinate_error_deg, 2) + "° radius" : ""].filter(Boolean).join(" · ") || "—") +
-          "</td><td>" + renderReferences([row]) + "</td></tr>";
-      }).join("") + "</tbody></table></div>" + (rows.length > 40 ? "<p>First 40 rows shown; downloads contain all retained rows.</p>" : "") + "</div></details>";
+      '<div class="ctas-evidence-table-wrap ctas-evidence-table-wrap--tall" role="region" aria-label="Complete messenger notice and revision table" tabindex="0"><table class="ctas-evidence-table ctas-messenger-table"><caption>All retained notices are shown. Retractions remain visible, and revision lineage is explicit rather than silently replacing earlier messages.</caption><thead><tr><th scope="col">Scientific time</th><th scope="col">Notice / revision</th><th scope="col">State and lineage</th><th scope="col">Messenger / detection</th><th scope="col">Significance / false-alarm rate</th><th scope="col">Localization / distance</th><th scope="col">Source and complete record</th></tr></thead><tbody>' +
+      rows.map(function (row) {
+        var lineage = messengerLineage(row, rows), roleClass = lineage.role === "Retraction" ? " is-retracted" : "";
+        var lineageText = [lineage.supersedes ? "Supersedes " + lineage.supersedes : "",
+          lineage.supersededBy ? "Superseded by " + lineage.supersededBy : "Current/latest retained revision",
+          lineage.basis].filter(Boolean).join(" · ");
+        return "<tr><td>" + esc(absolute(row.observed_at || row.event_time)) + "</td><th scope=\"row\"><strong>" +
+          esc(row.provider_signal_id || row.assertion_id || "Provider notice") + "</strong><small>" +
+          esc(lineage.revision === "" ? "Revision not encoded" : "Revision r" + lineage.revision) + "</small></th><td><span class=\"pill" + roleClass + "\">" +
+          esc(lineage.role) + "</span><small>" + esc(lineageText) + "</small></td><td>" +
+          esc([row.messenger, row.alert_type || row.role, row.detection === undefined || row.detection === null ? "" : row.detection ? "detection" : "nondetection"].filter(Boolean).join(" · ") || "—") +
+          (row.detector_network ? "<small>Detector network: " + esc(structuredText(row.detector_network)) + "</small>" : "") + "</td><td>" +
+          esc(row.significance_sigma === undefined || row.significance_sigma === null ? "Significance not retained" : num(row.significance_sigma, 3) + " σ") + "<small>" +
+          esc(row.false_alarm_rate_hz === undefined || row.false_alarm_rate_hz === null ? "False-alarm rate not retained" : text(row.false_alarm_rate_hz) + " Hz") + "</small></td><td>" +
+          esc([row.sky_area_90_sq_deg === undefined || row.sky_area_90_sq_deg === null ? "" : num(row.sky_area_90_sq_deg, 2) + " deg² (90%)",
+            row.sky_area_50_sq_deg === undefined || row.sky_area_50_sq_deg === null ? "" : num(row.sky_area_50_sq_deg, 2) + " deg² (50%)",
+            row.distance_mpc === undefined || row.distance_mpc === null ? "" : num(row.distance_mpc, 2) + (row.distance_std_mpc === undefined || row.distance_std_mpc === null ? "" : " ± " + num(row.distance_std_mpc, 2)) + " Mpc"].filter(Boolean).join(" · ") || "—") +
+          "</td><td>" + renderReferences([row]) + retainedRecordDetails("Inspect complete retained notice", row) + "</td></tr>";
+      }).join("") + "</tbody></table></div></div></details>";
   }
 
   function renderClassifications(candidate) {
     var follow = candidate.follow_up || {};
     var classifications = (follow.classifications || []).concat(follow.classification_history || []);
-    var reports = follow.publications || [];
-    if (!classifications.length && !reports.length) return "";
-    return '<details class="ctas-evidence-panel"><summary>Reported classifications and public reports <small>' +
-      (classifications.length + reports.length) + '</small></summary><div class="ctas-evidence-panel__body"><div class="ctas-detail__grid">' +
-      (classifications.length ? '<section class="ctas-detail__section"><h4>Classification assertions</h4><ul>' + classifications.slice(0, 30).map(function (row) {
+    var reports = follow.publications || [], revisions = follow.publication_revisions || [], publicationGroups = {};
+    function publicationKey(row) {
+      return text(row.publication_assertion_id || row.assertion_id || [row.provider, row.provider_publication_id].filter(Boolean).join(":"));
+    }
+    reports.forEach(function (row) {
+      var key = publicationKey(row); publicationGroups[key] = publicationGroups[key] || {report: null, revisions: []}; publicationGroups[key].report = row;
+    });
+    revisions.forEach(function (row) {
+      var key = publicationKey(row); publicationGroups[key] = publicationGroups[key] || {report: null, revisions: []}; publicationGroups[key].revisions.push(row);
+    });
+    Object.keys(publicationGroups).forEach(function (key) {
+      publicationGroups[key].revisions.sort(function (a, b) {
+        var sequence = Number(a.source_revision_sequence || 0) - Number(b.source_revision_sequence || 0);
+        return sequence || text(a.retrieved_at).localeCompare(text(b.retrieved_at));
+      });
+    });
+    if (!classifications.length && !reports.length && !revisions.length) return "";
+    return '<details class="ctas-evidence-panel" data-dossier-view="classifications"><summary>Reported classifications and public reports <small>' +
+      classifications.length + " classification rows · " + reports.length + " reports · " + revisions.length + ' revision rows</small></summary><div class="ctas-evidence-panel__body"><div class="ctas-detail__grid">' +
+      (classifications.length ? '<section class="ctas-detail__section"><h4>Classification assertions</h4><ul>' + classifications.map(function (row) {
         return "<li><strong>" + esc(row.classification || "Unclassified") + "</strong><span>" +
           esc([row.asserted_at ? absolute(row.asserted_at) : "time unavailable", row.provider, row.method,
-            row.probability === undefined ? "" : num(100 * row.probability, 1) + "% reported probability",
+            finiteNumber(row.probability) ? num(100 * row.probability, 1) + "% reported probability" : "",
             row.retracted ? "retracted" : row.superseded ? "superseded" : ""].filter(Boolean).join(" · ")) +
-          "</span>" + renderReferences([row]) + "</li>";
+          "</span><small>Assertion " + esc(row.assertion_id || "identifier not retained") + "</small>" + renderReferences([row]) +
+          retainedRecordDetails("Inspect complete classification assertion", row) + "</li>";
       }).join("") + "</ul></section>" : "") +
-      (reports.length ? '<section class="ctas-detail__section"><h4>Public reports</h4><ul>' + reports.slice(0, 30).map(function (row) {
-        return "<li><strong>" + esc(row.title || row.publication_type || "Public report") + "</strong><span>" +
-          esc([row.published_at ? absolute(row.published_at) : "", row.authors_text, row.provider].filter(Boolean).join(" · ")) +
-          "</span>" + (row.abstract ? "<p>" + esc(row.abstract) + "</p>" : "") + renderReferences([row]) + "</li>";
-      }).join("") + "</ul></section>" : "") + "</div></div></details>";
+      (Object.keys(publicationGroups).length ? '<section class="ctas-detail__section ctas-publication-section"><h4>Public reports and revision history</h4><ul>' +
+        Object.keys(publicationGroups).sort().map(function (key) {
+          var group = publicationGroups[key], row = group.report || group.revisions[group.revisions.length - 1] || {};
+          return '<li><details class="ctas-publication-record"><summary><span><strong>' + esc(row.title || row.publication_type || "Public report") + '</strong><small>' +
+            esc([row.published_at ? absolute(row.published_at) : "publication time unavailable", row.authors_text, row.provider].filter(Boolean).join(" · ")) +
+            '</small></span></summary><div class="ctas-publication-record__body">' + (row.abstract ? "<p>" + esc(row.abstract) + "</p>" : "") +
+            renderReferences([row]) + retainedRecordDetails("Inspect current retained report record", row) +
+            (group.revisions.length ? '<div class="ctas-evidence-table-wrap ctas-evidence-table-wrap--tall" role="region" aria-label="Complete publication revision history" tabindex="0"><table class="ctas-evidence-table ctas-publication-revisions"><caption>All ' +
+              group.revisions.length.toLocaleString() + ' retained revisions for this publication. A superseded revision remains part of the public history.</caption><thead><tr><th scope="col">Revision</th><th scope="col">Retrieved</th><th scope="col">State</th><th scope="col">Title / authors</th><th scope="col">Content checksums</th><th scope="col">Source and complete record</th></tr></thead><tbody>' +
+              group.revisions.map(function (revision) {
+                return '<tr><th scope="row">' + esc(revision.source_revision_sequence === undefined || revision.source_revision_sequence === null ? "Sequence not retained" : "Revision " + revision.source_revision_sequence) +
+                  '</th><td>' + esc(absolute(revision.retrieved_at)) + '</td><td><span class="pill' + (revision.superseded ? " is-superseded" : "") + '">' +
+                  esc(revision.superseded ? "Superseded" : "Current/latest retained") + '</span></td><td><strong>' + esc(revision.title || "Title not retained") +
+                  '</strong><small>' + esc(revision.authors_text || "Authors not retained") + '</small></td><td><small>Content <code>' +
+                  esc(revision.content_checksum ? shortHash(revision.content_checksum) + "…" : "not retained") + '</code></small><small>Source <code>' +
+                  esc(revision.source_content_checksum ? shortHash(revision.source_content_checksum) + "…" : "not retained") + '</code></small></td><td>' +
+                  renderReferences([revision]) + retainedRecordDetails("Inspect complete publication revision", revision) + '</td></tr>';
+              }).join("") + '</tbody></table></div>' : '<p>No separate publication-revision rows are retained.</p>') + '</div></details></li>';
+        }).join("") + "</ul></section>" : "") + "</div></div></details>";
   }
 
   function renderEnvironment(candidate) {
     var follow = candidate.follow_up || {};
     var hosts = follow.host_context || [], counterparts = follow.catalog_counterparts || [], products = follow.archive_products || [];
     if (!hosts.length && !counterparts.length && !products.length) return "";
-    return '<details class="ctas-evidence-panel"><summary>Environment and released archive context <small>' +
+    return '<details class="ctas-evidence-panel" data-dossier-view="environment"><summary>Environment and released archive context <small>' +
       (hosts.length + counterparts.length + products.length) + '</small></summary><div class="ctas-evidence-panel__body"><p>Positional catalog candidates are context, not host associations, unless a retained host record explicitly says otherwise.</p><div class="ctas-detail__grid">' +
-      (hosts.length ? '<section class="ctas-detail__section"><h4>Reported host context</h4><ul>' + hosts.slice(0, 20).map(function (row) {
-        return "<li><strong>" + esc(row.canonical_name || row.queried_name || "Host record") + "</strong><span>" +
-          esc([row.redshift === undefined ? "" : "z " + num(row.redshift, 5), row.physical_type, row.morphology,
-            row.separation_arcsec === undefined ? "" : num(row.separation_arcsec, 2) + " arcsec"].filter(Boolean).join(" · ")) +
-          "</span>" + renderReferences([row]) + "</li>";
+      (hosts.length ? '<section class="ctas-detail__section"><h4>Reported host context</h4><ul>' + hosts.map(function (row) {
+        return '<li><details class="ctas-environment-record"><summary><span><strong>' + esc(row.canonical_name || row.queried_name || "Host record") + '</strong><small>' +
+          esc([row.redshift === undefined || row.redshift === null ? "" : "z " + num(row.redshift, 5), row.physical_type, row.morphology,
+            row.transient_offset_arcsec === undefined || row.transient_offset_arcsec === null ? "" : num(row.transient_offset_arcsec, 2) + " arcsec reported offset"].filter(Boolean).join(" · ") || "Host values retained") +
+          '</small></span></summary><div class="ctas-environment-record__body"><dl class="ctas-detail__facts">' +
+          fact("Queried / canonical name", [row.queried_name, row.canonical_name].filter(Boolean).join(" → ") || "Not retained") +
+          fact("Host ICRS position", finiteNumber(row.ra_deg) && finiteNumber(row.dec_deg) ? num(row.ra_deg, 7) + "°, " + num(row.dec_deg, 7) + "°" : "Not retained") +
+          fact("Reported transient offset", finiteNumber(row.transient_offset_arcsec) ? num(row.transient_offset_arcsec, 3) + " arcsec" : "Not retained") +
+          fact("Redshift", finiteNumber(row.redshift) ? num(row.redshift, 7) + (finiteNumber(row.redshift_error) ? " ± " + num(row.redshift_error, 7) : "") : "Not retained") +
+          fact("Redshift reference", row.redshift_reference || "Not retained") +
+          fact("Heliocentric velocity", finiteNumber(row.heliocentric_velocity_km_s) ? num(row.heliocentric_velocity_km_s, 2) + " km s⁻¹" : "Not retained") +
+          fact("Hubble-flow distance", finiteNumber(row.hubble_flow_distance_mpc) ? num(row.hubble_flow_distance_mpc, 3) + " Mpc" : "Not retained") +
+          fact("Mean distance", finiteNumber(row.mean_distance_mpc) ? num(row.mean_distance_mpc, 3) + (finiteNumber(row.mean_distance_error_mpc) ? " ± " + num(row.mean_distance_error_mpc, 3) : "") + " Mpc" : "Not retained") +
+          fact("Physical / morphology / activity", [row.physical_type, row.morphology, row.activity_type].filter(Boolean).join(" · ") || "Not retained") +
+          fact("Angular / physical major axis", [finiteNumber(row.major_axis_arcsec) ? num(row.major_axis_arcsec, 3) + " arcsec" : "", finiteNumber(row.physical_major_axis_kpc) ? num(row.physical_major_axis_kpc, 3) + " kpc" : ""].filter(Boolean).join(" · ") || "Not retained") +
+          fact("Galactic V extinction", finiteNumber(row.galactic_extinction_v_mag) ? num(row.galactic_extinction_v_mag, 4) + " mag" : "Not retained") +
+          fact("Queried", row.queried_at ? absolute(row.queried_at) : "Not retained") + fact("Response checksum", row.response_checksum || "Not retained") +
+          '</dl>' + (row.cross_identifications ? '<details class="ctas-record-details"><summary>Cross-identifications</summary><pre>' + esc(structuredText(row.cross_identifications)) + '</pre></details>' : "") +
+          (row.overview_note ? '<p><strong>Provider overview:</strong> ' + esc(row.overview_note) + '</p>' : "") +
+          (row.attribution ? '<p><strong>Required attribution:</strong> ' + esc(row.attribution) + '</p>' : "") + renderReferences([row]) +
+          retainedRecordDetails("Inspect complete retained host assertion", row) + '</div></details></li>';
       }).join("") + "</ul></section>" : "") +
-      (counterparts.length ? '<section class="ctas-detail__section"><h4>Positional catalog candidates</h4><ul>' + counterparts.slice(0, 30).map(function (row) {
-        var motion = row.motion && typeof row.motion === "object" ? JSON.stringify(row.motion) : row.motion;
-        var photometry = row.photometry && typeof row.photometry === "object" ? JSON.stringify(row.photometry) : row.photometry;
-        return "<li><strong>" + esc(row.catalog_record_id || row.catalog_description || "Catalog row") + "</strong><span>" +
-          esc([row.catalog, row.separation_arcsec === undefined ? "" : num(row.separation_arcsec, 2) + " arcsec",
-            row.object_type || row.type, motion ? "motion " + motion : "", photometry ? "photometry " + photometry : ""].filter(Boolean).join(" · ")) +
-          "</span>" + renderReferences([row]) + "</li>";
-      }).join("") + "</ul>" + (counterparts.length > 30 ? "<p>First 30 shown; candidate JSON contains all rows.</p>" : "") + "</section>" : "") +
-      (products.length ? '<section class="ctas-detail__section"><h4>Released archive products</h4><ul>' + products.slice(0, 20).map(function (row) {
-        return "<li><strong>" + esc(row.product_filename || row.provider_product_id || "Archive product") + "</strong><span>" +
-          esc([row.mission, row.instrument, row.observed_at ? absolute(row.observed_at) : ""].filter(Boolean).join(" · ")) +
-          "</span>" + renderReferences([row]) + "</li>";
+      (counterparts.length ? '<section class="ctas-detail__section"><h4>Positional catalog candidates</h4><ul>' + counterparts.map(function (row) {
+        return '<li><details class="ctas-environment-record"><summary><span><strong>' + esc(row.catalog_record_id || row.catalog_description || "Catalog row") + '</strong><small>' +
+          esc([row.catalog, finiteNumber(row.separation_arcsec) ? num(row.separation_arcsec, 3) + " arcsec separation" : "separation not retained", row.counterpart_type].filter(Boolean).join(" · ")) +
+          '</small></span></summary><div class="ctas-environment-record__body"><dl class="ctas-detail__facts">' +
+          fact("Catalog", [row.catalog, row.catalog_description].filter(Boolean).join(" · ") || "Not retained") +
+          fact("Catalog record ID", row.catalog_record_id || "Not retained") +
+          fact("Catalog ICRS position", finiteNumber(row.ra_deg) && finiteNumber(row.dec_deg) ? num(row.ra_deg, 7) + "°, " + num(row.dec_deg, 7) + "°" : "Not retained") +
+          fact("Separation", finiteNumber(row.separation_arcsec) ? num(row.separation_arcsec, 4) + " arcsec" : "Not retained") +
+          fact("Position uncertainty", finiteNumber(row.position_error_arcsec) ? num(row.position_error_arcsec, 4) + " arcsec" : "Not retained") +
+          fact("Counterpart type", row.counterpart_type || "Not retained") + fact("Queried", row.queried_at ? absolute(row.queried_at) : "Not retained") +
+          fact("Response checksum", row.response_checksum || "Not retained") + '</dl>' +
+          (row.description ? '<p><strong>Provider description:</strong> ' + esc(row.description) + '</p>' : "") +
+          '<div class="ctas-code-grid"><div><h4>Photometry</h4><pre>' + esc(structuredText(row.photometry, "Not retained")) +
+          '</pre></div><div><h4>Motion</h4><pre>' + esc(structuredText(row.motion, "Not retained")) +
+          '</pre></div><div><h4>Quality flags</h4><pre>' + esc(structuredText(row.quality_flags, "Not retained")) +
+          '</pre></div><div><h4>Rights and source-row boundary</h4><pre>' + esc([row.rights_basis, row.source_row_exclusion].filter(Boolean).join("\n\n") || "Not retained") + '</pre></div></div>' +
+          (row.attribution ? '<p><strong>Required attribution:</strong> ' + esc(row.attribution) + '</p>' : "") +
+          renderReferences([row], [["source_url", null], ["catalog_documentation_url", "Open catalog documentation"]]) +
+          retainedRecordDetails("Inspect complete retained catalog assertion", row) + '</div></details></li>';
+      }).join("") + "</ul></section>" : "") +
+      (products.length ? '<section class="ctas-detail__section"><h4>Released archive products</h4><ul>' + products.map(function (row) {
+        return '<li><details class="ctas-environment-record"><summary><span><strong>' + esc(row.product_filename || row.provider_product_id || "Archive product") + '</strong><small>' +
+          esc([row.mission, row.instrument, row.data_product_type || row.product_type, finiteNumber(row.angular_distance_arcsec) ? num(row.angular_distance_arcsec, 3) + " arcsec" : ""].filter(Boolean).join(" · ")) +
+          '</small></span></summary><div class="ctas-environment-record__body">' + (row.description ? "<p>" + esc(row.description) + "</p>" : "") +
+          renderReferences([row], [["source_url", null], ["public_download_url", "Download source artifact"], ["product_documentation_url", "Open product documentation"]]) +
+          retainedRecordDetails("Inspect complete retained archive product", row) + '</div></details></li>';
       }).join("") + "</ul></section>" : "") + "</div></div></details>";
+  }
+
+  function renderIdentity(candidate) {
+    var identity = candidate.identity_resolution || {}, aliases = candidate.designations || [];
+    var warning = identity.state && identity.state !== "RESOLVED"
+      ? '<p class="ctas-identity-warning"><strong>' + esc(humanKey(identity.state)) + ' identity:</strong> CTAS will not guess between colliding aliases. Use provider plus alias or the stable UUID.</p>' : "";
+    var rows = aliases.map(function (row) {
+      var sourceLink = (candidate.links || []).find(function (link) {
+        return link.source_key === row.source_key && link.designation === row.designation;
+      });
+      return '<tr><th scope="row">' + esc(row.designation) + '</th><td>' + esc(row.source || row.source_key) + '</td><td>' +
+        esc(row.is_preferred ? "Preferred by source" : "Source alias") + (row.ambiguous ? ' · <strong>Ambiguous binding</strong>' : "") +
+        '</td><td>' + esc(row.asserted_at ? absolute(row.asserted_at) : "Assertion time not retained") + '</td><td>' +
+        (sourceLink ? renderReferences([sourceLink]) : '<span class="ctas-link-unavailable">No verified object link retained</span>') + '</td></tr>';
+    }).join("");
+    return '<details class="ctas-evidence-panel ctas-identity" data-dossier-view="identity" open><summary>Identity and aliases <small>' +
+      aliases.length + ' source-native aliases</small></summary><div class="ctas-evidence-panel__body">' + warning +
+      '<dl class="ctas-detail__facts">' + fact("Stable event UUID", candidate.event_id) + fact("Identity state", humanKey(identity.state || "UNREVIEWED")) +
+      fact("Lookup policy", identity.policy || "Provider-scoped exact alias; unscoped ambiguity is explicit") + '</dl>' +
+      (rows ? '<div class="ctas-evidence-table-wrap" role="region" aria-label="Provider-scoped event aliases" tabindex="0"><table class="ctas-evidence-table"><caption>Source-native aliases remain attached to the stable event UUID through display-name changes.</caption><thead><tr><th scope="col">Alias</th><th scope="col">Provider</th><th scope="col">Binding</th><th scope="col">Asserted</th><th scope="col">Original source</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p>No source-native alias is retained.</p>') +
+      '</div></details>';
+  }
+
+  function renderEvidenceLedger(candidate) {
+    var descriptor = candidate.astro_evidence || {}, conflicts = descriptor.conflictSets || [];
+    var selections = ((candidate.compatibility_provenance || {}).selectionProvenance || []);
+    var conflictHtml = conflicts.length ? '<ul class="ctas-conflict-list">' + conflicts.map(function (row) {
+      return '<li><div><span class="pill">' + esc((row.relations || []).map(humanKey).join(" · ")) + '</span><strong>' +
+        esc(humanKey(row.propertyCode)) + '</strong></div><p>' + esc(row.explanation) + '</p><small>' +
+        Number((row.measurementIds || []).length).toLocaleString() + ' source assertions · ' + esc(row.assessmentState) +
+        (row.significanceSigma === null || row.significanceSigma === undefined ? "" : " · " + num(row.significanceSigma, 2) + "σ") + '</small></li>';
+    }).join("") + '</ul>' : '<p class="ctas-no-conflict"><strong>No automated compatible-assertion conflict is retained.</strong> This is not proof that the source values are scientifically equivalent.</p>';
+    var selectionHtml = selections.length ? '<ul class="ctas-selection-list">' + selections.map(function (row) {
+      return '<li><strong>' + esc(humanKey(row.propertyCode)) + '</strong><p>' + esc(row.rationale) + '</p><small>Selected ' +
+        esc((row.selectedAssertionIds || []).join(", ")) + (row.rejectedAssertionIds && row.rejectedAssertionIds.length ? ' · Rejected ' + esc(row.rejectedAssertionIds.join(", ")) : " · No rejected assertion") +
+        ' · ' + esc(row.actor) + ' · ' + esc(absolute(row.selectedAt)) + '</small></li>';
+    }).join("") + '</ul>' : '<p>No display value is represented as an assertion-backed selection. Existing summary fields remain clearly labeled as source-reported or legacy summaries.</p>';
+    return '<details class="ctas-evidence-panel" data-dossier-view="assertions"><summary>Assertion ledger, conflicts, and selections <small>' +
+      Number(descriptor.measurementCount || 0).toLocaleString() + ' projected measurements</small></summary><div class="ctas-evidence-panel__body">' +
+      '<p>Classification labels and probabilities, detections and limits, and host redshifts remain separate source assertions. The panels below expose their source-native values; the deterministic exports contain the complete normalized ledger and stable assertion IDs.</p>' +
+      '<div class="ctas-detail__grid"><section class="ctas-detail__section"><h4>Grouped conflicts</h4>' + conflictHtml +
+      '</section><section class="ctas-detail__section"><h4>Recorded display selections</h4>' + selectionHtml + '</section></div></div></details>';
+  }
+
+  function renderAnalysis(candidate) {
+    var runs = (candidate.astro_evidence || {}).analysisRuns || [];
+    if (!runs.length) return '<details class="ctas-evidence-panel" data-dossier-view="analysis"><summary>Read-only CTAS analysis <small>INSUFFICIENT_DATA</small></summary><div class="ctas-evidence-panel__body"><p><strong>INSUFFICIENT_DATA:</strong> no rights-cleared light-curve inference run is retained for this event, so CTAS makes no analysis claim.</p></div></details>';
+    return '<details class="ctas-evidence-panel ctas-analysis" data-dossier-view="analysis"><summary>Read-only CTAS analysis <small>' +
+      runs.length.toLocaleString() + ' retained run' + (runs.length === 1 ? "" : "s") + '</small></summary><div class="ctas-evidence-panel__body"><p class="ctas-claim-boundary">This panel is read-only. Opening it does not rerun a model, send an alert, or request follow-up.</p><div class="ctas-analysis-runs">' +
+      runs.map(function (row, index) {
+        var warnings = row.warnings || [], inputs = row.inputRecordIds || [];
+        var statusCopy = row.status === "INSUFFICIENT_DATA"
+          ? "Prerequisites were not met, so CTAS made no light-curve parameter claim."
+          : row.status === "COMPLETE" ? "The existing result completed; warnings and quality limitations remain part of the record." : "The existing analysis did not produce an adopted scientific result.";
+        return '<details class="ctas-analysis-run"' + (index === 0 ? " open" : "") + '><summary><span><strong>' +
+          esc(humanKey(row.analysisType || "Analysis run")) + '</strong><small>' + esc(humanKey(row.status || "unknown")) +
+          ' · ' + esc(row.createdAt ? absolute(row.createdAt) : "completion time unavailable") + '</small></span></summary><div class="ctas-analysis-run__body"><div class="ctas-analysis__status"><span class="pill">' +
+          esc(humanKey(row.status)) + '</span><p>' + esc(statusCopy) + '</p></div><dl class="ctas-detail__facts">' +
+          fact("Analysis", humanKey(row.analysisType)) + fact("Method", [row.methodName, row.methodVersion ? "version " + row.methodVersion : ""].filter(Boolean).join(" · ") || "Not retained") +
+          fact("Input assertion IDs", inputs.length ? inputs.length.toLocaleString() + " checksum-bound inputs" : "None; prerequisite gate failed") +
+          fact("Input checksum", row.inputChecksumSha256 || "No input checksum retained") + fact("Result checksum", row.resultChecksumSha256 || "No result checksum retained") +
+          fact("Review state", humanKey(row.reviewState || "not recorded")) + fact("Completed", row.createdAt ? absolute(row.createdAt) : "Not retained") + '</dl>' +
+          (warnings.length ? '<div class="ctas-analysis__warnings"><h4>Warnings</h4><ul>' + warnings.map(function (warning) { return '<li>' + esc(warning) + '</li>'; }).join("") + '</ul></div>' : "") +
+          '<details class="ctas-record-details"><summary>Parameters, software, inputs, result, and complete run</summary><div class="ctas-code-grid"><div><h4>Parameters</h4><pre>' + esc(JSON.stringify(row.parameters || {}, null, 2)) +
+          '</pre></div><div><h4>Software versions</h4><pre>' + esc(JSON.stringify(row.softwareVersions || {}, null, 2)) +
+          '</pre></div><div><h4>Input assertion IDs</h4><pre>' + esc(inputs.join("\n") || "None") +
+          '</pre></div><div><h4>Result</h4><pre>' + esc(JSON.stringify(row.result || {}, null, 2)) +
+          '</pre></div><div><h4>Complete retained run</h4><pre>' + esc(JSON.stringify(row, null, 2)) + '</pre></div></div></details></div></details>';
+      }).join("") + '</div></div></details>';
+  }
+
+  function renderExports(candidate) {
+    return '<details class="ctas-evidence-panel ctas-exports" data-dossier-view="exports"><summary>Reproducible dossier exports <small>JSON · ECSV · VOTable · manifest</small></summary>' +
+      '<div class="ctas-evidence-panel__body"><p>Exports are generated deterministically from this exact snapshot, stable event UUID, source-native rows, versioned source contracts, persisted receipts, conflicts, selections, and the existing read-only analysis product.</p>' +
+      '<div class="ctas-evidence-tools"><button type="button" data-export-format="json">AstroEvidence JSON</button>' +
+      '<button type="button" data-export-format="ecsv">ECSV evidence table</button><button type="button" data-export-format="vot">IVOA VOTable</button>' +
+      '<button type="button" data-export-format="manifest">Checksum manifest</button></div>' +
+      '<p class="ctas-export-status" data-export-status role="status" aria-live="polite">Ready. Nothing is sent to a server; files are assembled in this browser.</p></div></details>';
   }
 
   function renderDetails(candidate) {
@@ -505,16 +906,17 @@
       ? "Not retained as a scientific magnitude" : num(candidate.discovery_magnitude, 3) + " mag (source reported)";
     var quality = Array.isArray(candidate.data_quality_flags) && candidate.data_quality_flags.length
       ? '<div class="ctas-quality-note"><strong>Source-value quality note</strong><p>' +
-        esc(candidate.data_quality_flags.join(" · ")) +
+        esc(qualityText(candidate.data_quality_flags)) +
         (candidate.reported_discovery_magnitude !== undefined ? " · Raw provider value retained: " + esc(candidate.reported_discovery_magnitude) : "") +
         ". The flagged value is excluded from the plotted magnitude and brightness-derived score term.</p></div>" : "";
-    return '<div class="ctas-workspace__head"><div><p class="eyebrow">Complete public candidate record</p><h3>' + esc(candidate.name) +
+    return '<div id="dossier" class="ctas-dossier"><div class="ctas-workspace__head"><div><p class="eyebrow">Complete public candidate record</p><h3 id="ctas-dossier-title" tabindex="-1" data-dossier-focus>' + esc(candidate.name) +
       '</h3><p>' + esc(summary.intro) +
       '</p></div><div class="ctas-detail__score"><span>CTAS follow-up score</span><strong>' + esc(num(candidate.ctas_score, 1)) +
       '</strong><small>ordering aid · not probability</small></div></div>' +
-      '<div class="ctas-workspace__actions"><button type="button" data-copy-link>Copy permalink</button><button type="button" data-download-candidate>Download candidate JSON</button><button type="button" data-close-candidate>Close record</button></div>' + summary.details +
+      '<div class="ctas-workspace__actions"><button type="button" data-copy-link>Copy permalink</button><button type="button" data-download-candidate>Download candidate JSON</button><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button><button type="button" data-close-candidate>Close record</button></div>' + renderScienceBrief(candidate) +
       '<dl class="ctas-detail__facts">' + fact("Event type", humanKey(candidate.event_type || "Not recorded")) +
       fact("Primary messenger", humanKey(candidate.primary_messenger || "Not recorded")) +
+      fact("Stable event UUID", candidate.event_id) +
       fact("ICRS coordinates", sexagesimal(candidate.ra_deg, candidate.dec_deg) || "Unavailable") +
       fact("Discovery", [candidate.discovery_time ? absolute(candidate.discovery_time) : "time unavailable", candidate.discovery_survey || "survey unavailable"].join(" · ")) +
       fact("Source-reported magnitude", magnitude) + fact("Reported class / alert label", candidate.classification || "Unclassified") +
@@ -524,9 +926,12 @@
       '<section class="ctas-original-sources"><h4>Original sources retained for this candidate</h4>' + renderReferences(candidate.links || []) +
       ((candidate.links || []).some(function (row) { return row.source_key === "tns"; })
         ? "<p>TNS hourly intake does not itself expose every current object-page flag. Open the exact TNS record above for the provider’s current object page and status.</p>" : "") + "</section>" +
-      renderScoreFactors(candidate) + renderCompleteness(candidate) +
+      renderIdentity(candidate) + renderScoreFactors(candidate) + renderCompleteness(candidate) + renderSourceCoverage(candidate) +
+      renderEvidenceLedger(candidate) +
       renderPhotometry(candidate) + renderSpectra(candidate) + renderMessenger(candidate) +
-      renderClassifications(candidate) + renderEnvironment(candidate) + renderTimeline(candidate) + renderSourceCoverage(candidate);
+      renderClassifications(candidate) + renderEnvironment(candidate) + renderTimeline(candidate) + renderAnalysis(candidate) +
+      (window.CTASWorkbench && window.CTASWorkbench.candidatePanels ? window.CTASWorkbench.candidatePanels(candidate) : "") +
+      renderExports(candidate) + "</div>";
   }
 
   function statusCell(label, value, sub) {
@@ -536,21 +941,39 @@
   function renderStatus() {
     if (!el.status) return;
     var status = state.status || {}, snapshot = state.snapshot || {};
-    var generated = status.last_successful_update || snapshot.generated_at;
+    var generated = status.last_successful_update || snapshot.catalog_as_of || snapshot.generated_at;
     var degraded = status.pipeline_status === "degraded";
     var cached = status.pipeline_status === "cached";
     var validUntilMs = status.valid_until ? new Date(status.valid_until).getTime() : NaN;
     var stale = Number.isFinite(validUntilMs) && Date.now() > validUntilMs;
     var assurance = status.static_snapshot_verification || status.static_catalog_assurance || {};
     var snapshotVerified = assurance.status === "verified-static-snapshot" || assurance.status === "certified-static-catalog";
+    var failedGateIds = Array.isArray(assurance.failed_gate_ids) ? assurance.failed_gate_ids : [];
+    var publicationBindingGates = ["deployed-code-binding", "local-origin-code-alignment"];
+    var publicationBindingPending = failedGateIds.length > 0 && failedGateIds.every(function (gateId) {
+      return publicationBindingGates.indexOf(gateId) !== -1;
+    });
+    var checkCount = Number(assurance.check_count);
+    var passedCheckCount = Number(assurance.passed_check_count);
+    var integrityValue = snapshotVerified ? "Verified" : publicationBindingPending && Number.isFinite(checkCount) && Number.isFinite(passedCheckCount)
+      ? passedCheckCount + " of " + checkCount + " checks passed"
+      : humanKey(assurance.status || "pending");
+    var integrityDetail = publicationBindingPending
+      ? "Only local commit and origin publication bindings are pending; this successor has not been published"
+      : assurance.content_release_id
+        ? "Checksums and public-file consistency · Snapshot " + esc(shortHash(assurance.content_release_id)) + "…"
+        : "Checksum report available below";
     el.status.classList.toggle("is-degraded", degraded || cached || stale);
     el.status.innerHTML = statusCell("Pipeline", cached ? "Cached snapshot" : stale ? "Publisher paused" : "Operational",
       cached ? "A live refresh failed; the last successfully loaded public snapshot remains usable" : stale ? "The last public snapshot remains usable, but the publishing terminal has not completed a current refresh" : degraded ? "Catalog and automatic updates are active; individual source availability is reported below" : "Catalog and automatic updates are active") +
       statusCell("Last successful public snapshot", esc(relative(generated) || "unavailable"), esc(absolute(generated))) +
       statusCell("Public candidates", Number(status.candidate_count || snapshot.candidate_count || state.candidates.length).toLocaleString(),
         "Positional catalog entries; not all are confirmed discoveries") +
-      statusCell("Snapshot integrity", snapshotVerified ? "Verified" : esc(humanKey(assurance.status || "pending")), assurance.content_release_id ? "Checksums and public-file consistency · Snapshot " + esc(shortHash(assurance.content_release_id)) + "…" : "Checksum report available below") +
-      statusCell("Publication cadence", "2-minute change check", "Runs while the publishing host is awake and online; unchanged snapshots receive a periodic freshness heartbeat");
+      statusCell("Snapshot integrity", esc(integrityValue), integrityDetail) +
+      statusCell("Automatic page refresh", state.autoRefreshPaused ? "Paused" : "2-minute check",
+        (state.autoRefreshPaused ? "The loaded snapshot remains fully usable" : "New catalog checks preserve the open event, panel, and band") +
+        ' · <button type="button" class="ctas-refresh-toggle" data-toggle-refresh aria-pressed="' + (state.autoRefreshPaused ? "true" : "false") + '">' +
+        (state.autoRefreshPaused ? "Resume refresh" : "Pause refresh") + "</button>");
   }
 
   function barRows(values, labels) {
@@ -581,17 +1004,54 @@
     if (el.priorityStats) el.priorityStats.innerHTML = barRows(stats.priority_bands, {
       urgent_75_100: "Urgent 75–100", high_50_74: "High 50–74", routine_25_49: "Routine 25–49", low_0_24: "Low 0–24"
     });
-    var stream = (state.snapshot || {}).recent_stream || [];
-    el.stream.innerHTML = stream.slice(0, 3).map(function (candidate, index) {
+    renderStream();
+    renderRepresentedSources();
+  }
+
+  function renderStream() {
+    if (!el.stream) return;
+    var stream = filteredRows().slice().sort(function (a, b) {
+      var model = window.CTASCatalogModel;
+      return (model ? model.latestMeaningful(b) : 0) - (model ? model.latestMeaningful(a) : 0);
+    }).slice(0, 3);
+    var title = document.getElementById("ctas-stream-title");
+    if (title) title.textContent = "Three most recent matching candidate updates";
+    el.stream.innerHTML = stream.map(function (candidate, index) {
       var counts = candidate.follow_up_counts || {};
       var evidence = [counts.observations ? counts.observations + " obs" : "", counts.spectra ? counts.spectra + " spectra" : "",
         counts.messenger_signals ? counts.messenger_signals + " notices" : "", counts.classifications ? counts.classifications + " classifications" : ""].filter(Boolean).join(" · ") || "event record only";
-      return '<li><span class="ctas-stream__number">0' + (index + 1) + '</span><div><button type="button" data-open-candidate="' + esc(candidate.name) + '"><strong>' + esc(candidate.name) + "</strong></button><p>" +
+      return '<li><span class="ctas-stream__number">0' + (index + 1) + '</span><div><button type="button" data-open-event="' + esc(candidate.event_id) + '"><strong>' + esc(candidate.name) + "</strong></button><p>" +
         esc(candidate.classification || "Unclassified") + " · " + esc(candidate.primary_messenger || "messenger unavailable") +
         "</p><small>" + esc(absolute(candidate.updated_at || candidate.discovery_time)) + " · " + esc(evidence) +
-        '</small></div><strong class="ctas-stream__score">' + esc(num(candidate.ctas_score, 1)) + "<span>CTAS score</span></strong></li>";
-    }).join("");
-    renderRepresentedSources();
+        '</small><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></div><strong class="ctas-stream__score">' + esc(num(candidate.ctas_score, 1)) + "<span>CTAS score</span></strong></li>";
+    }).join("") || '<li><div><strong>No candidates match the linked filters.</strong><p>Clear or broaden the scientific filters to restore the stream.</p></div></li>';
+  }
+
+  function safeCatalogDownloadPath(value) {
+    var path = text(value);
+    return /^ctas\/data\/(?:catalog-index\.json|candidate-chunks\/(?:manifest|[0-9a-f]{2})\.json)$/.test(path) ? path : null;
+  }
+  function renderCatalogDownloads() {
+    if (!el.downloadStatus || !el.downloadParts) return;
+    var manifest = state.catalogManifest;
+    if (!manifest || !Array.isArray(manifest.chunks)) {
+      el.downloadStatus.textContent = "The download manifest is temporarily unavailable; catalog browsing remains usable.";
+      el.downloadParts.innerHTML = "";
+      return;
+    }
+    var validChunks = manifest.chunks.filter(function (row) {
+      return row && safeCatalogDownloadPath(row.path) && finiteNumber(row.bytes) && finiteNumber(row.candidate_count) && /^[0-9a-f]{64}$/.test(text(row.sha256));
+    });
+    var totalBytes = validChunks.reduce(function (sum, row) { return sum + Number(row.bytes); }, 0);
+    el.downloadStatus.textContent = Number(manifest.candidate_count || 0).toLocaleString() +
+      " complete records in " + validChunks.length + " verified parts · " + (totalBytes / 1048576).toFixed(1) + " MiB total";
+    el.downloadParts.innerHTML = '<ol aria-label="Complete catalog download parts">' + validChunks.map(function (row, index) {
+      var path = safeCatalogDownloadPath(row.path);
+      return '<li><div><strong>Part ' + String(index + 1).padStart(2, "0") + '</strong><span>' +
+        Number(row.candidate_count).toLocaleString() + " candidates · " + (Number(row.bytes) / 1048576).toFixed(1) +
+        ' MiB</span><code aria-label="SHA-256 checksum">' + esc(row.sha256) + '</code></div><a href="' + esc(path) +
+        '" download>Download part <span class="sr-only">' + (index + 1) + " of " + validChunks.length + "</span></a></li>";
+    }).join("") + "</ol>";
   }
 
   function renderRepresentedSources() {
@@ -636,7 +1096,14 @@
           return "<li><div><strong>" + esc(row.name) + '</strong><span class="pill">' + esc(humanKey(row.operational_state)) +
             "</span></div><p>" + esc(row.data_types ? row.data_types.join(", ") : "Data products not specified") +
             "</p><small>" + esc([humanKey(row.implementation_state), humanKey(row.representation_state), row.organization_or_facility].filter(Boolean).join(" · ")) +
-            "</small>" + renderReferences([row], [["documentation_url", "Open provider documentation"]]) + "</li>";
+            "</small>" + renderReferences([row], [["documentation_url", "Open provider documentation"]]) +
+            '<details class="ctas-source-constraints"><summary>Access, pagination, rights, and limits</summary><dl>' +
+            fact("Access / authentication", row.authentication_requirement || "Not documented") +
+            fact("Pagination / completeness", row.pagination_policy || "Provider documentation does not state a separate pagination rule") +
+            fact("Rate or cadence", row.rate_or_cadence_limit || "Provider documentation does not state a numeric limit") +
+            fact("Rights / redistribution", row.redistribution_constraint || row.rights_or_public_access_basis || "Unresolved") +
+            fact("Known limitations", row.known_limitations) + fact("Documentation checked", row.last_verified) +
+            "</dl></details></li>";
         }).join("") + "</ul></details>";
     }).join("");
   }
@@ -644,34 +1111,48 @@
   function renderReleaseHistory() {
     var history = state.releaseHistory || {}, entries = Array.isArray(history.entries) ? history.entries : [];
     if (!entries.length) { el.releaseHistory.innerHTML = "<p>No release-history entries are available.</p>"; return; }
-    var visibleEntries = window.CTASCatalogModel
-      ? window.CTASCatalogModel.releaseHistorySelection(entries, 6, 8)
-      : entries.slice(0, 6);
     el.releaseHistory.innerHTML = '<p class="ctas-claim-boundary">' + esc(history.claim_boundary || "Catalog changes are not scientific validation.") +
-      '</p><ol class="ctas-release-list">' + visibleEntries.map(function (entry) {
+      '</p><div class="ctas-release-scroll" role="region" aria-label="Complete public catalog release history" tabindex="0"><ol class="ctas-release-list">' + entries.map(function (entry) {
         var delta = (entry.added_count ? "+" + entry.added_count + " added" : "0 added") + " · " + entry.removed_count + " removed · " + entry.changed_count + " changed";
         return "<li><div><strong>" + esc(absolute(entry.published_at)) + "</strong><span>" + esc(delta) + "</span></div><p>" +
           esc(entry.summary) + "</p>" + (entry.evidence ? "<small>" + esc(entry.evidence) + "</small>" : "") +
           '<code title="Catalog checksum">' + esc(shortHash(entry.catalog_content_checksum_sha256)) + "…</code></li>";
-      }).join("") + "</ol>";
+      }).join("") + "</ol></div>";
   }
 
+  function currentFilters() {
+    return {
+      q: state.q, class: state.cls, msg: state.msg, status: state.stat, survey: state.survey,
+      from: state.from, to: state.to, magMin: state.magMin, magMax: state.magMax,
+      scoreMin: state.scoreMin, scoreMax: state.scoreMax, spectrum: state.spectrum,
+      conflict: state.conflict, richness: state.richness, preset: state.preset,
+      window: String(state.skyDays), coneRa: state.coneRa, coneDec: state.coneDec,
+      coneRadius: state.coneRadius
+    };
+  }
+  function filteredRows() {
+    return window.CTASCatalogModel
+      ? window.CTASCatalogModel.filteredCandidates(state.candidates, currentFilters(), Date.now())
+      : state.candidates.slice();
+  }
+  function syncFilterRoute() {
+    if (!window.CTASCatalogModel) return;
+    var url = new URL(window.location.href), params = window.CTASCatalogModel.serializeFilters(currentFilters());
+    ["q", "class", "msg", "status", "survey", "from", "to", "magMin", "magMax", "scoreMin", "scoreMax",
+      "spectrum", "conflict", "richness", "preset", "window", "coneRa", "coneDec", "coneRadius"].forEach(function (key) { url.searchParams.delete(key); });
+    params.forEach(function (value, key) { url.searchParams.set(key, value); });
+    history.replaceState(null, "", url.pathname + (url.searchParams.toString() ? "?" + url.searchParams.toString() : "") + url.hash);
+  }
+  function notifyFilterChange() {
+    renderStream(); drawSky(); syncFilterRoute();
+    window.dispatchEvent(new CustomEvent("ctas:filters-changed", {detail: {filters: currentFilters(), candidates: filteredRows()}}));
+  }
   function visible() {
-    var query = state.q.trim().toLowerCase();
     function sortValue(candidate, key) {
       if (key === "record_completeness") return Number((candidate.record_completeness || {}).fraction || 0);
       return candidate[key];
     }
-    return state.candidates.filter(function (candidate) {
-      if (state.cls && text(candidate.classification) !== state.cls) return false;
-      if (state.msg && text(candidate.primary_messenger) !== state.msg) return false;
-      if (state.stat && text(candidate.status) !== state.stat) return false;
-      if (window.CTASCatalogModel && !window.CTASCatalogModel.matchesPreset(candidate, state.preset, Date.now())) return false;
-      if (!query) return true;
-      var aliases = (candidate.designations || []).map(function (row) { return row.designation; }).join(" ");
-      return (text(candidate.name) + " " + aliases + " " + text(candidate.classification) + " " + text(candidate.event_type) +
-        " " + text(candidate.primary_messenger) + " " + text(candidate.discovery_survey)).toLowerCase().indexOf(query) !== -1;
-    }).sort(function (a, b) {
+    return filteredRows().sort(function (a, b) {
       var av = sortValue(a, state.sortKey), bv = sortValue(b, state.sortKey);
       if (av === undefined || av === null || av === "") return 1;
       if (bv === undefined || bv === null || bv === "") return -1;
@@ -707,8 +1188,8 @@
       var evidence = [counts.observations ? counts.observations + " obs" : "", counts.spectra ? counts.spectra + " spectra" : "",
         counts.messenger_signals ? counts.messenger_signals + " notices" : "", counts.publications ? counts.publications + " reports" : ""].filter(Boolean).join(" · ") || "event only";
       var label = candidate.classification || "Unclassified";
-      return "<tr><td><button type=\"button\" class=\"ctas-candidate\" data-open-candidate=\"" + esc(candidate.name) + "\"><span>" +
-        esc(candidate.name) + "</span><small>Open complete record</small></button></td><td><span class=\"pill\">" + esc(label) +
+      return "<tr><td><button type=\"button\" class=\"ctas-candidate\" data-open-event=\"" + esc(candidate.event_id) + "\"><span>" +
+        esc(candidate.name) + "</span><small>Open complete record</small></button><div class=\"ctas-card-actions\"><button type=\"button\" data-compare-event=\"" + esc(candidate.event_id) + "\" aria-pressed=\"false\">Compare</button><button type=\"button\" data-watch-event=\"" + esc(candidate.event_id) + "\" aria-pressed=\"false\">Watch locally</button></div></td><td><span class=\"pill\">" + esc(label) +
         "</span><small class=\"ctas-label-kind\">" + esc(humanKey(candidate.reported_label_kind || "provider-reported")) +
         "</small></td><td class=\"num\">" + esc(num(candidate.ctas_score, 1)) + "</td><td><strong>" +
         esc((candidate.record_completeness || {}).label || "Not assessed") + "</strong><small class=\"ctas-table-sub\">" + esc(evidence) +
@@ -720,10 +1201,11 @@
     el.results.innerHTML = '<div class="ctas-table-wrap"><table class="ctas-table"><caption>Public CTAS candidates. Positions are ICRS; source-reported discovery magnitudes may use heterogeneous bands and systems.</caption><thead><tr>' +
       head + "</tr></thead><tbody>" + body + "</tbody></table></div>" + (rows.length > state.shown
         ? '<p class="ctas-more"><button type="button" id="ctas-more">Show ' + Math.min(PAGE, rows.length - state.shown) + " more</button></p>" : "");
+    if (window.CTASWorkbench && window.CTASWorkbench.refreshActions) window.CTASWorkbench.refreshActions();
   }
 
   function skyRows() {
-    return window.CTASCatalogModel ? window.CTASCatalogModel.skyCandidates(state.candidates, state.skyDays, Date.now()) : [];
+    return window.CTASCatalogModel ? window.CTASCatalogModel.skyCandidates(filteredRows(), state.skyDays, Date.now()) : [];
   }
   function mollweide(ra, dec, width, height) {
     var longitude = (180 - Number(ra)) * Math.PI / 180, latitude = Number(dec) * Math.PI / 180, theta = latitude;
@@ -777,16 +1259,17 @@
       var point = mollweide(candidate.ra_deg, candidate.dec_deg, width, height); point.candidate = candidate; return point;
     });
     state.skyPoints.forEach(function (point) {
-      var selected = state.skySelected && state.skySelected.name === point.candidate.name;
+      var selected = state.skySelected && state.skySelected.event_id === point.candidate.event_id;
       context.beginPath(); context.arc(point.x, point.y, selected ? 6.5 : 4.2, 0, Math.PI * 2);
       context.fillStyle = magnitudeColor(point.candidate.discovery_magnitude); context.fill();
       context.strokeStyle = selected ? "#fff" : "rgba(255,255,255,.56)"; context.lineWidth = selected ? 2.2 : 0.7; context.stroke();
     });
-    el.skyCount.textContent = rows.length.toLocaleString() + " candidates reported in the last " + (state.skyDays === 7 ? "week" : "month") + ".";
+    var windowLabel = state.skyDays === 1 ? "24 hours" : state.skyDays === 7 ? "week" : state.skyDays === 30 ? "month" : state.skyDays === 90 ? "90 days" : "retained catalog window";
+    el.skyCount.textContent = rows.length.toLocaleString() + " linked-filter candidates with coordinates reported in the " + windowLabel + ".";
     el.sky.setAttribute("aria-label", "Interactive all-sky map of " + rows.length + " CTAS candidates; use the synchronized accessible list or arrow keys and Enter.");
     if (el.skyAccessible) {
       el.skyAccessible.innerHTML = '<option value="">Choose a plotted candidate…</option>' + rows.map(function (candidate) {
-        return '<option value="' + esc(candidate.name) + '">' + esc(candidate.name + " — " + (candidate.classification || "Unclassified") + " — score " + num(candidate.ctas_score, 1)) + "</option>";
+        return '<option value="' + esc(candidate.event_id) + '">' + esc(candidate.name + " — " + (candidate.classification || "Unclassified") + " — score " + num(candidate.ctas_score, 1)) + "</option>";
       }).join("");
     }
   }
@@ -799,11 +1282,11 @@
     });
     return best && distanceBest <= 100 ? {point: best, x: x, y: y} : null;
   }
-  function selectSky(candidate, open) {
+  function selectSky(candidate, open, opener) {
     state.skySelected = candidate;
-    state.skyKeyboardIndex = state.skyPoints.map(function (point) { return point.candidate.name; }).indexOf(candidate.name);
+    state.skyKeyboardIndex = state.skyPoints.map(function (point) { return point.candidate.event_id; }).indexOf(candidate.event_id);
     drawSky();
-    if (open) openCandidate(candidate, true);
+    if (open) openCandidate(candidate, true, opener, false);
   }
   function bindSky() {
     Array.prototype.forEach.call(document.querySelectorAll("[data-sky-days]"), function (button) {
@@ -812,7 +1295,7 @@
         Array.prototype.forEach.call(document.querySelectorAll("[data-sky-days]"), function (item) {
           var active = item === button; item.classList.toggle("is-active", active); item.setAttribute("aria-pressed", active ? "true" : "false");
         });
-        drawSky();
+        drawSky(); syncFilterRoute();
       });
     });
     if (!el.sky) return;
@@ -822,17 +1305,17 @@
       var candidate = hit.point.candidate; el.sky.style.cursor = "pointer"; el.skyTip.hidden = false;
       el.skyTip.style.left = Math.min(hit.x + 14, el.sky.clientWidth - 220) + "px"; el.skyTip.style.top = Math.max(8, hit.y - 64) + "px";
       el.skyTip.innerHTML = "<strong>" + esc(candidate.name) + "</strong><span>" + esc(candidate.classification || "Unclassified") +
-        " · reported mag " + esc(num(candidate.discovery_magnitude, 2) || "unknown") + "</span><span>" + esc(sexagesimal(candidate.ra_deg, candidate.dec_deg)) + "</span>";
+        " · reported mag " + esc(num(candidate.discovery_magnitude, 2) || "unknown") + "</span><span>" + esc(sexagesimal(candidate.ra_deg, candidate.dec_deg)) + "</span><span>Click to open the dossier and comparison controls</span>";
     });
     el.sky.addEventListener("pointerleave", function () { el.skyTip.hidden = true; });
-    el.sky.addEventListener("click", function (event) { var hit = nearestSkyPoint(event); if (hit) selectSky(hit.point.candidate, true); });
+    el.sky.addEventListener("click", function (event) { var hit = nearestSkyPoint(event); if (hit) selectSky(hit.point.candidate, true, el.sky); });
     el.sky.addEventListener("keydown", function (event) {
       var keys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "Enter", " "];
       if (!state.skyPoints.length || keys.indexOf(event.key) === -1) return;
       event.preventDefault();
       if (event.key === "Enter" || event.key === " ") {
         if (state.skyKeyboardIndex < 0) state.skyKeyboardIndex = 0;
-        selectSky(state.skyPoints[state.skyKeyboardIndex].candidate, true); return;
+        selectSky(state.skyPoints[state.skyKeyboardIndex].candidate, true, el.sky); return;
       }
       if (event.key === "Home") state.skyKeyboardIndex = 0;
       else if (event.key === "End") state.skyKeyboardIndex = state.skyPoints.length - 1;
@@ -844,8 +1327,8 @@
       el.skyCount.textContent = "Selected " + state.skySelected.name + ". Press Enter to open the complete public record.";
     });
     if (el.skyAccessible) el.skyAccessible.addEventListener("change", function () {
-      var candidate = state.candidates.find(function (row) { return row.name === el.skyAccessible.value; });
-      if (candidate) selectSky(candidate, true);
+      var candidate = state.candidates.find(function (row) { return row.event_id === el.skyAccessible.value; });
+      if (candidate) selectSky(candidate, true, el.skyAccessible);
     });
     var timer;
     window.addEventListener("resize", function () { clearTimeout(timer); timer = setTimeout(drawSky, 120); });
@@ -864,17 +1347,98 @@
         .then(function () { return getJSON(name, attempts - 1); });
     });
   }
+  function sha256Hex(bytes) {
+    if (!window.crypto || !window.crypto.subtle) return Promise.reject(new Error("This browser cannot verify SHA-256 detail-shard integrity."));
+    return window.crypto.subtle.digest("SHA-256", bytes).then(function (digest) {
+      return Array.prototype.map.call(new Uint8Array(digest), function (value) { return value.toString(16).padStart(2, "0"); }).join("");
+    });
+  }
+  function chunkMetadata(path) {
+    var rows = (state.catalogManifest || {}).chunks || [];
+    return rows.find(function (row) { return text(row.path).replace(/^ctas\/data\//, "") === path; });
+  }
   function loadChunk(path) {
-    if (!state.chunks[path]) state.chunks[path] = getJSON(path).catch(function (error) { delete state.chunks[path]; throw error; });
+    if (!state.chunks[path]) {
+      state.chunks[path] = (function () {
+        var metadata = chunkMetadata(path);
+        if (!metadata || !/^[0-9a-f]{64}$/.test(text(metadata.sha256))) return Promise.reject(new Error("The release manifest does not bind this detail shard."));
+        return fetch(DATA_DIR + path, {cache: "no-cache"}).then(function (response) {
+          if (!response.ok) throw new Error(path + " returned HTTP " + response.status);
+          return response.arrayBuffer();
+        }).then(function (bytes) {
+          if (bytes.byteLength !== Number(metadata.bytes)) throw new Error("Detail-shard byte length does not match the release manifest.");
+          return sha256Hex(bytes).then(function (checksum) {
+            if (checksum !== metadata.sha256) throw new Error("Detail-shard SHA-256 does not match the release manifest; refresh after publication finishes.");
+            var document_ = JSON.parse(new TextDecoder("utf-8", {fatal: true}).decode(bytes));
+            if (Number(document_.candidate_count) !== Number(metadata.candidate_count)) throw new Error("Detail-shard candidate count does not match the release manifest.");
+            return document_;
+          });
+        });
+      }()).catch(function (error) { delete state.chunks[path]; throw error; });
+    }
     return state.chunks[path];
   }
-  function setCandidateHash(name) {
-    if (candidateFromHash() !== name) history.pushState(null, "", "#candidate=" + encodeURIComponent(name));
+  function applyAliasIndex(document_) {
+    if (!document_ || document_.catalog_content_checksum_sha256 !== (state.snapshot || {}).catalog_content_checksum_sha256) {
+      throw new Error("Alias index belongs to a different catalog release.");
+    }
+    var columns = document_.columns || [], rows = document_.rows || [], byId = {};
+    if (!Array.isArray(columns) || !Array.isArray(rows) || columns.indexOf("event_id") === -1) throw new Error("Alias index table is invalid.");
+    rows.forEach(function (values) {
+      if (!Array.isArray(values) || values.length !== columns.length) throw new Error("Alias index row width is invalid.");
+      var row = {}; columns.forEach(function (column, index) { row[column] = values[index]; });
+      (byId[row.event_id] = byId[row.event_id] || []).push({source_key: row.source_key, source: row.source_key,
+        designation: row.designation, ambiguous: Boolean(row.ambiguous)});
+    });
+    state.candidates.forEach(function (candidate) {
+      candidate.designations = byId[candidate.event_id] || [];
+      candidate.search_aliases = candidate.designations.map(function (row) { return row.designation; });
+    });
+    state.aliasIndex = document_;
   }
-  function candidateFromHash() {
+  function ensureAliasIndex() {
+    if (state.aliasIndex) return Promise.resolve(state.aliasIndex);
+    if (!state.aliasPromise) state.aliasPromise = getJSON("alias-index.json", 2).then(function (document_) {
+      applyAliasIndex(document_); return document_;
+    }).catch(function (error) { state.aliasPromise = null; throw error; });
+    return state.aliasPromise;
+  }
+  function legacyCandidateFromHash() {
     var match = window.location.hash.match(/^#candidate=(.+)$/);
     if (!match) return null;
     try { return decodeURIComponent(match[1]); } catch (_) { return null; }
+  }
+  function candidateRoute(summary, view, band) {
+    var url = new URL(window.location.href);
+    ["alias", "source", "candidate"].forEach(function (key) { url.searchParams.delete(key); });
+    url.searchParams.set("event", summary.event_id);
+    url.searchParams.set("view", view || "identity");
+    if (band && band !== "*") url.searchParams.set("band", band); else url.searchParams.delete("band");
+    url.hash = "dossier";
+    return url.pathname + (url.searchParams.toString() ? "?" + url.searchParams.toString() : "") + url.hash;
+  }
+  function setCandidateRoute(summary, replace) {
+    var view = new URL(window.location.href).searchParams.get("view") || "identity";
+    var band = state.photBand[summary.event_id] || new URL(window.location.href).searchParams.get("band") || "*";
+    var target = candidateRoute(summary, view, band);
+    if (window.location.pathname + window.location.search + window.location.hash === target) return;
+    history[replace ? "replaceState" : "pushState"](null, "", target);
+  }
+  function routeMatches() {
+    var url = new URL(window.location.href), eventId = url.searchParams.get("event");
+    if (eventId) return {kind: "event UUID", value: eventId, matches: state.candidates.filter(function (candidate) { return candidate.event_id === eventId; })};
+    var alias = url.searchParams.get("alias"), source = url.searchParams.get("source");
+    var legacy = legacyCandidateFromHash();
+    if (!alias && legacy) alias = legacy;
+    if (!alias) return {kind: null, value: null, matches: []};
+    var normalized = alias.toLowerCase();
+    var matches = state.candidates.filter(function (candidate) {
+      if (!source && text(candidate.name).toLowerCase() === normalized) return true;
+      return (candidate.designations || []).some(function (row) {
+        return text(row.designation).toLowerCase() === normalized && (!source || text(row.source_key).toLowerCase() === source.toLowerCase());
+      });
+    });
+    return {kind: source ? "provider-scoped alias" : "unscoped alias", value: alias, source: source, matches: matches};
   }
   function revealFragment(hash) {
     var fragment = String(hash || window.location.hash || "").replace(/^#/, "");
@@ -889,29 +1453,116 @@
       parent = parent.parentElement && parent.parentElement.closest("details");
     }
   }
-  function openCandidate(summary, scroll) {
+  function focusDossierTarget() {
+    var target = el.workspace.querySelector("[data-dossier-focus]");
+    if (target && typeof target.focus === "function") target.focus({preventScroll: true});
+  }
+  function rememberCandidateOpener(opener, summary) {
+    var eventId = opener && opener.getAttribute && opener.getAttribute("data-open-event");
+    state.activeOpener = {
+      element: opener || null,
+      elementId: opener && opener.id || null,
+      eventId: eventId || summary && summary.event_id || null
+    };
+  }
+  function restoreCandidateOpener(opener, summary) {
+    opener = opener || {};
+    var target = opener.element && document.contains(opener.element) ? opener.element : null;
+    if (!target && opener.elementId) target = document.getElementById(opener.elementId);
+    if (!target && (opener.eventId || summary && summary.event_id)) {
+      target = document.querySelector('[data-open-event="' + CSS.escape(opener.eventId || summary.event_id) + '"]');
+    }
+    if (!target) target = el.q || document.getElementById("ranked-title");
+    if (target && typeof target.focus === "function") {
+      if (!target.matches("button, a, input, select, textarea, [tabindex]")) target.setAttribute("tabindex", "-1");
+      target.focus({preventScroll: true});
+    }
+  }
+  function renderAliasAmbiguity(route) {
+    state.activeSummary = null; state.activeDetail = null; el.workspace.hidden = false;
+    el.workspace.innerHTML = '<div class="ctas-ambiguity"><p class="eyebrow">Explicit identity ambiguity</p><h3 tabindex="-1" data-dossier-focus>' + esc(route.value || "Candidate identifier") +
+      '</h3><p>' + esc(route.matches.length ? "This unscoped identifier matches more than one stable CTAS event. Choose a UUID; CTAS will not guess." : "No public candidate matches this exact identifier in the loaded snapshot.") +
+      '</p>' + (route.matches.length ? '<ul>' + route.matches.map(function (candidate) {
+        var aliases = (candidate.designations || []).map(function (row) { return row.source_key + ":" + row.designation; }).join(" · ");
+        return '<li><button type="button" data-open-event="' + esc(candidate.event_id) + '"><strong>' + esc(candidate.name) +
+          '</strong><span>' + esc(candidate.event_id) + '</span><small>' + esc(aliases || "No source alias") + '</small></button></li>';
+      }).join("") + '</ul>' : "") + '<button type="button" data-close-candidate>Close</button></div>';
+    focusDossierTarget();
+  }
+  function restoreDossierView(candidate) {
+    var url = new URL(window.location.href), view = url.searchParams.get("view"), band = url.searchParams.get("band");
+    if (band) state.photBand[candidate.event_id] = band;
+    if (view) {
+      var panel = el.workspace.querySelector('[data-dossier-view="' + CSS.escape(view) + '"]');
+      if (panel && panel.tagName === "DETAILS") panel.open = true;
+    }
+  }
+  function openCandidate(summary, scroll, opener, replaceRoute, quietRefresh) {
     if (!summary || !summary.detail_chunk) return;
-    state.activeSummary = summary; state.activeDetail = null; setCandidateHash(summary.name);
-    el.workspace.hidden = false; el.workspace.setAttribute("tabindex", "-1");
-    el.workspace.innerHTML = '<div class="ctas-loading"><strong>Loading ' + esc(summary.name) + "…</strong><span>Fetching its checksum-bound public evidence shard.</span></div>";
-    if (scroll) el.workspace.scrollIntoView({behavior: "smooth", block: "start"});
+    var focusReplacement = !quietRefresh || el.workspace.contains(document.activeElement);
+    if (opener) rememberCandidateOpener(opener, summary);
+    else if (!state.activeOpener) rememberCandidateOpener(null, summary);
+    state.activeSummary = summary; state.activeDetail = null; setCandidateRoute(summary, Boolean(replaceRoute));
+    var requestedBand = new URL(window.location.href).searchParams.get("band");
+    if (requestedBand) state.photBand[summary.event_id] = requestedBand;
+    var requestedEventId = summary.event_id;
+    el.workspace.hidden = false;
+    el.workspace.innerHTML = '<div class="ctas-loading" role="status" aria-live="polite" tabindex="-1" data-dossier-focus><strong>Loading ' + esc(summary.name) + "…</strong><span>Fetching its checksum-bound public evidence shard.</span></div>";
+    if (scroll) el.workspace.scrollIntoView({behavior: reducedMotion() ? "auto" : "smooth", block: "start"});
+    if (focusReplacement) focusDossierTarget();
     loadChunk(summary.detail_chunk).then(function (document_) {
-      var detail = (document_.candidates || []).find(function (candidate) { return candidate.name === summary.name; });
+      if (!state.activeSummary || state.activeSummary.event_id !== requestedEventId || el.workspace.hidden) return;
+      var detail = (document_.candidates || []).find(function (candidate) { return candidate.event_id === summary.event_id; });
       if (!detail) throw new Error("Candidate was not found in its published detail shard.");
-      state.activeDetail = detail; el.workspace.innerHTML = renderDetails(detail); el.workspace.focus({preventScroll: true});
+      state.activeDetail = detail; el.workspace.innerHTML = renderDetails(detail); restoreDossierView(detail);
+      window.dispatchEvent(new CustomEvent("ctas:candidate-opened", {detail: {candidate: detail, summary: summary}}));
+      if (focusReplacement) focusDossierTarget();
     }).catch(function (error) {
-      el.workspace.innerHTML = '<div class="ctas-empty ctas-empty--error"><h3>Candidate details could not be loaded</h3><p>' +
+      if (!state.activeSummary || state.activeSummary.event_id !== requestedEventId || el.workspace.hidden) return;
+      el.workspace.innerHTML = '<div class="ctas-empty ctas-empty--error"><h3 tabindex="-1" data-dossier-focus>Candidate details could not be loaded</h3><p>' +
         esc(error.message) + '</p><button type="button" data-retry-candidate>Retry this record</button></div>';
+      if (focusReplacement) focusDossierTarget();
     });
   }
   function closeCandidate() {
+    var opener = state.activeOpener, summary = state.activeSummary;
     state.activeSummary = null; state.activeDetail = null; el.workspace.hidden = true; el.workspace.innerHTML = "";
-    history.pushState(null, "", window.location.pathname + window.location.search + "#ranked-candidates");
+    window.dispatchEvent(new CustomEvent("ctas:candidate-closed"));
+    var url = new URL(window.location.href);
+    ["event", "view", "band", "alias", "source", "candidate"].forEach(function (key) { url.searchParams.delete(key); });
+    url.hash = "ranked-candidates";
+    history.pushState(null, "", url.pathname + (url.searchParams.toString() ? "?" + url.searchParams.toString() : "") + url.hash);
+    state.activeOpener = null;
+    restoreCandidateOpener(opener, summary);
   }
-  function openHashCandidate(scroll) {
-    var name = candidateFromHash(); if (!name) return;
-    var summary = state.candidates.find(function (candidate) { return candidate.name.toLowerCase() === name.toLowerCase(); });
-    if (summary) openCandidate(summary, scroll);
+  function clearCandidateForHistoryNavigation() {
+    state.activeSummary = null;
+    state.activeDetail = null;
+    state.activeOpener = null;
+    state.exportBusy = false;
+    el.workspace.hidden = true;
+    el.workspace.innerHTML = "";
+  }
+  function openRouteCandidate(scroll) {
+    var route = routeMatches();
+    if (!route.kind) return false;
+    if (route.matches.length === 1) { openCandidate(route.matches[0], scroll, null, true); return true; }
+    renderAliasAmbiguity(route); return true;
+  }
+  function reconcileHistoryRoute() {
+    restoreFiltersFromRoute();
+    renderTable(); renderStream(); drawSky();
+    var route = routeMatches();
+    if (!route.kind) {
+      clearCandidateForHistoryNavigation();
+      revealFragment();
+      return;
+    }
+    if (legacyCandidateFromHash() || window.location.hash === "#dossier") {
+      openRouteCandidate(false);
+      return;
+    }
+    revealFragment();
   }
 
   function populateFilters() {
@@ -922,21 +1573,108 @@
         return '<option value="' + esc(value) + '">' + esc(value) + "</option>";
       }).join("");
     }
-    fill(el.cls, "classification", "All labels"); fill(el.msg, "primary_messenger", "All messengers"); fill(el.stat, "status", "All statuses");
+    fill(el.cls, "classification", "All labels"); fill(el.msg, "primary_messenger", "All messengers");
+    fill(el.stat, "status", "All statuses"); fill(el.survey, "discovery_survey", "All surveys");
+  }
+  function restoreFiltersFromRoute() {
+    if (!window.CTASCatalogModel) return;
+    var filters = window.CTASCatalogModel.parseFilters(new URL(window.location.href).searchParams);
+    state.q = filters.q; state.cls = filters.class[0] || ""; state.msg = filters.msg[0] || "";
+    state.stat = filters.status[0] || ""; state.survey = filters.survey[0] || "";
+    state.from = filters.from; state.to = filters.to; state.magMin = filters.magMin; state.magMax = filters.magMax;
+    state.scoreMin = filters.scoreMin; state.scoreMax = filters.scoreMax; state.spectrum = filters.spectrum;
+    state.conflict = filters.conflict; state.richness = filters.richness; state.preset = filters.preset || "all";
+    state.coneRa = filters.coneRa; state.coneDec = filters.coneDec; state.coneRadius = filters.coneRadius;
+    if (filters.window && isFinite(Number(filters.window))) state.skyDays = Number(filters.window);
+    var values = [[el.q, state.q], [el.cls, state.cls], [el.msg, state.msg], [el.stat, state.stat], [el.survey, state.survey],
+      [el.from, state.from], [el.to, state.to], [el.scoreMin, state.scoreMin], [el.scoreMax, state.scoreMax], [el.magMax, state.magMax],
+      [el.spectrum, state.spectrum], [el.conflict, state.conflict], [el.richness, state.richness], [el.coneRa, state.coneRa],
+      [el.coneDec, state.coneDec], [el.coneRadius, state.coneRadius]];
+    values.forEach(function (pair) { if (pair[0]) pair[0].value = pair[1] === null || pair[1] === undefined ? "" : pair[1]; });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-preset]"), function (button) {
+      var active = button.getAttribute("data-preset") === state.preset; button.classList.toggle("is-active", active); button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-sky-days]"), function (button) {
+      var active = Number(button.getAttribute("data-sky-days")) === state.skyDays; button.classList.toggle("is-active", active); button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
   }
   function clearFilters() {
-    state.q = state.cls = state.msg = state.stat = ""; state.preset = "all"; state.sortKey = "ctas_score"; state.sortDir = -1; state.shown = PAGE;
-    if (el.q) el.q.value = ""; if (el.cls) el.cls.value = ""; if (el.msg) el.msg.value = ""; if (el.stat) el.stat.value = "";
+    state.q = state.cls = state.msg = state.stat = state.survey = state.from = state.to = state.spectrum = state.conflict = state.richness = "";
+    state.magMin = state.magMax = state.scoreMin = state.scoreMax = state.coneRa = state.coneDec = state.coneRadius = null;
+    state.preset = "all"; state.sortKey = "ctas_score"; state.sortDir = -1; state.shown = PAGE;
+    [el.q, el.cls, el.msg, el.stat, el.survey, el.from, el.to, el.scoreMin, el.scoreMax, el.magMax, el.spectrum, el.conflict, el.richness, el.coneRa, el.coneDec, el.coneRadius].forEach(function (field) { if (field) field.value = ""; });
     Array.prototype.forEach.call(document.querySelectorAll("[data-preset]"), function (button) {
       var active = button.getAttribute("data-preset") === "all"; button.classList.toggle("is-active", active); button.setAttribute("aria-pressed", active ? "true" : "false");
     });
-    renderTable();
+    renderTable(); notifyFilterChange();
+  }
+  function updateDossierRoute(view, band) {
+    if (!state.activeSummary) return;
+    var url = new URL(window.location.href);
+    url.searchParams.set("event", state.activeSummary.event_id);
+    if (view) url.searchParams.set("view", view);
+    if (band && band !== "*") url.searchParams.set("band", band); else if (band !== undefined) url.searchParams.delete("band");
+    url.hash = "dossier";
+    history.replaceState(null, "", url.pathname + "?" + url.searchParams.toString() + url.hash);
+  }
+  function downloadAstroEvidence(format, button) {
+    if (!state.activeDetail || state.exportBusy) return;
+    var status = el.workspace.querySelector("[data-export-status]");
+    if (!window.CTASAstroEvidence) {
+      if (status) status.textContent = "The AstroEvidence exporter did not load. Refresh the page and try again.";
+      return;
+    }
+    state.exportBusy = true;
+    Array.prototype.forEach.call(el.workspace.querySelectorAll("[data-export-format]"), function (item) { item.disabled = true; });
+    if (status) status.textContent = "Building the checksum-bound " + format.toUpperCase() + " export…";
+    window.CTASAstroEvidence.buildExportBundle(state.activeDetail, state.sourceUniverse).then(function (bundle) {
+      var names = Object.keys(bundle.files), chosen;
+      if (format === "manifest") chosen = bundle.manifestName;
+      else chosen = names.find(function (name) { return name.endsWith("." + format); });
+      if (!chosen) throw new Error("The requested export was not generated.");
+      var file = bundle.files[chosen]; downloadBlob(chosen, file.content, file.contentType);
+      if (status) status.textContent = "Downloaded " + chosen + ". Its checksum is recorded in the companion manifest.";
+      if (button) button.textContent = "Downloaded " + format.toUpperCase();
+    }).catch(function (error) {
+      if (status) status.textContent = "Export failed: " + error.message;
+    }).finally(function () {
+      state.exportBusy = false;
+      Array.prototype.forEach.call(el.workspace.querySelectorAll("[data-export-format]"), function (item) { item.disabled = false; });
+    });
+  }
+  function rerenderForFilters() {
+    state.shown = PAGE; renderTable(); notifyFilterChange();
+    if (window.CTASWorkbench && window.CTASWorkbench.refreshActions) window.CTASWorkbench.refreshActions();
+  }
+  function inputNumber(field) { return field && field.value !== "" && isFinite(Number(field.value)) ? Number(field.value) : null; }
+  function updateScoreSandbox() {
+    if (!state.activeDetail || !window.CTASCatalogModel || !state.activeDetail.score_model) return;
+    var overrides = {};
+    Array.prototype.forEach.call(el.workspace.querySelectorAll("[data-score-sandbox]"), function (input) { overrides[input.getAttribute("data-score-sandbox")] = Number(input.value); });
+    var scenario = window.CTASCatalogModel.scoreScenario(state.activeDetail.score_model, overrides);
+    var output = el.workspace.querySelector("[data-score-sandbox-output]");
+    if (output) output.value = num(scenario.final_score, 2);
   }
   function bindInterface() {
-    if (el.q) el.q.addEventListener("input", function () { state.q = el.q.value; state.shown = PAGE; renderTable(); });
-    if (el.cls) el.cls.addEventListener("change", function () { state.cls = el.cls.value; state.shown = PAGE; renderTable(); });
-    if (el.msg) el.msg.addEventListener("change", function () { state.msg = el.msg.value; state.shown = PAGE; renderTable(); });
-    if (el.stat) el.stat.addEventListener("change", function () { state.stat = el.stat.value; state.shown = PAGE; renderTable(); });
+    if (el.q) el.q.addEventListener("input", function () {
+      state.q = el.q.value; rerenderForFilters();
+      if (state.q && !state.aliasIndex) ensureAliasIndex().then(rerenderForFilters).catch(function () { /* name and UUID search remain usable */ });
+    });
+    if (el.cls) el.cls.addEventListener("change", function () { state.cls = el.cls.value; rerenderForFilters(); });
+    if (el.msg) el.msg.addEventListener("change", function () { state.msg = el.msg.value; rerenderForFilters(); });
+    if (el.stat) el.stat.addEventListener("change", function () { state.stat = el.stat.value; rerenderForFilters(); });
+    if (el.survey) el.survey.addEventListener("change", function () { state.survey = el.survey.value; rerenderForFilters(); });
+    if (el.from) el.from.addEventListener("change", function () { state.from = el.from.value; rerenderForFilters(); });
+    if (el.to) el.to.addEventListener("change", function () { state.to = el.to.value; rerenderForFilters(); });
+    if (el.scoreMin) el.scoreMin.addEventListener("input", function () { state.scoreMin = inputNumber(el.scoreMin); rerenderForFilters(); });
+    if (el.scoreMax) el.scoreMax.addEventListener("input", function () { state.scoreMax = inputNumber(el.scoreMax); rerenderForFilters(); });
+    if (el.magMax) el.magMax.addEventListener("input", function () { state.magMax = inputNumber(el.magMax); rerenderForFilters(); });
+    if (el.spectrum) el.spectrum.addEventListener("change", function () { state.spectrum = el.spectrum.value; rerenderForFilters(); });
+    if (el.conflict) el.conflict.addEventListener("change", function () { state.conflict = el.conflict.value; rerenderForFilters(); });
+    if (el.richness) el.richness.addEventListener("change", function () { state.richness = el.richness.value; rerenderForFilters(); });
+    if (el.coneRa) el.coneRa.addEventListener("input", function () { state.coneRa = inputNumber(el.coneRa); rerenderForFilters(); });
+    if (el.coneDec) el.coneDec.addEventListener("input", function () { state.coneDec = inputNumber(el.coneDec); rerenderForFilters(); });
+    if (el.coneRadius) el.coneRadius.addEventListener("input", function () { state.coneRadius = inputNumber(el.coneRadius); rerenderForFilters(); });
     if (el.clear) el.clear.addEventListener("click", clearFilters);
     Array.prototype.forEach.call(document.querySelectorAll("[data-preset]"), function (button) {
       button.addEventListener("click", function () {
@@ -952,28 +1690,41 @@
         Array.prototype.forEach.call(document.querySelectorAll("[data-preset]"), function (item) {
           var active = item === button; item.classList.toggle("is-active", active); item.setAttribute("aria-pressed", active ? "true" : "false");
         });
-        renderTable();
+        renderTable(); notifyFilterChange();
       });
     });
     document.addEventListener("click", function (event) {
       var fragmentLink = event.target.closest('a[href^="#"]');
       if (fragmentLink) revealFragment(fragmentLink.getAttribute("href"));
-      var open = event.target.closest("[data-open-candidate]");
+      var open = event.target.closest("[data-open-event]");
       if (open) {
-        var summary = state.candidates.find(function (candidate) { return candidate.name === open.getAttribute("data-open-candidate"); });
-        if (summary) openCandidate(summary, true); return;
+        var summary = state.candidates.find(function (candidate) { return candidate.event_id === open.getAttribute("data-open-event"); });
+        if (summary) openCandidate(summary, true, open, false); return;
       }
       if (event.target.closest("[data-close-candidate]")) { closeCandidate(); return; }
       if (event.target.closest("[data-retry-candidate]")) {
-        if (state.activeSummary) { delete state.chunks[state.activeSummary.detail_chunk]; openCandidate(state.activeSummary, false); } return;
+        if (state.activeSummary) { delete state.chunks[state.activeSummary.detail_chunk]; openCandidate(state.activeSummary, false, null, true); } return;
       }
       if (event.target.closest("[data-copy-link]") && state.activeDetail) {
-        var url = window.location.origin + window.location.pathname + "#candidate=" + encodeURIComponent(state.activeDetail.name);
+        var url = new URL(candidateRoute(state.activeDetail,
+          new URL(window.location.href).searchParams.get("view") || "identity",
+          state.photBand[state.activeDetail.event_id] || "*"), window.location.origin).href;
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url);
         event.target.closest("[data-copy-link]").textContent = "Permalink copied"; return;
       }
       if (event.target.closest("[data-download-candidate]") && state.activeDetail) {
         downloadBlob(state.activeDetail.name + "-ctas.json", JSON.stringify(state.activeDetail, null, 2) + "\n", "application/json"); return;
+      }
+      var spectrumButton = event.target.closest("[data-download-spectrum]");
+      if (spectrumButton && state.activeDetail) {
+        var spectrumIndex = Number(spectrumButton.getAttribute("data-download-spectrum"));
+        var spectrum = ((state.activeDetail.follow_up || {}).spectra || [])[spectrumIndex];
+        var spectrumPoints = spectrumPreviewPoints(spectrum), spectrumFormat = spectrumButton.getAttribute("data-format") || "json";
+        if (!spectrum || !spectrumPoints.length) return;
+        var spectrumName = text(spectrum.file_name || spectrum.provider_spectrum_id || "spectrum-preview").replace(/[^A-Za-z0-9._-]+/g, "-");
+        downloadBlob(state.activeDetail.name + "-" + spectrumName + "-preview." + spectrumFormat,
+          spectrumFormat === "csv" ? rowsToCsv(spectrumPoints) : JSON.stringify(spectrumPoints, null, 2) + "\n",
+          spectrumFormat === "csv" ? "text/csv;charset=utf-8" : "application/json"); return;
       }
       var evidenceButton = event.target.closest("[data-download-evidence]");
       if (evidenceButton && state.activeDetail) {
@@ -983,6 +1734,11 @@
           format === "csv" ? rowsToCsv(rows) : JSON.stringify(rows, null, 2) + "\n",
           format === "csv" ? "text/csv" : "application/json"); return;
       }
+      var exportButton = event.target.closest("[data-export-format]");
+      if (exportButton) { downloadAstroEvidence(exportButton.getAttribute("data-export-format"), exportButton); return; }
+      if (event.target.closest("[data-toggle-refresh]")) {
+        state.autoRefreshPaused = !state.autoRefreshPaused; renderStatus(); return;
+      }
       var sort = event.target.closest("[data-sort]");
       if (sort) {
         var key = sort.getAttribute("data-sort");
@@ -991,33 +1747,59 @@
       }
       if (event.target.closest("#ctas-more")) { state.shown += PAGE; renderTable(); return; }
       if (event.target.closest("[data-clear-inline]")) clearFilters();
+      if (event.target.closest("[data-reset-score-sandbox]") && state.activeDetail) {
+        var termByCode = {}; ((state.activeDetail.score_model || {}).terms || []).forEach(function (term) { termByCode[term.code] = term.points; });
+        Array.prototype.forEach.call(el.workspace.querySelectorAll("[data-score-sandbox]"), function (input) { input.value = termByCode[input.getAttribute("data-score-sandbox")] || 0; });
+        updateScoreSandbox(); return;
+      }
+      var dossierSummary = event.target.closest("summary");
+      var dossierPanel = dossierSummary && dossierSummary.parentElement && dossierSummary.parentElement.matches("[data-dossier-view]") ? dossierSummary.parentElement : null;
+      if (dossierPanel) window.setTimeout(function () {
+        if (dossierPanel.open) updateDossierRoute(dossierPanel.getAttribute("data-dossier-view"));
+      }, 0);
     });
     document.addEventListener("change", function (event) {
       if (!event.target.matches("[data-phot-band]") || !state.activeDetail) return;
-      state.photBand[state.activeDetail.name] = event.target.value;
-      var panel = el.workspace.querySelector("[data-phot-panel]"); if (panel) panel.outerHTML = renderPhotometry(state.activeDetail);
+      state.photBand[state.activeDetail.event_id] = event.target.value;
+      updateDossierRoute("photometry", event.target.value);
+      var panel = el.workspace.querySelector("[data-phot-panel]");
+      if (panel) {
+        panel.outerHTML = renderPhotometry(state.activeDetail);
+        var rebuiltPanel = el.workspace.querySelector("[data-phot-panel]"), rebuiltFilter = rebuiltPanel && rebuiltPanel.querySelector("[data-phot-band]");
+        if (rebuiltPanel) rebuiltPanel.open = true;
+        if (rebuiltFilter) rebuiltFilter.focus({preventScroll: true});
+      }
     });
-    window.addEventListener("hashchange", function () {
-      if (candidateFromHash()) openHashCandidate(false); else revealFragment();
-    });
-    window.addEventListener("popstate", function () {
-      if (candidateFromHash()) openHashCandidate(false); else revealFragment();
+    document.addEventListener("input", function (event) { if (event.target.matches("[data-score-sandbox]")) updateScoreSandbox(); });
+    window.addEventListener("hashchange", reconcileHistoryRoute);
+    window.addEventListener("popstate", reconcileHistoryRoute);
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && !el.workspace.hidden) closeCandidate();
     });
   }
 
-  function applySnapshot(index, status, universe, releaseHistory, cached) {
-    state.snapshot = index; state.candidates = Array.isArray(index.candidates) ? index.candidates : [];
-    state.status = status || {pipeline_status: "unknown", last_successful_update: index.generated_at, candidate_count: state.candidates.length};
-    state.sourceUniverse = universe; state.releaseHistory = releaseHistory; state.cachedSnapshot = Boolean(cached);
+  function applySnapshot(index, status, universe, releaseHistory, catalogManifest, cached) {
+    state.snapshot = index;
+    state.candidates = window.CTASCatalogModel ? window.CTASCatalogModel.inflateBootstrap(index) : (Array.isArray(index.candidates) ? index.candidates : []);
+    state.status = status || {pipeline_status: "unknown", last_successful_update: index.catalog_as_of || index.generated_at, candidate_count: state.candidates.length};
+    state.sourceUniverse = universe; state.releaseHistory = releaseHistory;
+    state.catalogManifest = catalogManifest; state.cachedSnapshot = Boolean(cached);
     if (cached) state.status = Object.assign({}, state.status, {pipeline_status: "cached"});
     if (el.toolbar) el.toolbar.hidden = !state.candidates.length;
-    renderStatus(); renderOverview(); renderSourceUniverse(); renderReleaseHistory(); populateFilters(); renderTable(); drawSky(); openHashCandidate(false); revealFragment();
+    populateFilters(); restoreFiltersFromRoute();
+    renderStatus(); renderOverview(); renderCatalogDownloads(); renderSourceUniverse(); renderReleaseHistory(); renderTable(); drawSky();
+    window.dispatchEvent(new CustomEvent("ctas:snapshot", {detail: {snapshot: state.snapshot, status: state.status,
+      candidates: state.candidates, sourceUniverse: state.sourceUniverse, releaseHistory: state.releaseHistory,
+      catalogManifest: state.catalogManifest, cached: state.cachedSnapshot}}));
+    var url = new URL(window.location.href), needsAliases = Boolean(url.searchParams.get("alias") || url.searchParams.get("source") || legacyCandidateFromHash());
+    (needsAliases ? ensureAliasIndex() : Promise.resolve()).then(function () { openRouteCandidate(false); }).catch(function () { openRouteCandidate(false); });
+    revealFragment();
   }
   function showLoadError(error) {
     var cached = null;
     try { cached = JSON.parse(sessionStorage.getItem(CACHE_KEY)); } catch (_) { cached = null; }
     if (cached && cached.index) {
-      applySnapshot(cached.index, cached.status, cached.universe, cached.history, true);
+      applySnapshot(cached.index, cached.status, cached.universe, cached.history, cached.manifest, true);
       el.results.insertAdjacentHTML("beforebegin", '<div class="ctas-cache-warning"><strong>Showing the last successfully loaded snapshot.</strong> The current compact catalog could not be refreshed. <button type="button" id="ctas-retry-load">Retry now</button></div>');
       document.getElementById("ctas-retry-load").addEventListener("click", function () { window.location.reload(); });
       return;
@@ -1025,30 +1807,113 @@
     el.results.innerHTML = '<div class="ctas-empty ctas-empty--error"><h3>CTAS data could not be loaded</h3><p>' + esc(error.message || "Unknown loading error") +
       '.</p><button type="button" onclick="window.location.reload()">Retry now</button></div>';
   }
+  function assertReleaseConsistency(index, status, universe, manifest) {
+    var checksum = index && index.catalog_content_checksum_sha256, problems = [];
+    if (!checksum) problems.push("browser bootstrap has no catalog checksum");
+    if (status && status.catalog_content_checksum_sha256 !== checksum) problems.push("status belongs to a different catalog checksum");
+    if (manifest && manifest.catalog_content_checksum_sha256 !== checksum) problems.push("detail manifest belongs to a different catalog checksum");
+    if (Number(index && index.candidate_count) !== Number(status && status.candidate_count)) problems.push("status and bootstrap candidate counts differ");
+    if (Number(index && index.candidate_count) !== Number(manifest && manifest.candidate_count)) problems.push("manifest and bootstrap candidate counts differ");
+    var expectedUniverse = ((index || {}).source_universe || {}).contract_set_checksum_sha256;
+    if (expectedUniverse && universe && universe.contract_set_checksum_sha256 !== expectedUniverse) problems.push("source universe contract set differs from the bootstrap binding");
+    if (problems.length) throw new Error("CTAS detected a staggered or mixed static release: " + problems.join("; ") + ". Refresh after publication finishes.");
+  }
+  function fetchReleaseBundle(cacheBust) {
+    var suffix = cacheBust ? "?coherence=" + encodeURIComponent(cacheBust) : "";
+    return Promise.all([
+      getJSON("catalog-bootstrap.json" + suffix), getJSON("status.json" + suffix).catch(function () { return null; }),
+      getJSON("source-universe.json" + suffix).catch(function () { return null; }),
+      getJSON("release-history.json" + suffix).catch(function () { return null; }),
+      getJSON("candidate-chunks/manifest.json" + suffix).catch(function () { return null; })
+    ]).then(function (result) { assertReleaseConsistency(result[0], result[1], result[2], result[4]); return result; });
+  }
   function boot() {
     el.results.innerHTML = '<p class="ctas-loading">Loading the compact public catalog…</p>';
-    Promise.all([
-      getJSON("catalog-index.json"), getJSON("status.json").catch(function () { return null; }),
-      getJSON("source-universe.json").catch(function () { return null; }),
-      getJSON("release-history.json").catch(function () { return null; })
-    ]).then(function (result) {
-      try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({index: result[0], status: result[1], universe: result[2], history: result[3]})); }
+    fetchReleaseBundle().catch(function (error) {
+      if (!/mixed static release|staggered/.test(error.message)) throw error;
+      return new Promise(function (resolve) { setTimeout(resolve, 700); }).then(function () { return fetchReleaseBundle(Date.now()); });
+    }).then(function (result) {
+      try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({index: result[0], status: result[1], universe: result[2], history: result[3], manifest: result[4]})); }
       catch (_) { /* cache is best effort */ }
-      applySnapshot(result[0], result[1], result[2], result[3], false);
+      applySnapshot(result[0], result[1], result[2], result[3], result[4], false);
     }).catch(showLoadError);
   }
   function pollStatus() {
+    if (state.autoRefreshPaused || document.hidden) return;
     getJSON("status.json", 2).then(function (status) {
-      var oldChecksum = (state.status || {}).catalog_content_checksum_sha256;
+      var previousStatus = state.status || {};
+      var oldCatalogChecksum = previousStatus.catalog_content_checksum_sha256;
+      var oldPublicationChecksum = previousStatus.publication_state_checksum_sha256;
+      var catalogChanged = Boolean(status.catalog_content_checksum_sha256) && oldCatalogChecksum !== status.catalog_content_checksum_sha256;
+      var publicationStateChanged = Boolean(status.publication_state_checksum_sha256) && oldPublicationChecksum !== status.publication_state_checksum_sha256;
       state.status = status; renderStatus();
-      if (oldChecksum && status.catalog_content_checksum_sha256 && oldChecksum !== status.catalog_content_checksum_sha256) {
-        getJSON("catalog-index.json", 2).then(function (index) {
-          state.snapshot = index; state.candidates = index.candidates || []; state.chunks = {};
-          renderOverview(); populateFilters(); renderTable(); drawSky();
+      if (catalogChanged || publicationStateChanged) {
+        var activeId = state.activeSummary && state.activeSummary.event_id;
+        fetchReleaseBundle(Date.now()).then(function (result) {
+          var index = result[0];
+          state.snapshot = index; state.candidates = window.CTASCatalogModel.inflateBootstrap(index); state.chunks = {}; state.aliasIndex = null; state.aliasPromise = null;
+          state.sourceUniverse = result[2]; state.releaseHistory = result[3]; state.catalogManifest = result[4]; state.status = result[1] || status;
+          populateFilters(); restoreFiltersFromRoute(); renderStatus(); renderOverview(); renderCatalogDownloads(); renderSourceUniverse(); renderReleaseHistory(); renderTable(); drawSky();
+          window.dispatchEvent(new CustomEvent("ctas:snapshot", {detail: {snapshot: state.snapshot, status: state.status,
+            candidates: state.candidates, sourceUniverse: state.sourceUniverse, releaseHistory: state.releaseHistory,
+            catalogManifest: state.catalogManifest, cached: false}}));
+          try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({index: index, status: state.status, universe: result[2], history: result[3], manifest: result[4]})); }
+          catch (_) { /* cache is best effort */ }
+          if (activeId) {
+            var refreshed = state.candidates.find(function (candidate) { return candidate.event_id === activeId; });
+            if (refreshed) openCandidate(refreshed, false, null, true, true); else openRouteCandidate(false);
+          }
         });
       }
     }).catch(function () { /* the loaded catalog remains usable */ });
   }
+
+  function candidateSummaryById(eventId) {
+    return state.candidates.find(function (candidate) { return candidate.event_id === eventId; }) || null;
+  }
+  function loadCandidateDetail(eventId) {
+    var summary = candidateSummaryById(eventId);
+    if (!summary || !summary.detail_chunk) return Promise.reject(new Error("Candidate is not present in this public release."));
+    return loadChunk(summary.detail_chunk).then(function (document_) {
+      var detail = (document_.candidates || []).find(function (candidate) { return candidate.event_id === eventId; });
+      if (!detail) throw new Error("Candidate is absent from its checksum-bound detail shard.");
+      return detail;
+    });
+  }
+  function openByName(name) {
+    var normalized = text(name).trim().toLowerCase();
+    if (!normalized) return Promise.reject(new Error("A candidate name or alias is required."));
+    var direct = state.candidates.filter(function (candidate) { return text(candidate.name).toLowerCase() === normalized; });
+    function finish(matches) {
+      if (matches.length === 1) { openCandidate(matches[0], true, null, false); return matches[0]; }
+      renderAliasAmbiguity({kind: "unscoped alias", value: name, matches: matches});
+      return null;
+    }
+    if (direct.length === 1) return Promise.resolve(finish(direct));
+    return ensureAliasIndex().then(function () {
+      var matches = state.candidates.filter(function (candidate) {
+        return text(candidate.name).toLowerCase() === normalized || (candidate.designations || []).some(function (row) {
+          return text(row.designation).toLowerCase() === normalized;
+        });
+      });
+      return finish(matches);
+    }).catch(function () { return finish(direct); });
+  }
+
+  window.CTASApp = {
+    getStatus: function () { return state.status || {}; },
+    getSnapshot: function () { return state.snapshot || {}; },
+    getCandidates: function () { return state.candidates.slice(); },
+    getVisibleCandidates: function () { return visible(); },
+    getFilters: currentFilters,
+    loadCandidateDetail: loadCandidateDetail,
+    openById: function (eventId) {
+      var summary = candidateSummaryById(eventId);
+      if (!summary) return false;
+      openCandidate(summary, true, null, false); return true;
+    },
+    openByName: openByName
+  };
 
   bindInterface(); bindSky(); boot(); window.setInterval(pollStatus, 120000);
 }());

@@ -17,7 +17,7 @@ local CTAS SQLite database
         v
 Python public exporter and validators
         |
-        | compact index + 32 lazy shards + full download + assurance artifacts
+        | sub-2 MiB columnar bootstrap + 256 checksum-bound detail shards + research tables
         v
 dedicated runtime checkout (public repository only)
         |
@@ -48,7 +48,7 @@ work and is not the background runtime.
 
 - The exporter reads a frozen SQLite backup, so a release cannot mix database
   states while ingestion continues.
-- Only the 40 explicit public data artifacts in `publish_ctas.sh` are staged.
+- Only the 271 explicit public data artifacts in `publish_ctas.sh` are staged.
 - Dirty non-data files in the runtime checkout stop the job.
 - A rejected push remains local and is amended on the next run; divergence is
   rebased only when Git can do so cleanly, otherwise publication stops without
@@ -110,12 +110,22 @@ checkout and logs for recovery and audit.
 
 ## Public artifacts
 
-- `ctas/data/catalog-index.json`: compact initial catalog index.
-- `ctas/data/candidate-chunks/manifest.json`: checksums for 32 lazy detail shards.
-- `ctas/data/candidate-chunks/*.json`: complete candidate workspaces.
-- `ctas/data/candidates.json`: full-catalog download.
+- `ctas/data/catalog-bootstrap.json`: the sub-2 MiB columnar browser bootstrap used by the public interface.
+- `ctas/data/catalog-index.json`: a compatibility copy of that bootstrap and the canonical event-UUID order.
+- `ctas/data/alias-index.json`: provider-scoped aliases, kept out of the initial page load and fetched for alias search or routes.
+- `ctas/data/candidate-chunks/manifest.json`: the authoritative complete-catalog download contract. It checksum-binds the bootstrap and all 256 parts, proves counts, and specifies exact reconstruction in bootstrap UUID order.
+- `ctas/data/candidate-chunks/*.json`: complete candidate workspaces. Together the 256 UUID-derived files contain every complete public record exactly once while keeping individual dossier requests bounded.
+- `ctas/data/research/manifest.json` and its listed CSV/VOTable/TOM files: normalized, checksum-bound reuse tables for scripts, TOPCAT, and target-management tools.
 - `ctas/data/status.json`: freshness, source health, counts, and publication state.
 - `ctas/data/source-universe.json`: maintained source and survey contracts.
 - `ctas/data/release-history.json`: checksum-addressed catalog changes.
 - `ctas/data/link-health.json`: recursive URL roles and structural checks.
 - `ctas/data/certification.json`: checksum-bound static-catalog assurance report.
+
+The former single-file `ctas/data/candidates.json` download exceeded GitHub's
+enforced object-size limit and is no longer published. Download the compact
+index plus the complete-catalog manifest and its listed parts instead. Verify
+the declared byte lengths and SHA-256 values, map part records by `event_id`,
+then emit them in the `event_id` column order declared by `catalog-index.json`'s
+`candidate_columns` and `candidate_rows` table. The
+manifest includes the checksum of that canonical reconstructed array.

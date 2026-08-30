@@ -35,6 +35,7 @@ while true; do
   line=$(printf '%s\n' "$out" | grep -v '^$' | tail -n 1)
 
   case "$out" in
+    *"publication paused"*) printf '  %s  \033[33m%s\033[0m\n' "$ts" "$line" ;;
     *published*)      printf '  %s  \033[32m%s\033[0m\n' "$ts" "$line" ;;
     *"no change"*)    printf '  %s  up to date\n' "$ts" ;;
     *FAIL*|*error*)   printf '  %s  \033[31m%s\033[0m\n' "$ts" "$line"

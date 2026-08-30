@@ -597,6 +597,11 @@ select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
    ======================================================================== */
 .ctas-hero__inner { grid-template-columns: minmax(0, 1fr) !important; }
 .ctas-badges { margin-top: 1.25rem; }
+.ctas-badges .chip {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .ctas-status--hero { grid-template-columns: repeat(5, minmax(0, 1fr)); border-radius: 0; }
 .ctas-status--hero.is-degraded { border-color: rgba(212, 167, 79, .52); }
 .ctas-hero__actions { display: flex; flex-wrap: wrap; gap: .7rem; margin: 1rem 0 1.5rem; }
@@ -614,7 +619,7 @@ select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .ctas-contents { top: 4.55rem; z-index: 90; }
 .ctas-utility { border-bottom: 1px solid var(--border); background: rgba(7, 14, 25, .98); }
 .ctas-utility .wrap { display: flex; flex-wrap: wrap; gap: .15rem 1rem; padding-block: .62rem; }
-.ctas-utility a { color: var(--ink-3); font-size: .76rem; text-decoration: none; }
+.ctas-utility a { position: relative; color: var(--ink-3); font-size: .76rem; text-decoration: none; }
 .ctas-utility a:hover, .ctas-utility a:focus-visible { color: var(--gold); }
 .ctas-utility a:not(:last-child)::after { content: "·"; margin-left: 1rem; color: var(--border-strong); }
 
@@ -649,6 +654,28 @@ select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .ctas-overview, .ctas-source-census { margin: 1rem 0; }
 .ctas-breakdowns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .ctas-bar { grid-template-columns: minmax(8.5rem, 1fr) minmax(4rem, 1.4fr) auto; }
+.ctas-catalog-downloads { margin-top: 1.2rem; border: 1px solid var(--border); background: rgba(255,255,255,.02); }
+.ctas-catalog-downloads > summary { min-height: 52px; padding: .8rem 1rem; cursor: pointer; list-style: none; }
+.ctas-catalog-downloads > summary::-webkit-details-marker { display: none; }
+.ctas-catalog-downloads > summary span, .ctas-catalog-downloads > summary strong,
+.ctas-catalog-downloads > summary small { display: block; }
+.ctas-catalog-downloads > summary small { margin-top: .18rem; color: var(--ink-3); font-weight: 500; }
+.ctas-catalog-downloads__body { padding: 0 1rem 1rem; }
+.ctas-catalog-downloads__body > p { max-width: 82ch; color: var(--ink-2); }
+.ctas-download-links { display: flex; flex-wrap: wrap; gap: .55rem; }
+.ctas-download-links a, .ctas-download-parts a {
+  display: inline-flex; align-items: center; min-height: 40px; padding: .45rem .65rem;
+  border: 1px solid var(--border-strong); border-radius: 7px; color: var(--gold); text-decoration: none;
+}
+.ctas-download-links a:hover, .ctas-download-links a:focus-visible,
+.ctas-download-parts a:hover, .ctas-download-parts a:focus-visible { border-color: var(--gold); background: rgba(212,167,79,.08); }
+.ctas-download-status { font-size: .8rem; }
+.ctas-download-parts { max-height: min(32rem, 65vh); overflow: auto; overscroll-behavior: contain; }
+.ctas-download-parts ol { display: grid; gap: .45rem; margin: 0; padding: 0; list-style: none; }
+.ctas-download-parts li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .65rem; border: 1px solid var(--border); background: var(--surface); }
+.ctas-download-parts li strong, .ctas-download-parts li span, .ctas-download-parts li code { display: block; }
+.ctas-download-parts li span { margin-top: .12rem; color: var(--ink-3); font-size: .75rem; }
+.ctas-download-parts li code { max-width: min(64ch, 58vw); margin-top: .3rem; overflow-wrap: anywhere; color: var(--ink-2); font-size: .68rem; }
 
 .ctas-release-list { list-style: none; display: grid; gap: .6rem; margin: 0; padding: 0; }
 .ctas-release-list li { margin: 0; padding: .9rem; border: 1px solid var(--border); background: var(--surface); }
@@ -656,6 +683,8 @@ select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .ctas-release-list li span, .ctas-release-list li small { color: var(--ink-3); }
 .ctas-release-list li p { margin: .4rem 0; color: var(--ink-2); }
 .ctas-release-list code { display: inline-block; margin-top: .4rem; color: var(--gold); font-size: .72rem; }
+.ctas-release-scroll { max-height: min(34rem, 70vh); overflow: auto; overscroll-behavior: contain; }
+.ctas-release-scroll:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .ctas-claim-boundary { max-width: 72ch; color: var(--ink-3); }
 
 .ctas-stream { margin: 1rem 0; border-radius: var(--radius); }
@@ -711,6 +740,7 @@ select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .ctas-known-missing strong, .ctas-known-missing span { display: block; }
 .ctas-known-missing strong { margin-bottom: .28rem; color: var(--ink); font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; }
 .ctas-source-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
   min-height: 32px;
@@ -796,6 +826,8 @@ table.ctas-table { min-width: 1080px; }
   .ctas-panel > summary { align-items: start !important; min-height: 62px; padding: .9rem !important; }
   .ctas-panel > summary small { display: none; }
   .ctas-panel__body { padding: .9rem; }
+  .ctas-download-parts li { align-items: stretch; flex-direction: column; }
+  .ctas-download-parts li code { max-width: 100%; }
   .ctas-stream__list li { grid-template-columns: auto minmax(0, 1fr); gap: .65rem; }
   .ctas-stream__score { grid-column: 2; }
   .ctas-workspace__head { display: block; }
@@ -813,4 +845,419 @@ table.ctas-table { min-width: 1080px; }
   .ctas-mag-legend { flex-wrap: wrap; }
   .ctas-mag-legend i { width: 80px; }
   .ctas-workspace { padding: .85rem; }
+}
+
+/* CTAS 1.5 evidence dossier ------------------------------------------------ */
+.ctas-dossier { min-width: 0; }
+.ctas-refresh-toggle {
+  min-height: 30px;
+  margin-left: .2rem;
+  padding: .25rem .48rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.ctas-source-denominators {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0 1rem 1rem;
+  border: 1px solid var(--border);
+  background: var(--border);
+}
+.ctas-source-denominators > div { min-width: 0; padding: .8rem; background: var(--surface); }
+.ctas-source-denominators strong,
+.ctas-source-denominators span,
+.ctas-source-denominators small { display: block; }
+.ctas-source-denominators strong { color: var(--ink); font: 700 1.25rem/1 var(--font-mono); }
+.ctas-source-denominators span { margin-top: .35rem; color: var(--gold); font-size: .72rem; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; }
+.ctas-source-denominators small { margin-top: .2rem; color: var(--ink-3); font-size: .68rem; }
+.ctas-source-matrix { min-width: 1050px; }
+.ctas-source-matrix th[scope="row"] strong,
+.ctas-source-matrix th[scope="row"] small,
+.ctas-source-matrix td > small,
+.ctas-source-matrix td > strong,
+.ctas-source-matrix .ctas-evidence-state { display: block; }
+.ctas-source-matrix th[scope="row"] small,
+.ctas-source-matrix td > small { margin-top: .25rem; color: var(--ink-3); font-weight: 400; }
+.ctas-evidence-state { color: var(--ink); font-weight: 700; }
+.ctas-inline-rule { min-width: 12rem; margin-top: .45rem; }
+.ctas-inline-rule > summary,
+.ctas-receipt-history > summary,
+.ctas-source-constraints > summary { min-height: 32px; cursor: pointer; color: var(--ink-2); font-size: .72rem; font-weight: 700; }
+.ctas-inline-rule p { max-width: 45ch; color: var(--ink-2); }
+.ctas-receipt-history { margin: .9rem 1rem 1rem; }
+.ctas-source-constraints { margin-top: .65rem; border-top: 1px solid var(--border); padding-top: .45rem; }
+.ctas-source-constraints dl { display: grid; gap: .35rem; margin: .5rem 0 0; }
+.ctas-source-constraints dl div { padding: .45rem; background: rgba(255,255,255,.025); }
+.ctas-source-constraints dd { overflow-wrap: anywhere; }
+.ctas-identity-warning,
+.ctas-analysis__status,
+.ctas-no-conflict {
+  padding: .75rem .85rem;
+  border: 1px solid rgba(212, 167, 79, .42);
+  border-left: 3px solid var(--gold);
+  background: rgba(212, 167, 79, .06);
+  color: var(--ink-2);
+}
+.ctas-conflict-list,
+.ctas-selection-list { list-style: none; display: grid; gap: .5rem; margin: 0; padding: 0; }
+.ctas-conflict-list li,
+.ctas-selection-list li { margin: 0; padding: .75rem; border: 1px solid var(--border); background: var(--surface); }
+.ctas-conflict-list li > div { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.ctas-conflict-list p,
+.ctas-selection-list p { margin: .4rem 0; color: var(--ink-2); }
+.ctas-conflict-list small,
+.ctas-selection-list small { display: block; color: var(--ink-3); overflow-wrap: anywhere; }
+.ctas-analysis__status { display: flex; align-items: start; gap: .7rem; }
+.ctas-analysis__status p { margin: 0; }
+.ctas-analysis__warnings { margin: .75rem 0; padding: .7rem .85rem; border: 1px solid var(--border); }
+.ctas-analysis__warnings h4 { margin: 0 0 .35rem; }
+.ctas-analysis__warnings ul { margin: 0; padding-left: 1.1rem; }
+.ctas-code-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; margin-top: .65rem; }
+.ctas-code-grid > div { min-width: 0; padding: .65rem; border: 1px solid var(--border); background: var(--surface); }
+.ctas-code-grid h4 { margin: 0 0 .35rem; }
+.ctas-code-grid pre { max-height: 18rem; margin: 0; padding: .5rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: #07101d; color: var(--ink-2); font-size: .7rem; }
+.ctas-export-status { min-height: 1.5rem; margin: .7rem 0 0; color: var(--ink-2); }
+.ctas-ambiguity { padding: .5rem; }
+.ctas-ambiguity > p { max-width: 70ch; color: var(--ink-2); }
+.ctas-ambiguity ul { list-style: none; display: grid; gap: .55rem; margin: 1rem 0; padding: 0; }
+.ctas-ambiguity li { margin: 0; }
+.ctas-ambiguity li button { width: 100%; display: grid; justify-items: start; gap: .2rem; text-align: left; }
+.ctas-ambiguity li span,
+.ctas-ambiguity li small { overflow-wrap: anywhere; color: var(--ink-3); }
+.ctas-evidence-table-wrap:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.ctas-evidence-table code,
+.ctas-detail__facts dd { overflow-wrap: anywhere; }
+.ctas-evidence-tools button:disabled { cursor: wait; opacity: .62; }
+
+/* Complete dossier records stay available without turning the page into one long wall of rows. */
+.ctas-evidence-table-wrap--tall {
+  max-height: min(38rem, 72vh);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.ctas-evidence-table-wrap--tall thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.ctas-record-details,
+.ctas-receipt-detail,
+.ctas-spectrum-points { margin-top: .65rem; border-top: 1px solid var(--border); }
+.ctas-record-details > summary,
+.ctas-receipt-detail > summary,
+.ctas-spectrum-points > summary {
+  min-height: 38px;
+  padding: .45rem 0;
+  cursor: pointer;
+  color: var(--ink-2);
+  font-size: .74rem;
+  font-weight: 700;
+}
+.ctas-record-details pre,
+.ctas-receipt-detail pre {
+  max-height: 24rem;
+  margin: .35rem 0 .7rem;
+  padding: .65rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #07101d;
+  color: var(--ink-2);
+  font-size: .7rem;
+}
+.ctas-receipt-detail { min-width: 18rem; }
+.ctas-receipt-detail > p { max-width: 62ch; color: var(--ink-3); font-size: .76rem; }
+
+.ctas-spectrum-list > li { padding: 0; overflow: hidden; }
+.ctas-spectrum-record > summary,
+.ctas-publication-record > summary,
+.ctas-environment-record > summary,
+.ctas-analysis-run > summary {
+  display: flex;
+  min-height: 48px;
+  padding: .75rem;
+  cursor: pointer;
+}
+.ctas-spectrum-record > summary span,
+.ctas-publication-record > summary span,
+.ctas-environment-record > summary span,
+.ctas-analysis-run > summary span { min-width: 0; }
+.ctas-spectrum-record > summary strong,
+.ctas-spectrum-record > summary small,
+.ctas-publication-record > summary strong,
+.ctas-publication-record > summary small,
+.ctas-environment-record > summary strong,
+.ctas-environment-record > summary small,
+.ctas-analysis-run > summary strong,
+.ctas-analysis-run > summary small { display: block; overflow-wrap: anywhere; }
+.ctas-spectrum-record > summary small,
+.ctas-publication-record > summary small,
+.ctas-environment-record > summary small,
+.ctas-analysis-run > summary small { margin-top: .25rem; color: var(--ink-3); font-weight: 500; }
+.ctas-spectrum-record__body,
+.ctas-publication-record__body,
+.ctas-environment-record__body,
+.ctas-analysis-run__body { padding: 0 .75rem .8rem; }
+.ctas-spectrum-record__body code { overflow-wrap: anywhere; }
+.ctas-spectrum-preview { margin: .9rem 0; }
+.ctas-spectrum-preview svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 230px;
+  border: 1px solid var(--border);
+  background: #07101d;
+}
+.ctas-spectrum-line { fill: none; stroke: #8ad5df; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.ctas-spectrum-preview figcaption { margin-top: .4rem; color: var(--ink-3); font-size: .75rem; }
+.ctas-spectrum-table { min-width: 540px; }
+.ctas-messenger-table { min-width: 1280px; }
+.ctas-messenger-table td > small,
+.ctas-messenger-table th > small,
+.ctas-publication-revisions td > small { display: block; margin-top: .3rem; color: var(--ink-3); }
+.pill.is-retracted { border-color: rgba(255, 107, 107, .7); color: #ff9b9b; }
+.pill.is-superseded { border-color: rgba(184, 200, 223, .38); color: var(--ink-3); }
+.ctas-publication-section { min-width: 0; }
+.ctas-publication-record,
+.ctas-environment-record,
+.ctas-analysis-run { border: 1px solid var(--border); background: rgba(255,255,255,.018); }
+.ctas-publication-section li,
+.ctas-detail__section li:has(> .ctas-environment-record) { padding: 0; border-top: 0; }
+.ctas-publication-revisions { min-width: 1100px; }
+.ctas-analysis-runs { display: grid; gap: .65rem; }
+[data-dossier-focus]:focus-visible { outline: 2px solid var(--gold); outline-offset: 5px; }
+
+@media (max-width: 840px) {
+  .ctas-source-denominators { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ctas-code-grid { grid-template-columns: 1fr; }
+  .ctas-spectrum-preview svg { min-height: 190px; }
+}
+@media (max-width: 420px) {
+  .ctas-source-denominators { grid-template-columns: 1fr; }
+  .ctas-source-denominators > div { min-height: 78px; }
+}
+
+/* Scientist workspace ----------------------------------------------------- */
+.ctas-modebar {
+  position: sticky;
+  top: 0;
+  z-index: 18;
+  border-block: 1px solid var(--border);
+  background: rgba(7, 16, 29, .95);
+  backdrop-filter: blur(16px);
+}
+.ctas-modebar__inner {
+  display: grid;
+  grid-template-columns: minmax(13rem, .7fr) minmax(30rem, 1.5fr);
+  align-items: center;
+  gap: .55rem 1.4rem;
+  padding-block: .7rem;
+}
+.ctas-modebar h2 { margin: .08rem 0 0; font-size: clamp(1rem, 1.7vw, 1.25rem); }
+.ctas-mode-switcher { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem; }
+.ctas-mode-switcher button {
+  min-height: 54px;
+  padding: .55rem .7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: rgba(255,255,255,.025);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.ctas-mode-switcher button strong,
+.ctas-mode-switcher button span { display: block; }
+.ctas-mode-switcher button span { margin-top: .12rem; color: var(--ink-3); font-size: .68rem; }
+.ctas-mode-switcher button[aria-pressed="true"] {
+  border-color: var(--gold);
+  background: rgba(212, 167, 79, .12);
+  box-shadow: inset 0 0 0 1px rgba(212, 167, 79, .22);
+}
+.ctas-mode-description { grid-column: 1 / -1; margin: 0; color: var(--ink-3); font-size: .76rem; }
+
+.ctas-learn-studio,
+.ctas-research-workbench { border-color: rgba(212, 167, 79, .3); }
+body[data-ctas-mode="learn"] .ctas-learn-studio,
+body[data-ctas-mode="research"] .ctas-research-workbench { box-shadow: 0 0 0 1px rgba(212, 167, 79, .18), 0 22px 60px rgba(0,0,0,.18); }
+.ctas-guides { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; }
+.ctas-guides article {
+  display: flex;
+  min-width: 0;
+  min-height: 14rem;
+  flex-direction: column;
+  padding: .95rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
+}
+.ctas-guides article.is-synthetic { border-style: dashed; }
+.ctas-guides h3 { margin: .7rem 0 .45rem; font-size: 1rem; }
+.ctas-guides p { flex: 1; color: var(--ink-2); font-size: .82rem; }
+.ctas-guides button,
+.ctas-research-actions button,
+.ctas-research-actions a,
+.ctas-comparison-tray button,
+.ctas-comparison-workspace button,
+.ctas-card-actions button,
+.ctas-observability button,
+.ctas-time-machine button,
+.ctas-aladin button {
+  min-height: 38px;
+  padding: .45rem .65rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ctas-glossary { margin-top: 1rem; border-top: 1px solid var(--border); }
+.ctas-glossary > summary { min-height: 48px; padding: .8rem 0; cursor: pointer; font-weight: 750; }
+.ctas-glossary dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
+.ctas-glossary dl > div { padding: .75rem; border: 1px solid var(--border); background: var(--surface); }
+.ctas-glossary dt { color: var(--gold); font-weight: 800; }
+.ctas-glossary dd { margin: .3rem 0 0; color: var(--ink-2); font-size: .8rem; }
+
+.ctas-research-actions { display: grid; grid-template-columns: 1.3fr 1.3fr .9fr; gap: .8rem; }
+.ctas-research-actions > section { padding: .9rem; border: 1px solid var(--border); background: var(--surface); }
+.ctas-research-actions h3 { margin: 0 0 .35rem; font-size: 1rem; }
+.ctas-research-actions p { color: var(--ink-2); font-size: .8rem; }
+.ctas-research-actions [role="status"] { min-height: 1.3rem; margin: .55rem 0 0; color: var(--ink-3); }
+.ctas-source-explorer { margin-top: .8rem; border-top: 1px solid var(--border); }
+.ctas-source-explorer > summary { min-height: 48px; padding: .75rem 0; cursor: pointer; font-weight: 750; }
+.ctas-source-explorer__controls { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .7rem; }
+.ctas-source-explorer__controls input,
+.ctas-source-explorer__controls select { min-height: 40px; padding: .45rem .6rem; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface-2); color: var(--ink); }
+.ctas-source-explorer__summary { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: .65rem; }
+.ctas-source-explorer__summary span { padding: .35rem .5rem; border: 1px solid var(--border); color: var(--ink-2); font-size: .72rem; }
+.ctas-source-explorer__list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .55rem; list-style: none; margin: 0; padding: 0; }
+.ctas-source-explorer__list li { min-width: 0; padding: .65rem; border: 1px solid var(--border); background: rgba(255,255,255,.018); }
+.ctas-source-explorer__list strong,
+.ctas-source-explorer__list small { display: block; overflow-wrap: anywhere; }
+.ctas-source-explorer__list small { margin-top: .25rem; color: var(--ink-3); }
+
+.ctas-science-filters { width: 100%; margin-top: .7rem; border-top: 1px solid var(--border); }
+.ctas-science-filters > summary { min-height: 44px; padding: .65rem 0; cursor: pointer; color: var(--ink-2); font-weight: 750; }
+.ctas-fields--science { grid-template-columns: repeat(6, minmax(9rem, 1fr)); }
+.ctas-fields input[type="date"],
+.ctas-fields input[type="number"] { width: 100%; min-height: 42px; padding: .5rem .6rem; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface-2); color: var(--ink); }
+.ctas-filter-state { display: flex; align-items: center; justify-content: space-between; gap: .7rem; }
+
+.ctas-card-actions { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .4rem; }
+.ctas-card-actions button { min-height: 32px; padding: .28rem .45rem; font-size: .68rem; }
+.ctas-card-actions button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+.ctas-comparison-tray {
+  position: sticky;
+  bottom: .6rem;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .7rem;
+  margin: .8rem 0;
+  padding: .75rem;
+  border: 1px solid var(--gold);
+  border-radius: 9px;
+  background: rgba(7, 16, 29, .97);
+  box-shadow: 0 12px 38px rgba(0,0,0,.4);
+}
+.ctas-comparison-tray[hidden] { display: none; }
+.ctas-comparison-tray__items { display: flex; flex-wrap: wrap; gap: .4rem; }
+.ctas-comparison-tray__items span { display: inline-flex; align-items: center; gap: .35rem; padding: .32rem .45rem; border: 1px solid var(--border); font-size: .74rem; }
+.ctas-comparison-tray__items button { min-height: 26px; padding: .1rem .3rem; }
+.ctas-comparison-workspace { margin: 1rem 0; padding: 1rem; border: 1px solid var(--border-strong); background: rgba(255,255,255,.025); }
+.ctas-comparison-workspace[hidden] { display: none; }
+.ctas-comparison-workspace__head { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.ctas-comparison-workspace__head h3 { margin: .1rem 0 .3rem; }
+.ctas-compare-grid { display: grid; grid-template-columns: repeat(var(--compare-count, 2), minmax(15rem, 1fr)); gap: .65rem; margin-top: .85rem; overflow-x: auto; }
+.ctas-compare-card { min-width: 0; border: 1px solid var(--border); background: var(--surface); }
+.ctas-compare-card > header { padding: .8rem; border-bottom: 1px solid var(--border); }
+.ctas-compare-card > header h4 { margin: .15rem 0; font-size: 1.08rem; }
+.ctas-compare-card dl { margin: 0; }
+.ctas-compare-card dl > div { padding: .65rem .8rem; border-bottom: 1px solid var(--border); }
+.ctas-compare-card dt { color: var(--ink-3); font-size: .67rem; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+.ctas-compare-card dd { margin: .2rem 0 0; overflow-wrap: anywhere; color: var(--ink-2); }
+
+.ctas-science-brief { margin: 1rem 0; padding: .85rem; border: 1px solid rgba(138, 213, 223, .35); background: rgba(138, 213, 223, .04); }
+.ctas-science-brief > h4 { margin: 0 0 .65rem; }
+.ctas-science-brief__grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .55rem; }
+.ctas-science-brief__grid section { min-width: 0; padding: .7rem; border: 1px solid var(--border); background: var(--surface); }
+.ctas-science-brief__grid h5 { margin: 0 0 .35rem; color: var(--gold); font-size: .73rem; letter-spacing: .05em; text-transform: uppercase; }
+.ctas-science-brief__grid p,
+.ctas-science-brief__grid li { color: var(--ink-2); font-size: .77rem; overflow-wrap: anywhere; }
+.ctas-science-brief__grid ul { margin: 0; padding-left: 1rem; }
+
+.ctas-score-waterfall { margin-top: .75rem; }
+.ctas-score-waterfall__row { display: grid; grid-template-columns: minmax(10rem, 1.25fr) 3fr 4.6rem; align-items: center; gap: .5rem; min-height: 34px; }
+.ctas-score-waterfall__track { position: relative; height: 12px; border-radius: 99px; background: rgba(255,255,255,.06); overflow: hidden; }
+.ctas-score-waterfall__track i { position: absolute; top: 0; bottom: 0; left: 50%; width: var(--size); background: #62d7aa; }
+.ctas-score-waterfall__row.is-negative .ctas-score-waterfall__track i { right: 50%; left: auto; background: #ef7b72; }
+.ctas-score-waterfall__row strong { text-align: right; font-family: var(--font-mono); }
+.ctas-score-sandbox { margin-top: .8rem; padding: .75rem; border: 1px dashed var(--border-strong); }
+.ctas-score-sandbox__controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .55rem; }
+.ctas-score-sandbox label { display: grid; gap: .2rem; color: var(--ink-2); font-size: .75rem; }
+.ctas-score-sandbox output { color: var(--gold); font-size: 1.2rem; font-weight: 800; }
+
+.ctas-astronomy-tools { display: grid; gap: .65rem; margin-top: .75rem; }
+.ctas-aladin__stage { min-height: 360px; margin-top: .65rem; border: 1px solid var(--border); background: #030912; }
+.ctas-observability__controls { display: grid; grid-template-columns: repeat(5, minmax(8rem, 1fr)); gap: .55rem; }
+.ctas-observability__controls label { display: grid; gap: .2rem; color: var(--ink-3); font-size: .7rem; }
+.ctas-observability__controls input,
+.ctas-observability__controls select { min-height: 40px; padding: .42rem .5rem; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--ink); }
+.ctas-observability__plot svg { display: block; width: 100%; min-height: 230px; margin-top: .75rem; border: 1px solid var(--border); background: #07101d; }
+.ctas-observability__intervals { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.ctas-observability__intervals span { padding: .35rem .5rem; border: 1px solid var(--border); color: var(--ink-2); font-size: .72rem; }
+.ctas-time-machine__controls { display: grid; grid-template-columns: minmax(12rem, 1fr) auto auto; gap: .55rem; align-items: end; }
+.ctas-time-machine input { width: 100%; }
+.ctas-time-machine__entries { max-height: 24rem; overflow: auto; margin: .75rem 0 0; padding-left: 1.15rem; }
+.ctas-time-machine__entries li { padding: .45rem; border-bottom: 1px solid var(--border); color: var(--ink-2); }
+.ctas-time-machine__entries time,
+.ctas-time-machine__entries small { display: block; color: var(--ink-3); }
+
+@media (max-width: 1180px) {
+  .ctas-guides { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ctas-research-actions { grid-template-columns: 1fr 1fr; }
+  .ctas-research-actions > section:last-child { grid-column: 1 / -1; }
+  .ctas-science-brief__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ctas-fields--science { grid-template-columns: repeat(4, minmax(9rem, 1fr)); }
+}
+@media (max-width: 840px) {
+  .ctas-modebar { position: static; }
+  .ctas-modebar__inner { grid-template-columns: 1fr; }
+  .ctas-mode-description { grid-column: auto; }
+  .ctas-guides,
+  .ctas-source-explorer__list,
+  .ctas-glossary dl,
+  .ctas-science-brief__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ctas-research-actions { grid-template-columns: 1fr; }
+  .ctas-research-actions > section:last-child { grid-column: auto; }
+  .ctas-fields--science { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ctas-comparison-tray { align-items: stretch; flex-direction: column; }
+  .ctas-compare-grid { grid-template-columns: 1fr; overflow: visible; }
+  .ctas-observability__controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .ctas-mode-switcher,
+  .ctas-guides,
+  .ctas-source-explorer__list,
+  .ctas-glossary dl,
+  .ctas-science-brief__grid,
+  .ctas-fields--science,
+  .ctas-score-sandbox__controls,
+  .ctas-observability__controls { grid-template-columns: 1fr; }
+  .ctas-mode-switcher button { min-height: 48px; }
+  .ctas-guides article { min-height: 0; }
+  .ctas-time-machine__controls { grid-template-columns: 1fr; }
+}
+
+@media (forced-colors: active) {
+  .ctas-mode-switcher button[aria-pressed="true"],
+  .ctas-card-actions button[aria-pressed="true"] { outline: 3px solid Highlight; }
+  .ctas-score-waterfall__track i { background: Highlight; }
 }

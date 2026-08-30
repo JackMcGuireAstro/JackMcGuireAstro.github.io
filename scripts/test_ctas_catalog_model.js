@@ -55,6 +55,62 @@ assert.strictEqual(model.sexagesimal(15, -0), "01:00:00.0 -00:00:00");
 assert.strictEqual(model.sexagesimal(20, -10), "01:20:00.0 -10:00:00");
 assert.strictEqual(model.sexagesimal(360, 0), "", "out-of-range ICRS coordinates are refused");
 
+const bootstrapColumns = [
+  "event_id", "name", "ctas_score", "follow_up_total", "detail_chunk",
+  "n_classifications", "n_classification_history", "n_observations", "n_spectra",
+  "n_messenger_signals", "n_publications", "n_publication_revisions", "n_host_context", "n_catalog_counterparts", "n_archive_products",
+  "record_label", "record_present", "record_applicable", "record_not_assessed", "record_fraction",
+  "primary_source_key", "primary_source_url", "primary_source_designation", "identity_state", "conflict_count",
+  "source_declared", "source_applicable", "source_executed", "source_data_bearing"
+];
+const bootstrapValues = {
+  event_id: "123e4567-e89b-42d3-a456-426614174000", name: "AT2026columnar", ctas_score: 72,
+  follow_up_total: 4, detail_chunk: "candidate-chunks/7f.json", n_classifications: 1,
+  n_classification_history: 0, n_observations: 2, n_spectra: 1, n_messenger_signals: 0,
+  n_publications: 0, n_host_context: 0, n_catalog_counterparts: 0, n_archive_products: 0,
+  n_publication_revisions: 0,
+  record_label: "Partial public record", record_present: 4, record_applicable: 7,
+  record_not_assessed: 1, record_fraction: 4 / 7, primary_source_key: "tns",
+  primary_source_url: "https://www.wis-tns.org/object/2026columnar", primary_source_designation: "AT2026columnar",
+  identity_state: "RESOLVED", conflict_count: 2, source_declared: 14, source_applicable: 5,
+  source_executed: 3, source_data_bearing: 2
+};
+const inflated = model.inflateBootstrap({candidate_columns: bootstrapColumns,
+  candidate_rows: [bootstrapColumns.map(column => bootstrapValues[column])]});
+assert.strictEqual(inflated.length, 1);
+assert.deepStrictEqual(inflated[0].follow_up_counts,
+  {classifications: 1, classification_history: 0, observations: 2, spectra: 1,
+    messenger_signals: 0, publications: 0, publication_revisions: 0,
+    host_context: 0, catalog_counterparts: 0, archive_products: 0});
+assert.deepStrictEqual(inflated[0].identity_resolution, {state: "RESOLVED"});
+assert.deepStrictEqual(inflated[0].source_accounting,
+  {declaredSources: 14, applicableSources: 5, executedQueryReceipts: 3, dataBearingSources: 2});
+assert.throws(() => model.inflateBootstrap({candidate_columns: bootstrapColumns, candidate_rows: [["too short"]]}),
+  /wrong width/);
+assert.throws(() => model.inflateBootstrap({candidate_columns: ["event_id", "event_id"], candidate_rows: []}),
+  /no valid candidate table/);
+
+const terminalScenario = model.scoreScenario({baseline: 35, terms: [{code: "recency_points", points: 20}],
+  multimessenger_bonus: 5, status_override: "retracted"}, {recency_points: 50});
+assert.strictEqual(terminalScenario.final_preclip, 90);
+assert.strictEqual(terminalScenario.final_score, 0, "terminal status override must be applied after every arithmetic term");
+const roundedScenario = model.scoreScenario({baseline: 35, terms: [], multimessenger_bonus: 0,
+  persisted_factor_rounding_residual: 0.01, status_override: null}, {});
+assert.strictEqual(roundedScenario.persisted_factor_rounding_residual, 0.01);
+assert.strictEqual(roundedScenario.final_score, 35.01);
+
+const replayTimeline = [
+  {entry_id: "first", public_available_at: "2026-08-20T01:00:00Z"},
+  {entry_id: "future", public_available_at: "2026-08-20T03:00:00Z"},
+  {entry_id: "undated", public_available_at: null}
+];
+const replayBefore = model.evidenceAt(replayTimeline, "2026-08-20T00:59:59Z");
+assert.deepStrictEqual(replayBefore.visible, []);
+assert.deepStrictEqual(replayBefore.undated.map(row => row.entry_id), ["undated"]);
+const replayBetween = model.evidenceAt(replayTimeline, "2026-08-20T02:00:00Z");
+assert.deepStrictEqual(replayBetween.visible.map(row => row.entry_id), ["first"],
+  "historical replay must exclude evidence arriving after the requested cutoff");
+
 const history = Array.from({length: 9}, (_, index) => ({
   published_at: "2026-08-23T" + String(18 - index).padStart(2, "0") + ":00:00Z",
   catalog_content_checksum_sha256: String(index).repeat(64),
@@ -67,4 +123,4 @@ assert.strictEqual(visibleHistory.length, 7);
 assert.strictEqual(visibleHistory[6].added_count, 81,
   "a documented material intake remains visible after routine releases exceed the recent preview");
 
-console.log("catalog model: 21 assertions passed");
+console.log("catalog model: columnar bootstrap, filters, score, replay, sky, and history assertions passed");

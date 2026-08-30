@@ -21,16 +21,23 @@ SITE="${CTAS_SITE:-$HOME/Documents/GitHub/JackMcGuireAstro.github.io}"
 DB="${CTAS_DB:-$HOME/.codex/.chatgpt-projects/g-p-6a5d91be2e688191b7333527fcd488b3/data/soc.db}"
 BRANCH="${CTAS_BRANCH:-main}"
 PUBLIC_FILES=(
-  ctas/data/candidates.json
+  ctas/data/catalog-bootstrap.json
   ctas/data/catalog-index.json
+  ctas/data/alias-index.json
   ctas/data/candidate-chunks/manifest.json
+  ctas/data/research/manifest.json
+  ctas/data/research/events.csv
+  ctas/data/research/aliases.csv
+  ctas/data/research/sources.csv
+  ctas/data/research/events.vot
+  ctas/data/research/tom-targets.csv
   ctas/data/status.json
   ctas/data/source-universe.json
   ctas/data/release-history.json
   ctas/data/link-health.json
   ctas/data/certification.json
 )
-for bucket_index in {0..31}; do
+for bucket_index in {0..255}; do
   printf -v bucket '%02x' "$bucket_index"
   PUBLIC_FILES+=("ctas/data/candidate-chunks/$bucket.json")
 done
@@ -41,7 +48,7 @@ MIN_INTERVAL="${CTAS_MIN_INTERVAL:-0}"
 
 # The watcher still checks every two minutes. When neither candidate content nor
 # durable source state changed, publish only a bounded freshness heartbeat.
-# This avoids a meaningless 23 MB catalog commit every poll while keeping the
+# This avoids a meaningless large catalog commit every poll while keeping the
 # public snapshot report comfortably inside its 30-minute verification window.
 HEARTBEAT_INTERVAL="${CTAS_HEARTBEAT_INTERVAL:-900}"
 
@@ -132,7 +139,8 @@ fi
 python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
   --release-base-ref origin/main >>"$LOG" 2>&1 \
   || die "export failed; nothing committed"
-python3 scripts/check_ctas_links.py --candidates ctas/data/candidates.json \
+python3 scripts/check_ctas_links.py --catalog-index ctas/data/catalog-index.json \
+  --candidate-manifest ctas/data/candidate-chunks/manifest.json \
   --source-universe ctas/data/source-universe.json --output ctas/data/link-health.json >>"$LOG" 2>&1 \
   || die "public link validation failed; nothing committed"
 # Rebuild once so the verification report binds the current link-health artifact and
@@ -141,9 +149,35 @@ python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ct
   --release-base-ref origin/main >>"$LOG" 2>&1 \
   || die "verification-report rebuild failed; nothing committed"
 
+EXPECTED_SHARDS=$(python3 - <<'PY'
+import json
+from pathlib import Path
+
+manifest = json.loads(Path("ctas/data/candidate-chunks/manifest.json").read_text())
+actual = sorted(row.get("path") for row in manifest.get("chunks", []))
+expected = [f"ctas/data/candidate-chunks/{index:02x}.json" for index in range(256)]
+if actual != expected:
+    raise SystemExit("detail-shard manifest is not the exact 00..ff release set")
+print(len(actual))
+PY
+) || die "detail-shard manifest does not match the explicit publisher allowlist"
+[ "$EXPECTED_SHARDS" = "256" ] || die "detail-shard manifest does not declare 256 shards"
+
 CERT_STATUS=$(python3 -c "import json;print(json.load(open('ctas/data/certification.json'))['status'])" 2>/dev/null || echo "unreadable")
-[ "$CERT_STATUS" = "verified-static-snapshot" ] \
-  || die "static-snapshot verification is $CERT_STATUS; refusing publication"
+if [ "$CERT_STATUS" != "verified-static-snapshot" ]; then
+  FAILED_GATES=$(python3 -c '
+import json
+report = json.load(open("ctas/data/certification.json"))
+print(",".join(sorted(gate["id"] for gate in report.get("gates", []) if gate.get("passed") is not True)))
+' 2>/dev/null || echo "unreadable")
+  case "$FAILED_GATES" in
+    deployed-code-binding,local-origin-code-alignment|deployed-code-binding|local-origin-code-alignment)
+      say "local checksum-bound code successor is not published; publication paused"
+      exit 0
+      ;;
+    *) die "static-snapshot verification is $CERT_STATUS ($FAILED_GATES); refusing publication" ;;
+  esac
+fi
 
 # ------------------------------------------------------------ changed at all?
 # publication_state_checksum_sha256 covers semantic candidate content plus
@@ -212,7 +246,7 @@ if git diff --quiet HEAD -- "${PUBLIC_FILES[@]}" 2>/dev/null; then
   exit 0
 fi
 
-COUNT=$(python3 -c "import json;print(json.load(open('ctas/data/candidates.json'))['candidate_count'])" 2>/dev/null || echo "?")
+COUNT=$(python3 -c "import json;print(json.load(open('ctas/data/catalog-index.json'))['candidate_count'])" 2>/dev/null || echo "?")
 
 if [ "$DRY" -eq 1 ]; then
   say "--dry-run: $COUNT candidates; would commit ${#PUBLIC_FILES[@]} allowlisted public CTAS artifacts and push to $BRANCH"

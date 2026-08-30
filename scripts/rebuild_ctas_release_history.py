@@ -10,11 +10,23 @@ transition.  Same-count semantic history resumes under the repaired exporter.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import re
 import subprocess
 from pathlib import Path
+
+try:
+    from export_ctas_snapshot import (
+        catalog_semantic_checksum,
+        git_catalog_document,
+        semantic_catalog_candidates,
+    )
+except ModuleNotFoundError:  # imported as scripts.rebuild_ctas_release_history in tests
+    from scripts.export_ctas_snapshot import (
+        catalog_semantic_checksum,
+        git_catalog_document,
+        semantic_catalog_candidates,
+    )
 
 SCHEMA = "ctas.public-release-history@1.0.0"
 SUBJECT = re.compile(r"^CTAS data: (\d+) candidates ")
@@ -25,22 +37,18 @@ def git(repo: Path, *args: str) -> bytes:
 
 
 def snapshot(repo: Path, commit: str) -> dict:
-    return json.loads(git(repo, "show", f"{commit}:ctas/data/candidates.json"))
+    document = git_catalog_document(repo, commit)
+    if document is None:
+        raise ValueError(f"no checksum-valid CTAS catalog at {commit}")
+    return document
 
 
 def semantic_candidates(document: dict) -> list[dict]:
-    candidates = json.loads(json.dumps(document.get("candidates", [])))
-    for candidate in candidates:
-        for coverage in candidate.get("source_coverage", []):
-            coverage.pop("checked_at", None)
-            coverage.pop("next_eligible_at", None)
-    return candidates
+    return semantic_catalog_candidates(document.get("candidates", []))
 
 
 def semantic_checksum(document: dict) -> str:
-    return hashlib.sha256(
-        json.dumps(semantic_candidates(document), sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    return catalog_semantic_checksum(document.get("candidates", []))
 
 
 def main() -> int:
@@ -53,7 +61,8 @@ def main() -> int:
     repo = Path(__file__).resolve().parents[1]
     lines = git(
         repo, "log", "--first-parent", "--format=%H%x09%P%x09%s",
-        args.ref, "--", "ctas/data/candidates.json",
+        args.ref, "--", "ctas/data/candidates.json", "ctas/data/catalog-index.json",
+        "ctas/data/candidate-chunks/manifest.json",
     ).decode().splitlines()
     releases = []
     for line in lines:
@@ -70,7 +79,7 @@ def main() -> int:
         try:
             current_snapshot = snapshot(repo, commit)
             previous_snapshot = snapshot(repo, parent) if parent else {"candidates": []}
-        except (subprocess.CalledProcessError, json.JSONDecodeError):
+        except (subprocess.CalledProcessError, json.JSONDecodeError, ValueError):
             continue
         current_by_name = {
             str(row["name"]): row for row in semantic_candidates(current_snapshot) if row.get("name")

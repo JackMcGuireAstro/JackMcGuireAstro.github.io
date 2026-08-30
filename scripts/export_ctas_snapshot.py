@@ -25,27 +25,55 @@ records are excluded by construction.
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
+import io
 import json
 import os
 import re
 import sqlite3
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
-
-UTC = timezone.utc  # datetime.UTC is 3.11+; this works on 3.9+
 from pathlib import Path
 from typing import Any
+
+UTC = timezone.utc  # datetime.UTC is 3.11+; this works on 3.9+
+
+try:
+    from ctas_astro_evidence import (
+        build_projection,
+        derive_messenger_revisions,
+        receipt_completeness,
+        sanitized_receipt_detail,
+    )
+except ModuleNotFoundError:  # imported as scripts.export_ctas_snapshot in tests
+    from scripts.ctas_astro_evidence import (
+        build_projection,
+        derive_messenger_revisions,
+        receipt_completeness,
+        sanitized_receipt_detail,
+    )
 
 SCHEMA_VERSION = 2
 
 SOURCE_UNIVERSE_SCHEMA = "ctas.public-source-universe@1.0.0"
-CATALOG_INDEX_SCHEMA = "ctas.public-catalog-index@1.0.0"
+CATALOG_INDEX_SCHEMA = "ctas.public-catalog-index@1.1.0"
+ALIAS_INDEX_SCHEMA = "ctas.public-alias-index@1.0.0"
+RESEARCH_TABLE_MANIFEST_SCHEMA = "ctas.research-table-manifest@1.0.0"
 CANDIDATE_CHUNK_SCHEMA = "ctas.public-candidate-chunk@1.0.0"
-CANDIDATE_MANIFEST_SCHEMA = "ctas.public-candidate-manifest@1.0.0"
+CANDIDATE_DOWNLOAD_MANIFEST_SCHEMA = "ctas.public-complete-catalog-manifest@1.0.0"
+# Compatibility name used by existing tests/importers.  The one manifest is now
+# both the lazy-detail index and the authoritative complete-catalog download.
+CANDIDATE_MANIFEST_SCHEMA = CANDIDATE_DOWNLOAD_MANIFEST_SCHEMA
 RELEASE_HISTORY_SCHEMA = "ctas.public-release-history@1.0.0"
-CANDIDATE_BUCKET_COUNT = 32
+CANDIDATE_BUCKET_COUNT = 256
+CATALOG_BOOTSTRAP_MAX_BYTES = 2 * 1024 * 1024
+# A single evidence-rich dossier can exceed 2 MiB before compression; the
+# stable 256-way UUID partition therefore uses a truthful 4 MiB raw ceiling.
+CANDIDATE_SHARD_TARGET_MAX_BYTES = 4 * 1024 * 1024
+GITHUB_MAX_BLOB_BYTES = 100 * 1024 * 1024
 SOURCE_STATE_VOCABULARY = (
     "active-returning-data",
     "active-no-recent-messages",
@@ -157,6 +185,44 @@ REPRESENTED_THROUGH = {
     "snews-gcn": ["gcn"],
     "superk-gcn": ["gcn"],
     "svom-gcn": ["gcn"],
+}
+
+OFFICIAL_PROVIDER_CONSTRAINTS = {
+    "tns": {
+        "authentication_requirement": "Authenticated POST API with TNS bot API key and mandatory tns_marker User-Agent; bulk public intake uses released CSV deltas.",
+        "pagination_policy": "Follow response pagination and rate headers; do not hard-code a page ceiling. Prefer daily/full/hourly CSV deltas for catalog-scale intake.",
+        "rate_or_cadence_limit": "Rolling 60-second quotas vary by operation; cone searches have a separate lower quota. CTAS must honor returned rate headers.",
+        "redistribution_constraint": "Public catalog metadata are retained. Attached spectra or photometry are link-only unless individually rights-cleared; discoverability is not a blanket artifact license.",
+        "last_verified": "2026-08-29",
+    },
+    "gcn": {
+        "authentication_requirement": "GCN Kafka client ID and secret; OAuth tokens refresh automatically and inactive credentials may be disabled.",
+        "pagination_policy": "Use a long-running Kafka consumer with offsets and heartbeat; use the complete daily Circular JSON/text archive rather than scraping result pages.",
+        "rate_or_cadence_limit": "Official documentation does not publish a numeric consumer-rate or retention guarantee; CTAS does not invent one.",
+        "redistribution_constraint": "Notices and Circulars are preliminary public records. Preserve corrections, retractions, notice/test state, and original GCN links and citation metadata.",
+        "last_verified": "2026-08-29",
+    },
+    "rubin-lasair": {
+        "authentication_requirement": "Authorization: Token header; credentials remain local and are never published.",
+        "pagination_policy": "Deterministic query order with limit/offset; default limit 1,000. Streams default to 1,000 rows; light-curve calls accept at most 50 objects.",
+        "rate_or_cadence_limit": "Normal accounts: 100 calls/hour and 10,000 query rows; approved power users: 10,000 calls/hour and 1,000,000 rows.",
+        "redistribution_constraint": "Cite Lasair and preserve ZTF/upstream credits. No blanket redistribution license is inferred for every crossmatched upstream field.",
+        "last_verified": "2026-08-29",
+    },
+    "aavso-aid": {
+        "authentication_requirement": "Authorization: Token header; credentials remain local and are never published.",
+        "pagination_policy": "Follow count/next/previous/results until next is null; the official API does not document a page-size control or hard row ceiling.",
+        "rate_or_cadence_limit": "No more than one request every 10 seconds without AAVSO approval.",
+        "redistribution_constraint": "AAVSO and contributing observers require acknowledgment; observer codes and upper-limit semantics must be preserved.",
+        "last_verified": "2026-08-29",
+    },
+    "atlas": {
+        "authentication_requirement": "Registered ATLAS forced-photometry token in the Authorization header; credentials remain local.",
+        "pagination_policy": "Submit a bounded queue task, poll its task URL, then fetch and checksum the temporary result. Queue listings use cursor pagination.",
+        "rate_or_cadence_limit": "HTTP 429 supplies the required wait; official documentation does not state one stable numeric quota.",
+        "redistribution_constraint": "Preserve request parameters, result checksum, negative difference flux, template caveats, exact acknowledgment, and required ATLAS citations.",
+        "last_verified": "2026-08-29",
+    },
 }
 
 # Stable resolution of source-native discovery labels. This is deliberately
@@ -286,12 +352,15 @@ def iso(value: Any) -> str | None:
     s = str(value).strip()
     if not s:
         return None
-    s = s.replace(" ", "T", 1)
-    if "." in s:
-        s = s.split(".", 1)[0]
-    if not s.endswith("Z"):
-        s += "Z"
-    return s
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", s):
+        s += "T00:00:00"
+    try:
+        parsed = datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 def utcstamp() -> str:
@@ -304,7 +373,7 @@ def clean(value: Any) -> Any:
     if isinstance(value, float):
         if value != value or value in (float("inf"), float("-inf")):
             return None
-        return round(value, 6)
+        return value
     if isinstance(value, str):
         v = value.strip()
         return v or None
@@ -318,10 +387,10 @@ def tns_object_id(value: str) -> str | None:
     return match.group(1) if match else None
 
 
-def candidate_bucket(name: str) -> str:
-    """Return a stable content bucket so candidate details can load on demand."""
+def candidate_bucket(identity: str) -> str:
+    """Return a stable UUID-derived bucket so renames do not move dossiers."""
 
-    return f"{int(hashlib.sha256(name.encode()).hexdigest()[:8], 16) % CANDIDATE_BUCKET_COUNT:02x}"
+    return f"{int(hashlib.sha256(identity.encode()).hexdigest()[:8], 16) % CANDIDATE_BUCKET_COUNT:02x}"
 
 
 def reported_label_kind(candidate: dict[str, Any]) -> str:
@@ -608,6 +677,239 @@ def score_explanation_for(candidate: dict[str, Any]) -> str:
     return "The published factor record shows that " + "; ".join(parts) + "."
 
 
+SCORE_TERM_DEFINITIONS = (
+    ("recency_points", "Recency", 1.0, "source-reported discovery time"),
+    ("brightness_points", "Reported brightness", 1.0, "source-reported discovery magnitude"),
+    ("classification_gap_points", "Missing classification", 1.0, "retained classification state"),
+    ("classification_conflict_points", "Classification conflict", 1.0, "retained active classification assertions"),
+    ("spectroscopy_gap_points", "Missing spectrum", 1.0, "retained public spectrum count"),
+    ("coverage_reduction", "Existing observation coverage", -1.0, "retained quantitative observation count"),
+    ("observation_gap_points", "Observation age", 1.0, "latest retained observation time"),
+)
+
+
+def score_model_for(candidate: dict[str, Any]) -> dict[str, Any]:
+    """Reconstruct the operational follow-up score from its persisted factors.
+
+    Terminal source states are applied last.  This deliberately repairs legacy
+    rows created before that ordering was enforced in the ingestion service;
+    every other mismatch remains fail-closed through the release gate.
+    """
+
+    factors = dict(candidate.get("score_factors") or {})
+    terms: list[dict[str, Any]] = []
+    for code, label, sign, basis in SCORE_TERM_DEFINITIONS:
+        raw = factors.get(code, 0.0)
+        try:
+            points = sign * float(raw or 0.0)
+        except (TypeError, ValueError):
+            points = 0.0
+        terms.append({
+            "code": code,
+            "label": label,
+            "points": round(points, 2),
+            "basis": basis,
+        })
+
+    baseline = 35.0
+    core_preclip = baseline + sum(float(term["points"]) for term in terms)
+    core_postclip = max(0.0, min(100.0, core_preclip))
+    try:
+        messenger_bonus = float(factors.get("multimessenger_points") or 0.0)
+    except (TypeError, ValueError):
+        messenger_bonus = 0.0
+    status = str(candidate.get("status") or "candidate").lower()
+    status_override = status if status in {"retracted", "bogus"} else None
+    try:
+        recorded = round(float(candidate.get("ctas_score") or 0.0), 2)
+    except (TypeError, ValueError):
+        recorded = 0.0
+    final_from_terms = core_postclip + messenger_bonus
+    calculated = round(0.0 if status_override else max(0.0, min(100.0, final_from_terms)), 2)
+    # Persisted factors are rounded to hundredths independently of the score.
+    # Retain an explicit one-cent reconciliation residual rather than implying
+    # that the displayed rounded terms had more precision than they do.
+    rounding_residual = 0.0
+    if not status_override and abs(recorded - calculated) <= 0.011:
+        rounding_residual = round(recorded - calculated, 2)
+    final_preclip = final_from_terms + rounding_residual
+    calculated = round(0.0 if status_override else max(0.0, min(100.0, final_preclip)), 2)
+    corrected_terminal_legacy = bool(status_override and abs(recorded - calculated) > 0.01)
+    if corrected_terminal_legacy:
+        candidate["ctas_score"] = calculated
+        factors["status"] = status_override
+        candidate["score_factors"] = factors
+    published = round(float(candidate.get("ctas_score") or 0.0), 2)
+    reconciled = abs(published - calculated) <= 0.01
+    return {
+        "schema": "ctas.follow-up-score@1.0.0",
+        "baseline": baseline,
+        "terms": terms,
+        "core_preclip": round(core_preclip, 2),
+        "core_postclip": round(core_postclip, 2),
+        "multimessenger_bonus": round(messenger_bonus, 2),
+        "persisted_factor_rounding_residual": rounding_residual,
+        "final_preclip": round(final_preclip, 2),
+        "final_score": calculated,
+        "status_override": status_override,
+        "recorded_score_before_publication_correction": recorded,
+        "publication_correction_applied": corrected_terminal_legacy,
+        "reconciled": reconciled,
+        "tolerance": 0.01,
+        "score_method_version": factors.get("score_method_version") or "ctas-operational-score-v1",
+        "factor_record_as_of": factors.get("calculation_as_of") or candidate.get("updated_at"),
+        "factor_precision_note": (
+            "Persisted score factors are rounded to hundredths; a displayed residual of at most "
+            "0.01 reconciles their sum to the persisted score without inventing precision."
+        ),
+        "claim_boundary": (
+            "Operational follow-up ordering arithmetic only; not a probability, "
+            "classification confidence, or measure of scientific importance."
+        ),
+    }
+
+
+def _basis_ids(rows: list[dict[str, Any]]) -> list[str]:
+    identifiers: set[str] = set()
+    for row in rows:
+        for key in (
+            "assertion_id", "provider_observation_id", "provider_spectrum_id",
+            "provider_signal_id", "publication_assertion_id", "provider_publication_id",
+            "host_assertion_id", "catalog_assertion_id", "provider_product_id",
+        ):
+            value = clean(row.get(key))
+            if value:
+                identifiers.add(str(value))
+                break
+    return sorted(identifiers)
+
+
+def science_brief_for(candidate: dict[str, Any]) -> dict[str, Any]:
+    """Build deterministic known/uncertain/missing/change prose from retained rows."""
+
+    follow = candidate.get("follow_up") or {}
+    completeness = candidate.get("record_completeness") or {}
+    conflicts = (candidate.get("astro_evidence") or {}).get("conflictSets") or []
+    identity = candidate.get("identity_resolution") or {}
+    known: list[dict[str, Any]] = []
+    if candidate.get("ra_deg") is not None and candidate.get("dec_deg") is not None:
+        known.append({
+            "label": "ICRS position",
+            "value": f"RA {float(candidate['ra_deg']):.6f} deg, Dec {float(candidate['dec_deg']):+.6f} deg",
+            "basis_assertion_ids": [],
+            "source_count": 1,
+        })
+    class_rows = list(follow.get("classifications") or [])
+    classification_conflict = any(
+        "class" in str(row.get("propertyCode") or "").lower() for row in conflicts
+    )
+    classification = clean(candidate.get("classification"))
+    if classification and classification.lower() not in {"unclassified", "unknown", "at"} and not classification_conflict:
+        known.append({
+            "label": "Reported classification",
+            "value": classification,
+            "basis_assertion_ids": _basis_ids(class_rows),
+            "source_count": len({str(row.get('provider') or '') for row in class_rows if row.get('provider')}) or 1,
+        })
+    if candidate.get("discovery_magnitude") is not None:
+        known.append({
+            "label": "Source-reported discovery magnitude",
+            "value": f"{float(candidate['discovery_magnitude']):.3f} mag",
+            "basis_assertion_ids": [],
+            "source_count": 1,
+        })
+    known.append({
+        "label": "Retained public evidence",
+        "value": f"{int(candidate.get('follow_up_total') or 0)} source-native follow-up rows",
+        "basis_assertion_ids": [],
+        "source_count": int((candidate.get("source_accounting") or {}).get("dataBearingSources") or 0),
+    })
+
+    uncertain: list[dict[str, Any]] = []
+    for conflict in conflicts:
+        uncertain.append({
+            "label": str(conflict.get("propertyCode") or "Source assertion"),
+            "state": "conflicting-source-assertions",
+            "conflict_set_ids": [str(conflict.get("conflictSetId") or conflict.get("id") or "")],
+        })
+    if identity.get("state") and identity.get("state") != "RESOLVED":
+        uncertain.append({
+            "label": "Cross-source identity",
+            "state": str(identity["state"]).lower(),
+            "conflict_set_ids": [],
+        })
+    if candidate.get("classification_probability") is not None:
+        uncertain.append({
+            "label": "Reported classification probability",
+            "state": "source-reported; calibration is not assumed by CTAS",
+            "conflict_set_ids": [],
+        })
+    if not uncertain:
+        uncertain.append({
+            "label": "Explicit conflicts",
+            "state": "none retained; this is not proof that all source values are equivalent",
+            "conflict_set_ids": [],
+        })
+
+    suggested = {
+        "classification": "classification assertion",
+        "follow-up-photometry": "time-series photometry or limiting magnitude",
+        "spectrum": "rights-cleared spectrum or spectrum metadata",
+        "host-context": "explicit host-association assertion",
+        "catalog-context": "position-aware catalog query",
+        "messenger": "source-linked messenger notice",
+        "reports": "public report or publication",
+    }
+    missing = [
+        {
+            "component_id": row["id"],
+            "label": row["label"],
+            "state": row["state"],
+            "suggested_evidence_type": suggested.get(row["id"], "source-attributed public evidence"),
+        }
+        for row in completeness.get("components", [])
+        if row.get("state") in {"missing", "not-assessed"}
+    ]
+
+    timeline = candidate.get("evidence_timeline") or timeline_for(candidate)
+    provider_timeline = [
+        row for row in timeline
+        if row.get("assertion_kind") == "provider assertion" and row.get("public_available_at")
+    ]
+    dated_timeline = [row for row in timeline if row.get("public_available_at")]
+    recent_pool = provider_timeline or dated_timeline
+    recent = max(
+        recent_pool,
+        key=lambda row: str(row.get("public_available_at") or ""),
+        default=(timeline[0] if timeline else None),
+    )
+    source = candidate.get("discovery_survey") or "a declared public source"
+    happened = (
+        f"{candidate.get('name') or 'This record'} entered CTAS as a "
+        f"{str(candidate.get('event_type') or 'time-dependent astronomical candidate').replace('-', ' ')} "
+        f"reported by {source}."
+    )
+    return {
+        "schema": "ctas.candidate-science-brief@1.0.0",
+        "what_happened": {
+            "text": happened,
+            "basis_record_ids": [str(candidate.get("event_id"))],
+        },
+        "confidently_known": known,
+        "uncertain_or_conflicting": uncertain,
+        "missing_information": missing,
+        "most_recent_change": ({key: recent[key] for key in (
+            "entry_id", "evidence_type", "title", "provider", "scientific_time",
+            "provider_publication_time", "ctas_receipt_time", "public_available_at",
+            "basis_record_id",
+        ) if recent and key in recent} if recent else None),
+        "claim_boundary": (
+            "A deterministic summary of this checksum-bound public record; it does not "
+            "confirm discovery, class, counterpart, host, or scientific importance."
+        ),
+    }
+
+
 def timeline_for(candidate: dict[str, Any]) -> list[dict[str, Any]]:
     """Build one public evidence timeline while preserving independent clocks."""
 
@@ -621,6 +923,13 @@ def timeline_for(candidate: dict[str, Any]) -> list[dict[str, Any]]:
             url = next((clean(row.get(key)) for key in source_url_keys if clean(row.get(key))), None)
             facility = next((clean(row.get(key)) for key in ("facility", "observatory", "telescope", "instrument") if clean(row.get(key))), None)
             summary = next((clean(row.get(key)) for key in ("summary", "description", "overview_note", "measurement", "abstract") if clean(row.get(key))), None)
+            basis_record_id = next((
+                clean(row.get(key)) for key in (
+                    "assertion_id", "provider_observation_id", "provider_spectrum_id",
+                    "provider_signal_id", "publication_assertion_id", "provider_publication_id",
+                    "host_assertion_id", "catalog_assertion_id", "provider_product_id",
+                ) if clean(row.get(key))
+            ), None)
             entry = {
                 "evidence_type": evidence_type,
                 "provider": clean(row.get("provider")) or "provider not recorded",
@@ -628,10 +937,11 @@ def timeline_for(candidate: dict[str, Any]) -> list[dict[str, Any]]:
                 "assertion_kind": "provider assertion",
                 "scientific_time": iso(row.get(scientific_key)) if scientific_key else None,
                 "provider_publication_time": iso(row.get("source_published_at") or row.get("published_at")),
-                "ctas_receipt_time": iso(row.get("ctas_received_at")),
+                "ctas_receipt_time": iso(row.get("ctas_received_at") or row.get("retrieved_at")),
                 "facility_or_instrument": facility,
                 "summary": summary,
                 "source_url": url,
+                "basis_record_id": basis_record_id,
                 "stable_order": index,
             }
             entries.append({key: value for key, value in entry.items() if value is not None})
@@ -678,6 +988,22 @@ def timeline_for(candidate: dict[str, Any]) -> list[dict[str, Any]]:
     entries.sort(key=sort_key, reverse=True)
     for entry in entries:
         entry.pop("stable_order", None)
+        if entry.get("provider_publication_time"):
+            entry["public_available_at"] = entry["provider_publication_time"]
+            entry["availability_basis"] = "provider publication time"
+        elif entry.get("ctas_receipt_time"):
+            entry["public_available_at"] = entry["ctas_receipt_time"]
+            entry["availability_basis"] = "CTAS receipt time"
+        else:
+            entry["public_available_at"] = None
+            entry["availability_basis"] = "no defensible public-availability clock retained"
+        kind = str(entry.get("evidence_type") or "")
+        entry["revision_state"] = (
+            "retracted" if "retraction" in kind else
+            "revision" if "revision" in kind else "current-or-standalone"
+        )
+        canonical = json.dumps(entry, sort_keys=True, separators=(",", ":"))
+        entry["entry_id"] = "timeline:" + hashlib.sha256(canonical.encode()).hexdigest()[:24]
     return entries
 
 
@@ -698,6 +1024,16 @@ def rows_by_event(
                 for key in row.keys()
                 if key != "event_id" and clean(row[key]) is not None
             }
+            for key in (
+                "classification", "cross_identifications", "detector_network", "keywords",
+                "motion", "photometry", "preview_points", "properties", "quality_flags",
+                "related_files", "related_objects", "scientific_claims",
+            ):
+                if key in item and isinstance(item[key], str):
+                    try:
+                        item[key] = json.loads(item[key])
+                    except json.JSONDecodeError:
+                        pass
             for key in (
                 "observed_at", "asserted_at", "published_at", "source_published_at",
                 "ctas_received_at", "queried_at",
@@ -730,7 +1066,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         chunk = ids[i:i + CHUNK]
         q = ",".join("?" * len(chunk))
         for a in cur.execute(
-            f"SELECT event_id, provider, external_id, is_preferred FROM aliases "
+            f"SELECT id, event_id, provider, external_id, is_preferred, created_at FROM aliases "
             f"WHERE event_id IN ({q}) ORDER BY is_preferred DESC, provider, external_id",
             chunk,
         ):
@@ -740,8 +1076,10 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         cur,
         ids,
         """
-        SELECT ca.event_id, ca.provider, ca.classification, ca.subtype, ca.probability,
-               ca.method, ca.asserted_at, ca.citation_url, ca.superseded, ca.retracted,
+        SELECT ca.event_id, ca.id AS assertion_id, ca.envelope_id AS source_record_id,
+               ca.provider, ca.classification, ca.subtype, ca.probability,
+               ca.method, ca.model_name, ca.model_version, ca.asserted_at,
+               ca.citation_url, ca.superseded, ca.retracted,
                ae.source_publication_time AS source_published_at,
                ae.received_at AS ctas_received_at
         FROM classification_assertions ca
@@ -757,8 +1095,10 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         cur,
         ids,
         """
-        SELECT ca.event_id, ca.provider, ca.classification, ca.subtype, ca.probability,
-               ca.method, ca.asserted_at, ca.citation_url, ca.superseded, ca.retracted,
+        SELECT ca.event_id, ca.id AS assertion_id, ca.envelope_id AS source_record_id,
+               ca.provider, ca.classification, ca.subtype, ca.probability,
+               ca.method, ca.model_name, ca.model_version, ca.asserted_at,
+               ca.citation_url, ca.superseded, ca.retracted,
                ae.source_publication_time AS source_published_at,
                ae.received_at AS ctas_received_at
         FROM classification_assertions ca
@@ -773,18 +1113,22 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         cur,
         ids,
         """
-        SELECT o.event_id, o.provider, o.observed_at, o.detection, o.telescope,
-               o.observatory, o.instrument, o.pipeline, o.band, o.magnitude_system,
+        SELECT o.event_id, o.id AS assertion_id, o.envelope_id AS source_record_id,
+               o.provider, o.provider_observation_id, o.observed_at, o.original_time,
+               o.mjd, o.jd, o.detection, o.telescope, o.observatory, o.instrument,
+               o.detector, o.pipeline, o.band, o.original_band, o.wavelength_nm, o.magnitude_system,
                o.magnitude, o.magnitude_error, o.flux, o.flux_error, o.flux_unit,
-               o.limiting_magnitude, o.exposure_seconds, o.signal_to_noise,
-               o.calibration, o.photometry_method, o.summary, o.source_url,
+               o.limiting_magnitude, o.limiting_flux, o.exposure_seconds, o.signal_to_noise,
+               o.calibration, o.quality_flags, o.photometry_method, o.difference_photometry,
+               o.summary, o.source_url, o.source_assertion_group_id,
+               o.source_revision_checksum, o.source_revision_sequence, o.source_assertion_index,
+               o.superseded, o.superseded_at, o.superseded_by_revision,
                ae.source_publication_time AS source_published_at,
                COALESCE(ae.received_at, o.created_at) AS ctas_received_at
         FROM observations o
         LEFT JOIN alert_envelopes ae ON ae.id = o.envelope_id
         WHERE o.event_id IN ({ids})
           AND o.data_rights IN ('public', 'open')
-          AND COALESCE(o.superseded, 0) = 0
         ORDER BY o.event_id, o.observed_at DESC, o.id
         """,
     )
@@ -792,11 +1136,13 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         cur,
         ids,
         """
-        SELECT ms.event_id, ms.provider, ms.provider_signal_id, ms.observed_at,
+        SELECT ms.event_id, ms.id AS assertion_id, ms.envelope_id AS source_record_id,
+               ms.provider, ms.provider_signal_id, ms.observed_at,
                ms.messenger, ms.role, ms.instrument, ms.detection, ms.alert_type,
                ms.significance_sigma, ms.false_alarm_rate_hz, ms.sky_area_50_sq_deg,
                ms.sky_area_90_sq_deg, ms.distance_mpc, ms.distance_std_mpc,
-               ms.measurement, ms.summary, ms.source_url, ms.skymap_url,
+               ms.classification, ms.properties, ms.detector_network,
+               ms.time_offset_seconds, ms.measurement, ms.summary, ms.source_url, ms.skymap_url,
                ae.source_publication_time AS source_published_at,
                COALESCE(ae.received_at, ms.created_at) AS ctas_received_at
         FROM messenger_signals ms
@@ -807,6 +1153,10 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         ORDER BY ms.event_id, ms.observed_at DESC, ms.id
         """,
     )
+    signals = {
+        event_id: derive_messenger_revisions(rows)
+        for event_id, rows in signals.items()
+    }
     publications = rows_by_event(
         cur,
         ids,
@@ -819,7 +1169,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
                  ) AS revision_rank
           FROM publication_revisions pr
         )
-        SELECT pel.event_id, p.provider, p.provider_publication_id,
+        SELECT pel.event_id, p.id AS assertion_id, p.provider, p.provider_publication_id,
                p.publication_type, p.canonical_url, p.published_at,
                p.published_at AS source_published_at,
                p.created_at AS ctas_received_at,
@@ -834,14 +1184,40 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         """,
     )
 
+    publication_revisions = rows_by_event(
+        cur,
+        ids,
+        """
+        SELECT pel.event_id, p.id AS publication_assertion_id,
+               pr.id AS assertion_id, p.provider, p.provider_publication_id,
+               p.publication_type, p.canonical_url, p.published_at,
+               pr.content_checksum, pr.source_content_checksum,
+               pr.source_revision_sequence, pr.retrieved_at,
+               pr.title, pr.authors_text, pr.abstract, pr.source_group,
+               pr.keywords, pr.related_objects, pr.related_files, pr.scientific_claims,
+               CASE WHEN pr.id = (
+                 SELECT newer.id FROM publication_revisions newer
+                 WHERE newer.publication_id = p.id
+                 ORDER BY newer.retrieved_at DESC, newer.id DESC LIMIT 1
+               ) THEN 0 ELSE 1 END AS superseded
+        FROM publication_event_links pel
+        JOIN publications p ON p.id = pel.publication_id
+        JOIN publication_revisions pr ON pr.publication_id = p.id
+        WHERE pel.event_id IN ({ids})
+          AND p.data_rights IN ('public', 'open')
+        ORDER BY pel.event_id, p.published_at DESC, p.id, pr.retrieved_at DESC, pr.id
+        """,
+    )
+
     spectra = rows_by_event(
         cur,
         ids,
         """
-        SELECT s.event_id, s.provider, s.provider_spectrum_id, s.observed_at,
+        SELECT s.event_id, s.id AS assertion_id, s.envelope_id AS source_record_id,
+               s.provider, s.provider_spectrum_id, s.observed_at,
                s.telescope, s.instrument, s.configuration, s.wavelength_unit,
                s.flux_unit, s.resolution, s.calibration_state, s.public_download_url,
-               s.file_name, s.file_checksum, s.source_url,
+               s.preview_points, s.file_name, s.file_checksum, s.source_url,
                ae.source_publication_time AS source_published_at,
                COALESCE(ae.received_at, s.created_at) AS ctas_received_at
         FROM spectra s
@@ -856,10 +1232,14 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         cur,
         ids,
         """
-        SELECT h.event_id, h.provider, h.queried_name, h.canonical_name,
-               h.ra_deg, h.dec_deg, h.transient_offset_arcsec, h.redshift,
-               h.redshift_error, h.physical_type, h.morphology, h.activity_type,
-               h.overview_note, h.source_url, h.attribution, h.queried_at,
+        SELECT h.event_id, h.id AS assertion_id, h.envelope_id AS source_record_id,
+               h.provider, h.queried_name, h.canonical_name,
+               h.cross_identifications, h.ra_deg, h.dec_deg, h.transient_offset_arcsec, h.redshift,
+               h.redshift_error, h.redshift_reference, h.heliocentric_velocity_km_s,
+               h.hubble_flow_distance_mpc, h.mean_distance_mpc, h.mean_distance_error_mpc,
+               h.physical_type, h.morphology, h.activity_type, h.major_axis_arcsec,
+               h.physical_major_axis_kpc, h.galactic_extinction_v_mag,
+               h.overview_note, h.response_checksum, h.source_url, h.attribution, h.queried_at,
                ae.received_at AS ctas_received_at
         FROM host_context_assertions h
         LEFT JOIN alert_envelopes ae ON ae.id = h.envelope_id
@@ -872,10 +1252,12 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         cur,
         ids,
         """
-        SELECT event_id, provider, catalog, catalog_record_id, catalog_description,
+        SELECT event_id, id AS assertion_id, provider, catalog, catalog_record_id, catalog_description,
                ra_deg, dec_deg, separation_arcsec, position_error_arcsec,
                counterpart_type, photometry, motion, description, source_url,
-               catalog_documentation_url, attribution, rights_basis, queried_at,
+               catalog_documentation_url, attribution, rights_basis, quality_flags,
+               response_checksum, queried_at,
+               'Provider-native source_row is not mirrored; normalized rights-cleared fields and the response checksum are retained.' AS source_row_exclusion,
                queried_at AS ctas_received_at
         FROM catalog_crossmatch_assertions
         WHERE event_id IN ({ids}) AND data_rights IN ('public', 'open')
@@ -887,10 +1269,13 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         cur,
         ids,
         """
-        SELECT event_id, provider, provider_product_id, mission, observation_id,
-               data_product_type, product_type, product_filename, description,
+        SELECT event_id, id AS assertion_id, provider, provider_product_id, mission, observation_id,
+               product_group_id, data_product_type, product_type, product_subgroup,
+               product_filename, description,
                instrument, filters, calibration_level, exposure_seconds,
-               angular_distance_arcsec, public_download_url,
+               observed_start_mjd, observed_end_mjd, release_mjd,
+               angular_distance_arcsec, proposal_id, proposal_pi,
+               data_uri, public_download_url, size_bytes, response_checksum,
                product_documentation_url, source_url, attribution, rights_basis,
                queried_at, queried_at AS ctas_received_at
         FROM archive_product_assertions
@@ -899,27 +1284,38 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         """,
     )
 
-    latest_attempts = rows_by_event(
+    all_attempts = rows_by_event(
         cur,
         ids,
         """
-        WITH ranked AS (
-          SELECT sqa.*,
-                 ROW_NUMBER() OVER (
-                   PARTITION BY sqa.event_id, sqa.source_id, sqa.query_kind
-                   ORDER BY sqa.checked_at DESC, sqa.id DESC
-                 ) AS attempt_rank
-          FROM source_query_attempts sqa
-          WHERE sqa.event_id IN ({ids})
-        )
-        SELECT ranked.event_id, ranked.source_id, ranked.query_kind,
-               ranked.terminal_state, ranked.checked_at, ranked.next_eligible_at,
-               ranked.error_code, ranked.evidence_url, sources.display_name,
-               sources.documentation_url
-        FROM ranked
-        JOIN sources ON sources.id = ranked.source_id
-        WHERE ranked.attempt_rank = 1
-        ORDER BY ranked.event_id, sources.display_name, ranked.source_id
+        SELECT sqa.*, sources.display_name, sources.documentation_url
+        FROM source_query_attempts sqa
+        JOIN sources ON sources.id = sqa.source_id
+        WHERE sqa.event_id IN ({ids})
+        ORDER BY sqa.event_id, sqa.source_id, sqa.query_kind,
+                 sqa.checked_at DESC, sqa.id DESC
+        """,
+    )
+    latest_attempts: dict[str, list[dict[str, Any]]] = {}
+    for event_id, event_attempts in all_attempts.items():
+        seen_attempt_keys: set[tuple[str, str]] = set()
+        for attempt in event_attempts:
+            key = (str(attempt.get("source_id") or ""), str(attempt.get("query_kind") or ""))
+            if key in seen_attempt_keys:
+                continue
+            seen_attempt_keys.add(key)
+            latest_attempts.setdefault(event_id, []).append(attempt)
+
+    analysis_runs = rows_by_event(
+        cur,
+        ids,
+        """
+        SELECT ar.*
+        FROM analysis_runs ar
+        WHERE ar.event_id IN ({ids})
+          AND ar.analysis_type = 'light-curve-inference'
+          AND ar.data_rights IN ('public', 'open')
+        ORDER BY ar.event_id, COALESCE(ar.completed_at, ar.created_at), ar.id
         """,
     )
 
@@ -1021,7 +1417,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             skipped += 1
             continue
 
-        rec: dict[str, Any] = {}
+        rec: dict[str, Any] = {"event_id": str(r["id"])}
         for src, dest in COLUMNS.items():
             v = clean(r[src])
             if v is None:
@@ -1072,10 +1468,12 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
                 continue          # unknown provider may be an internal ref
             label, template = PUBLIC_LINKS[provider]
             entry = {
+                "alias_id": str(a["id"]),
                 "source_key": provider,
                 "label": label,
                 "designation": str(ext),
                 "is_preferred": bool(a["is_preferred"]),
+                "asserted_at": iso(a["created_at"]),
             }
             if template:
                 linked_id = tns_object_id(str(ext)) if provider == "tns" else str(ext)
@@ -1083,25 +1481,23 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
                     entry["url"] = template.format(id=linked_id)
             links.append(entry)
         if links:
-            # de-duplicate on (label, designation)
-            seen, uniq = set(), []
-            for l in links:
-                k = (l["label"], l["designation"])
-                if k not in seen:
-                    seen.add(k)
-                    uniq.append(l)
-            uniq.sort(key=lambda item: (item["source_key"] != "tns", not item["is_preferred"], item["label"], item["designation"]))
-            linked_rows = [item for item in uniq if item.get("url")]
+            links.sort(key=lambda item: (
+                item["source_key"] != "tns", not item["is_preferred"], item["label"],
+                item["designation"], item["alias_id"],
+            ))
+            linked_rows = [item for item in links if item.get("url")]
             if linked_rows:
-                rec["links"] = linked_rows[:12]
+                rec["links"] = linked_rows
             rec["designations"] = [
                 {
+                    "alias_id": item["alias_id"],
                     "source_key": item["source_key"],
                     "source": item["label"],
                     "designation": item["designation"],
                     "is_preferred": item["is_preferred"],
+                    "asserted_at": item.get("asserted_at"),
                 }
-                for item in uniq[:24]
+                for item in links
             ]
 
         follow_up = {
@@ -1111,6 +1507,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             "spectra": spectra.get(r["id"], []),
             "messenger_signals": signals.get(r["id"], []),
             "publications": publications.get(r["id"], []),
+            "publication_revisions": publication_revisions.get(r["id"], []),
             "host_context": host_context.get(r["id"], []),
             "catalog_counterparts": catalog_counterparts.get(r["id"], []),
             "archive_products": archive_products.get(r["id"], []),
@@ -1267,6 +1664,57 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
 
         out.append(rec)
 
+    scoped_alias_bindings: dict[tuple[str, str], set[str]] = {}
+    unscoped_alias_bindings: dict[str, set[str]] = {}
+    alias_provider_bindings: dict[str, dict[str, set[str]]] = {}
+    for candidate in out:
+        event_id = str(candidate["event_id"])
+        display_key = str(candidate["name"]).strip().casefold()
+        unscoped_alias_bindings.setdefault(display_key, set()).add(event_id)
+        for alias in candidate.get("designations", []):
+            provider = str(alias.get("source_key") or "").strip().casefold()
+            value = str(alias.get("designation") or "").strip().casefold()
+            if not provider or not value:
+                continue
+            scoped_alias_bindings.setdefault((provider, value), set()).add(event_id)
+            unscoped_alias_bindings.setdefault(value, set()).add(event_id)
+            alias_provider_bindings.setdefault(value, {}).setdefault(provider, set()).add(event_id)
+
+    for candidate in out:
+        event_id = str(candidate["event_id"])
+        scoped_conflicts = []
+        unscoped_collisions = []
+        provider_disagreements = []
+        values = {str(candidate["name"]).strip().casefold()}
+        for alias in candidate.get("designations", []):
+            provider = str(alias.get("source_key") or "").strip().casefold()
+            value = str(alias.get("designation") or "").strip().casefold()
+            values.add(value)
+            bound = sorted(scoped_alias_bindings.get((provider, value), set()))
+            if len(bound) > 1:
+                alias["ambiguous"] = True
+                scoped_conflicts.append({"source_key": provider, "alias": alias.get("designation"), "event_ids": bound})
+        for value in sorted(values):
+            bound = sorted(unscoped_alias_bindings.get(value, set()))
+            if len(bound) > 1:
+                unscoped_collisions.append({"alias": value, "event_ids": bound})
+            provider_sets = alias_provider_bindings.get(value, {})
+            distinct = {tuple(sorted(ids_for_provider)) for ids_for_provider in provider_sets.values()}
+            if len(distinct) > 1:
+                provider_disagreements.append({
+                    "alias": value,
+                    "provider_bindings": {provider: sorted(bound_ids) for provider, bound_ids in sorted(provider_sets.items())},
+                })
+        state = "CONFLICTING" if provider_disagreements else "AMBIGUOUS" if scoped_conflicts or unscoped_collisions else "RESOLVED"
+        candidate["identity_resolution"] = {
+            "schema": "ctas.provider-scoped-identity@1.0.0",
+            "state": state,
+            "policy": "Provider and exact source-native alias are the lookup key; unscoped collisions return every candidate and never guess.",
+            "scoped_alias_conflicts": scoped_conflicts,
+            "unscoped_alias_collisions": unscoped_collisions,
+            "provider_disagreements": provider_disagreements,
+        }
+
     provider_counts: dict[str, dict[str, int]] = {}
     survey_counts: dict[str, int] = {}
     for candidate in out:
@@ -1300,6 +1748,8 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
     counts["latest_source_attempts"] = latest_source_attempts
     counts["source_success_times"] = source_success_times
     counts["source_disposition_counts"] = source_disposition_counts
+    counts["all_attempts"] = all_attempts
+    counts["analysis_runs"] = analysis_runs
     return out, counts
 
 
@@ -1330,7 +1780,7 @@ def recursive_safety_problems(value: Any, path: str = "root") -> list[str]:
     if isinstance(value, dict):
         for key, child in value.items():
             lowered = str(key).lower()
-            if lowered in RECURSIVE_BANNED_KEYS:
+            if lowered in RECURSIVE_BANNED_KEYS and child != "[REDACTED]":
                 problems.append(f"{path} contains banned key {key}")
             problems.extend(recursive_safety_problems(child, f"{path}.{key}"))
     elif isinstance(value, list):
@@ -1361,14 +1811,688 @@ def git_ref(repo: Path, ref: str) -> str | None:
         return None
 
 
+PROJECTION_TIME_KEYS = frozenset({
+    "asserted_at", "checked_at", "completed_at", "created_at", "ctas_received_at",
+    "discovery_time", "latest_classification_at", "latest_messenger_at",
+    "latest_retraction_at", "latest_spectrum_at", "observed_at", "published_at",
+    "queried_at", "received_at", "retrieved_at", "source_publication_time",
+    "source_published_at", "started_at", "superseded_at", "updated_at",
+})
+
+
+def stable_candidate_projection_time(
+    candidate: dict[str, Any],
+    attempts: list[dict[str, Any]],
+    analysis_runs: list[dict[str, Any]],
+) -> str:
+    """Return a content-derived projection time, never an export wall clock.
+
+    ``generatedAt`` is embedded in every candidate dossier.  Binding it to the
+    heartbeat rewrote all 32 large shards even when the frozen database bytes
+    were unchanged.  The latest persisted event/evidence/receipt/analysis time
+    instead changes only when the public dossier's retained inputs change.
+    """
+
+    timestamps: list[datetime] = []
+
+    def collect(value: Any) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if str(key) in PROJECTION_TIME_KEYS:
+                    parsed = parse_utc(child)
+                    if parsed is not None:
+                        timestamps.append(parsed)
+                if isinstance(child, (dict, list)):
+                    collect(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect(child)
+
+    collect(candidate)
+    collect(attempts)
+    collect(analysis_runs)
+    if not timestamps:
+        raise ValueError(
+            f"candidate {candidate.get('event_id') or candidate.get('name') or '<unknown>'} "
+            "has no persisted timestamp for AstroEvidence generatedAt"
+        )
+    latest = max(timestamps)
+    timespec = "microseconds" if latest.microsecond else "seconds"
+    return latest.isoformat(timespec=timespec).replace("+00:00", "Z")
+
+
+def candidate_chunk_artifacts(
+    candidates: list[dict[str, Any]],
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, bytes]]:
+    """Serialize deterministic UUID buckets for complete public dossiers."""
+
+    bucket_rows: dict[str, list[dict[str, Any]]] = {
+        f"{index:02x}": [] for index in range(CANDIDATE_BUCKET_COUNT)
+    }
+    for candidate in candidates:
+        bucket_rows[candidate_bucket(str(candidate["event_id"]))].append(candidate)
+
+    chunk_raw: dict[str, bytes] = {}
+    for bucket, bucket_candidates in sorted(bucket_rows.items()):
+        ordered = sorted(bucket_candidates, key=lambda row: str(row["event_id"]))
+        bucket_rows[bucket] = ordered
+        document = {
+            "schema": CANDIDATE_CHUNK_SCHEMA,
+            "bucket": bucket,
+            "candidate_count": len(ordered),
+            "candidates": ordered,
+        }
+        relative = f"ctas/data/candidate-chunks/{bucket}.json"
+        chunk_raw[relative] = (
+            json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode()
+    return bucket_rows, chunk_raw
+
+
+CATALOG_CANDIDATE_COLUMNS = (
+    "event_id", "name", "event_type", "primary_messenger", "messenger_channels",
+    "ra_deg", "dec_deg", "coordinate_error_arcsec", "discovery_time",
+    "discovery_survey", "discovery_instrument", "discovery_magnitude",
+    "status", "classification", "reported_label_kind", "classification_probability",
+    "ctas_score", "follow_up_total", "redshift", "updated_at",
+    "latest_classification_at", "latest_spectrum_at", "latest_messenger_at",
+    "latest_retraction_at", "detail_chunk",
+    "n_classifications", "n_classification_history", "n_observations", "n_spectra",
+    "n_messenger_signals", "n_publications", "n_publication_revisions", "n_host_context",
+    "n_catalog_counterparts", "n_archive_products",
+    "record_label", "record_present", "record_applicable", "record_not_assessed",
+    "record_fraction", "primary_source_key", "primary_source_url",
+    "primary_source_designation", "identity_state", "conflict_count",
+    "source_declared", "source_applicable", "source_executed", "source_data_bearing",
+)
+
+
+def compact_candidate_row(candidate: dict[str, Any]) -> list[Any]:
+    """Return one positional bootstrap row; complete evidence remains in a shard."""
+
+    counts = candidate.get("follow_up_counts") or {}
+    completeness = candidate.get("record_completeness") or {}
+    accounting = candidate.get("source_accounting") or {}
+    links = [row for row in candidate.get("links", []) if row.get("url")]
+    primary = next((row for row in links if row.get("source_key") == "tns"), links[0] if links else {})
+    values: dict[str, Any] = {
+        **{key: candidate.get(key) for key in CATALOG_CANDIDATE_COLUMNS},
+        "detail_chunk": f"candidate-chunks/{candidate_bucket(str(candidate['event_id']))}.json",
+        "n_classifications": int(counts.get("classifications") or 0),
+        "n_classification_history": int(counts.get("classification_history") or 0),
+        "n_observations": int(counts.get("observations") or 0),
+        "n_spectra": int(counts.get("spectra") or 0),
+        "n_messenger_signals": int(counts.get("messenger_signals") or 0),
+        "n_publications": int(counts.get("publications") or 0),
+        "n_publication_revisions": int(counts.get("publication_revisions") or 0),
+        "n_host_context": int(counts.get("host_context") or 0),
+        "n_catalog_counterparts": int(counts.get("catalog_counterparts") or 0),
+        "n_archive_products": int(counts.get("archive_products") or 0),
+        "record_label": completeness.get("label"),
+        "record_present": completeness.get("present"),
+        "record_applicable": completeness.get("applicable"),
+        "record_not_assessed": completeness.get("not_assessed"),
+        "record_fraction": completeness.get("fraction"),
+        "primary_source_key": primary.get("source_key"),
+        "primary_source_url": primary.get("url"),
+        "primary_source_designation": primary.get("designation"),
+        "identity_state": (candidate.get("identity_resolution") or {}).get("state"),
+        "conflict_count": len((candidate.get("astro_evidence") or {}).get("conflictSets") or []),
+        "source_declared": accounting.get("declaredSources"),
+        "source_applicable": accounting.get("applicableSources"),
+        "source_executed": accounting.get("executedQueryReceipts"),
+        "source_data_bearing": accounting.get("dataBearingSources"),
+    }
+    return [values.get(column) for column in CATALOG_CANDIDATE_COLUMNS]
+
+
+def inflate_catalog_candidates(index: dict[str, Any]) -> list[dict[str, Any]]:
+    """Inflate either the 1.1 columnar bootstrap or a legacy object index."""
+
+    if isinstance(index.get("candidates"), list):
+        return [row for row in index["candidates"] if isinstance(row, dict)]
+    columns = index.get("candidate_columns")
+    rows = index.get("candidate_rows")
+    if not isinstance(columns, list) or not isinstance(rows, list) or len(columns) != len(set(columns)):
+        raise ValueError("catalog bootstrap has no valid candidate table")
+    inflated: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, list) or len(row) != len(columns):
+            raise ValueError("catalog bootstrap candidate row width does not match its columns")
+        flat = dict(zip(columns, row))
+        counts = {
+            key: int(flat.pop("n_" + key) or 0)
+            for key in (
+                "classifications", "classification_history", "observations", "spectra",
+                "messenger_signals", "publications", "publication_revisions", "host_context",
+                "catalog_counterparts", "archive_products",
+            )
+        }
+        record = {
+            "label": flat.pop("record_label"),
+            "present": flat.pop("record_present"),
+            "applicable": flat.pop("record_applicable"),
+            "not_assessed": flat.pop("record_not_assessed"),
+            "fraction": flat.pop("record_fraction"),
+        }
+        primary_source = {
+            "source_key": flat.pop("primary_source_key"),
+            "url": flat.pop("primary_source_url"),
+            "designation": flat.pop("primary_source_designation"),
+        }
+        source_counts = {
+            "declaredSources": flat.pop("source_declared"),
+            "applicableSources": flat.pop("source_applicable"),
+            "executedQueryReceipts": flat.pop("source_executed"),
+            "dataBearingSources": flat.pop("source_data_bearing"),
+        }
+        identity_state = flat.pop("identity_state")
+        conflict_count = flat.pop("conflict_count")
+        candidate = {key: value for key, value in flat.items() if value is not None}
+        candidate["follow_up_counts"] = counts
+        candidate["record_completeness"] = record
+        candidate["links"] = [primary_source] if primary_source.get("url") else []
+        candidate["identity_resolution"] = {"state": identity_state}
+        candidate["conflict_count"] = int(conflict_count or 0)
+        candidate["source_accounting"] = source_counts
+        inflated.append(candidate)
+    return inflated
+
+
+def alias_index_artifact(
+    candidates: list[dict[str, Any]], catalog_content_checksum_sha256: str,
+) -> tuple[dict[str, Any], bytes]:
+    columns = ["event_id", "source_key", "designation", "ambiguous"]
+    rows = sorted([
+        [
+            str(candidate["event_id"]), str(alias.get("source_key") or ""),
+            str(alias.get("designation") or ""), bool(alias.get("ambiguous")),
+        ]
+        for candidate in candidates for alias in candidate.get("designations", [])
+        if alias.get("designation")
+    ], key=lambda row: (row[2].casefold(), row[1].casefold(), row[0]))
+    document = {
+        "schema": ALIAS_INDEX_SCHEMA,
+        "catalog_content_checksum_sha256": catalog_content_checksum_sha256,
+        "candidate_count": len(candidates),
+        "alias_count": len(rows),
+        "columns": columns,
+        "rows": rows,
+    }
+    raw = (json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    return document, raw
+
+
+def _csv_artifact(columns: list[str], rows: list[list[Any]]) -> bytes:
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream, lineterminator="\n")
+    writer.writerow(columns)
+    for row in rows:
+        writer.writerow([
+            json.dumps(value, sort_keys=True, separators=(",", ":"))
+            if isinstance(value, (dict, list)) else value
+            for value in row
+        ])
+    return stream.getvalue().encode()
+
+
+def _events_votable_artifact(
+    candidates: list[dict[str, Any]], catalog_content_checksum_sha256: str,
+) -> bytes:
+    """Serialize the public candidate summary as a deterministic VOTable."""
+
+    root = ET.Element("VOTABLE", {
+        "version": "1.5",
+        "xmlns": "http://www.ivoa.net/xml/VOTable/v1.3",
+    })
+    ET.SubElement(root, "DESCRIPTION").text = (
+        "Public CTAS candidate summary. The CTAS score is an operational "
+        "follow-up ordering aid, not a probability, classification confidence, "
+        "or measure of scientific importance."
+    )
+    resource = ET.SubElement(root, "RESOURCE", {"type": "results"})
+    ET.SubElement(resource, "COOSYS", {"ID": "ICRS", "system": "ICRS"})
+    ET.SubElement(resource, "PARAM", {
+        "name": "catalog_content_checksum_sha256",
+        "datatype": "char",
+        "arraysize": "64",
+        "value": catalog_content_checksum_sha256,
+    })
+    table = ET.SubElement(resource, "TABLE", {
+        "name": "ctas_public_candidates",
+        "nrows": str(len(candidates)),
+    })
+    ET.SubElement(table, "DESCRIPTION").text = (
+        "One summary row per public CTAS candidate. Complete source-native "
+        "evidence remains in the checksum-bound candidate shards. Empty cells "
+        "mean the public record does not retain that value."
+    )
+    fields = (
+        ("event_id", "char", None, None, "Stable CTAS public event identifier."),
+        ("name", "char", "meta.id;meta.main", None, "Preferred public designation."),
+        ("ra_deg", "double", "pos.eq.ra;meta.main", "deg", "Source-retained ICRS right ascension."),
+        ("dec_deg", "double", "pos.eq.dec;meta.main", "deg", "Source-retained ICRS declination."),
+        ("discovery_time", "char", "time.epoch", None, "Source-reported discovery time in UTC when retained."),
+        ("discovery_survey", "char", None, None, "Source-reported discovery survey or facility."),
+        ("discovery_magnitude", "double", None, "mag", "Source-reported discovery magnitude when retained."),
+        ("classification", "char", None, None, "Latest retained reported classification label."),
+        ("status", "char", None, None, "Current retained CTAS record state."),
+        ("ctas_score", "double", None, None, "Operational CTAS follow-up ordering score; not a probability."),
+        ("primary_messenger", "char", None, None, "Primary retained messenger channel."),
+        ("follow_up_total", "long", None, None, "Count of retained public follow-up records."),
+        ("redshift", "double", "src.redshift", None, "Retained redshift value when available."),
+        ("source_url", "char", "meta.ref.url", None, "Preferred public source-record URL when available."),
+        ("ctas_url", "char", "meta.ref.url", None, "CTAS public candidate dossier URL."),
+    )
+    for name, datatype, ucd, unit, description in fields:
+        attributes = {"ID": name, "name": name, "datatype": datatype}
+        if datatype == "char":
+            attributes["arraysize"] = "*"
+        if ucd:
+            attributes["ucd"] = ucd
+        if unit:
+            attributes["unit"] = unit
+        field = ET.SubElement(table, "FIELD", attributes)
+        ET.SubElement(field, "DESCRIPTION").text = description
+
+    table_data = ET.SubElement(ET.SubElement(table, "DATA"), "TABLEDATA")
+    for candidate in candidates:
+        links = [row for row in candidate.get("links", []) if row.get("url")]
+        primary = next(
+            (row for row in links if row.get("source_key") == "tns"),
+            links[0] if links else {},
+        )
+        values = (
+            candidate.get("event_id"),
+            candidate.get("name"),
+            candidate.get("ra_deg"),
+            candidate.get("dec_deg"),
+            candidate.get("discovery_time"),
+            candidate.get("discovery_survey"),
+            candidate.get("discovery_magnitude"),
+            candidate.get("classification"),
+            candidate.get("status"),
+            candidate.get("ctas_score"),
+            candidate.get("primary_messenger"),
+            candidate.get("follow_up_total"),
+            candidate.get("redshift"),
+            primary.get("url"),
+            f"https://jackmcguireastro.github.io/ctas.html?event={candidate['event_id']}#dossier",
+        )
+        tr = ET.SubElement(table_data, "TR")
+        for value in values:
+            cell = ET.SubElement(tr, "TD")
+            if value is not None:
+                cell.text = format(value, ".15g") if isinstance(value, float) else str(value)
+    return ET.tostring(
+        root, encoding="utf-8", xml_declaration=True, short_empty_elements=True,
+    ) + b"\n"
+
+
+def _tom_targets_artifact(candidates: list[dict[str, Any]]) -> tuple[bytes, int, int]:
+    """Build a TOM Toolkit base-import CSV for coordinate-complete targets."""
+
+    prepared: list[tuple[dict[str, Any], float, float, list[str]]] = []
+    max_aliases = 0
+    for candidate in candidates:
+        try:
+            ra = float(candidate.get("ra_deg"))
+            dec = float(candidate.get("dec_deg"))
+        except (TypeError, ValueError):
+            continue
+        if not (0.0 <= ra < 360.0 and -90.0 <= dec <= 90.0):
+            continue
+        primary_name = str(candidate.get("name") or "").strip()
+        if not primary_name:
+            continue
+        aliases: list[str] = []
+        seen = {primary_name.casefold()}
+        for alias in sorted(
+            candidate.get("designations", []),
+            key=lambda row: (
+                not bool(row.get("is_preferred")),
+                str(row.get("source_key") or "").casefold(),
+                str(row.get("designation") or "").casefold(),
+            ),
+        ):
+            designation = str(alias.get("designation") or "").strip()
+            if designation and designation.casefold() not in seen:
+                seen.add(designation.casefold())
+                aliases.append(designation)
+        max_aliases = max(max_aliases, len(aliases))
+        prepared.append((candidate, ra, dec, aliases))
+
+    columns = [
+        "name", "type", "ra", "dec", "epoch", "ctas_event_id", "ctas_score",
+        "classification", "primary_messenger", "ctas_url", "source_url",
+    ] + [f"name{index}" for index in range(2, max_aliases + 2)]
+    rows: list[list[Any]] = []
+    for candidate, ra, dec, aliases in prepared:
+        links = [row for row in candidate.get("links", []) if row.get("url")]
+        primary = next(
+            (row for row in links if row.get("source_key") == "tns"),
+            links[0] if links else {},
+        )
+        rows.append([
+            candidate.get("name"), "SIDEREAL", ra, dec, 2000.0,
+            candidate.get("event_id"), candidate.get("ctas_score"),
+            candidate.get("classification"), candidate.get("primary_messenger"),
+            f"https://jackmcguireastro.github.io/ctas.html?event={candidate['event_id']}#dossier",
+            primary.get("url"), *aliases, *([""] * (max_aliases - len(aliases))),
+        ])
+    return _csv_artifact(columns, rows), len(rows), max_aliases
+
+
+def research_table_artifacts(
+    candidates: list[dict[str, Any]], source_universe: dict[str, Any],
+    catalog_content_checksum_sha256: str,
+) -> tuple[dict[str, bytes], dict[str, Any], bytes]:
+    """Build normalized and astronomy-interoperable research artifacts."""
+
+    event_columns = list(CATALOG_CANDIDATE_COLUMNS)
+    event_rows = [compact_candidate_row(candidate) for candidate in candidates]
+    alias_columns = ["event_id", "source_key", "designation", "ambiguous"]
+    alias_rows = [
+        [candidate["event_id"], row.get("source_key"), row.get("designation"), bool(row.get("ambiguous"))]
+        for candidate in candidates for row in candidate.get("designations", [])
+        if row.get("designation")
+    ]
+    source_columns = [
+        "source_key", "name", "primary_family", "implementation_state",
+        "operational_state", "representation_state", "documentation_url",
+        "rights_or_public_access_basis", "known_limitations",
+    ]
+    source_rows = [[row.get(key) for key in source_columns] for row in source_universe.get("sources", [])]
+    events_votable_raw = _events_votable_artifact(
+        candidates, catalog_content_checksum_sha256,
+    )
+    tom_targets_raw, tom_target_count, tom_alias_count = _tom_targets_artifact(candidates)
+    artifacts = {
+        "ctas/data/research/events.csv": _csv_artifact(event_columns, event_rows),
+        "ctas/data/research/aliases.csv": _csv_artifact(alias_columns, alias_rows),
+        "ctas/data/research/sources.csv": _csv_artifact(source_columns, source_rows),
+        "ctas/data/research/events.vot": events_votable_raw,
+        "ctas/data/research/tom-targets.csv": tom_targets_raw,
+    }
+    artifact_metadata = {
+        "ctas/data/research/events.csv": {
+            "row_count": len(event_rows),
+            "media_type": "text/csv; charset=utf-8",
+            "format": "UTF-8 CSV with RFC 4180 quoting and LF line endings",
+            "scope": "One compact summary row for every public CTAS candidate.",
+            "limitations": ["Complete nested evidence is stored in candidate shards."],
+        },
+        "ctas/data/research/aliases.csv": {
+            "row_count": len(alias_rows),
+            "media_type": "text/csv; charset=utf-8",
+            "format": "UTF-8 CSV with RFC 4180 quoting and LF line endings",
+            "scope": "Provider-scoped public designations linked to CTAS event identifiers.",
+            "limitations": ["An alias is a retained assertion, not independent identity validation."],
+        },
+        "ctas/data/research/sources.csv": {
+            "row_count": len(source_rows),
+            "media_type": "text/csv; charset=utf-8",
+            "format": "UTF-8 CSV with RFC 4180 quoting and LF line endings",
+            "scope": "Declared public source-universe contracts represented by this release.",
+            "limitations": ["Source inclusion does not imply uninterrupted or complete provider coverage."],
+        },
+        "ctas/data/research/events.vot": {
+            "row_count": len(event_rows),
+            "media_type": "application/x-votable+xml",
+            "format": "IVOA VOTable 1.5 TABLEDATA",
+            "scope": "One VO-compatible summary row for every public CTAS candidate.",
+            "coordinate_frame": "ICRS",
+            "limitations": [
+                "Missing retained values are empty cells.",
+                "This is a summary table; complete nested evidence is stored in candidate shards.",
+            ],
+        },
+        "ctas/data/research/tom-targets.csv": {
+            "row_count": tom_target_count,
+            "media_type": "text/csv; charset=utf-8",
+            "format": "TOM Toolkit base target-import CSV",
+            "scope": "Public CTAS candidates with complete valid ICRS coordinates.",
+            "coordinate_frame": "ICRS",
+            "coordinate_epoch": 2000.0,
+            "alias_column_count": tom_alias_count,
+            "omitted_candidate_count": len(candidates) - tom_target_count,
+            "limitations": [
+                "Coordinate-incomplete candidates are omitted rather than assigned invented positions.",
+                "Columns other than TOM base target fields import as TargetExtra values; custom TOM target models or configurations may require adaptation.",
+                "Importing this file does not request telescope observations.",
+            ],
+        },
+    }
+    manifest = {
+        "schema": RESEARCH_TABLE_MANIFEST_SCHEMA,
+        "catalog_content_checksum_sha256": catalog_content_checksum_sha256,
+        "format_note": (
+            "The zero-optional-dependency static publisher emits normalized UTF-8 CSV, "
+            "an IVOA VOTable summary, and a TOM Toolkit target-import table. Complete "
+            "nested evidence remains in the checksum-bound candidate shards."
+        ),
+        "tables": [
+            {
+                "path": path,
+                "bytes": len(raw),
+                "sha256": hashlib.sha256(raw).hexdigest(),
+                **artifact_metadata[path],
+            }
+            for path, raw in sorted(artifacts.items())
+        ],
+    }
+    manifest_raw = (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode()
+    artifacts["ctas/data/research/manifest.json"] = manifest_raw
+    return artifacts, manifest, manifest_raw
+
+
+def canonical_candidate_list_bytes(candidates: list[dict[str, Any]]) -> bytes:
+    """Canonical logical representation used to verify reconstruction."""
+
+    return (
+        json.dumps(candidates, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode()
+
+
+def complete_catalog_manifest_artifact(
+    candidates: list[dict[str, Any]],
+    index_candidates: list[dict[str, Any]],
+    catalog_index_raw: bytes,
+    bucket_rows: dict[str, list[dict[str, Any]]],
+    chunk_raw: dict[str, bytes],
+    catalog_content_checksum_sha256: str,
+) -> tuple[dict[str, Any], bytes]:
+    """Build the deterministic, exact complete-catalog reconstruction contract."""
+
+    complete_by_id = {str(candidate["event_id"]): candidate for candidate in candidates}
+    index_ids = [str(row["event_id"]) for row in index_candidates]
+    if len(complete_by_id) != len(candidates) or set(index_ids) != set(complete_by_id):
+        raise ValueError("catalog index and complete candidate UUIDs do not match")
+    index_ordered_candidates = [complete_by_id[event_id] for event_id in index_ids]
+    manifest = {
+        "schema": CANDIDATE_MANIFEST_SCHEMA,
+        "schema_version": SCHEMA_VERSION,
+        "catalog_content_checksum_sha256": catalog_content_checksum_sha256,
+        "candidate_count": len(candidates),
+        "chunk_count": len(chunk_raw),
+        "catalog_index": {
+            "path": "ctas/data/catalog-index.json",
+            "candidate_count": len(index_candidates),
+            "bytes": len(catalog_index_raw),
+            "sha256": hashlib.sha256(catalog_index_raw).hexdigest(),
+            "ordering_field": "candidate_rows[][event_id column]",
+        },
+        "assembled_candidates_checksum_sha256": hashlib.sha256(
+            canonical_candidate_list_bytes(index_ordered_candidates)
+        ).hexdigest(),
+        "reconstruction": {
+            "contract_version": "1.0.0",
+            "description": (
+                "Together the listed chunks contain every complete public candidate record "
+                "exactly once. No single-file browser assembly is required."
+            ),
+            "steps": [
+                "Fetch catalog_index.path and verify its byte length and SHA-256.",
+                "Fetch every chunks[].path in listed order and verify its byte length, SHA-256, and candidate_count.",
+                "Reject missing or duplicate event_id values and require the chunk UUID set to equal the catalog-index UUID set.",
+                "Inflate catalog_index.candidate_rows with candidate_columns, map complete chunk records by event_id, then order them by the inflated event_id column.",
+                "Verify SHA-256 over UTF-8 JSON of that ordered candidate array serialized with sorted keys, compact separators, and one trailing newline.",
+            ],
+            "canonical_json": "json.dumps(candidates, sort_keys=True, separators=(',', ':')) + newline",
+        },
+        "chunks": [
+            {
+                "path": path,
+                "candidate_count": len(bucket_rows[Path(path).stem]),
+                "bytes": len(raw),
+                "sha256": hashlib.sha256(raw).hexdigest(),
+            }
+            for path, raw in sorted(chunk_raw.items())
+        ],
+    }
+    raw = (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode()
+    return manifest, raw
+
+
+def git_catalog_document(repo: Path, ref: str) -> dict[str, Any] | None:
+    """Load a complete catalog at ``ref`` across the legacy/sharded boundary.
+
+    Old releases stored a giant ``candidates.json`` document.  New releases
+    store one compact index plus an ordered, checksum-bound chunk manifest.
+    Every byte/count/checksum and the exact index ordering are verified before
+    a sharded release is accepted for history comparison.
+    """
+
+    legacy_raw = git_blob(repo, ref, "ctas/data/candidates.json")
+    if legacy_raw:
+        try:
+            legacy = json.loads(legacy_raw)
+        except (TypeError, json.JSONDecodeError):
+            legacy = None
+        if isinstance(legacy, dict) and isinstance(legacy.get("candidates"), list):
+            return legacy
+
+    manifest_raw = git_blob(repo, ref, "ctas/data/candidate-chunks/manifest.json")
+    if not manifest_raw:
+        return None
+    try:
+        manifest = json.loads(manifest_raw)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    if not isinstance(manifest, dict) or not isinstance(manifest.get("chunks"), list):
+        return None
+
+    index_meta = manifest.get("catalog_index") or {}
+    index_path = str(index_meta.get("path") or "ctas/data/catalog-index.json")
+    index_raw = git_blob(repo, ref, index_path)
+    if not index_raw:
+        return None
+    if index_meta.get("bytes") is not None and index_meta.get("bytes") != len(index_raw):
+        return None
+    if index_meta.get("sha256") and index_meta.get("sha256") != hashlib.sha256(index_raw).hexdigest():
+        return None
+    try:
+        index = json.loads(index_raw)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    try:
+        index_rows = inflate_catalog_candidates(index) if isinstance(index, dict) else None
+    except (TypeError, ValueError):
+        index_rows = None
+    if not isinstance(index_rows, list):
+        return None
+
+    complete_by_id: dict[str, dict[str, Any]] = {}
+    for chunk_meta in manifest["chunks"]:
+        if not isinstance(chunk_meta, dict):
+            return None
+        path = str(chunk_meta.get("path") or "")
+        raw = git_blob(repo, ref, path)
+        if not raw or chunk_meta.get("bytes") != len(raw):
+            return None
+        if chunk_meta.get("sha256") != hashlib.sha256(raw).hexdigest():
+            return None
+        try:
+            document = json.loads(raw)
+        except (TypeError, json.JSONDecodeError):
+            return None
+        rows = document.get("candidates") if isinstance(document, dict) else None
+        if not isinstance(rows, list) or document.get("candidate_count") != len(rows):
+            return None
+        if chunk_meta.get("candidate_count") != len(rows):
+            return None
+        for candidate in rows:
+            if not isinstance(candidate, dict):
+                return None
+            event_id = str(candidate.get("event_id") or "")
+            if not event_id or event_id in complete_by_id:
+                return None
+            complete_by_id[event_id] = candidate
+
+    index_ids = [str(row.get("event_id") or "") for row in index_rows if isinstance(row, dict)]
+    if (
+        len(index_ids) != len(index_rows)
+        or "" in index_ids
+        or len(set(index_ids)) != len(index_ids)
+        or set(index_ids) != set(complete_by_id)
+        or manifest.get("candidate_count") != len(index_ids)
+        or index.get("candidate_count") != len(index_ids)
+    ):
+        return None
+    ordered = [complete_by_id[event_id] for event_id in index_ids]
+    assembled_checksum = hashlib.sha256(canonical_candidate_list_bytes(ordered)).hexdigest()
+    if manifest.get("assembled_candidates_checksum_sha256") != assembled_checksum:
+        return None
+    return {**index, "candidates": ordered}
+
+
 def atomic_write(path: Path, raw: bytes) -> None:
     temporary = path.with_name(path.name + ".tmp")
     temporary.write_bytes(raw)
     os.replace(temporary, path)
 
 
+def output_path_for_public_artifact(output_dir: Path, public_path: str) -> Path:
+    """Map a published ``ctas/data`` path into the caller-selected output root.
+
+    The manifest retains repository-relative public paths, but a development
+    export must never use those paths to escape ``--output-dir``.
+    """
+
+    published = Path(public_path)
+    try:
+        relative = published.relative_to(Path("ctas/data"))
+    except ValueError as exc:
+        raise ValueError(f"public data artifact is outside ctas/data: {public_path}") from exc
+    if not relative.parts or any(part in {"", ".", ".."} for part in relative.parts):
+        raise ValueError(f"invalid public data artifact path: {public_path}")
+    root = output_dir.resolve()
+    target = (root / relative).resolve()
+    if target != root and root not in target.parents:
+        raise ValueError(f"public data artifact escapes output directory: {public_path}")
+    return target
+
+
+def write_output_artifact(output_dir: Path, public_path: str, raw: bytes) -> Path:
+    """Write one public-layout artifact strictly beneath ``output_dir``."""
+
+    target = output_path_for_public_artifact(output_dir, public_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    atomic_write(target, raw)
+    return target
+
+
 def certificate_status(gates: list[dict[str, Any]]) -> str:
-    return "verified-static-snapshot" if gates and all(gate.get("passed") is True for gate in gates) else "verification-failed"
+    if not gates:
+        return "verification-failed"
+    failed = [gate for gate in gates if gate.get("passed") is not True]
+    if not failed:
+        return "verified-static-snapshot"
+    publication_binding_ids = {"deployed-code-binding", "local-origin-code-alignment"}
+    failed_ids = {str(gate.get("id") or "") for gate in failed}
+    if failed_ids and failed_ids <= publication_binding_ids:
+        return "publication-binding-pending"
+    return "verification-failed"
 
 
 def semantic_catalog_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1384,6 +2508,16 @@ def semantic_catalog_candidates(candidates: list[dict[str, Any]]) -> list[dict[s
         for coverage in candidate.get("source_coverage", []):
             coverage.pop("checked_at", None)
             coverage.pop("next_eligible_at", None)
+        astro_evidence = candidate.get("astro_evidence")
+        if isinstance(astro_evidence, dict):
+            # The projection timestamp says when this export was assembled,
+            # not that the underlying event evidence changed.
+            astro_evidence.pop("generatedAt", None)
+        for source_row in candidate.get("source_matrix", []):
+            # Age is a view of a retained timestamp at export time. The
+            # timestamp itself remains checksum-bearing; the ticking duration
+            # must not manufacture a new catalog release every heartbeat.
+            source_row.pop("retainedEvidenceAgeSeconds", None)
     return semantic
 
 
@@ -1397,6 +2531,68 @@ def catalog_semantic_checksum(candidates: list[dict[str, Any]]) -> str:
     ).hexdigest()
 
 
+def source_universe_contract_checksum(source_universe: dict[str, Any]) -> str:
+    """Hash the versioned contracts without export-time wrapper metadata."""
+
+    semantic = {
+        key: value for key, value in source_universe.items()
+        if key not in {
+            "generated_at", "artifact_checksum_sha256", "contract_set_checksum_sha256",
+        }
+    }
+    return hashlib.sha256(
+        json.dumps(semantic, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def receipt_provenance_problems(candidate: dict[str, Any], candidate_index: int) -> list[str]:
+    """Validate the one-to-one public join and its derived completeness claim."""
+
+    prefix = f"candidate {candidate_index}"
+    projection = candidate.get("astro_evidence") or {}
+    compatibility = candidate.get("compatibility_provenance") or {}
+    receipts = projection.get("persistedQueryReceipts", [])
+    details = compatibility.get("receiptProvenance", [])
+    if not isinstance(receipts, list):
+        return [f"{prefix} has non-list persisted query receipts"]
+    if not isinstance(details, list):
+        return [f"{prefix} has non-list receipt provenance"]
+
+    problems: list[str] = []
+    receipt_ids = [str(row.get("receiptId") or "") for row in receipts if isinstance(row, dict)]
+    detail_ids = [str(row.get("receiptId") or "") for row in details if isinstance(row, dict)]
+    if len(receipt_ids) != len(receipts) or "" in receipt_ids or len(set(receipt_ids)) != len(receipt_ids):
+        problems.append(f"{prefix} has missing or duplicate persisted receipt IDs")
+    if len(detail_ids) != len(details) or "" in detail_ids or len(set(detail_ids)) != len(detail_ids):
+        problems.append(f"{prefix} has missing or duplicate receipt-provenance IDs")
+    if set(receipt_ids) != set(detail_ids):
+        problems.append(f"{prefix} does not have exactly one provenance extension per persisted receipt")
+
+    receipt_by_id = {
+        str(row.get("receiptId")): row for row in receipts
+        if isinstance(row, dict) and row.get("receiptId")
+    }
+    detail_by_id = {
+        str(row.get("receiptId")): row for row in details
+        if isinstance(row, dict) and row.get("receiptId")
+    }
+    for receipt_id in sorted(set(receipt_by_id) & set(detail_by_id)):
+        receipt = receipt_by_id[receipt_id]
+        detail = detail_by_id[receipt_id]
+        if detail.get("sourceContractId") != receipt.get("sourceContractId"):
+            problems.append(f"{prefix} receipt {receipt_id} has inconsistent source-contract linkage")
+        safe_detail = sanitized_receipt_detail(detail)
+        allowed = set(safe_detail) | {"completeness"}
+        if set(detail) - allowed or any(detail.get(key) != value for key, value in safe_detail.items()):
+            problems.append(f"{prefix} receipt {receipt_id} has unsafe or non-allowlisted provenance")
+        if detail.get("executionState") not in {"EXECUTED", "NOT_EXECUTED"}:
+            problems.append(f"{prefix} receipt {receipt_id} has an invalid execution state")
+        expected = receipt_completeness(receipt, safe_detail)
+        if "completeness" in detail and detail.get("completeness") != expected:
+            problems.append(f"{prefix} receipt {receipt_id} has an inaccurate completeness assessment")
+    return problems
+
+
 def validate(payload: dict[str, Any]) -> list[str]:
     problems = []
     if payload.get("schema_version") != SCHEMA_VERSION:
@@ -1404,9 +2600,26 @@ def validate(payload: dict[str, Any]) -> list[str]:
     cands = payload.get("candidates")
     if not isinstance(cands, list):
         return ["candidates is not a list"]
+    event_ids: set[str] = set()
+    required_astro_fields = {
+        "projectionSchema", "coreSchemaName", "coreSchemaVersion", "generatedAt",
+        "sourceUniverseVersion", "target", "persistedQueryReceipts", "conflictSets",
+        "selections", "dataProducts", "analysisRuns", "measurementCount", "projectionMethod",
+    }
+    canonical_outcomes = {
+        "DATA_RETURNED", "SEARCHED_NO_MATCH", "PARTIAL_RESULT", "QUERY_FAILED",
+        "QUERY_BLOCKED", "NOT_CONFIGURED", "NOT_APPLICABLE", "AMBIGUOUS",
+        "STALE_LAST_GOOD_RETAINED", "LINK_ONLY_NOT_QUERIED", "NOT_QUERIED",
+    }
     for i, c in enumerate(cands):
         if not c.get("name"):
             problems.append(f"candidate {i} has no name")
+        event_id = str(c.get("event_id") or "")
+        if not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", event_id, re.IGNORECASE):
+            problems.append(f"candidate {i} has no stable RFC-4122 event UUID")
+        if event_id in event_ids:
+            problems.append(f"candidate {i} duplicates event UUID {event_id}")
+        event_ids.add(event_id)
         if "ctas_score" not in c:
             problems.append(f"candidate {i} has no CTAS score")
         else:
@@ -1432,7 +2645,55 @@ def validate(payload: dict[str, Any]) -> list[str]:
         leaked = BANNED_KEYS & set(c)
         if leaked:
             problems.append(f"candidate {i} leaks {sorted(leaked)}")
+        projection = c.get("astro_evidence")
+        if not isinstance(projection, dict) or set(projection) != required_astro_fields:
+            problems.append(f"candidate {i} does not expose the exact AstroEvidence compatibility descriptor")
+        else:
+            if projection.get("coreSchemaVersion") != "0.1.0" or projection.get("target", {}).get("targetId") != event_id:
+                problems.append(f"candidate {i} has an inconsistent AstroEvidence identity or schema version")
+            contract_ids = set(c.get("source_accounting", {}).get("applicableSourceIds", []))
+            if any(row.get("sourceContractId") not in contract_ids for row in projection.get("persistedQueryReceipts", [])):
+                problems.append(f"candidate {i} has a receipt outside its applicable source set")
+            if any(row.get("outcome") not in canonical_outcomes for row in projection.get("persistedQueryReceipts", [])):
+                problems.append(f"candidate {i} has a receipt outside the canonical outcome vocabulary")
+            accounting = c.get("source_accounting", {})
+            if accounting.get("applicableSources") != len(contract_ids):
+                problems.append(f"candidate {i} has inconsistent applicable-source accounting")
+            problems.extend(receipt_provenance_problems(c, i))
     problems.extend(recursive_safety_problems(payload, "candidates-artifact"))
+    return problems
+
+
+def projection_integrity_problems(projection: dict[str, Any]) -> list[str]:
+    """Check referential closure that JSON Schema cannot express."""
+
+    problems: list[str] = []
+    target_id = projection.get("target", {}).get("targetId")
+    contract_ids = {row.get("sourceContractId") for row in projection.get("sourceContracts", [])}
+    measurement_ids = {row.get("measurementId") for row in projection.get("measurements", [])}
+    if None in contract_ids or len(contract_ids) != len(projection.get("sourceContracts", [])):
+        problems.append(f"{target_id}: missing or duplicate source-contract IDs")
+    if None in measurement_ids or len(measurement_ids) != len(projection.get("measurements", [])):
+        problems.append(f"{target_id}: missing or duplicate measurement IDs")
+    referenced_sources = {
+        row.get("sourceContractId")
+        for key in ("queryReceipts", "measurements", "dataProducts")
+        for row in projection.get(key, [])
+    } | {row.get("sourceContractId") for row in projection.get("target", {}).get("aliases", [])}
+    if not referenced_sources <= contract_ids:
+        problems.append(f"{target_id}: evidence references an undeclared source contract")
+    for key in ("queryReceipts", "measurements", "dataProducts", "analysisRuns"):
+        if any(row.get("targetId") != target_id for row in projection.get(key, [])):
+            problems.append(f"{target_id}: {key} contains a foreign target ID")
+    for conflict in projection.get("conflictSets", []):
+        if not set(conflict.get("measurementIds", [])) <= measurement_ids:
+            problems.append(f"{target_id}: conflict contains unresolved measurement IDs")
+    for selection in projection.get("selections", []):
+        if not set(selection.get("measurementIds", [])) <= measurement_ids:
+            problems.append(f"{target_id}: selection contains unresolved measurement IDs")
+    for analysis in projection.get("analysisRuns", []):
+        if not set(analysis.get("inputRecordIds", [])) <= measurement_ids:
+            problems.append(f"{target_id}: analysis contains unresolved input measurement IDs")
     return problems
 
 
@@ -1462,6 +2723,13 @@ def main() -> int:
     except sqlite3.Error as exc:
         print(f"error: could not read the database read-only: {exc}", file=sys.stderr)
         return 1
+
+    # Reconstruct derived ranking arithmetic before any aggregate or recent
+    # view is produced.  This also applies the documented terminal-state repair
+    # to legacy rows that predate the ingestion-order fix.
+    for candidate in candidates:
+        candidate["score_model"] = score_model_for(candidate)
+        candidate["score_explanation"] = score_explanation_for(candidate)
 
     generated_dt = datetime.now(UTC).replace(microsecond=0)
     generated_at = generated_dt.isoformat().replace("+00:00", "Z")
@@ -1505,7 +2773,7 @@ def main() -> int:
     payload["recent_stream"] = [
         {
             key: row[key] for key in (
-                "name", "updated_at", "discovery_time", "classification",
+                "event_id", "name", "updated_at", "discovery_time", "classification",
                 "primary_messenger", "ctas_score", "follow_up_counts",
             ) if key in row
         }
@@ -1701,6 +2969,14 @@ def main() -> int:
         ).hexdigest()
         source_universe_rows.append(row)
         existing_keys.add(source_key)
+    for row in source_universe_rows:
+        constraints = OFFICIAL_PROVIDER_CONSTRAINTS.get(str(row["source_key"]))
+        if constraints:
+            row.update(constraints)
+            row.pop("contract_checksum_sha256", None)
+            row["contract_checksum_sha256"] = hashlib.sha256(
+                json.dumps(row, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
     source_universe_rows.sort(key=lambda row: (row["source_family"], row["name"], row["source_key"]))
     source_universe = {
         "schema": SOURCE_UNIVERSE_SCHEMA,
@@ -1714,13 +2990,19 @@ def main() -> int:
         "survey_source_aliases": dict(sorted(SURVEY_SOURCE_ALIASES.items())),
         "sources": source_universe_rows,
     }
+    source_universe["contract_set_checksum_sha256"] = (
+        source_universe_contract_checksum(source_universe)
+    )
     source_universe_canonical = (json.dumps(source_universe, sort_keys=True, separators=(",", ":")) + "\n").encode()
     source_universe["artifact_checksum_sha256"] = hashlib.sha256(source_universe_canonical).hexdigest()
     payload["source_universe"] = {
         "schema": SOURCE_UNIVERSE_SCHEMA,
         "source_count": len(source_universe_rows),
         "artifact": "ctas/data/source-universe.json",
-        "artifact_checksum_sha256": source_universe["artifact_checksum_sha256"],
+        # The source-universe wrapper carries the current heartbeat, so its raw
+        # artifact checksum belongs in status/certification rather than the
+        # byte-stable compact catalog index.
+        "contract_set_checksum_sha256": source_universe["contract_set_checksum_sha256"],
     }
     payload["provider_statistics"] = [
         {"provider": provider, **record_counts}
@@ -1730,92 +3012,136 @@ def main() -> int:
         )
     ]
     payload["surveys"] = counts["surveys"]
+
+    source_universe_version = (
+        f"{SOURCE_UNIVERSE_SCHEMA}+sha256:{source_universe['contract_set_checksum_sha256'][:16]}"
+    )
+    accounting_totals = {
+        "declaredSources": len(source_universe_rows),
+        "applicableSourceEvaluations": 0,
+        "executedQueryReceipts": 0,
+        "dataBearingSourceEvaluations": 0,
+        "outcomeCounts": {},
+    }
+    projection_problems: list[str] = []
+    for candidate in candidates:
+        event_id = str(candidate["event_id"])
+        candidate_attempts = counts["all_attempts"].get(event_id, [])
+        candidate_analysis_runs = counts["analysis_runs"].get(event_id, [])
+        projection_generated_at = stable_candidate_projection_time(
+            candidate, candidate_attempts, candidate_analysis_runs,
+        )
+        projection, accounting, source_matrix, compatibility_metadata = build_projection(
+            candidate,
+            source_universe_rows,
+            candidate_attempts,
+            candidate_analysis_runs,
+            projection_generated_at,
+            source_universe_version,
+        )
+        projection_problems.extend(projection_integrity_problems(projection))
+        candidate["astro_evidence"] = {
+            "projectionSchema": "ctas.astro-evidence-compatibility@1.0.0",
+            "coreSchemaName": projection["schemaName"],
+            "coreSchemaVersion": projection["schemaVersion"],
+            "generatedAt": projection["generatedAt"],
+            "sourceUniverseVersion": projection["sourceUniverseVersion"],
+            "target": projection["target"],
+            "persistedQueryReceipts": projection["queryReceipts"],
+            "conflictSets": projection["conflictSets"],
+            "selections": projection["selections"],
+            "dataProducts": projection["dataProducts"],
+            "analysisRuns": projection["analysisRuns"],
+            "measurementCount": len(projection["measurements"]),
+            "projectionMethod": "The exporter projects source-native retained rows once; the browser deterministically assembles those measurements with versioned source contracts and persisted receipts.",
+        }
+        candidate["source_accounting"] = accounting
+        candidate["source_matrix"] = [
+            {key: row.get(key) for key in (
+                "sourceContractId", "sourceName", "documentationUrl", "applicabilityRule", "currentQueryOutcome",
+                "currentQueryCheckedAt", "executedReceiptCount", "retainedRecordCount",
+                "retainedRecordTypes", "retainedEvidenceLatestAt",
+                "retainedEvidenceState",
+            )}
+            for row in source_matrix
+        ]
+        candidate["compatibility_provenance"] = {
+            "receiptProvenance": compatibility_metadata["receiptProvenance"],
+            "selectionProvenance": compatibility_metadata["selectionProvenance"],
+        }
+        candidate["evidence_timeline"] = timeline_for(candidate)
+        initial_score_model = candidate.get("score_model") or {}
+        recomputed_score_model = score_model_for(candidate)
+        if initial_score_model.get("publication_correction_applied"):
+            recomputed_score_model["recorded_score_before_publication_correction"] = (
+                initial_score_model.get("recorded_score_before_publication_correction")
+            )
+            recomputed_score_model["publication_correction_applied"] = True
+        candidate["score_model"] = recomputed_score_model
+        candidate["score_explanation"] = score_explanation_for(candidate)
+        candidate["science_brief"] = science_brief_for(candidate)
+        accounting_totals["applicableSourceEvaluations"] += int(accounting["applicableSources"])
+        accounting_totals["executedQueryReceipts"] += int(accounting["executedQueryReceipts"])
+        accounting_totals["dataBearingSourceEvaluations"] += int(accounting["dataBearingSources"])
+        for outcome, count in accounting["outcomeCounts"].items():
+            accounting_totals["outcomeCounts"][outcome] = accounting_totals["outcomeCounts"].get(outcome, 0) + int(count)
+    accounting_totals["outcomeCounts"] = dict(sorted(accounting_totals["outcomeCounts"].items()))
+    payload["source_accounting"] = accounting_totals
+    payload["statistics"]["source_accounting"] = accounting_totals
     payload["catalog_content_checksum_sha256"] = catalog_semantic_checksum(candidates)
 
-    summary_fields = (
-        "name", "event_type", "primary_messenger", "messenger_channels",
-        "ra_deg", "dec_deg", "coordinate_error_arcsec", "discovery_time",
-        "discovery_survey", "discovery_instrument", "discovery_magnitude",
-        "reported_discovery_magnitude", "status", "classification",
-        "reported_label_kind", "classification_probability", "ctas_score",
-        "follow_up_counts", "follow_up_total", "redshift", "updated_at",
-        "latest_classification_at", "latest_spectrum_at", "latest_messenger_at",
-        "latest_retraction_at", "links", "designations", "data_quality_flags",
-    )
-    index_candidates = []
-    bucket_rows: dict[str, list[dict[str, Any]]] = {
-        f"{index:02x}": [] for index in range(CANDIDATE_BUCKET_COUNT)
-    }
-    for candidate in candidates:
-        bucket = candidate_bucket(str(candidate["name"]))
-        compact = {key: candidate[key] for key in summary_fields if key in candidate}
-        completeness = candidate.get("record_completeness", {})
-        compact["record_completeness"] = {
-            key: completeness[key] for key in (
-                "label", "present", "applicable", "not_assessed", "fraction",
-            ) if key in completeness
-        }
-        compact["detail_chunk"] = f"candidate-chunks/{bucket}.json"
-        index_candidates.append(compact)
-        bucket_rows[bucket].append(candidate)
+    candidate_rows = [compact_candidate_row(candidate) for candidate in candidates]
 
-    chunk_raw: dict[str, bytes] = {}
-    for bucket, bucket_candidates in sorted(bucket_rows.items()):
-        document = {
-            "schema": CANDIDATE_CHUNK_SCHEMA,
-            "bucket": bucket,
-            "candidate_count": len(bucket_candidates),
-            "candidates": bucket_candidates,
-        }
-        relative = f"ctas/data/candidate-chunks/{bucket}.json"
-        chunk_raw[relative] = (
-            json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
-        ).encode()
+    bucket_rows, chunk_raw = candidate_chunk_artifacts(candidates)
 
     catalog_index = {
         "schema": CATALOG_INDEX_SCHEMA,
         "schema_version": SCHEMA_VERSION,
-        "generated_at": payload["generated_at"],
-        "export_checked_at": payload["export_checked_at"],
-        "valid_until": payload["valid_until"],
+        "catalog_as_of": max(
+            (str(candidate["astro_evidence"]["generatedAt"]) for candidate in candidates),
+            default=payload["latest_record_update"],
+        ),
         "latest_record_update": payload["latest_record_update"],
         "origin": payload["origin"],
         "cadence": payload["cadence"],
-        "candidate_count": len(index_candidates),
+        "candidate_count": len(candidate_rows),
         "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
         "statistics": payload["statistics"],
         "recent_stream": payload["recent_stream"],
         "provider_statistics": payload["provider_statistics"],
         "surveys": payload["surveys"],
         "source_universe": payload["source_universe"],
+        "source_accounting": payload["source_accounting"],
         "detail_manifest": "ctas/data/candidate-chunks/manifest.json",
-        "candidates": index_candidates,
+        "alias_index": "ctas/data/alias-index.json",
+        "research_tables": "ctas/data/research/manifest.json",
+        "candidate_columns": list(CATALOG_CANDIDATE_COLUMNS),
+        "candidate_rows": candidate_rows,
     }
     catalog_index_raw = (
         json.dumps(catalog_index, sort_keys=True, separators=(",", ":")) + "\n"
     ).encode()
-    candidate_manifest = {
-        "schema": CANDIDATE_MANIFEST_SCHEMA,
-        "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
-        "candidate_count": len(candidates),
-        "chunk_count": len(chunk_raw),
-        "chunks": [
-            {
-                "path": path,
-                "candidate_count": len(bucket_rows[Path(path).stem]),
-                "bytes": len(raw),
-                "sha256": hashlib.sha256(raw).hexdigest(),
-            }
-            for path, raw in sorted(chunk_raw.items())
-        ],
-    }
-    candidate_manifest_raw = (
-        json.dumps(candidate_manifest, indent=2, sort_keys=True) + "\n"
-    ).encode()
+    index_candidates = inflate_catalog_candidates(catalog_index)
+    alias_index, alias_index_raw = alias_index_artifact(
+        candidates, payload["catalog_content_checksum_sha256"],
+    )
+    research_files, research_manifest, research_manifest_raw = research_table_artifacts(
+        candidates, source_universe, payload["catalog_content_checksum_sha256"],
+    )
+    candidate_manifest, candidate_manifest_raw = complete_catalog_manifest_artifact(
+        candidates,
+        index_candidates,
+        catalog_index_raw,
+        bucket_rows,
+        chunk_raw,
+        payload["catalog_content_checksum_sha256"],
+    )
 
-    problems = validate(payload)
+    problems = validate(payload) + projection_problems
     problems.extend(recursive_safety_problems(source_universe, "source-universe"))
     problems.extend(recursive_safety_problems(catalog_index, "catalog-index"))
+    problems.extend(recursive_safety_problems(alias_index, "alias-index"))
+    problems.extend(recursive_safety_problems(research_manifest, "research-manifest"))
     problems.extend(recursive_safety_problems(candidate_manifest, "candidate-manifest"))
     if problems:
         print("export failed validation:", file=sys.stderr)
@@ -1867,6 +3193,7 @@ def main() -> int:
         "sources": payload["sources"],
         "surveys": payload["surveys"],
         "source_universe": payload["source_universe"],
+        "source_accounting": payload["source_accounting"],
     }
     problems.extend(recursive_safety_problems(status, "status"))
     if problems:
@@ -1875,11 +3202,10 @@ def main() -> int:
             print("  -", problem, file=sys.stderr)
         return 1
 
-    body = json.dumps(payload, indent=2)
     print(f"database        : {db.name}")
     print(f"real events     : {counts['total_real_events']:,}")
     print(f"published       : {counts['published']:,}   (skipped {counts['skipped']})")
-    print(f"payload size    : {len(body)/1024:.0f} KB")
+    print(f"detail shards   : {sum(map(len, chunk_raw.values()))/1024:.0f} KB in {len(chunk_raw)} files")
     if candidates:
         print("\nsample record:")
         print(json.dumps(candidates[0], indent=2)[:900])
@@ -1890,7 +3216,6 @@ def main() -> int:
 
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    candidates_raw = (body + "\n").encode()
     site_root = Path(__file__).resolve().parents[1]
     source_universe_raw = (json.dumps(source_universe, indent=2, sort_keys=True) + "\n").encode()
     try:
@@ -1905,13 +3230,7 @@ def main() -> int:
     if release_history.get("schema") != RELEASE_HISTORY_SCHEMA or not isinstance(release_history.get("entries"), list):
         release_history = {"schema": RELEASE_HISTORY_SCHEMA, "entries": []}
 
-    previous_snapshot_raw = git_blob(
-        site_root, args.release_base_ref, "ctas/data/candidates.json"
-    )
-    try:
-        previous_snapshot = json.loads(previous_snapshot_raw) if previous_snapshot_raw else None
-    except (TypeError, json.JSONDecodeError):
-        previous_snapshot = None
+    previous_snapshot = git_catalog_document(site_root, args.release_base_ref)
     previous_checksum = (
         catalog_semantic_checksum(previous_snapshot.get("candidates", []))
         if previous_snapshot else None
@@ -1989,8 +3308,15 @@ def main() -> int:
     )
 
     code_paths = (
-        "ctas.html", "ctas/app.js", "ctas/catalog-model.js", "ctas/ctas.css", "scripts/export_ctas_snapshot.py",
-        "scripts/check_ctas_links.py", "scripts/test_ctas_static.py", "scripts/test_ctas_catalog_model.js",
+        "ctas.html", "ctas/app.js", "ctas/catalog-model.js", "ctas/astro-evidence.js",
+        "ctas/workbench.js", "ctas/observability.js", "ctas/ctas.css",
+        "ctas/data/observatories.json",
+        "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
+        "ctas/schema/astro-evidence-core-0.1.0.schema.json",
+        "scripts/export_ctas_snapshot.py", "scripts/ctas_astro_evidence.py",
+        "scripts/check_ctas_links.py", "scripts/rebuild_ctas_release_history.py",
+        "scripts/test_ctas_static.py", "scripts/test_ctas_catalog_model.js",
+        "scripts/test_ctas_links.py", "scripts/test_ctas_astro_evidence.py",
         "scripts/mirror_loop.sh", "scripts/publish_ctas.sh", "scripts/ctas_launchd_runner.sh",
         "scripts/install_ctas_mirror.sh", "scripts/diagnose_ctas_mirror.sh",
         "scripts/io.github.jackmcguireastro.ctas-mirror.plist", "CTAS-AUTOMATION.md",
@@ -2009,16 +3335,16 @@ def main() -> int:
         head_code.get(path) is not None and head_code.get(path) == origin_code.get(path)
         for path in code_paths
     )
-    deployed_code = {
-        path: head_code[path] if head_code.get(path) is not None else working_code[path]
-        for path in code_paths if path in working_code
-    }
     bound_files = {
-        **deployed_code,
-        "ctas/data/candidates.json": candidates_raw,
+        # Bind the exact working bytes that generated this report. Separate
+        # gates below honestly fail while those bytes differ from HEAD/origin.
+        **working_code,
+        "ctas/data/catalog-bootstrap.json": catalog_index_raw,
         "ctas/data/catalog-index.json": catalog_index_raw,
+        "ctas/data/alias-index.json": alias_index_raw,
         "ctas/data/candidate-chunks/manifest.json": candidate_manifest_raw,
         **chunk_raw,
+        **research_files,
         "ctas/data/source-universe.json": source_universe_raw,
         "ctas/data/release-history.json": release_history_raw,
     }
@@ -2162,17 +3488,21 @@ def main() -> int:
         and valid_until >= datetime.now(UTC) + timedelta(minutes=5)
     )
     public_ui_text = b"\n".join(
-        deployed_code[path]
-        for path in ("ctas.html", "ctas/app.js", "ctas/catalog-model.js", "ctas/ctas.css")
-        if path in deployed_code
+        working_code[path]
+        for path in (
+            "ctas.html", "ctas/app.js", "ctas/catalog-model.js",
+            "ctas/astro-evidence.js", "ctas/workbench.js", "ctas/observability.js",
+            "ctas/ctas.css",
+        )
+        if path in working_code
     ).decode("utf-8", errors="replace")
     publisher_text = b"\n".join(
-        deployed_code[path]
+        working_code[path]
         for path in (
             "scripts/publish_ctas.sh", "scripts/ctas_launchd_runner.sh",
             "scripts/io.github.jackmcguireastro.ctas-mirror.plist",
         )
-        if path in deployed_code
+        if path in working_code
     ).decode("utf-8", errors="replace")
     interpretation_tokens = (
         "follow-up ordering aid", "not a probability", "does not establish discovery",
@@ -2183,6 +3513,7 @@ def main() -> int:
         "data-sky-days=\"30\"", "data-preset=\"event-only\"", "renderDetails(candidate)",
         "renderSourceUniverse", "renderTimeline", "catalog-index.json", "detail_chunk",
         "candidate-workspace", "release-history.json", "keydown",
+        "renderCatalogDownloads", "candidate-chunks/manifest.json",
     )
     cadence_contract = (
         payload["cadence"] == "about every 2 minutes" and
@@ -2198,16 +3529,105 @@ def main() -> int:
         link_health.get("structural_status") == "passed" and
         link_health.get("live_status") in {"passed", "degraded-provider-unavailable"}
     )
+    manifest_chunk_rows = [
+        {
+            "path": path,
+            "candidate_count": len(bucket_rows[Path(path).stem]),
+            "bytes": len(raw),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+        }
+        for path, raw in sorted(chunk_raw.items())
+    ]
+    reconstructed_candidates = [
+        candidate
+        for path in sorted(chunk_raw)
+        for candidate in json.loads(chunk_raw[path]).get("candidates", [])
+    ]
+    reconstructed_by_id = {
+        str(candidate.get("event_id") or ""): candidate
+        for candidate in reconstructed_candidates
+    }
+    index_ids = [str(row.get("event_id") or "") for row in index_candidates]
+    reconstructed_in_index_order = [
+        reconstructed_by_id[event_id]
+        for event_id in index_ids
+        if event_id in reconstructed_by_id
+    ]
     shard_integrity = (
         catalog_index.get("schema") == CATALOG_INDEX_SCHEMA
         and catalog_index.get("candidate_count") == len(candidates)
         and len(index_candidates) == len(candidates)
         and {row["name"] for row in index_candidates} == set(names)
+        and candidate_manifest.get("schema") == CANDIDATE_MANIFEST_SCHEMA
         and candidate_manifest.get("chunk_count") == CANDIDATE_BUCKET_COUNT
-        and sum(row["candidate_count"] for row in candidate_manifest["chunks"]) == len(candidates)
+        and candidate_manifest.get("chunks") == manifest_chunk_rows
+        and sum(row["candidate_count"] for row in manifest_chunk_rows) == len(candidates)
+        and len(reconstructed_candidates) == len(reconstructed_by_id) == len(candidates)
+        and set(index_ids) == set(reconstructed_by_id)
+        and candidate_manifest.get("catalog_index") == {
+            "path": "ctas/data/catalog-index.json",
+            "candidate_count": len(index_candidates),
+            "bytes": len(catalog_index_raw),
+            "sha256": hashlib.sha256(catalog_index_raw).hexdigest(),
+            "ordering_field": "candidate_rows[][event_id column]",
+        }
+        and candidate_manifest.get("assembled_candidates_checksum_sha256") == hashlib.sha256(
+            canonical_candidate_list_bytes(reconstructed_in_index_order)
+        ).hexdigest()
         and all(
-            row.get("detail_chunk") == f"candidate-chunks/{candidate_bucket(str(row['name']))}.json"
+            row.get("detail_chunk") == f"candidate-chunks/{candidate_bucket(str(row['event_id']))}.json"
             for row in index_candidates
+        )
+    )
+    artifact_size_integrity = all(
+        len(raw) < GITHUB_MAX_BLOB_BYTES for raw in bound_files.values()
+    )
+    bootstrap_size_integrity = len(catalog_index_raw) <= CATALOG_BOOTSTRAP_MAX_BYTES
+    shard_target_integrity = bool(chunk_raw) and max(map(len, chunk_raw.values())) <= CANDIDATE_SHARD_TARGET_MAX_BYTES
+    score_reconciliation = all(
+        (candidate.get("score_model") or {}).get("reconciled") is True
+        and abs(float(candidate.get("ctas_score") or 0.0) - float((candidate.get("score_model") or {}).get("final_score") or 0.0)) <= 0.01
+        and (str(candidate.get("status") or "").lower() not in {"retracted", "bogus"} or float(candidate.get("ctas_score") or 0.0) == 0.0)
+        for candidate in candidates
+    )
+    science_brief_integrity = all(
+        (candidate.get("science_brief") or {}).get("schema") == "ctas.candidate-science-brief@1.0.0"
+        and {
+            row["component_id"] for row in (candidate.get("science_brief") or {}).get("missing_information", [])
+        } == {
+            row["id"] for row in (candidate.get("record_completeness") or {}).get("components", [])
+            if row.get("state") in {"missing", "not-assessed"}
+        }
+        for candidate in candidates
+    )
+    replay_integrity = all(
+        len({row.get("entry_id") for row in candidate.get("evidence_timeline", [])}) == len(candidate.get("evidence_timeline", []))
+        and all(
+            row.get("public_available_at") in {row.get("provider_publication_time"), row.get("ctas_receipt_time"), None}
+            and not (
+                row.get("public_available_at") == row.get("scientific_time")
+                and not row.get("provider_publication_time")
+                and not row.get("ctas_receipt_time")
+            )
+            for row in candidate.get("evidence_timeline", [])
+        )
+        for candidate in candidates
+    )
+    alias_event_ids = {str(row[0]) for row in alias_index.get("rows", [])}
+    alias_integrity = (
+        alias_index.get("schema") == ALIAS_INDEX_SCHEMA
+        and alias_index.get("catalog_content_checksum_sha256") == payload["catalog_content_checksum_sha256"]
+        and alias_index.get("alias_count") == len(alias_index.get("rows", []))
+        and alias_event_ids <= set(index_ids)
+    )
+    research_integrity = (
+        research_manifest.get("schema") == RESEARCH_TABLE_MANIFEST_SCHEMA
+        and research_manifest.get("catalog_content_checksum_sha256") == payload["catalog_content_checksum_sha256"]
+        and all(
+            row["path"] in research_files
+            and row["bytes"] == len(research_files[row["path"]])
+            and row["sha256"] == hashlib.sha256(research_files[row["path"]]).hexdigest()
+            for row in research_manifest.get("tables", [])
         )
     )
     magnitude_safety = all(
@@ -2236,14 +3656,28 @@ def main() -> int:
 
     gates = [
         gate("required-public-artifacts", all(path in bound_files for path in (
-            "ctas.html", "ctas/app.js", "ctas/ctas.css", "ctas/data/candidates.json",
-            "ctas/data/catalog-index.json", "ctas/data/candidate-chunks/manifest.json",
+            "ctas.html", "ctas/app.js", "ctas/workbench.js", "ctas/observability.js",
+            "ctas/ctas.css", "ctas/data/observatories.json",
+            "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
+            "ctas/schema/astro-evidence-core-0.1.0.schema.json",
+            "ctas/data/catalog-bootstrap.json", "ctas/data/catalog-index.json",
+            "ctas/data/alias-index.json", "ctas/data/research/manifest.json",
+            "ctas/data/research/events.vot", "ctas/data/research/tom-targets.csv",
+            "ctas/data/candidate-chunks/manifest.json",
             "ctas/data/source-universe.json", "ctas/data/link-health.json",
             "ctas/data/release-history.json",
-        )), "HTML, JavaScript, CSS, full download, lazy catalog shards, source universe, history, and link-health artifact"),
+        )), "HTML, JavaScript, CSS, observatory definitions, research quickstart, frozen AstroEvidence schema, compact index, astronomy research exports, complete-catalog reconstruction manifest and chunks, source universe, history, and link-health artifact"),
         gate("catalog-population", bool(candidates) and not counts["catalog_truncated"] and len(candidates) == counts["eligible_public_events"] and len(names) == len(set(names)), f"{len(candidates)} complete eligible records; truncated={counts['catalog_truncated']}"),
         gate("candidate-public-contract", required_contract, f"{sum(bool(c.get('name')) and 'ctas_score' in c for c in candidates)}/{len(candidates)} identity and score records"),
-        gate("lazy-catalog-shard-integrity", shard_integrity, f"{len(candidates)} index rows across {len(chunk_raw)} checksum-bound chunks"),
+        gate("complete-catalog-reconstruction-integrity", shard_integrity, f"{len(candidates)} complete records exactly once across {len(chunk_raw)} checksum-bound chunks in catalog-index UUID order"),
+        gate("bootstrap-performance-budget", bootstrap_size_integrity, f"columnar browser bootstrap is {len(catalog_index_raw)} bytes; budget={CATALOG_BOOTSTRAP_MAX_BYTES}"),
+        gate("detail-shard-performance-budget", shard_target_integrity, f"largest of {len(chunk_raw)} UUID shards is {max(map(len, chunk_raw.values()), default=0)} bytes; budget={CANDIDATE_SHARD_TARGET_MAX_BYTES}"),
+        gate("github-blob-size-limit", artifact_size_integrity, f"every bound public artifact is below GitHub's {GITHUB_MAX_BLOB_BYTES}-byte limit"),
+        gate("score-arithmetic-reconciliation", score_reconciliation, f"{sum((candidate.get('score_model') or {}).get('reconciled') is True for candidate in candidates)}/{len(candidates)} scores reconstruct within 0.01 with terminal overrides applied last"),
+        gate("candidate-science-brief-integrity", science_brief_integrity, f"{len(candidates)} deterministic known, uncertain, missing, and recent-change summaries"),
+        gate("evidence-replay-no-future-leakage", replay_integrity, "historical availability uses provider-publication or CTAS-receipt clocks, never observation time alone"),
+        gate("alias-index-integrity", alias_integrity, f"{alias_index.get('alias_count', 0)} provider-scoped aliases bound to the catalog checksum"),
+        gate("research-table-integrity", research_integrity, f"{len(research_manifest.get('tables', []))} research tables and interoperability exports checksum-bound to the catalog"),
         gate("derived-magnitude-safety", magnitude_safety, f"{payload['statistics']['magnitude_values_excluded']} implausible source values retained only as flagged raw reports"),
         gate("release-history-integrity", release_history_integrity, f"{len(release_history['entries'])} checksum-addressed public catalog changes"),
         gate("coordinate-integrity", coordinate_contract, "coordinate pairs are complete/absent and within ICRS degree ranges"),
@@ -2273,7 +3707,7 @@ def main() -> int:
         b"".join(name.encode() + b"\0" + raw for name, raw in sorted(bound_files.items()))
     ).hexdigest()
     certificate = {
-        "schema": "ctas.static-snapshot-verification@1.0.0",
+        "schema": "ctas.static-snapshot-verification@1.1.0",
         "generated_at": payload["generated_at"],
         "valid_until": payload["valid_until"],
         "architecture": "local-python-to-static-github-pages",
@@ -2296,14 +3730,19 @@ def main() -> int:
     status["static_snapshot_verification"] = {
         "status": certificate["status"],
         "schema": certificate["schema"],
+        "passed_check_count": sum(gate["passed"] is True for gate in gates),
+        "check_count": len(gates),
+        "failed_gate_ids": [gate["id"] for gate in gates if gate["passed"] is not True],
         "report_checksum_sha256": certificate["report_checksum_sha256"],
         "valid_until": certificate["valid_until"],
         "content_release_id": certificate["content_release_id"],
     }
     status["artifacts"] = {
-        "candidates": {"path": "ctas/data/candidates.json", "sha256": hashlib.sha256(candidates_raw).hexdigest()},
+        "catalog_bootstrap": {"path": "ctas/data/catalog-bootstrap.json", "sha256": hashlib.sha256(catalog_index_raw).hexdigest()},
         "catalog_index": {"path": "ctas/data/catalog-index.json", "sha256": hashlib.sha256(catalog_index_raw).hexdigest()},
-        "candidate_manifest": {"path": "ctas/data/candidate-chunks/manifest.json", "sha256": hashlib.sha256(candidate_manifest_raw).hexdigest()},
+        "alias_index": {"path": "ctas/data/alias-index.json", "sha256": hashlib.sha256(alias_index_raw).hexdigest()},
+        "complete_catalog_manifest": {"path": "ctas/data/candidate-chunks/manifest.json", "sha256": hashlib.sha256(candidate_manifest_raw).hexdigest()},
+        "research_tables": {"path": "ctas/data/research/manifest.json", "sha256": hashlib.sha256(research_manifest_raw).hexdigest()},
         "source_universe": {"path": "ctas/data/source-universe.json", "sha256": hashlib.sha256(source_universe_raw).hexdigest()},
         "release_history": {"path": "ctas/data/release-history.json", "sha256": hashlib.sha256(release_history_raw).hexdigest()},
         "link_health": {"path": "ctas/data/link-health.json", "sha256": hashlib.sha256(link_health_raw).hexdigest() if link_health_raw else None},
@@ -2311,18 +3750,35 @@ def main() -> int:
     }
     status_raw = (json.dumps(status, indent=2, sort_keys=True) + "\n").encode()
     certificate_raw = (json.dumps(certificate, indent=2, sort_keys=True) + "\n").encode()
-    atomic_write(out / "candidates.json", candidates_raw)
+    final_public_bytes = {
+        **bound_files,
+        "ctas/data/status.json": status_raw,
+        "ctas/data/certification.json": certificate_raw,
+    }
+    oversized = {
+        path: len(raw) for path, raw in final_public_bytes.items()
+        if len(raw) >= GITHUB_MAX_BLOB_BYTES
+    }
+    if oversized:
+        print("export failed: public artifacts exceed GitHub's single-object limit:", file=sys.stderr)
+        for path, size in sorted(oversized.items()):
+            print(f"  - {path}: {size} bytes", file=sys.stderr)
+        return 1
+    atomic_write(out / "catalog-bootstrap.json", catalog_index_raw)
     atomic_write(out / "catalog-index.json", catalog_index_raw)
+    atomic_write(out / "alias-index.json", alias_index_raw)
     chunk_dir = out / "candidate-chunks"
     chunk_dir.mkdir(parents=True, exist_ok=True)
     atomic_write(chunk_dir / "manifest.json", candidate_manifest_raw)
     for relative, raw in chunk_raw.items():
-        atomic_write(site_root / relative, raw)
+        write_output_artifact(out, relative, raw)
+    for relative, raw in research_files.items():
+        write_output_artifact(out, relative, raw)
     atomic_write(out / "status.json", status_raw)
     atomic_write(out / "source-universe.json", source_universe_raw)
     atomic_write(out / "release-history.json", release_history_raw)
     atomic_write(out / "certification.json", certificate_raw)
-    print(f"\nwrote compact index, {len(chunk_raw)} lazy detail chunks, full download, status, source universe, history, and verification report")
+    print(f"\nwrote compact bootstrap/index, alias index, research tables, complete-catalog manifest, {len(chunk_raw)} checksum-bound detail chunks, status, source universe, history, and verification report")
     print(f"snapshot verification: {certificate['status']} ({sum(g['passed'] for g in gates)}/{len(gates)} checks)")
     return 0
 
