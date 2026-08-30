@@ -3,7 +3,7 @@
   "candidate_count": 3035,
   "catalog_content_checksum_sha256": "8cbfc1439c929f662532d26586fad50b87a3fc33f8d771559b9090a5030ed3b5",
   "claim_boundary": "Automated checksum and structural verification of one static snapshot; not peer review, scientific truth, classification validation, discovery authority, or a managed-service deployment claim.",
-  "content_release_id": "2b9d2fbffe7979473e469e126647ca657becb8fa5fc04c64bb5c38d1bc81eeff",
+  "content_release_id": "9ece7490556578b68a5aa279ab28cc8c505de6bc7f4b51881d612e3cd3b12b9d",
   "files": {
     "CTAS-AUTOMATION.md": {
       "bytes": 5774,
@@ -1078,8 +1078,8 @@
       "sha256": "1fd7e6e8eb8cabfa797ca748a3fa4a173c17a767a8cbfd5d056fc825efc164ae"
     },
     "ctas/data/release-history.json": {
-      "bytes": 19980,
-      "sha256": "60889a556c6c6d67ff8d3f57c978c4cb62063c5760634ae2cf3f55fc2ae57fdc"
+      "bytes": 33241,
+      "sha256": "5c60ac9056df64f2e7802e4693db0952ff01972ff84215a29e4e3ca38dec9d6b"
     },
     "ctas/data/research/aliases.csv": {
       "bytes": 277600,
@@ -1107,7 +1107,7 @@
     },
     "ctas/data/source-universe.json": {
       "bytes": 148937,
-      "sha256": "8b2cd165d72aeef6b951f370cae9455fd86cc49beec93fcff6030e95d4d8d520"
+      "sha256": "20f7bb6b9550ce7e884b044401c86c19b5e717b68345f40aab9190ef16543529"
     },
     "ctas/observability.js": {
       "bytes": 7995,
@@ -1253,7 +1253,7 @@
       "passed": true
     },
     {
-      "evidence": "24 checksum-addressed public catalog changes",
+      "evidence": "40 checksum-addressed public catalog changes",
       "id": "release-history-integrity",
       "passed": true
     },
@@ -1293,7 +1293,7 @@
       "passed": true
     },
     {
-      "evidence": "generated 2026-08-30T03:48:43Z; valid until 2026-08-30T04:18:43Z",
+      "evidence": "generated 2026-08-30T03:53:10Z; valid until 2026-08-30T04:23:10Z",
       "id": "snapshot-freshness",
       "passed": true
     },
@@ -1350,12 +1350,12 @@
     {
       "evidence": "bound code bytes exactly match HEAD, not a dirty working tree",
       "id": "deployed-code-binding",
-      "passed": false
+      "passed": true
     },
     {
       "evidence": "HEAD bound code bytes match origin/main; generated data declares a successor release",
       "id": "local-origin-code-alignment",
-      "passed": false
+      "passed": true
     },
     {
       "evidence": "checksum-bound report is written to ctas/data/certification.json and included by the explicit publisher allowlist",
@@ -1368,15 +1368,15 @@
       "passed": true
     }
   ],
-  "generated_at": "2026-08-30T03:48:43Z",
+  "generated_at": "2026-08-30T03:53:10Z",
   "publication_relationship": {
-    "base_commit": "883f92fb8e60a6dcc80762e913d9adb6ba6b930e",
+    "base_commit": "a6498f49c647463e3c5af7f25c8b9cdb22a24f06",
     "kind": "generated-successor-to-origin-main",
-    "local_head": "9ddb3ddbc2246c73fec9791bd9dba93a2950e817",
+    "local_head": "a6498f49c647463e3c5af7f25c8b9cdb22a24f06",
     "statement": "Generated public data are the declared next successor to the bound origin/main code; post-push live verification confirms public byte availability."
   },
-  "report_checksum_sha256": "dbcef8e952deccfc4251fa98c6fca5a8f3a807ba5b1a4cebd57159a99ee9cbd2",
+  "report_checksum_sha256": "8d5c41632790c84a107fb0ca3fcdcf3be59aa1803ac3a8ee56286d5db8d6be86",
   "schema": "ctas.static-snapshot-verification@1.1.0",
-  "status": "publication-binding-pending",
-  "valid_until": "2026-08-30T04:18:43Z"
+  "status": "verified-static-snapshot",
+  "valid_until": "2026-08-30T04:23:10Z"
 }
