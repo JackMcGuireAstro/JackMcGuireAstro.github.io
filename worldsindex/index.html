@@ -6,13 +6,13 @@
   <meta name="description" content="WorldsIndex: a multi-source exoplanet and candidate atlas with inspectable measurements, provenance, methods, and scientific exports.">
   <meta name="theme-color" content="#07111d">
   <link rel="canonical" href="https://jackmcguireastro.github.io/worldsindex/">
-  <link rel="stylesheet" href="assets/app.css?v=20260830-ux3">
+  <link rel="stylesheet" href="assets/app.css?v=20260830-ux4">
   <title>WorldsIndex · Exoplanet evidence atlas</title>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to WorldsIndex</a>
   <header class="topbar">
-    <a class="brand" href="../index.html" aria-label="Jack McGuire home"><span class="brand-mark">WI</span><span>WorldsIndex<small>on jackmcguireastro.github.io</small></span></a>
+    <a class="brand" href="../index.html" aria-label="Jack McGuire home"><span class="brand-mark">WI</span><span>WorldsIndex<small>Powered by ExoNexus</small></span></a>
     <nav aria-label="WorldsIndex sections">
       <a href="#atlas">Atlas</a><a href="#object-evidence">Object evidence</a><a href="#compare">Compare</a><a href="#methods">Methods</a><a href="#coverage">Sources</a><a href="#downloads">Downloads</a>
     </nav>
@@ -22,7 +22,7 @@
   <main id="main">
     <section class="hero">
       <div>
-        <p class="eyebrow">ExoNexus evidence engine · GitHub-native public release</p>
+        <p class="eyebrow">Powered by ExoNexus · an evidence-aware exoplanet atlas</p>
         <h1>Every value has<br><em>a history.</em></h1>
         <p class="lede">Search confirmed planets, candidates, disputed claims, and false positives. See a useful value first, then inspect every retained measurement, uncertainty, and source behind it.</p>
         <div class="hero-actions"><a class="button primary" href="#atlas">Explore the atlas</a></div>
@@ -32,7 +32,6 @@
         <div class="release-metrics"><strong id="metric-objects">Loading…</strong><span>catalog-union objects</span><strong id="metric-records">—</strong><span>source-record occurrences</span><strong id="metric-sources">—</strong><span>declared source contracts</span></div>
         <p id="release-time" class="muted">Opening the compressed public release…</p>
         <div id="provider-health" class="provider-health"><span class="health-dot"></span><span>Loading provider health…</span></div>
-        <div class="release-state"><span aria-hidden="true">●</span> No ChatGPT-hosted runtime dependency</div>
       </aside>
     </section>
 
@@ -96,7 +95,7 @@
     </section>
 
     <section class="workspace" id="coverage" aria-labelledby="coverage-title">
-      <div class="section-heading"><div><p class="eyebrow">Declared source universe</p><h2 id="coverage-title">Count sources by what actually happened</h2></div><label>Filter source states<select id="source-state-filter"><option value="all">All states</option></select></label></div>
+      <div class="section-heading"><div><p class="eyebrow">Source coverage</p><h2 id="coverage-title">Active data first; inactive contracts remain auditable</h2></div><label>Sources shown<select id="source-state-filter"><option value="active">Active sources</option><option value="inactive">Inactive contracts only</option><option value="all">All declared sources</option></select></label></div>
       <div id="source-summary" class="summary-grid"></div>
       <div id="source-list" class="source-list"></div>
       <aside class="boundary"><h3>Scientific and automation boundary</h3><p>The laptop updater can repeatedly query structured catalogs, validate changes, quarantine unsafe releases, and publish a last-known-good static release. No website can honestly guarantee every future paper or provider forever: services change schemas, restrict access, disappear, or publish measurements only in unstructured literature. Every declared provider therefore remains visible with its exact implementation and latest-query state instead of being silently counted as complete.</p><ul><li>A catalog row is not independent confirmation.</li><li>An archive holding is not itself a planet detection.</li><li>Confidence describes evidence fitness and provenance, not the probability that a value is true.</li><li>Source-composite values may come from different papers and are not a self-consistent physical solution.</li><li>“All” means the validated records inside the versioned declared source universe shown here.</li></ul></aside>
@@ -114,6 +113,6 @@
   </main>
   <footer><p><strong>WorldsIndex</strong> · ExoNexus provenance-aware catalog union · <a href="../index.html">Jack McGuire</a></p><p>No ChatGPT-hosted application dependency. Public data and interface are served from this GitHub repository.</p></footer>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="assets/app.js?v=20260830-ux3"></script>
+  <script type="module" src="assets/app.js?v=20260830-ux4"></script>
 </body>
 </html>
