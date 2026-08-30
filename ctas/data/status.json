@@ -2,57 +2,57 @@
   "artifacts": {
     "alias_index": {
       "path": "ctas/data/alias-index.json",
-      "sha256": "c6db1ab4c1e851d9596bef3c0b84becf44264c34163661af59aa2fa6793f5f35"
+      "sha256": "5132bb60dfe495a82124864a3684c66ab6f012bdfeedd0e6f1ea7a97478d6f8f"
     },
     "catalog_bootstrap": {
       "path": "ctas/data/catalog-bootstrap.json",
-      "sha256": "1cc835929ad90e975024d9cab9e37f201f6594fa6aaf91007ddfe0fde70242e0"
+      "sha256": "7a1cd61415896d22feb3e9cfb925c36ccd7c3344d4cdbd919c4ea3013ae59f7e"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "1cc835929ad90e975024d9cab9e37f201f6594fa6aaf91007ddfe0fde70242e0"
+      "sha256": "7a1cd61415896d22feb3e9cfb925c36ccd7c3344d4cdbd919c4ea3013ae59f7e"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "bd2f61754a109a591da42858458454afeab662fa3ff2291dda80a9643a51d133"
+      "report_checksum_sha256": "b8ddb55fb297e68d22b9a5eedac14b33cbcedc47d6538850ca70137fec2f429b"
     },
     "complete_catalog_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "673c74a5d023c7044217252c76f1d36e8ba034559f6daff71e6c4ee745303025"
+      "sha256": "c2c2fd9c114f42a01b398113ff510030f962ed102c77ba9829d73eede3d36782"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "2038731fe0788166ff8308f61c2a7846645a86e7b8a302e4e669a01b3a4ebaf3"
+      "sha256": "a0ff6e030712f71a671e3d43925a23ea616d485e19bf23b7c0aac16be1d72c3b"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "330922223c0e90940d6f0f6eec87227cd631effa191c677283316011331c52ac"
+      "sha256": "7e7e9eec79ff5217afedf36a2f83cf89ea601be87485d1c5069789c5f223de79"
     },
     "research_tables": {
       "path": "ctas/data/research/manifest.json",
-      "sha256": "9f307b871564bd12fb9c3cd134da48ba72fdd27b6e96099f9f48af7b8ea6b168"
+      "sha256": "5b2932145529b5af8f72ae4016352a73843104e8a2b8ca3e59f3a8a059ee7afc"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "e08f505d5b8ae1e261b7038ff531fcc3b1ef3083f30436efb133e1e5cb90c133"
+      "sha256": "5515a1199af50b1bdcc6aca592cc96b91cb20ea7b085e9bfd38a60f068194ebb"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 3038,
-  "catalog_content_checksum_sha256": "3beb451ac14365ac0a03f900699090aa9872ed454543bf3030e5de8fc7ff52a0",
-  "degraded_source_count": 6,
-  "export_checked_at": "2026-08-30T07:53:41Z",
-  "last_successful_update": "2026-08-30T07:53:41Z",
+  "catalog_content_checksum_sha256": "153e5cf8f8109e38f07c924b449e9ef97234e2ac994acfc3a1b7bfe3786b3c73",
+  "degraded_source_count": 3,
+  "export_checked_at": "2026-08-30T08:00:04Z",
+  "last_successful_update": "2026-08-30T08:00:04Z",
   "latest_record_update": "2026-08-30T07:15:26.283365Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "c1042a46485813db3c05e9432ba3701e664376badb493db5c8bab4b0d8766b92",
+  "publication_state_checksum_sha256": "db65d2c3a4b46e6036df7bde84ee1c0f94488a458f6d9dc619e684c32bbaede3",
   "schema_version": 2,
   "source_accounting": {
     "applicableSourceEvaluations": 155817,
     "dataBearingSourceEvaluations": 4209,
     "declaredSources": 76,
-    "executedQueryReceipts": 29094,
+    "executedQueryReceipts": 29108,
     "outcomeCounts": {
       "AMBIGUOUS": 112,
       "DATA_RETURNED": 832,
@@ -67,7 +67,7 @@
   },
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "contract_set_checksum_sha256": "c66d8b95e03fd99285752ddec489be4395ccba7a40bb55872ddcf7d7556436e1",
+    "contract_set_checksum_sha256": "18f602b676f58eebceeadc1c4137f70c5799f993547e0fec2808419709c9f88c",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -1288,7 +1288,7 @@
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 136233.429377,
+      "lag_seconds": 138048.000979,
       "last_message_at": "2026-08-28T17:31:45Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1413,13 +1413,13 @@
   ],
   "static_snapshot_verification": {
     "check_count": 36,
-    "content_release_id": "c14da9e1224718a4dcac9f043ab6966a8a6bb7821fbc971461e5846a310fa020",
+    "content_release_id": "517a8e1cae855fbaf6763a6c6d8530ec3afa560e65828bf3a38a6a73aeea3a49",
     "failed_gate_ids": [],
     "passed_check_count": 36,
-    "report_checksum_sha256": "bd2f61754a109a591da42858458454afeab662fa3ff2291dda80a9643a51d133",
+    "report_checksum_sha256": "b8ddb55fb297e68d22b9a5eedac14b33cbcedc47d6538850ca70137fec2f429b",
     "schema": "ctas.static-snapshot-verification@1.1.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-30T08:23:41Z"
+    "valid_until": "2026-08-30T08:30:04Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1468,7 +1468,7 @@
       "applicableSourceEvaluations": 155817,
       "dataBearingSourceEvaluations": 4209,
       "declaredSources": 76,
-      "executedQueryReceipts": 29094,
+      "executedQueryReceipts": 29108,
       "outcomeCounts": {
         "AMBIGUOUS": 112,
         "DATA_RETURNED": 832,
@@ -1625,5 +1625,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-30T08:23:41Z"
+  "valid_until": "2026-08-30T08:30:04Z"
 }
