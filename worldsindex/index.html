@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="WorldsIndex: a multi-source exoplanet and candidate atlas with inspectable measurements, provenance, methods, and scientific exports.">
+  <meta name="theme-color" content="#07111d">
+  <link rel="canonical" href="https://jackmcguireastro.github.io/worldsindex/">
+  <link rel="stylesheet" href="assets/app.css">
+  <title>WorldsIndex · Exoplanet evidence atlas</title>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to WorldsIndex</a>
+  <header class="topbar">
+    <a class="brand" href="../index.html" aria-label="Jack McGuire home"><span class="brand-mark">WI</span><span>WorldsIndex<small>on jackmcguireastro.github.io</small></span></a>
+    <nav aria-label="WorldsIndex sections">
+      <a href="#atlas">Atlas</a><a href="#object-evidence">Object evidence</a><a href="#compare">Compare</a><a href="#methods">Methods</a><a href="#coverage">Sources</a><a href="#downloads">Downloads</a>
+    </nav>
+    <a class="portfolio-link" href="../index.html">Jack McGuire ↗</a>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">ExoNexus evidence engine · GitHub-native public release</p>
+        <h1>Every value has<br><em>a history.</em></h1>
+        <p class="lede">Explore confirmed planets, candidates, false positives, controversial claims, and refuted detections across a declared multi-source catalog universe. Compare the retained measurements; inspect their source and uncertainty; never confuse catalog membership with independent confirmation.</p>
+        <div class="hero-actions"><a class="button primary" href="#atlas">Explore all detections</a><a class="button" href="#coverage">Audit source coverage</a></div>
+      </div>
+      <aside class="release-card" aria-live="polite">
+        <p class="eyebrow">Current static evidence state</p>
+        <div class="release-metrics"><strong id="metric-objects">Loading…</strong><span>catalog-union objects</span><strong id="metric-records">—</strong><span>source-record occurrences</span><strong id="metric-sources">—</strong><span>declared source contracts</span></div>
+        <p id="release-time" class="muted">Opening the compressed public release…</p>
+        <div class="release-state"><span aria-hidden="true">●</span> No ChatGPT-hosted runtime dependency</div>
+      </aside>
+    </section>
+
+    <section class="workspace" id="atlas" aria-labelledby="atlas-title">
+      <div class="section-heading"><div><p class="eyebrow">Interactive celestial sphere</p><h2 id="atlas-title">The declared detection universe on one sky</h2></div><p id="atlas-count" class="count-badge">Loading atlas…</p></div>
+      <div class="search-panel">
+        <label for="object-search">Find any retained planet, candidate, host, or source identifier</label>
+        <div class="search-row"><input id="object-search" type="search" autocomplete="off" placeholder="Try HD 209458 b, TRAPPIST-1 c, TOI-700…"><button id="search-button" class="button primary" type="button">Search</button></div>
+        <div id="search-results" class="search-results" role="listbox" hidden></div>
+      </div>
+      <div class="filter-grid" aria-label="Atlas filters">
+        <label>Status<select id="atlas-status"><option value="all">All statuses</option></select></label>
+        <label>Method<select id="atlas-method"><option value="all">All methods</option></select></label>
+        <label>Source<select id="atlas-source"><option value="all">All retained sources</option></select></label>
+        <label>Discovery year from<input id="atlas-year-start" type="number" min="1780" max="2100" value="1780"></label>
+        <label>through<input id="atlas-year-end" type="number" min="1780" max="2100" value="2100"></label>
+        <button id="atlas-reset" class="button" type="button">Reset filters</button>
+      </div>
+      <div class="sky-layout">
+        <div class="sky-wrap">
+          <canvas id="sky" aria-label="Interactive all-sky map of retained detections. Use search or the accessible result table below for a keyboard equivalent."></canvas>
+          <div class="sky-key"><span><i class="confirmed"></i>Confirmed</span><span><i class="candidate"></i>Candidate</span><span><i class="false"></i>False positive/refuted</span><span><i class="other"></i>Other</span></div>
+          <p class="fineprint">Hammer–Aitoff equatorial projection. Right ascension increases to the left. Point overlap is expected; select near a stack to inspect the nearest retained object.</p>
+        </div>
+        <aside id="selection-summary" class="selection-card"><p class="eyebrow">Selected object</p><h3>Select a point or search</h3><p class="muted">The full atlas is rendered locally in your browser from the compressed GitHub release.</p></aside>
+      </div>
+      <details class="accessible-list"><summary>Keyboard-accessible filtered object browser</summary><div id="object-list" class="object-list"></div></details>
+    </section>
+
+    <section class="workspace accent" id="object-evidence" aria-labelledby="evidence-title">
+      <div class="section-heading"><div><p class="eyebrow">Object dossier</p><h2 id="evidence-title">Best display values with alternatives still visible</h2></div><span id="object-status" class="status-pill">No object selected</span></div>
+      <div id="object-empty" class="empty-state"><p>Choose an object from the sky, search, or population plot to open its dossier.</p></div>
+      <div id="object-dossier" hidden>
+        <div class="object-heading"><div><h3 id="object-name"></h3><p id="object-subtitle" class="muted"></p></div><div class="object-actions"><button id="copy-link" class="button" type="button">Copy object link</button><button id="download-object" class="button" type="button">Download dossier JSON</button></div></div>
+        <nav class="tabs" aria-label="Object dossier views"><button class="active" data-tab="overview">Overview</button><button data-tab="measurements">Measurements</button><button data-tab="sources">Source records</button><button data-tab="provenance">Provenance</button></nav>
+        <div id="tab-overview" class="tab-panel"></div>
+        <div id="tab-measurements" class="tab-panel" hidden></div>
+        <div id="tab-sources" class="tab-panel" hidden></div>
+        <div id="tab-provenance" class="tab-panel" hidden></div>
+      </div>
+    </section>
+
+    <section class="workspace" id="compare" aria-labelledby="compare-title">
+      <div class="section-heading"><div><p class="eyebrow">Compare &amp; learn</p><h2 id="compare-title">A population plot that reports what it excludes</h2></div><button id="download-plot" class="button" type="button">Download filtered CSV</button></div>
+      <div class="plot-controls">
+        <label>X axis<select id="plot-x"></select></label><label>Y axis<select id="plot-y"></select></label>
+        <label class="check"><input id="plot-x-log" type="checkbox" checked> Log X</label><label class="check"><input id="plot-y-log" type="checkbox" checked> Log Y</label>
+      </div>
+      <div class="plot-wrap"><canvas id="plot" aria-label="Interactive exoplanet population scatter plot"></canvas></div>
+      <p id="plot-accounting" class="accounting"></p>
+      <p class="fineprint">This is a source-resolved catalog projection, not a completeness-corrected population sample. Missing, bounded, nonpositive-log, and filtered values are excluded and counted.</p>
+    </section>
+
+    <section class="workspace accent" id="methods" aria-labelledby="methods-title">
+      <div class="section-heading"><div><p class="eyebrow">Detection methods &amp; concept labs</p><h2 id="methods-title">What each method measures—and where it can mislead</h2></div><label>Learning depth<select id="learning-depth"><option value="introductory">Introductory</option><option value="undergraduate" selected>Undergraduate</option><option value="research">Research</option></select></label></div>
+      <div id="method-tabs" class="method-tabs" role="tablist"></div>
+      <article id="method-detail" class="method-detail"></article>
+    </section>
+
+    <section class="workspace" id="coverage" aria-labelledby="coverage-title">
+      <div class="section-heading"><div><p class="eyebrow">Declared source universe</p><h2 id="coverage-title">Count sources by what actually happened</h2></div><label>Filter source states<select id="source-state-filter"><option value="all">All states</option></select></label></div>
+      <div id="source-summary" class="summary-grid"></div>
+      <div id="source-list" class="source-list"></div>
+      <aside class="boundary"><h3>Scientific and hosting boundary</h3><p>GitHub Pages serves the complete frozen public release directly. It cannot safely hold private credentials or run arbitrary secret-backed provider queries. Those providers remain declared with their exact state, scope, limit, and official link; future measurements enter through the guarded refresh pipeline and become static, inspectable release artifacts after validation.</p><ul><li>A catalog row is not independent confirmation.</li><li>An archive holding is not itself a planet detection.</li><li>Confidence describes evidence fitness and provenance, not the probability that a value is true.</li><li>Source-composite values may come from different papers and are not a self-consistent physical solution.</li><li>“All” means the validated records inside the versioned declared source universe shown here.</li></ul></aside>
+    </section>
+
+    <section class="workspace accent" id="downloads" aria-labelledby="downloads-title">
+      <div class="section-heading"><div><p class="eyebrow">Scientist-ready artifacts</p><h2 id="downloads-title">Download, cite, and reproduce this evidence state</h2></div></div>
+      <div class="download-grid">
+        <a href="data/sky-detections.json.gz" download><strong>Complete atlas JSON.gz</strong><span>All retained objects, coordinates, statuses, method claims, source membership, and population projections.</span></a>
+        <a href="data/manifest.json" download><strong>Release manifest</strong><span>Counts, hashes, versions, timestamps, and scientific boundary.</span></a>
+        <a href="data/source-monitor.json" download><strong>Latest source-monitor receipt</strong><span>Per-provider availability, changes, caps, failures, and artifact hashes.</span></a>
+        <button id="download-all-csv" type="button"><strong>Complete atlas CSV</strong><span>Generate an analysis-ready flat projection in this browser.</span></button>
+      </div>
+    </section>
+  </main>
+  <footer><p><strong>WorldsIndex</strong> · ExoNexus provenance-aware catalog union · <a href="../index.html">Jack McGuire</a></p><p>No ChatGPT-hosted application dependency. Public data and interface are served from this GitHub repository.</p></footer>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="assets/app.js"></script>
+</body>
+</html>
