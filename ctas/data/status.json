@@ -2,57 +2,57 @@
   "artifacts": {
     "alias_index": {
       "path": "ctas/data/alias-index.json",
-      "sha256": "e4a09fa899e86ce0148f68314445ee629c8fe12167155469b676d0957ff1297f"
+      "sha256": "b46bd362333a36ae2992584da16c437a0222317af00ede870b4cc30b7ffe16f6"
     },
     "catalog_bootstrap": {
       "path": "ctas/data/catalog-bootstrap.json",
-      "sha256": "0984c4a92d03cc48d37987618d140fb386f0c3a992a9376f54ba2ae982f2887a"
+      "sha256": "69b8f0a05faf38b4620ea62c44e23c07815697672eeafbae441be6f9b5384e23"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "0984c4a92d03cc48d37987618d140fb386f0c3a992a9376f54ba2ae982f2887a"
+      "sha256": "69b8f0a05faf38b4620ea62c44e23c07815697672eeafbae441be6f9b5384e23"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "5fbfebc1217dba1ec99fb7b20bf570c76fd6ad037da5ec654f46914945aac3af"
+      "report_checksum_sha256": "4896091c664f98272dba0d2be29477605acdd4904da7ee69db4a780ceefc0bad"
     },
     "complete_catalog_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "57d7af10a08b0b475a6acfd1903f0f241ade4e7fa4557489986b9a5dce9eede5"
+      "sha256": "f34333798e1b0a6c9f50c24657b75c30bcae8d6324e40005e946100a5996be4f"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "ac754f9010807329d40d61b9347eed17c3d18e3eb4a42c3eaa0f29d99f1016c4"
+      "sha256": "25ecc309c2a6a4310ed0b4ad769a8788116c8696474a92d1fd3b9a90897f2a6d"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "64cb50af77ec3a99e8639aebe292e2f9977fd337cd2d57b8aeb280c4eb4eb1c8"
+      "sha256": "2d2e6a8751c0c0306bfb9afdc8101e7d3b18f7dbeefd94ac0495a95c6c281f64"
     },
     "research_tables": {
       "path": "ctas/data/research/manifest.json",
-      "sha256": "4d3613b961d4fc8db2d6575126813a8bb04eb6df9a208c230ac7e7986ac0d3c1"
+      "sha256": "499b3eed28ad6044aed978639c5d0b9d3c6a4a628de2a7c852729d1f9f228f52"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "2071d0e56ac1861cae3ee3f41b9efcfb5d599fb9ecc172663d9182310d057ff0"
+      "sha256": "0ef69e80c8e4f4c93514c1a214bf449a725cc071bd3402a2fa2f5354006865d6"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 3039,
-  "catalog_content_checksum_sha256": "155e65cb5188a7e44cecabd55b257c0ac846296c30acccf8e2a86b28ad3b26a8",
-  "degraded_source_count": 6,
-  "export_checked_at": "2026-08-30T08:50:39Z",
-  "last_successful_update": "2026-08-30T08:50:39Z",
-  "latest_record_update": "2026-08-30T08:27:57.696252Z",
+  "catalog_content_checksum_sha256": "b07d87815a625fc5ad13d98782f47f41b91fedf61f0d3f478d6aa62964a2f866",
+  "degraded_source_count": 3,
+  "export_checked_at": "2026-08-30T09:02:56Z",
+  "last_successful_update": "2026-08-30T09:02:56Z",
+  "latest_record_update": "2026-08-30T08:57:36.895684Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "0db953f8a575051367f6e1a602c3a7a605f605b4422fca03fb477d36fafdfb30",
+  "publication_state_checksum_sha256": "c3449729290c5f4678fd21e96da3ab35925bbcfc5924d3b6f2516ac73ded78b4",
   "schema_version": 2,
   "source_accounting": {
     "applicableSourceEvaluations": 155872,
     "dataBearingSourceEvaluations": 4218,
     "declaredSources": 76,
-    "executedQueryReceipts": 29207,
+    "executedQueryReceipts": 29222,
     "outcomeCounts": {
       "AMBIGUOUS": 112,
       "DATA_RETURNED": 840,
@@ -67,7 +67,7 @@
   },
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "contract_set_checksum_sha256": "739a2681fd47042433544c41dc858548c18250eca984b4bb2b011bb6227e6fa1",
+    "contract_set_checksum_sha256": "78e84e849450fd12713b3b1ebab69f8fd627cc4c165627a98169fbbd64cef4b4",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 76
   },
@@ -887,7 +887,7 @@
       "public_scope": "Public ZTF broker object/light-curve output accessed through the user's account",
       "rate_or_cadence_limit": "One exact retained ZTF alias per target refresh; provider documents 100 calls/hour for a standard user token",
       "record_counts": {
-        "observations": 834
+        "observations": 837
       },
       "source": "rubin-lasair",
       "state": "disabled"
@@ -1288,7 +1288,7 @@
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 139862.224543,
+      "lag_seconds": 141677.037978,
       "last_message_at": "2026-08-28T17:31:45Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
@@ -1413,13 +1413,13 @@
   ],
   "static_snapshot_verification": {
     "check_count": 36,
-    "content_release_id": "e1e12526e4f889d2afb1e48bc761973e442611e5cf0157f70548cb3690d0771f",
+    "content_release_id": "6ee793508a0bf11852a1cbe6780b55aa31103a08be752d72a08f4c97c49990a6",
     "failed_gate_ids": [],
     "passed_check_count": 36,
-    "report_checksum_sha256": "5fbfebc1217dba1ec99fb7b20bf570c76fd6ad037da5ec654f46914945aac3af",
+    "report_checksum_sha256": "4896091c664f98272dba0d2be29477605acdd4904da7ee69db4a780ceefc0bad",
     "schema": "ctas.static-snapshot-verification@1.1.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-30T09:20:39Z"
+    "valid_until": "2026-08-30T09:32:56Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1453,7 +1453,7 @@
       "radio": 56,
       "x-ray": 37
     },
-    "observations": 12575,
+    "observations": 12578,
     "priority_bands": {
       "high_50_74": 2503,
       "low_0_24": 20,
@@ -1468,7 +1468,7 @@
       "applicableSourceEvaluations": 155872,
       "dataBearingSourceEvaluations": 4218,
       "declaredSources": 76,
-      "executedQueryReceipts": 29207,
+      "executedQueryReceipts": 29222,
       "outcomeCounts": {
         "AMBIGUOUS": 112,
         "DATA_RETURNED": 840,
@@ -1625,5 +1625,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-30T09:20:39Z"
+  "valid_until": "2026-08-30T09:32:56Z"
 }
