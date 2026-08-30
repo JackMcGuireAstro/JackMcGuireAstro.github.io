@@ -144,11 +144,12 @@ const exoplanetEu = parseCsv(await readFile(join(sourceRoot, 'data/snapshots/exo
 const euFields = ['planet_status','mass','mass_error_min','mass_error_max','mass_sini','mass_sini_error_min','mass_sini_error_max','radius','radius_error_min','radius_error_max','orbital_period','orbital_period_error_min','orbital_period_error_max','semi_major_axis','semi_major_axis_error_min','semi_major_axis_error_max','eccentricity','eccentricity_error_min','eccentricity_error_max','inclination','inclination_error_min','inclination_error_max','discovered','updated','temp_calculated','temp_measured','publication','detection_type','mass_measurement_type','radius_measurement_type','alternate_names','molecules','star_name','ra','dec','star_distance','star_mass','star_radius','star_teff'];
 for (const row of exoplanetEu) attachByName(row.name, { sourceId: 'exoplanet-eu', recordType: 'catalog row', name: row.name, values: selected(row, euFields) });
 
-const buckets = new Map();
+// Materialize every bucket on every release. This prevents a removed record
+// from leaving an obsolete shard behind in the static site checkout.
+const buckets = new Map(Array.from({ length: 256 }, (_, index) => [index.toString(16).padStart(2, '0'), {}]));
 for (const [objectId, detail] of details) {
   if (!detail.records.length) continue;
   const bucket = bucketFor(objectId);
-  if (!buckets.has(bucket)) buckets.set(bucket, {});
   buckets.get(bucket)[objectId] = detail;
 }
 for (const [bucket, payload] of buckets) {

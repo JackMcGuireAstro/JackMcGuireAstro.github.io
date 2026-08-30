@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>io.github.jackmcguireastro.worldsindex-mirror</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>REPLACE_WITH_HOME/Library/Application Support/WorldsIndexPublisher/site/scripts/worldsindex_launchd_runner.sh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>REPLACE_WITH_HOME/Library/Application Support/WorldsIndexPublisher/site</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>21600</integer>
+  <key>ThrottleInterval</key>
+  <integer>600</integer>
+  <key>Nice</key>
+  <integer>5</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HOME</key><string>REPLACE_WITH_HOME</string>
+    <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>GIT_TERMINAL_PROMPT</key><string>0</string>
+    <key>GIT_SSH_COMMAND</key><string>ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -i REPLACE_WITH_HOME/.ssh/id_ed25519</string>
+    <key>WORLDSINDEX_SITE</key><string>REPLACE_WITH_HOME/Library/Application Support/WorldsIndexPublisher/site</string>
+    <key>WORLDSINDEX_SOURCE</key><string>REPLACE_WITH_SOURCE</string>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>REPLACE_WITH_HOME/Library/Logs/worldsindex-mirror/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>REPLACE_WITH_HOME/Library/Logs/worldsindex-mirror/launchd.err.log</string>
+</dict>
+</plist>

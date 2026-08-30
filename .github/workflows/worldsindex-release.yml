@@ -1,0 +1,36 @@
+name: Validate WorldsIndex release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "worldsindex/**"
+      - "scripts/build_worldsindex_static.mjs"
+      - "scripts/test_worldsindex_static.py"
+      - ".github/workflows/worldsindex-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worldsindex-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-static-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate static data and GitHub-native application
+        run: |
+          python3 scripts/test_worldsindex_static.py
+          node --check worldsindex/assets/app.js
+          git diff --check
