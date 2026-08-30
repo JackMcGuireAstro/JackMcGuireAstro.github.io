@@ -22,6 +22,14 @@ GitHub then runs the WorldsIndex release-validation workflow. GitHub Pages
 publishes the repository; it does not query scientific providers or hold their
 credentials.
 
+Because macOS blocks background launch agents from reading Documents, the
+installer makes a launchd-readable operational copy of ExoNexus at
+`~/Library/Application Support/WorldsIndexPublisher/source`. The editable
+canonical project remains under Documents. Rerun the installer after changing
+source code or frozen inputs; provider receipts continue advancing in the
+operational copy between installs. `.env.local` remains local with mode 0600 and
+is never copied into the public-site checkout.
+
 ## Scientific boundary
 
 A provider change marker is evidence that a source may have changed. It is not
@@ -71,6 +79,7 @@ Disable the service while retaining its recoverable checkout:
 Operational files live in:
 
 - runtime checkout: `~/Library/Application Support/WorldsIndexPublisher/site`
+- operational ExoNexus mirror: `~/Library/Application Support/WorldsIndexPublisher/source`
 - logs: `~/Library/Logs/worldsindex-mirror`
 - launch agent: `~/Library/LaunchAgents/io.github.jackmcguireastro.worldsindex-mirror.plist`
 

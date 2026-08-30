@@ -4,7 +4,8 @@ set -uo pipefail
 
 LABEL="io.github.jackmcguireastro.worldsindex-mirror"
 RUNTIME_SITE="$HOME/Library/Application Support/WorldsIndexPublisher/site"
-SOURCE="${WORLDSINDEX_SOURCE:-$HOME/Documents/Codex/CTAS and WorldsIndex/WorldsIndex Development/work/worldsindex}"
+AUTHORING_SOURCE="$HOME/Documents/Codex/CTAS and WorldsIndex/WorldsIndex Development/work/worldsindex"
+SOURCE="${WORLDSINDEX_SOURCE:-$HOME/Library/Application Support/WorldsIndexPublisher/source}"
 DEST="$HOME/Library/LaunchAgents/$LABEL.plist"
 LOG_DIR="$HOME/Library/Logs/worldsindex-mirror"
 DOMAIN="gui/$(id -u)"
@@ -35,6 +36,7 @@ launchctl print "$DOMAIN/$LABEL" 2>&1 | \
   egrep -i 'state|program|last exit|pid |runs|path =|error|not find|interval' | head -40
 
 h "4. operational inputs"
+[ -r "$AUTHORING_SOURCE/package.json" ] && echo "editable source readable: $AUTHORING_SOURCE" || echo "editable source NOT READABLE"
 [ -r "$SOURCE/package.json" ] && echo "source readable: $SOURCE" || echo "source NOT READABLE: $SOURCE"
 [ -r "$SOURCE/outputs/sync/latest-attempt.json" ] && \
   python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print("last provider state:",d.get("state"),"at",d.get("completedAt",d.get("startedAt","unknown")))' "$SOURCE/outputs/sync/latest-attempt.json" \

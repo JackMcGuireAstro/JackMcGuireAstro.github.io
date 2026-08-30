@@ -5,11 +5,12 @@ set -uo pipefail
 LABEL="io.github.jackmcguireastro.worldsindex-mirror"
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 AUTHORING_SITE=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
-SOURCE="${WORLDSINDEX_SOURCE:-$HOME/Documents/Codex/CTAS and WorldsIndex/WorldsIndex Development/work/worldsindex}"
+AUTHORING_SOURCE="${WORLDSINDEX_AUTHORING_SOURCE:-$HOME/Documents/Codex/CTAS and WorldsIndex/WorldsIndex Development/work/worldsindex}"
 TEMPLATE="$AUTHORING_SITE/scripts/$LABEL.plist"
 DEST="$HOME/Library/LaunchAgents/$LABEL.plist"
 RUNTIME_ROOT="$HOME/Library/Application Support/WorldsIndexPublisher"
 RUNTIME_SITE="$RUNTIME_ROOT/site"
+RUNTIME_SOURCE="$RUNTIME_ROOT/source"
 LOG_DIR="$HOME/Library/Logs/worldsindex-mirror"
 DOMAIN="gui/$(id -u)"
 
@@ -31,12 +32,13 @@ echo "================================================"
 fail=0
 [ -d "$AUTHORING_SITE/.git" ] && ok "authoring repo   $AUTHORING_SITE" || { bad "authoring repo not found"; fail=1; }
 [ -f "$TEMPLATE" ] && ok "agent template  scripts/$LABEL.plist" || { bad "missing $TEMPLATE"; fail=1; }
-[ -f "$SOURCE/package.json" ] && ok "ExoNexus source $SOURCE" || { bad "source project not found: $SOURCE"; fail=1; }
-[ -x "$SOURCE/scripts/run-source-monitor-noninteractive.sh" ] && ok "provider monitor executable" || { bad "provider monitor is unavailable"; fail=1; }
+[ -f "$AUTHORING_SOURCE/package.json" ] && ok "ExoNexus source $AUTHORING_SOURCE" || { bad "source project not found: $AUTHORING_SOURCE"; fail=1; }
+[ -x "$AUTHORING_SOURCE/scripts/run-source-monitor-noninteractive.sh" ] && ok "provider monitor executable" || { bad "provider monitor is unavailable"; fail=1; }
 command -v node >/dev/null && ok "node            $(node --version 2>&1)" || { bad "node not found"; fail=1; }
 command -v npm >/dev/null && ok "npm             $(npm --version 2>&1)" || { bad "npm not found"; fail=1; }
 command -v python3 >/dev/null && ok "python3         $(python3 -V 2>&1)" || { bad "python3 not found"; fail=1; }
 command -v git >/dev/null && ok "git             $(git --version 2>&1)" || { bad "git not found"; fail=1; }
+command -v rsync >/dev/null && ok "rsync           available" || { bad "rsync not found"; fail=1; }
 [ "$fail" -eq 0 ] || exit 1
 
 REMOTE=$(git -C "$AUTHORING_SITE" remote get-url origin 2>/dev/null || true)
@@ -84,7 +86,34 @@ else
   ok "runtime checkout current"
 fi
 
-python3 - "$TEMPLATE" "$DEST" "$HOME" "$SOURCE" "$NODE_BIN" <<'PY'
+echo
+echo "Refreshing the launchd-readable ExoNexus mirror"
+SOURCE_WAS_PRESENT=0
+[ -f "$RUNTIME_SOURCE/package.json" ] && SOURCE_WAS_PRESENT=1
+RSYNC_EXCLUDES=(
+  --exclude='.git/'
+  --exclude='.next/'
+  --exclude='.vinext/'
+  --exclude='.wrangler/'
+  --exclude='dist/'
+  --exclude='* 2.*'
+)
+if [ "$SOURCE_WAS_PRESENT" -eq 1 ]; then
+  # Preserve the operational receipt chain that launchd advances between
+  # installer runs; all code, contracts, and frozen inputs still mirror the
+  # editable source exactly.
+  RSYNC_EXCLUDES+=(--exclude='outputs/sync/' --exclude='public/data/sync/')
+fi
+mkdir -p "$RUNTIME_SOURCE"
+rsync -a --delete "${RSYNC_EXCLUDES[@]}" "$AUTHORING_SOURCE/" "$RUNTIME_SOURCE/" \
+  || { bad "could not refresh $RUNTIME_SOURCE"; exit 1; }
+[ -f "$RUNTIME_SOURCE/package.json" ] || { bad "operational source mirror is incomplete"; exit 1; }
+if [ -f "$RUNTIME_SOURCE/.env.local" ]; then
+  chmod 600 "$RUNTIME_SOURCE/.env.local" || { bad "could not protect the local credential file"; exit 1; }
+fi
+ok "operational source $RUNTIME_SOURCE"
+
+python3 - "$TEMPLATE" "$DEST" "$HOME" "$RUNTIME_SOURCE" "$NODE_BIN" <<'PY'
 from pathlib import Path
 import sys
 
@@ -133,7 +162,8 @@ cat <<EOF
 Done. WorldsIndex now checks locally and publishes without ChatGPT or Codex scheduling.
 
   Schedule       every 6 hours while this Mac is awake, online, and logged in
-  Source         $SOURCE
+  Editable source $AUTHORING_SOURCE
+  Runtime source  $RUNTIME_SOURCE
   Runtime        $RUNTIME_SITE
   Public page    https://jackmcguireastro.github.io/worldsindex/
   Logs           $LOG_DIR
