@@ -574,7 +574,10 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn('passedCheckCount + " of " + checkCount + " checks passed"', app)
         self.assertIn("Only local commit and origin publication bindings are pending", app)
         self.assertIn('"failed_gate_ids"', (ROOT / "scripts/export_ctas_snapshot.py").read_text())
+        self.assertIn('localPreview ? "Local preview"', app)
         self.assertIn('stale ? "Publisher paused"', app)
+        self.assertIn('window.location.protocol === "file:"', app)
+        self.assertIn("Open the current public CTAS catalog", app)
         self.assertNotIn("Certified Static Catalog", html + app)
         self.assertNotIn("Static release assurance", html + app)
 
@@ -608,6 +611,13 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertNotIn('loadLocal(MODE_KEY, "explore")', workbench)
 
         self.assertIn('data-dossier-view="brief"', app)
+        dossier = app[app.index("function renderDetails"):app.index("function statusCell")]
+        self.assertIn("skyContextPanel(candidate)", dossier)
+        self.assertLess(dossier.index("skyContextPanel(candidate)"), dossier.index("renderIdentity(candidate)"))
+        self.assertIn("hips-image-services/hips2fits", workbench)
+        self.assertIn("CDS/P/DSS2/color", workbench)
+        self.assertIn("not</em> automatically the transient, its host, or a confirmed counterpart", workbench)
+        self.assertIn("CTAS reported position", workbench)
         self.assertIn('data-dossier-view="identity"><summary>', app)
         self.assertNotIn('data-dossier-view="identity" open', app)
         self.assertNotIn('view || "identity"', app)

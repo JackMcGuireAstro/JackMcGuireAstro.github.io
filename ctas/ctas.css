@@ -1205,6 +1205,25 @@ body[data-ctas-mode="research"] .ctas-research-workbench { box-shadow: 0 0 0 1px
 .ctas-score-sandbox output { color: var(--gold); font-size: 1.2rem; font-weight: 800; }
 
 .ctas-astronomy-tools { display: grid; gap: .65rem; margin-top: .75rem; }
+.ctas-sky-context { margin: 1rem 0; padding: .85rem; border: 1px solid rgba(138, 213, 223, .4); background: rgba(138, 213, 223, .035); }
+.ctas-sky-context > header { display: flex; align-items: start; justify-content: space-between; gap: .75rem; margin-bottom: .7rem; }
+.ctas-sky-context h4 { margin: .12rem 0 0; }
+.ctas-sky-context__grid { display: grid; grid-template-columns: minmax(18rem, 1.35fr) minmax(16rem, .8fr); gap: .85rem; align-items: start; }
+.ctas-sky-context figure { margin: 0; }
+.ctas-sky-context__frame { position: relative; min-height: 270px; overflow: hidden; border: 1px solid var(--border); background: #030912; }
+.ctas-sky-context__frame img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; }
+.ctas-sky-context__frame [data-sky-image-error] { padding: 1rem; color: var(--ink-2); }
+.ctas-sky-context__crosshair { position: absolute; top: 50%; left: 50%; width: 26px; height: 26px; transform: translate(-50%, -50%); border: 1px solid rgba(255, 209, 102, .95); border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.65); pointer-events: none; }
+.ctas-sky-context__crosshair::before,
+.ctas-sky-context__crosshair::after { content: ""; position: absolute; top: 50%; left: 50%; background: #ffd166; box-shadow: 0 0 0 1px rgba(0,0,0,.5); }
+.ctas-sky-context__crosshair::before { width: 42px; height: 1px; transform: translate(-50%, -50%); }
+.ctas-sky-context__crosshair::after { width: 1px; height: 42px; transform: translate(-50%, -50%); }
+.ctas-sky-context figcaption { margin-top: .4rem; color: var(--ink-3); font-size: .72rem; }
+.ctas-sky-context__controls { display: grid; gap: .65rem; }
+.ctas-sky-context__controls p { margin: 0; color: var(--ink-2); }
+.ctas-sky-context__controls [role="group"] { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
+.ctas-sky-context__controls [role="group"] span { width: 100%; color: var(--ink-3); font-size: .68rem; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
+.ctas-sky-context__controls [data-sky-fov][aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
 .ctas-aladin__stage { min-height: 360px; margin-top: .65rem; border: 1px solid var(--border); background: #030912; }
 .ctas-observability__controls { display: grid; grid-template-columns: repeat(5, minmax(8rem, 1fr)); gap: .55rem; }
 .ctas-observability__controls label { display: grid; gap: .2rem; color: var(--ink-3); font-size: .7rem; }
@@ -1241,6 +1260,7 @@ body[data-ctas-mode="research"] .ctas-research-workbench { box-shadow: 0 0 0 1px
   .ctas-comparison-tray { align-items: stretch; flex-direction: column; }
   .ctas-compare-grid { grid-template-columns: 1fr; overflow: visible; }
   .ctas-observability__controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ctas-sky-context__grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
   .ctas-mode-switcher,

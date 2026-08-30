@@ -930,6 +930,7 @@
       '<section class="ctas-original-sources"><h4>Original sources</h4>' + renderReferences(candidate.links || []) +
       ((candidate.links || []).some(function (row) { return row.source_key === "tns"; })
         ? "<p>TNS hourly intake does not itself expose every current object-page flag. Open the exact TNS record above for the provider’s current object page and status.</p>" : "") + "</section>" +
+      (window.CTASWorkbench && window.CTASWorkbench.skyContextPanel ? window.CTASWorkbench.skyContextPanel(candidate) : "") +
       renderIdentity(candidate) + renderScoreFactors(candidate) + renderCompleteness(candidate) + renderSourceCoverage(candidate) +
       renderEvidenceLedger(candidate) +
       renderPhotometry(candidate) + renderSpectra(candidate) + renderMessenger(candidate) +
@@ -948,6 +949,7 @@
     var generated = status.last_successful_update || snapshot.catalog_as_of || snapshot.generated_at;
     var degraded = status.pipeline_status === "degraded";
     var cached = status.pipeline_status === "cached";
+    var localPreview = window.location.protocol === "file:";
     var validUntilMs = status.valid_until ? new Date(status.valid_until).getTime() : NaN;
     var stale = Number.isFinite(validUntilMs) && Date.now() > validUntilMs;
     var assurance = status.static_snapshot_verification || status.static_catalog_assurance || {};
@@ -967,20 +969,22 @@
       : assurance.content_release_id
         ? "Checksums and public-file consistency · Snapshot " + esc(shortHash(assurance.content_release_id)) + "…"
         : "Checksum report available below";
-    el.status.classList.toggle("is-degraded", degraded || cached || stale);
-    var pipelineValue = cached ? "Cached snapshot" : stale ? "Publisher paused" : "Operational";
-    var pipelineDetail = cached ? "A live refresh failed; the last successfully loaded public snapshot remains usable."
+    el.status.classList.toggle("is-degraded", !localPreview && (degraded || cached || stale));
+    var pipelineValue = localPreview ? "Local preview" : cached ? "Cached snapshot" : stale ? "Publisher paused" : "Operational";
+    var pipelineDetail = localPreview ? "This file is a bundled development snapshot, not the live publishing endpoint. Its age does not describe the public CTAS publisher."
+      : cached ? "A live refresh failed; the last successfully loaded public snapshot remains usable."
       : stale ? "The last public snapshot remains usable, but the background publisher has not completed a current refresh."
       : degraded ? "Catalog updates are active; individual source availability is reported in Catalog details."
       : "Catalog updates are active.";
     el.status.innerHTML = '<div class="ctas-status__line">' +
       statusCell("Pipeline", esc(pipelineValue)) +
-      statusCell("Updated", esc(relative(generated) || "unavailable")) +
+      statusCell(localPreview ? "Bundled snapshot" : "Updated", esc(relative(generated) || "unavailable")) +
       statusCell("Public candidates", Number(status.candidate_count || snapshot.candidate_count || state.candidates.length).toLocaleString()) +
       statusCell("Snapshot integrity", esc(integrityValue)) +
-      statusCell("Update check", state.autoRefreshPaused ? "Paused" : "Every 2 minutes") +
+      statusCell("Update check", localPreview ? "Public site only" : state.autoRefreshPaused ? "Paused" : "Every 2 minutes") +
       '</div><details class="ctas-status__details"><summary>Status details</summary><div><p>' + esc(pipelineDetail) +
       '</p><p><strong>Last successful snapshot:</strong> ' + esc(absolute(generated)) + '</p><p><strong>Integrity:</strong> ' + integrityDetail +
+      (localPreview ? '</p><p><a href="https://jackmcguireastro.github.io/ctas.html?mode=explore">Open the current public CTAS catalog</a>' : "") +
       '</p><button type="button" class="ctas-refresh-toggle" data-toggle-refresh aria-pressed="' + (state.autoRefreshPaused ? "true" : "false") + '">' +
       (state.autoRefreshPaused ? "Resume 2-minute checks" : "Pause 2-minute checks") + "</button></div></details>";
   }

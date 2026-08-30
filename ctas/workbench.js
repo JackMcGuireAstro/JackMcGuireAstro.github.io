@@ -264,11 +264,27 @@
     }).join("") || '<li>No maintained source contract matches those filters.</li>';
   }
 
+  function hipsCutoutUrl(candidate, fov) {
+    var params = new URLSearchParams({
+      hips: "CDS/P/DSS2/color", width: "900", height: "600", projection: "TAN",
+      fov: String(fov), ra: String(Number(candidate.ra_deg)), dec: String(Number(candidate.dec_deg)),
+      coordsys: "icrs", format: "jpg", stretch: "asinh"
+    });
+    return "https://alasky.cds.unistra.fr/hips-image-services/hips2fits?" + params.toString();
+  }
+
+  function skyContextPanel(candidate) {
+    var hasCoordinates = finite(candidate.ra_deg) && finite(candidate.dec_deg);
+    if (!hasCoordinates) return '<section class="ctas-sky-context ctas-sky-context--missing"><h4>Sky at the reported position</h4><p><strong>INSUFFICIENT_DATA:</strong> no valid ICRS coordinate pair is retained, so CTAS cannot request an archival sky image.</p></section>';
+    var ra = Number(candidate.ra_deg).toFixed(7), dec = Number(candidate.dec_deg).toFixed(7);
+    return '<section class="ctas-sky-context ctas-aladin" data-sky-context data-current-fov="0.2"><header><div><p class="eyebrow">Archival image context</p><h4>Sky at the reported position</h4></div><span class="pill">DSS2 color · 12′ field</span></header>' +
+      '<div class="ctas-sky-context__grid"><figure><div class="ctas-sky-context__frame"><img data-sky-cutout src="' + esc(hipsCutoutUrl(candidate, .2)) + '" loading="lazy" decoding="async" referrerpolicy="no-referrer" alt="DSS2 archival sky cutout centered on ' + esc(candidate.name) + ' at ICRS RA ' + ra + ' degrees, Dec ' + dec + ' degrees"><span class="ctas-sky-context__crosshair" aria-hidden="true"></span><p data-sky-image-error hidden>Archival preview unavailable. The coordinates and interactive atlas remain usable.</p></div><figcaption data-sky-caption>12 arcmin DSS2 color field centered on the reported ICRS position. The crosshair marks the catalog coordinate.</figcaption></figure>' +
+      '<div class="ctas-sky-context__controls"><p><strong>What this shows:</strong> archival survey context around the reported transient coordinate. A nearby star or galaxy is <em>not</em> automatically the transient, its host, or a confirmed counterpart.</p><div role="group" aria-label="Sky image field of view"><span>Field of view</span><button type="button" data-sky-fov="0.033333" data-sky-fov-label="2 arcmin">2′</button><button type="button" data-sky-fov="0.2" data-sky-fov-label="12 arcmin" aria-pressed="true">12′</button><button type="button" data-sky-fov="0.5" data-sky-fov-label="30 arcmin">30′</button></div><button type="button" data-load-aladin="' + esc(candidate.event_id) + '">Open interactive sky atlas</button><p data-aladin-status role="status" aria-live="polite">Image supplied on demand by CDS HiPS2FITS from DSS2; survey attribution remains with the provider.</p></div></div><div class="ctas-aladin__stage" data-aladin-stage hidden></div></section>';
+  }
+
   function candidatePanels(candidate) {
     var hasCoordinates = finite(candidate.ra_deg) && finite(candidate.dec_deg);
     return '<div class="ctas-astronomy-tools">' +
-      '<details class="ctas-evidence-panel ctas-aladin" data-dossier-view="sky-context"><summary>Astronomy-native sky context <small>' + (hasCoordinates ? "Aladin Lite on demand" : "INSUFFICIENT_DATA") + '</small></summary><div class="ctas-evidence-panel__body">' +
-      (hasCoordinates ? '<p>Load the CDS Aladin Lite atlas only when requested. The CTAS ICRS position remains the marker authority; imagery and catalog layers are fetched from their named providers.</p><button type="button" data-load-aladin="' + esc(candidate.event_id) + '">Load interactive sky atlas</button><p data-aladin-status role="status" aria-live="polite"></p><div class="ctas-aladin__stage" data-aladin-stage hidden></div>' : '<p><strong>INSUFFICIENT_DATA:</strong> no valid coordinate pair is retained, so CTAS does not open a sky-image context.</p>') + '</div></details>' +
       '<details class="ctas-evidence-panel ctas-observability" data-dossier-view="observability"><summary>Browser-local observability planner <small>' + (hasCoordinates ? "geometric estimate" : "INSUFFICIENT_DATA") + '</small></summary><div class="ctas-evidence-panel__body">' +
       (hasCoordinates ? '<p>Adjust public site coordinates and geometric constraints. This does not include weather, telescope state, instrument limits, or scheduling authority.</p><div class="ctas-observability__controls"><label>Site<select data-observatory-site><option value="wir" data-lat="41.0983" data-lon="-105.976">Wyoming Infrared Observatory</option><option value="gemini-n" data-lat="19.8233333" data-lon="-155.4683333">Gemini North</option><option value="gemini-s" data-lat="-30.2416667" data-lon="-70.7466667">Gemini South</option><option value="rubin" data-lat="-30.2446333" data-lon="-70.7494167">Rubin Observatory</option><option value="custom">Custom coordinates</option></select></label><label>Date (UTC)<input type="date" data-observatory-date value="' + new Date().toISOString().slice(0, 10) + '"></label><label>Latitude (deg)<input type="number" data-observatory-lat min="-90" max="90" step="0.0001" value="41.0983"></label><label>Longitude (deg, east +)<input type="number" data-observatory-lon min="-180" max="180" step="0.0001" value="-105.976"></label><label>Minimum altitude (deg)<input type="number" data-observatory-alt min="0" max="90" value="30"></label><label>Maximum airmass<input type="number" data-observatory-airmass min="1" max="10" step="0.1" value="3"></label><label>Sun altitude maximum<select data-observatory-sun><option value="-6">Civil twilight (−6°)</option><option value="-12" selected>Nautical twilight (−12°)</option><option value="-18">Astronomical twilight (−18°)</option></select></label><label>Minimum Moon separation (deg)<input type="number" data-observatory-moon min="0" max="180" value="20"></label><button type="button" data-run-observability="' + esc(candidate.event_id) + '">Calculate</button></div><div data-observability-result role="status" aria-live="polite"></div>' : '<p><strong>INSUFFICIENT_DATA:</strong> observability requires a retained ICRS position.</p>') + '</div></details>' +
       '<details class="ctas-evidence-panel ctas-time-machine" data-dossier-view="history"><summary>Evidence time machine <small>what CTAS had received by a chosen time</small></summary><div class="ctas-evidence-panel__body"><p>This replay gates rows on provider-publication or CTAS-receipt time. It does not claim what every astronomer globally knew, and it never treats observation time alone as availability.</p><div data-time-machine="' + esc(candidate.event_id) + '"></div></div></details></div>';
@@ -332,12 +348,16 @@
 
   function loadAladin(candidate, button) {
     var panel = button.closest(".ctas-aladin"), stage = panel.querySelector("[data-aladin-stage]"), status = panel.querySelector("[data-aladin-status]");
+    var requestedFov = Number(panel.getAttribute("data-current-fov")) || .2;
     button.disabled = true; status.textContent = "Loading the CDS Aladin Lite runtime and public sky imagery…"; stage.hidden = false;
     function start() {
       if (!window.A || !window.A.init) { status.textContent = "Aladin Lite did not become available. The CTAS coordinate facts remain usable."; button.disabled = false; return; }
       window.A.init.then(function () {
-        window.A.aladin(stage, {target: Number(candidate.ra_deg).toFixed(7) + " " + Number(candidate.dec_deg).toFixed(7), fov: .2,
+        var aladin = window.A.aladin(stage, {target: Number(candidate.ra_deg).toFixed(7) + " " + Number(candidate.dec_deg).toFixed(7), fov: requestedFov,
           cooFrame: "ICRSd", survey: "P/DSS2/color", showReticle: true, showCooGrid: true});
+        var markerCatalog = window.A.catalog({name: "CTAS reported position", sourceSize: 14, color: "#ffd166"});
+        markerCatalog.addSources([window.A.marker(Number(candidate.ra_deg), Number(candidate.dec_deg), {popupTitle: candidate.name, popupDesc: "Reported CTAS ICRS position"})]);
+        aladin.addCatalog(markerCatalog);
         status.textContent = "Interactive CDS Aladin Lite context centered on the retained CTAS ICRS position. External layers retain their provider attribution.";
         button.hidden = true;
       }).catch(function (error) { status.textContent = "Aladin Lite could not initialize: " + error.message; button.disabled = false; });
@@ -397,6 +417,16 @@
       }
       if (event.target.closest("[data-send-samp]")) { sendSamp(); return; }
       var aladin = event.target.closest("[data-load-aladin]"); if (aladin) { var candidate = state.detailById[aladin.getAttribute("data-load-aladin")] || candidateById(aladin.getAttribute("data-load-aladin")); if (candidate) loadAladin(candidate, aladin); return; }
+      var fov = event.target.closest("[data-sky-fov]"); if (fov) {
+        var skyPanel = fov.closest("[data-sky-context]"), skyCandidate = state.detailById[skyPanel.querySelector("[data-load-aladin]").getAttribute("data-load-aladin")];
+        if (!skyCandidate) return;
+        var selectedFov = Number(fov.getAttribute("data-sky-fov"));
+        skyPanel.setAttribute("data-current-fov", selectedFov);
+        skyPanel.querySelector("[data-sky-cutout]").src = hipsCutoutUrl(skyCandidate, selectedFov);
+        skyPanel.querySelector("[data-sky-caption]").textContent = fov.getAttribute("data-sky-fov-label") + " DSS2 color field centered on the reported ICRS position. The crosshair marks the catalog coordinate.";
+        Array.prototype.forEach.call(skyPanel.querySelectorAll("[data-sky-fov]"), function (button) { button.setAttribute("aria-pressed", button === fov ? "true" : "false"); });
+        return;
+      }
       var run = event.target.closest("[data-run-observability]"); if (run) { var target = state.detailById[run.getAttribute("data-run-observability")] || candidateById(run.getAttribute("data-run-observability")); var resultHost = run.closest(".ctas-observability").querySelector("[data-observability-result]"); if (target) renderObservability(target, resultHost); return; }
       var live = event.target.closest("[data-replay-live]"); if (live) { var liveCandidate = state.detailById[live.getAttribute("data-replay-live")]; if (liveCandidate) { var dated = (liveCandidate.evidence_timeline || []).filter(function (row) { return row.public_available_at; }); renderReplay(liveCandidate, dated.length - 1); updateUrl({at: null}, true); } return; }
       var play = event.target.closest("[data-replay-play]"); if (play) {
@@ -420,6 +450,12 @@
         if (option.dataset.lon) panel.querySelector("[data-observatory-lon]").value = option.dataset.lon;
       }
     });
+    document.addEventListener("error", function (event) {
+      if (!event.target.matches || !event.target.matches("[data-sky-cutout]")) return;
+      event.target.hidden = true;
+      var crosshair = event.target.parentNode.querySelector(".ctas-sky-context__crosshair"); if (crosshair) crosshair.hidden = true;
+      var fallback = event.target.parentNode.querySelector("[data-sky-image-error]"); if (fallback) fallback.hidden = false;
+    }, true);
     window.addEventListener("ctas:snapshot", function (event) {
       state.snapshot = event.detail.snapshot; state.candidates = event.detail.candidates || []; state.sourceUniverse = event.detail.sourceUniverse || null;
       state.watchIds = loadLocal(WATCH_KEY, []).filter(function (id) { return candidateById(id); });
@@ -437,6 +473,7 @@
   window.CTASWorkbench = {
     afterCandidateRender: afterCandidateRender,
     candidatePanels: candidatePanels,
+    skyContextPanel: skyContextPanel,
     setMode: setMode,
     refreshActions: updateActionStates
   };
