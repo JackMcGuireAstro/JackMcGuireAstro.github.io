@@ -45,19 +45,6 @@ REMOTE=$(git -C "$AUTHORING_SITE" remote get-url origin 2>/dev/null || true)
 [ -n "$REMOTE" ] || { bad "authoring repo has no origin"; exit 1; }
 NODE_BIN=$(dirname "$(command -v node)")
 
-echo
-echo "Checking unattended GitHub access"
-PUSHTEST=$(cd "$AUTHORING_SITE" && GIT_TERMINAL_PROMPT=0 \
-  GIT_SSH_COMMAND="ssh -o BatchMode=yes -o IdentitiesOnly=yes -i $HOME/.ssh/id_ed25519" \
-  git push --dry-run origin main 2>&1)
-if [ $? -eq 0 ]; then
-  ok "unattended SSH push works"
-else
-  bad "unattended push failed"
-  printf '%s\n' "$PUSHTEST" | sed 's/^/        /'
-  exit 1
-fi
-
 mkdir -p "$RUNTIME_ROOT" "$HOME/Library/LaunchAgents" "$LOG_DIR"
 if [ ! -d "$RUNTIME_SITE/.git" ]; then
   echo
@@ -84,6 +71,19 @@ else
   git -C "$RUNTIME_SITE" merge --quiet --ff-only origin/main \
     || { bad "runtime checkout is not a clean fast-forward"; exit 1; }
   ok "runtime checkout current"
+fi
+
+echo
+echo "Checking unattended GitHub access"
+PUSHTEST=$(cd "$RUNTIME_SITE" && GIT_TERMINAL_PROMPT=0 \
+  GIT_SSH_COMMAND="ssh -o BatchMode=yes -o IdentitiesOnly=yes -i $HOME/.ssh/id_ed25519" \
+  git push --dry-run origin main 2>&1)
+if [ $? -eq 0 ]; then
+  ok "unattended SSH push works"
+else
+  bad "unattended push failed"
+  printf '%s\n' "$PUSHTEST" | sed 's/^/        /'
+  exit 1
 fi
 
 echo
