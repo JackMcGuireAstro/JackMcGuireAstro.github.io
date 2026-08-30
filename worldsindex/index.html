@@ -6,7 +6,7 @@
   <meta name="description" content="WorldsIndex: a multi-source exoplanet and candidate atlas with inspectable measurements, provenance, methods, and scientific exports.">
   <meta name="theme-color" content="#07111d">
   <link rel="canonical" href="https://jackmcguireastro.github.io/worldsindex/">
-  <link rel="stylesheet" href="assets/app.css?v=20260830-ux1">
+  <link rel="stylesheet" href="assets/app.css?v=20260830-ux2">
   <title>WorldsIndex · Exoplanet evidence atlas</title>
 </head>
 <body>
@@ -14,9 +14,8 @@
   <header class="topbar">
     <a class="brand" href="../index.html" aria-label="Jack McGuire home"><span class="brand-mark">WI</span><span>WorldsIndex<small>on jackmcguireastro.github.io</small></span></a>
     <nav aria-label="WorldsIndex sections">
-      <a href="#start">Start</a><a href="#atlas">Atlas</a><a href="#object-evidence">Object evidence</a><a href="#compare">Compare</a><a href="#methods">Methods</a><a href="#coverage">Sources</a><a href="#downloads">Downloads</a>
+      <a href="#atlas">Atlas</a><a href="#object-evidence">Object evidence</a><a href="#compare">Compare</a><a href="#methods">Methods</a><a href="#coverage">Sources</a><a href="#downloads">Downloads</a>
     </nav>
-    <div class="audience-switch" role="group" aria-label="Choose explanation depth"><button type="button" data-audience="beginner" aria-pressed="true">Beginner</button><button type="button" data-audience="research" aria-pressed="false">Research</button></div>
     <a class="portfolio-link" href="../index.html">Jack McGuire ↗</a>
   </header>
 
@@ -25,8 +24,8 @@
       <div>
         <p class="eyebrow">ExoNexus evidence engine · GitHub-native public release</p>
         <h1>Every value has<br><em>a history.</em></h1>
-        <p class="lede">Explore confirmed planets, candidates, false positives, controversial claims, and refuted detections across a declared multi-source catalog universe. Compare the retained measurements; inspect their source and uncertainty; never confuse catalog membership with independent confirmation.</p>
-        <div class="hero-actions"><a class="button primary beginner-only" href="#start">Show me how this works</a><a class="button primary research-only" href="#atlas">Open the full atlas</a><a class="button" href="#coverage">Audit source coverage</a></div>
+        <p class="lede">Search confirmed planets, candidates, disputed claims, and false positives. See a useful value first, then inspect every retained measurement, uncertainty, and source behind it.</p>
+        <div class="hero-actions"><a class="button primary" href="#atlas">Explore the atlas</a></div>
       </div>
       <aside class="release-card" aria-live="polite">
         <p class="eyebrow">Current static evidence state</p>
@@ -35,17 +34,6 @@
         <div id="provider-health" class="provider-health"><span class="health-dot"></span><span>Loading provider health…</span></div>
         <div class="release-state"><span aria-hidden="true">●</span> No ChatGPT-hosted runtime dependency</div>
       </aside>
-    </section>
-
-    <section class="workspace orientation beginner-only" id="start" aria-labelledby="start-title">
-      <div class="section-heading"><div><p class="eyebrow">Start here · no astronomy required</p><h2 id="start-title">Four ways to explore another world</h2></div></div>
-      <div class="journey-grid">
-        <a href="#atlas"><span>01</span><strong>Find a world</strong><p>Search a familiar name or select a point on the sky. Candidates and disputed detections are included—not silently discarded.</p></a>
-        <a href="#object-evidence"><span>02</span><strong>Read its evidence</strong><p>See the clearest current value first, then open the measurements tab to compare what different sources reported.</p></a>
-        <a href="#methods"><span>03</span><strong>Learn how we know</strong><p>Explore what transit, radial-velocity, imaging, microlensing, and other methods actually observe—and their blind spots.</p></a>
-        <a href="#compare"><span>04</span><strong>Compare populations</strong><p>Change the axes and filters to see patterns, while WorldsIndex reports which objects could not be plotted.</p></a>
-      </div>
-      <details class="glossary"><summary>Three terms that prevent most confusion</summary><div><p><strong>Confirmed</strong> means the object satisfies a catalog’s validation or confirmation criteria; it does not make every published number agree.</p><p><strong>Candidate</strong> means a signal may be planetary but still needs validation or follow-up.</p><p><strong>Measurement</strong> is one source’s reported result. Different instruments, models, or papers can produce different values for the same property.</p></div></details>
     </section>
 
     <section class="workspace" id="atlas" aria-labelledby="atlas-title">
@@ -88,18 +76,21 @@
     </section>
 
     <section class="workspace" id="compare" aria-labelledby="compare-title">
-      <div class="section-heading"><div><p class="eyebrow">Compare &amp; learn</p><h2 id="compare-title">A population plot that reports what it excludes</h2></div><button id="download-plot" class="button" type="button">Download filtered CSV</button></div>
+      <div class="section-heading"><div><p class="eyebrow">Compare &amp; learn</p><h2 id="compare-title">See how detection methods shape the planets we find</h2></div><button id="download-plot" class="button" type="button">Download plotted data</button></div>
+      <div id="plot-guide" class="plot-guide"></div>
       <div class="plot-controls">
         <label>X axis<select id="plot-x"></select></label><label>Y axis<select id="plot-y"></select></label>
         <label class="check"><input id="plot-x-log" type="checkbox" checked> Log X</label><label class="check"><input id="plot-y-log" type="checkbox" checked> Log Y</label>
       </div>
       <div class="plot-wrap"><canvas id="plot" aria-label="Interactive exoplanet population scatter plot"></canvas></div>
       <p id="plot-accounting" class="accounting"></p>
-      <p class="fineprint">This is a source-resolved catalog projection, not a completeness-corrected population sample. Missing, bounded, nonpositive-log, and filtered values are excluded and counted.</p>
+      <p class="fineprint">This plot shows retained catalog values, not the true underlying planet population. Objects without both chosen measurements cannot be plotted; the accounting above states exactly how many are omitted.</p>
+      <section class="direct-compare" aria-labelledby="direct-compare-title"><div><p class="eyebrow">Object-to-object comparison</p><h3 id="direct-compare-title">Choose two or more worlds</h3><p class="muted">Search and add up to four objects. Each column uses the same display rules, units, and source labels.</p></div><div class="compare-picker"><label>Find a planet or candidate<input id="compare-search" type="search" autocomplete="off" placeholder="Try TRAPPIST-1 e…"></label><div id="compare-results" class="compare-results" role="listbox" hidden></div></div><div id="compare-selected" class="compare-selected"></div><div id="comparison-table" class="comparison-table"></div></section>
     </section>
 
     <section class="workspace accent" id="methods" aria-labelledby="methods-title">
-      <div class="section-heading"><div><p class="eyebrow">Detection methods &amp; concept labs</p><h2 id="methods-title">What each method measures—and where it can mislead</h2></div><label>Learning depth<select id="learning-depth"><option value="introductory">Introductory</option><option value="undergraduate" selected>Undergraduate</option><option value="research">Research</option></select></label></div>
+      <div class="section-heading"><div><p class="eyebrow">Detection methods &amp; concept labs</p><h2 id="methods-title">What each method measures—and where it can mislead</h2></div></div>
+      <input id="learning-depth" type="hidden" value="research">
       <div id="method-tabs" class="method-tabs" role="tablist"></div>
       <article id="method-detail" class="method-detail"></article>
     </section>
@@ -123,6 +114,6 @@
   </main>
   <footer><p><strong>WorldsIndex</strong> · ExoNexus provenance-aware catalog union · <a href="../index.html">Jack McGuire</a></p><p>No ChatGPT-hosted application dependency. Public data and interface are served from this GitHub repository.</p></footer>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="assets/app.js?v=20260830-ux1"></script>
+  <script type="module" src="assets/app.js?v=20260830-ux2"></script>
 </body>
 </html>
