@@ -515,6 +515,63 @@ a.card:hover h3 { color: var(--gold); }
   margin-inline: auto;
 }
 
+/* ====================================================== WorldsIndex page */
+.worldsindex-hero {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(138, 180, 221, .22);
+  background: radial-gradient(70% 120% at 84% 42%, rgba(138,180,221,.13), transparent 65%), linear-gradient(145deg, #08111b, #111b27 68%);
+}
+.worldsindex-hero::before { content: ""; position: absolute; inset: 0; opacity: .24; pointer-events: none; background-image: radial-gradient(circle at 14% 26%, #fff 0 1px, transparent 1.5px), radial-gradient(circle at 42% 68%, #fff 0 1px, transparent 1.5px), radial-gradient(circle at 76% 19%, #fff 0 1px, transparent 1.5px), radial-gradient(circle at 89% 73%, #fff 0 1px, transparent 1.5px); background-size: 170px 140px, 220px 180px, 190px 150px, 250px 210px; }
+.worldsindex-hero__inner { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, .95fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; min-height: 650px; padding-block: clamp(4rem, 8vw, 7rem); }
+.worldsindex-hero h1 { margin-bottom: .1em; font-size: clamp(3.6rem, 8vw, 7.8rem); letter-spacing: -.055em; }
+.worldsindex-tagline { color: var(--blue); font: italic clamp(1.4rem, 3vw, 2.2rem)/1.25 var(--font-display); }
+.worldsindex-sky-mark { width: 100%; filter: drop-shadow(0 25px 50px rgba(0,0,0,.35)); }
+.worldsindex-contents { position: sticky; z-index: 5; top: 62px; border-bottom: 1px solid var(--border); background: rgba(10,15,22,.94); backdrop-filter: blur(12px); }
+.worldsindex-contents > div { display: flex; flex-wrap: wrap; gap: .35rem 1.4rem; align-items: center; min-height: 52px; }
+.worldsindex-contents span { color: var(--ink-3); font: .72rem var(--font-mono); text-transform: uppercase; letter-spacing: .12em; }
+.worldsindex-contents a { color: var(--ink-2); font-size: .86rem; text-decoration: none; }
+.worldsindex-contents a:hover { color: var(--gold); text-decoration: underline; }
+#explore, #compare, #methods, #scientists, #sources, #scientific-boundary { scroll-margin-top: 126px; }
+.worldsindex-feature-grid .card { min-height: 250px; background: radial-gradient(130% 100% at 100% 0, rgba(138,180,221,.08), transparent 55%), var(--surface); }
+.worldsindex-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, .85fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; }
+.worldsindex-mini-plot { position: relative; min-height: 340px; border: 1px solid rgba(138,180,221,.3); border-left: 48px solid #101923; border-bottom: 48px solid #101923; border-radius: var(--radius); background-image: linear-gradient(rgba(138,180,221,.09) 1px, transparent 1px), linear-gradient(90deg, rgba(138,180,221,.09) 1px, transparent 1px); background-size: 20% 20%; }
+.worldsindex-mini-plot i { position: absolute; left: var(--x); bottom: var(--y); width: 10px; height: 10px; border: 2px solid #08111b; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+.worldsindex-mini-plot i:nth-of-type(3n) { background: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.worldsindex-mini-plot .plot-label { position: absolute; color: var(--ink-2); font: .72rem var(--font-mono); text-transform: uppercase; letter-spacing: .08em; }
+.worldsindex-mini-plot .plot-label--x { bottom: -37px; left: 50%; transform: translateX(-50%); }
+.worldsindex-mini-plot .plot-label--y { left: -40px; top: 50%; transform: translate(-50%,-50%) rotate(-90deg); }
+.worldsindex-mini-plot small { position: absolute; top: 10px; right: 12px; color: var(--ink-3); font: .68rem var(--font-mono); text-transform: uppercase; }
+.worldsindex-method-cards .card { border-top: 3px solid var(--blue); }
+.worldsindex-science-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--border); }
+.worldsindex-science-grid article { padding: clamp(1.3rem, 3vw, 2rem); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.worldsindex-science-grid article:nth-child(2n) { border-right: 0; }
+.worldsindex-science-grid article:nth-last-child(-n+2) { border-bottom: 0; }
+.worldsindex-science-grid p { color: var(--ink-2); }
+.worldsindex-source-states { display: grid; grid-template-columns: repeat(4, 1fr); margin-bottom: 1.5rem; border: 1px solid var(--border); }
+.worldsindex-source-states div { padding: 1.25rem; border-right: 1px solid var(--border); }
+.worldsindex-source-states div:last-child { border-right: 0; }
+.worldsindex-source-states strong, .worldsindex-source-states span { display: block; }
+.worldsindex-source-states strong { color: var(--blue); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; }
+.worldsindex-source-states span { margin-top: .55rem; color: var(--ink-3); font-size: .86rem; }
+.worldsindex-boundary { max-width: 900px; padding: clamp(1.5rem, 4vw, 3rem); border: 1px solid rgba(215,180,92,.32); border-left: 4px solid var(--gold); border-radius: var(--radius-lg); background: radial-gradient(100% 160% at 100% 0, rgba(215,180,92,.09), transparent 60%), var(--surface); }
+.worldsindex-boundary li { color: var(--ink-2); }
+@media (max-width: 900px) {
+  .worldsindex-hero__inner, .worldsindex-split { grid-template-columns: 1fr; }
+  .worldsindex-hero__inner { min-height: 0; }
+  .worldsindex-sky-mark { max-width: 650px; margin-inline: auto; }
+  .worldsindex-source-states { grid-template-columns: repeat(2, 1fr); }
+  .worldsindex-source-states div:nth-child(2) { border-right: 0; }
+  .worldsindex-source-states div:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+}
+@media (max-width: 620px) {
+  .worldsindex-science-grid, .worldsindex-source-states { grid-template-columns: 1fr; }
+  .worldsindex-science-grid article, .worldsindex-source-states div { border-right: 0; border-bottom: 1px solid var(--border); }
+  .worldsindex-science-grid article:last-child, .worldsindex-source-states div:last-child { border-bottom: 0; }
+  .worldsindex-contents { position: static; }
+  #explore, #compare, #methods, #scientists, #sources, #scientific-boundary { scroll-margin-top: 74px; }
+}
+
 /* =============================================== workflow / pipeline flow */
 .flow {
   display: grid;
