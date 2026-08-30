@@ -13,9 +13,10 @@
 #
 # It commits ONLY the explicit public-artifact allowlist below. Any other work
 # in progress is left untouched.
-# It never force-pushes and never rewrites history.
+# It never force-pushes and never rewrites published history.
 # =============================================================================
 set -uo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 
 SITE="${CTAS_SITE:-$HOME/Documents/GitHub/JackMcGuireAstro.github.io}"
 DB="${CTAS_DB:-$HOME/.codex/.chatgpt-projects/g-p-6a5d91be2e688191b7333527fcd488b3/data/soc.db}"
@@ -291,9 +292,50 @@ SHA=$(git rev-parse --short HEAD)
 PUSH_ERR=$(git push origin "$BRANCH" 2>&1)
 PUSH_STATUS=$?
 if [ "$PUSH_STATUS" -ne 0 ]; then
-  say "first push attempt failed; retrying once with bounded SSH timeouts"
-  PUSH_ERR=$(git push origin "$BRANCH" 2>&1)
-  PUSH_STATUS=$?
+  say "first push attempt failed; refreshing origin before one safe retry"
+  if git fetch --quiet origin "$BRANCH"; then
+    REBASE_ERR=$(git rebase "origin/$BRANCH" 2>&1)
+    REBASE_STATUS=$?
+    if [ "$REBASE_STATUS" -eq 0 ]; then
+      SHA=$(git rev-parse --short HEAD)
+      # A concurrent site-only commit is safe to integrate. If it changed any
+      # checksum-bound CTAS code, keep the local data commit and let the next
+      # scheduled run rebuild the release against that code before publishing.
+      if python3 - <<'PY'
+import hashlib
+import json
+from pathlib import Path
+
+report = json.loads(Path("ctas/data/certification.json").read_text())
+mismatches = []
+for path, row in report.get("files", {}).items():
+    if path.startswith("ctas/data/"):
+        continue
+    file_path = Path(path)
+    expected = row.get("sha256") if isinstance(row, dict) else None
+    actual = hashlib.sha256(file_path.read_bytes()).hexdigest() if file_path.is_file() else None
+    if actual != expected:
+        mismatches.append(path)
+if mismatches:
+    raise SystemExit("checksum-bound code changed: " + ", ".join(mismatches))
+PY
+      then
+        say "remote update preserved checksum-bound CTAS code; retrying without force"
+        PUSH_ERR=$(git push origin "$BRANCH" 2>&1)
+        PUSH_STATUS=$?
+      else
+        PUSH_ERR="remote update changed checksum-bound CTAS code; the next scheduled run must rebuild the release"
+        PUSH_STATUS=1
+      fi
+    else
+      git rebase --abort >/dev/null 2>&1 || true
+      PUSH_ERR="safe rebase onto origin/$BRANCH failed: $(printf '%s' "$REBASE_ERR" | tr '\n' ' ' | cut -c1-220)"
+      PUSH_STATUS=1
+    fi
+  else
+    PUSH_ERR="could not refresh origin/$BRANCH after the rejected push"
+    PUSH_STATUS=1
+  fi
 fi
 if [ "$PUSH_STATUS" -eq 0 ]; then
   date +%s >"$STAMP"

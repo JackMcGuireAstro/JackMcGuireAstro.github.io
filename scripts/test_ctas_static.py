@@ -811,6 +811,11 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn("CURRENT_CODE_BINDING", publisher)
         self.assertIn("HEAD_CODE_BINDING", publisher)
         self.assertIn("CODE_BINDING_CHANGED", publisher)
+        self.assertIn("export PYTHONDONTWRITEBYTECODE=1", publisher)
+        self.assertIn('git fetch --quiet origin "$BRANCH"', publisher)
+        self.assertIn('git rebase "origin/$BRANCH"', publisher)
+        self.assertIn("remote update preserved checksum-bound CTAS code", publisher)
+        self.assertNotIn("git push --force", publisher)
         self.assertIn("deployed-code-binding,local-origin-code-alignment", publisher)
         self.assertIn("local checksum-bound code successor is not published; publication paused", publisher)
         mirror = (ROOT / "scripts/mirror_loop.sh").read_text()
@@ -824,12 +829,22 @@ class CertificateAndArtifactTests(unittest.TestCase):
         agent = (ROOT / "scripts/io.github.jackmcguireastro.ctas-mirror.plist").read_text()
         self.assertIn('git fetch --quiet origin "$BRANCH"', runner)
         self.assertIn('git merge --quiet --ff-only "origin/$BRANCH"', runner)
+        self.assertIn("export PYTHONDONTWRITEBYTECODE=1", runner)
         self.assertIn("trap 'rmdir", runner)
         self.assertNotIn("exec env CTAS_SITE", runner)
         self.assertIn("<key>StartInterval</key>", agent)
         self.assertIn("<integer>120</integer>", agent)
         self.assertNotIn("<key>WatchPaths</key>", agent)
         self.assertIn("Library/Application Support/CTASPublisher/site", agent)
+        installer = (ROOT / "scripts/install_ctas_mirror.sh").read_text()
+        self.assertLess(
+            installer.index('launchctl enable "$DOMAIN/$LABEL"'),
+            installer.index('launchctl bootstrap "$DOMAIN" "$DEST"'),
+        )
+        self.assertIn('grep -q \'state = running\'', installer)
+        ignore = (ROOT / ".gitignore").read_text()
+        self.assertIn("__pycache__/", ignore)
+        self.assertIn("*.py[cod]", ignore)
 
     def test_compact_index_and_all_detail_shards_are_checksum_bound(self):
         self.assertEqual(self.index["candidate_count"], self.snapshot["candidate_count"])
