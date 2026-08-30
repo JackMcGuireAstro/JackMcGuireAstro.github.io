@@ -1372,19 +1372,24 @@ body[data-ctas-mode="research"] .ctas-research-workbench { box-shadow: 0 0 0 1px
 .ctas-navigation__menu nav a:hover, .ctas-navigation__menu nav a:focus-visible { background: rgba(255,255,255,.05); color: var(--gold); }
 
 .ctas-modebar { position: static; border-top: 0; }
-.ctas-modebar__inner { display: flex; align-items: center; gap: .55rem; padding-block: .45rem; }
+.ctas-modebar__inner { display: grid; grid-template-columns: auto auto minmax(16rem, 1fr); align-items: center; gap: .7rem; padding-block: .55rem; }
 .ctas-mode-label { color: var(--ink-3); font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .ctas-mode-switcher { display: inline-flex; gap: .25rem; padding: .2rem; border: 1px solid var(--border); border-radius: 999px; }
 .ctas-mode-switcher button {
-  min-height: 32px;
-  padding: .35rem .72rem;
+  min-height: 44px;
+  padding: .42rem .78rem;
   border: 0;
   border-radius: 999px;
   background: transparent;
   text-align: center;
   font-size: .76rem;
 }
+.ctas-mode-switcher button strong,
+.ctas-mode-switcher button span { display: block; }
+.ctas-mode-switcher button span { margin-top: .12rem; color: var(--ink-3); font-size: .62rem; font-weight: 500; }
+.ctas-mode-switcher button[aria-pressed="true"] span { color: rgba(7,17,29,.72); }
 .ctas-mode-switcher button[aria-pressed="true"] { background: var(--gold); color: #07101d; box-shadow: none; }
+.ctas-mode-description { margin: 0; max-width: 58rem; color: var(--ink-3); font-size: .74rem; line-height: 1.45; }
 
 .ctas-interface { padding-block: 1rem 2.5rem; }
 .ctas-panel { margin: .65rem 0; background: rgba(7,14,25,.36); }
@@ -1443,7 +1448,7 @@ body[data-ctas-mode="research"] .ctas-table tr:focus-within .ctas-card-actions {
   .ctas-status__cell, .ctas-status__cell:first-child { display: grid; gap: .08rem; padding: 0; border: 0; }
   .ctas-brief__lead { grid-template-columns: 1fr; }
   .ctas-navigation__menu nav { min-width: min(78vw, 16rem); }
-  .ctas-modebar__inner { overflow-x: auto; }
+  .ctas-modebar__inner { grid-template-columns: 1fr; overflow-x: visible; }
   .ctas-mode-switcher { flex: 0 0 auto; }
   .ctas-mode-switcher button { min-height: 34px; }
   .ctas-fields--basic { grid-template-columns: 1fr; }

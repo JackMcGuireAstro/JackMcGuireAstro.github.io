@@ -3,9 +3,9 @@
   "use strict";
 
   var MODE_COPY = {
-    learn: "Learn shows guided examples and plain-language interpretation.",
-    explore: "Explore shows the latest stream, linked sky, and ranked catalog.",
-    research: "Research focuses on the ranked catalog, filters, comparison, exports, and source coverage."
+    learn: "New here provides guided real examples, a plain-language glossary, and interpretation without hiding uncertainty.",
+    explore: "Live catalog shows today’s reports, the interactive sky, and the top-100 leaderboard. Every path uses the same source-attributed evidence.",
+    research: "Research tools keep the complete catalog, scientific filters, comparison, receipts, exports, and source coverage within reach."
   };
   var MAX_COMPARE = 5;
   var WATCH_KEY = "ctas-browser-watchlist-v1";
@@ -394,7 +394,9 @@
   }
 
   function afterCandidateRender(candidate) {
-    state.detailById[candidate.event_id] = candidate; initializeReplay(candidate); updateActionStates();
+    state.detailById[candidate.event_id] = candidate;
+    var brief = document.querySelector('[data-dossier-view="brief"]'); if (brief) brief.open = state.mode !== "research";
+    initializeReplay(candidate); updateActionStates();
   }
 
   function bind() {

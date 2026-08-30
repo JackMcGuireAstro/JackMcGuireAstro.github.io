@@ -57,8 +57,16 @@
         <string>REPLACE_WITH_HOME/.codex/.chatgpt-projects/g-p-6a5d91be2e688191b7333527fcd488b3/data/soc.db</string>
     </dict>
 
+    <!-- A successful scheduled run exits normally. A failed run is retried
+         automatically after the throttle interval instead of waiting for a
+         person or an open Terminal. -->
     <key>KeepAlive</key>
-    <false/>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>ThrottleInterval</key>
+    <integer>60</integer>
     <key>ProcessType</key>
     <string>Background</string>
     <key>LowPriorityIO</key>

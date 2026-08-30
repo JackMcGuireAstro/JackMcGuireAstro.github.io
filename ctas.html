@@ -56,12 +56,11 @@
       <div>
         <p class="eyebrow">Cowboy Transient Alert System</p>
         <h1>CTAS</h1>
-        <p class="hero__statement">Find public transient candidates, inspect available follow-up, and decide
-          what may merit attention next.</p>
+        <p class="hero__statement">See what changed in the sky, understand why it may matter, and inspect the original evidence at your preferred depth.</p>
         <p class="ctas-hero__meta">Active development · version <span data-ctas="version">1.5.0</span></p>
         <div class="ctas-status ctas-status--hero" id="ctas-status"></div>
         <div class="ctas-hero__actions">
-          <a class="btn btn--primary" href="ctas.html?mode=explore#ranked-candidates">Browse candidates</a>
+          <a class="btn btn--primary" href="ctas.html?mode=explore#recent-stream">See today’s transients</a>
           <a class="btn btn--ghost" href="ctas.html?mode=explore#celestial-sphere">Explore the sky</a>
         </div>
 
@@ -137,13 +136,13 @@
 
   <section class="ctas-modebar" id="ctas-modes" aria-labelledby="ctas-mode-title">
     <div class="wrap wrap--wide ctas-modebar__inner">
-      <span id="ctas-mode-title" class="ctas-mode-label">View</span>
+      <span id="ctas-mode-title" class="ctas-mode-label">Choose your depth</span>
       <div class="ctas-mode-switcher" role="group" aria-label="CTAS experience">
-        <button type="button" data-ctas-mode="learn" aria-pressed="false">Learn</button>
-        <button type="button" data-ctas-mode="explore" aria-pressed="true">Explore</button>
-        <button type="button" data-ctas-mode="research" aria-pressed="false">Research</button>
+        <button type="button" data-ctas-mode="learn" aria-pressed="false"><strong>New here</strong><span>Guided astronomy</span></button>
+        <button type="button" data-ctas-mode="explore" aria-pressed="true"><strong>Live catalog</strong><span>Today, sky, and leaderboard</span></button>
+        <button type="button" data-ctas-mode="research" aria-pressed="false"><strong>Research tools</strong><span>Filters, evidence, and exports</span></button>
       </div>
-      <p id="ctas-mode-description" class="sr-only" aria-live="polite">Explore emphasizes the live public stream, linked sky, and ranked catalog. Every mode uses the same evidence.</p>
+      <p id="ctas-mode-description" class="ctas-mode-description" aria-live="polite">Live catalog shows today’s reports, the interactive sky, and the top-100 leaderboard. Every path uses the same source-attributed evidence.</p>
     </div>
   </section>
 
@@ -382,7 +381,7 @@
           <section><h3>Automated snapshot checks</h3><p>The published report binds the static catalog, interface, source
             universe, shards, and validation results to exact checksums. The background publisher checks every 120 seconds
             while its Mac is awake, online, and logged in. “Verified” means those automated
-            integrity checks passed for that snapshot; it is not scientific certification or human peer review.</p></section>
+            integrity checks passed for that snapshot; it is not scientific certification or human peer review. Failed background runs retry automatically while the Mac is awake, online, and logged in.</p></section>
           <section id="use-and-cite"><h3>Use and cite</h3><p>Cite CTAS as “Cowboy Transient Alert System
             (Jack McGuire), version 1.5.0,” include the catalog checksum and access date, and cite each original
             provider used in scientific work. <a href="mailto:jackmcg7@live.com?subject=CTAS%20citation">Contact Jack</a>

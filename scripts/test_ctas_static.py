@@ -609,6 +609,11 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn('research.open = false', workbench)
         self.assertIn('MODE_COPY[requested] ? requested : "explore"', workbench)
         self.assertNotIn('loadLocal(MODE_KEY, "explore")', workbench)
+        self.assertIn("Choose your depth", html)
+        self.assertIn("Guided astronomy", html)
+        self.assertIn("Today, sky, and leaderboard", html)
+        self.assertIn("Filters, evidence, and exports", html)
+        self.assertIn('brief.open = state.mode !== "research"', workbench)
         self.assertIn("Top 100 CTAS-ranked candidates", html)
         self.assertIn("Reported in the last 24 hours", html)
         self.assertIn("Browse the complete retained catalog", app)
@@ -697,7 +702,8 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertEqual(self.universe["source_count"], len(self.universe["sources"]))
         keys = [row["source_key"] for row in self.universe["sources"]]
         self.assertEqual(len(keys), len(set(keys)))
-        self.assertTrue({"rubin-lsst", "pan-starrs", "goto", "master", "blackgem", "wfst", "yse", "chime", "maxi", "einstein-probe", "ads"} <= set(keys))
+        self.assertTrue({"rubin-lsst", "pan-starrs", "goto", "master", "blackgem", "wfst", "yse", "chime", "maxi", "einstein-probe", "ads",
+                         "boom-gcn", "dsa110-gcn", "integral-gcn", "km3net-gcn", "moa-gcn"} <= set(keys))
         self.assertTrue(all(row["operational_state"] in EXPORTER.SOURCE_STATE_VOCABULARY for row in self.universe["sources"]))
 
     def test_alias_index_is_exact_checksum_bound_and_ambiguity_preserving(self):
@@ -885,6 +891,9 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertNotIn("exec env CTAS_SITE", runner)
         self.assertIn("<key>StartInterval</key>", agent)
         self.assertIn("<integer>120</integer>", agent)
+        self.assertIn("<key>SuccessfulExit</key>", agent)
+        self.assertIn("<key>ThrottleInterval</key>", agent)
+        self.assertIn("<integer>60</integer>", agent)
         self.assertNotIn("<key>WatchPaths</key>", agent)
         self.assertIn("Library/Application Support/CTASPublisher/site", agent)
         installer = (ROOT / "scripts/install_ctas_mirror.sh").read_text()
