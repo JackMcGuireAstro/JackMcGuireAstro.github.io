@@ -3,7 +3,7 @@
   "use strict";
 
   var DATA_DIR = "ctas/data/";
-  var PAGE = 35;
+  var PAGE = 25;
   var CACHE_KEY = "ctas-public-bootstrap-v4";
   var PUBLIC_LINK_HOSTS = {
     "api.fink-portal.org": 1, "api.ztf.fink-portal.org": 1, "fink-portal.org": 1,
@@ -442,7 +442,10 @@
         ? "<p><strong>" + planning.intervals.length + " geometric window" + (planning.intervals.length === 1 ? "" : "s") + "</strong> pass the default WIR constraints today (UTC).</p><p>Open the observability planner to inspect or change the assumptions.</p>"
         : "<p>No interval passes the default WIR geometric constraints today (UTC).</p><p>This is not a weather or telescope-availability claim.</p>";
     }
-    return '<section class="ctas-science-brief" aria-labelledby="ctas-science-brief-title"><h4 id="ctas-science-brief-title">Candidate science brief</h4><div class="ctas-science-brief__grid"><section><h5>What happened</h5><p>' + esc((brief.what_happened || {}).text || "Public CTAS event record.") + '</p></section><section><h5>Known in this snapshot</h5>' + known + '</section><section><h5>Uncertain or conflicting</h5>' + uncertain + '</section><section><h5>Missing information</h5>' + missing + '</section><section><h5>Most recent retained change</h5>' + changed + '</section><section><h5>Visible from WIR today?</h5>' + visibility + '</section></div><p class="ctas-claim-boundary">' + esc(brief.claim_boundary) + '</p></section>';
+    return '<details class="ctas-science-brief" data-dossier-view="brief"><summary><span id="ctas-science-brief-title">At a glance</span><small>' +
+      Number((brief.confidently_known || []).length).toLocaleString() + " known · " + Number((brief.uncertain_or_conflicting || []).length).toLocaleString() +
+      " uncertain · " + Number((brief.missing_information || []).length).toLocaleString() +
+      ' missing</small></summary><div class="ctas-science-brief__body"><div class="ctas-science-brief__grid"><section><h5>What happened</h5><p>' + esc((brief.what_happened || {}).text || "Public CTAS event record.") + '</p></section><section><h5>Known</h5>' + known + '</section><section><h5>Uncertain</h5>' + uncertain + '</section><section><h5>Missing</h5>' + missing + '</section><section><h5>Latest evidence</h5>' + changed + '</section><section><h5>Visible from WIR today?</h5>' + visibility + '</section></div><p class="ctas-claim-boundary">' + esc(brief.claim_boundary) + '</p></div></details>';
   }
 
   function messengerProperties(row) {
@@ -830,7 +833,7 @@
         '</td><td>' + esc(row.asserted_at ? absolute(row.asserted_at) : "Assertion time not retained") + '</td><td>' +
         (sourceLink ? renderReferences([sourceLink]) : '<span class="ctas-link-unavailable">No verified object link retained</span>') + '</td></tr>';
     }).join("");
-    return '<details class="ctas-evidence-panel ctas-identity" data-dossier-view="identity" open><summary>Identity and aliases <small>' +
+    return '<details class="ctas-evidence-panel ctas-identity" data-dossier-view="identity"><summary>Identity and aliases <small>' +
       aliases.length + ' source-native aliases</small></summary><div class="ctas-evidence-panel__body">' + warning +
       '<dl class="ctas-detail__facts">' + fact("Stable event UUID", candidate.event_id) + fact("Identity state", humanKey(identity.state || "UNREVIEWED")) +
       fact("Lookup policy", identity.policy || "Provider-scoped exact alias; unscoped ambiguity is explicit") + '</dl>' +
@@ -864,12 +867,12 @@
     if (!runs.length) return '<details class="ctas-evidence-panel" data-dossier-view="analysis"><summary>Read-only CTAS analysis <small>INSUFFICIENT_DATA</small></summary><div class="ctas-evidence-panel__body"><p><strong>INSUFFICIENT_DATA:</strong> no rights-cleared light-curve inference run is retained for this event, so CTAS makes no analysis claim.</p></div></details>';
     return '<details class="ctas-evidence-panel ctas-analysis" data-dossier-view="analysis"><summary>Read-only CTAS analysis <small>' +
       runs.length.toLocaleString() + ' retained run' + (runs.length === 1 ? "" : "s") + '</small></summary><div class="ctas-evidence-panel__body"><p class="ctas-claim-boundary">This panel is read-only. Opening it does not rerun a model, send an alert, or request follow-up.</p><div class="ctas-analysis-runs">' +
-      runs.map(function (row, index) {
+      runs.map(function (row) {
         var warnings = row.warnings || [], inputs = row.inputRecordIds || [];
         var statusCopy = row.status === "INSUFFICIENT_DATA"
           ? "Prerequisites were not met, so CTAS made no light-curve parameter claim."
           : row.status === "COMPLETE" ? "The existing result completed; warnings and quality limitations remain part of the record." : "The existing analysis did not produce an adopted scientific result.";
-        return '<details class="ctas-analysis-run"' + (index === 0 ? " open" : "") + '><summary><span><strong>' +
+        return '<details class="ctas-analysis-run"><summary><span><strong>' +
           esc(humanKey(row.analysisType || "Analysis run")) + '</strong><small>' + esc(humanKey(row.status || "unknown")) +
           ' · ' + esc(row.createdAt ? absolute(row.createdAt) : "completion time unavailable") + '</small></span></summary><div class="ctas-analysis-run__body"><div class="ctas-analysis__status"><span class="pill">' +
           esc(humanKey(row.status)) + '</span><p>' + esc(statusCopy) + '</p></div><dl class="ctas-detail__facts">' +
@@ -909,21 +912,22 @@
         esc(qualityText(candidate.data_quality_flags)) +
         (candidate.reported_discovery_magnitude !== undefined ? " · Raw provider value retained: " + esc(candidate.reported_discovery_magnitude) : "") +
         ". The flagged value is excluded from the plotted magnitude and brightness-derived score term.</p></div>" : "";
-    return '<div id="dossier" class="ctas-dossier"><div class="ctas-workspace__head"><div><p class="eyebrow">Complete public candidate record</p><h3 id="ctas-dossier-title" tabindex="-1" data-dossier-focus>' + esc(candidate.name) +
+    return '<div id="dossier" class="ctas-dossier"><div class="ctas-workspace__head"><div><p class="eyebrow">Candidate dossier</p><h3 id="ctas-dossier-title" tabindex="-1" data-dossier-focus>' + esc(candidate.name) +
       '</h3><p>' + esc(summary.intro) +
       '</p></div><div class="ctas-detail__score"><span>CTAS follow-up score</span><strong>' + esc(num(candidate.ctas_score, 1)) +
       '</strong><small>ordering aid · not probability</small></div></div>' +
-      '<div class="ctas-workspace__actions"><button type="button" data-copy-link>Copy permalink</button><button type="button" data-download-candidate>Download candidate JSON</button><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button><button type="button" data-close-candidate>Close record</button></div>' + renderScienceBrief(candidate) +
-      '<dl class="ctas-detail__facts">' + fact("Event type", humanKey(candidate.event_type || "Not recorded")) +
-      fact("Primary messenger", humanKey(candidate.primary_messenger || "Not recorded")) +
-      fact("Stable event UUID", candidate.event_id) +
+      '<div class="ctas-workspace__actions"><button type="button" data-close-candidate>Back to catalog</button><details class="ctas-more-actions"><summary>More actions</summary><div><button type="button" data-copy-link>Copy link</button><button type="button" data-download-candidate>Download JSON</button><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></details></div>' + renderScienceBrief(candidate) +
+      '<dl class="ctas-detail__facts ctas-detail__facts--essential">' + fact("Event / messenger", humanKey(candidate.event_type || "Not recorded") + " · " + humanKey(candidate.primary_messenger || "Not recorded")) +
+      fact("Reported class / alert label", candidate.classification || "Unclassified") +
+      fact("Current record status", humanKey(candidate.status || "unknown")) +
       fact("ICRS coordinates", sexagesimal(candidate.ra_deg, candidate.dec_deg) || "Unavailable") +
       fact("Discovery", [candidate.discovery_time ? absolute(candidate.discovery_time) : "time unavailable", candidate.discovery_survey || "survey unavailable"].join(" · ")) +
-      fact("Source-reported magnitude", magnitude) + fact("Reported class / alert label", candidate.classification || "Unclassified") +
-      fact("Label kind", labelKind) + fact("Reported classification probability", candidate.classification_probability === undefined ? "Not reported" : num(100 * candidate.classification_probability, 1) + "% (calibration not assumed)") +
-      fact("Current record status", humanKey(candidate.status || "unknown")) + fact("Retained follow-up", evidence.join(" · ") || "Event record only") +
-      fact("Redshift", num(candidate.redshift, 5)) + fact("Host", candidate.host_name) + "</dl>" + quality +
-      '<section class="ctas-original-sources"><h4>Original sources retained for this candidate</h4>' + renderReferences(candidate.links || []) +
+      fact("Source-reported magnitude", magnitude) + fact("Available evidence", evidence.join(" · ") || "Event record only") + "</dl>" +
+      '<details class="ctas-secondary-facts"><summary>Identifiers and additional facts</summary><dl class="ctas-detail__facts">' +
+      fact("Stable event UUID", candidate.event_id) + fact("Label kind", labelKind) +
+      fact("Reported classification probability", candidate.classification_probability === undefined ? "Not reported" : num(100 * candidate.classification_probability, 1) + "% (calibration not assumed)") +
+      fact("Redshift", num(candidate.redshift, 5)) + fact("Host", candidate.host_name) + "</dl></details>" + quality +
+      '<section class="ctas-original-sources"><h4>Original sources</h4>' + renderReferences(candidate.links || []) +
       ((candidate.links || []).some(function (row) { return row.source_key === "tns"; })
         ? "<p>TNS hourly intake does not itself expose every current object-page flag. Open the exact TNS record above for the provider’s current object page and status.</p>" : "") + "</section>" +
       renderIdentity(candidate) + renderScoreFactors(candidate) + renderCompleteness(candidate) + renderSourceCoverage(candidate) +
@@ -934,9 +938,9 @@
       renderExports(candidate) + "</div>";
   }
 
-  function statusCell(label, value, sub) {
-    return '<div class="ctas-status__cell"><p class="ctas-status__label">' + esc(label) +
-      '</p><p class="ctas-status__value">' + value + "</p>" + (sub ? '<p class="ctas-status__sub">' + sub + "</p>" : "") + "</div>";
+  function statusCell(label, value) {
+    return '<span class="ctas-status__cell"><span class="ctas-status__label">' + esc(label) +
+      '</span><strong class="ctas-status__value">' + value + "</strong></span>";
   }
   function renderStatus() {
     if (!el.status) return;
@@ -964,16 +968,21 @@
         ? "Checksums and public-file consistency · Snapshot " + esc(shortHash(assurance.content_release_id)) + "…"
         : "Checksum report available below";
     el.status.classList.toggle("is-degraded", degraded || cached || stale);
-    el.status.innerHTML = statusCell("Pipeline", cached ? "Cached snapshot" : stale ? "Publisher paused" : "Operational",
-      cached ? "A live refresh failed; the last successfully loaded public snapshot remains usable" : stale ? "The last public snapshot remains usable, but the publishing terminal has not completed a current refresh" : degraded ? "Catalog and automatic updates are active; individual source availability is reported below" : "Catalog and automatic updates are active") +
-      statusCell("Last successful public snapshot", esc(relative(generated) || "unavailable"), esc(absolute(generated))) +
-      statusCell("Public candidates", Number(status.candidate_count || snapshot.candidate_count || state.candidates.length).toLocaleString(),
-        "Positional catalog entries; not all are confirmed discoveries") +
-      statusCell("Snapshot integrity", esc(integrityValue), integrityDetail) +
-      statusCell("Automatic page refresh", state.autoRefreshPaused ? "Paused" : "2-minute check",
-        (state.autoRefreshPaused ? "The loaded snapshot remains fully usable" : "New catalog checks preserve the open event, panel, and band") +
-        ' · <button type="button" class="ctas-refresh-toggle" data-toggle-refresh aria-pressed="' + (state.autoRefreshPaused ? "true" : "false") + '">' +
-        (state.autoRefreshPaused ? "Resume refresh" : "Pause refresh") + "</button>");
+    var pipelineValue = cached ? "Cached snapshot" : stale ? "Publisher paused" : "Operational";
+    var pipelineDetail = cached ? "A live refresh failed; the last successfully loaded public snapshot remains usable."
+      : stale ? "The last public snapshot remains usable, but the background publisher has not completed a current refresh."
+      : degraded ? "Catalog updates are active; individual source availability is reported in Catalog details."
+      : "Catalog updates are active.";
+    el.status.innerHTML = '<div class="ctas-status__line">' +
+      statusCell("Pipeline", esc(pipelineValue)) +
+      statusCell("Updated", esc(relative(generated) || "unavailable")) +
+      statusCell("Public candidates", Number(status.candidate_count || snapshot.candidate_count || state.candidates.length).toLocaleString()) +
+      statusCell("Snapshot integrity", esc(integrityValue)) +
+      statusCell("Update check", state.autoRefreshPaused ? "Paused" : "Every 2 minutes") +
+      '</div><details class="ctas-status__details"><summary>Status details</summary><div><p>' + esc(pipelineDetail) +
+      '</p><p><strong>Last successful snapshot:</strong> ' + esc(absolute(generated)) + '</p><p><strong>Integrity:</strong> ' + integrityDetail +
+      '</p><button type="button" class="ctas-refresh-toggle" data-toggle-refresh aria-pressed="' + (state.autoRefreshPaused ? "true" : "false") + '">' +
+      (state.autoRefreshPaused ? "Resume 2-minute checks" : "Pause 2-minute checks") + "</button></div></details>";
   }
 
   function barRows(values, labels) {
@@ -1015,7 +1024,7 @@
       return (model ? model.latestMeaningful(b) : 0) - (model ? model.latestMeaningful(a) : 0);
     }).slice(0, 3);
     var title = document.getElementById("ctas-stream-title");
-    if (title) title.textContent = "Three most recent matching candidate updates";
+    if (title) title.textContent = "Latest matching updates";
     el.stream.innerHTML = stream.map(function (candidate, index) {
       var counts = candidate.follow_up_counts || {};
       var evidence = [counts.observations ? counts.observations + " obs" : "", counts.spectra ? counts.spectra + " spectra" : "",
@@ -1412,13 +1421,13 @@
     var url = new URL(window.location.href);
     ["alias", "source", "candidate"].forEach(function (key) { url.searchParams.delete(key); });
     url.searchParams.set("event", summary.event_id);
-    url.searchParams.set("view", view || "identity");
+    if (view) url.searchParams.set("view", view); else url.searchParams.delete("view");
     if (band && band !== "*") url.searchParams.set("band", band); else url.searchParams.delete("band");
     url.hash = "dossier";
     return url.pathname + (url.searchParams.toString() ? "?" + url.searchParams.toString() : "") + url.hash;
   }
   function setCandidateRoute(summary, replace) {
-    var view = new URL(window.location.href).searchParams.get("view") || "identity";
+    var view = new URL(window.location.href).searchParams.get("view") || "";
     var band = state.photBand[summary.event_id] || new URL(window.location.href).searchParams.get("band") || "*";
     var target = candidateRoute(summary, view, band);
     if (window.location.pathname + window.location.search + window.location.hash === target) return;
@@ -1707,7 +1716,7 @@
       }
       if (event.target.closest("[data-copy-link]") && state.activeDetail) {
         var url = new URL(candidateRoute(state.activeDetail,
-          new URL(window.location.href).searchParams.get("view") || "identity",
+          new URL(window.location.href).searchParams.get("view") || "",
           state.photBand[state.activeDetail.event_id] || "*"), window.location.origin).href;
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url);
         event.target.closest("[data-copy-link]").textContent = "Permalink copied"; return;

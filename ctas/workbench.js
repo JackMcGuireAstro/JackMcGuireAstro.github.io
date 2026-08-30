@@ -3,9 +3,9 @@
   "use strict";
 
   var MODE_COPY = {
-    learn: "Learn opens guided examples and plain-language interpretation while preserving the complete catalog and source evidence.",
-    explore: "Explore emphasizes the live public stream, linked sky, and ranked catalog. Every mode uses the same evidence and keeps every section reachable.",
-    research: "Research opens comparison, cohort exports, local watchlists, observability estimates, and source-coverage tools without changing the underlying record."
+    learn: "Learn shows guided examples and plain-language interpretation.",
+    explore: "Explore shows the latest stream, linked sky, and ranked catalog.",
+    research: "Research focuses on the ranked catalog, filters, comparison, exports, and source coverage."
   };
   var MAX_COMPARE = 5;
   var WATCH_KEY = "ctas-browser-watchlist-v1";
@@ -55,19 +55,26 @@
     var description = document.getElementById("ctas-mode-description");
     if (description) description.textContent = MODE_COPY[mode];
     var learn = document.getElementById("ctas-learn"), research = document.getElementById("ctas-research-tools");
-    if (mode === "learn" && learn) learn.open = true;
-    if (mode === "research" && research) research.open = true;
+    var stream = document.getElementById("recent-stream"), sky = document.getElementById("celestial-sphere");
+    var ranked = document.getElementById("ranked-candidates");
+    if (learn) { learn.hidden = mode !== "learn"; learn.open = mode === "learn"; }
+    if (research) { research.hidden = mode !== "research"; research.open = false; }
+    if (stream) stream.hidden = mode !== "explore";
+    if (sky) { sky.hidden = mode !== "explore"; sky.open = false; }
+    if (ranked) ranked.hidden = mode === "learn";
     saveLocal(MODE_KEY, mode);
     if (!options.fromHistory) updateUrl({mode: mode}, true);
     if (options.focus) {
-      var target = mode === "learn" ? learn : mode === "research" ? research : document.getElementById("recent-stream");
+      var target = mode === "learn" ? learn : mode === "research" ? ranked : document.getElementById("recent-stream");
       if (target) target.scrollIntoView({behavior: window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start"});
     }
   }
 
   function restoreMode() {
     var url = new URL(window.location.href), requested = url.searchParams.get("mode");
-    setMode(MODE_COPY[requested] ? requested : loadLocal(MODE_KEY, "explore"), {fromHistory: Boolean(requested)});
+    var fragment = String(url.hash || "").replace(/^#/, "");
+    var fragmentMode = fragment === "ctas-learn" ? "learn" : ["recent-stream", "celestial-sphere"].indexOf(fragment) !== -1 ? "explore" : null;
+    setMode(fragmentMode || (MODE_COPY[requested] ? requested : "explore"), {fromHistory: true});
   }
 
   function restoreCompareIds() {
@@ -373,7 +380,8 @@
   function bind() {
     document.addEventListener("click", function (event) {
       var mode = event.target.closest("[data-ctas-mode]"); if (mode) { setMode(mode.getAttribute("data-ctas-mode"), {focus: true}); return; }
-      var named = event.target.closest("[data-open-name]"); if (named && window.CTASApp) { window.CTASApp.openByName(named.getAttribute("data-open-name")); return; }
+      var switcher = event.target.closest("[data-switch-mode]"); if (switcher) { setMode(switcher.getAttribute("data-switch-mode"), {focus: true}); return; }
+      var named = event.target.closest("[data-open-name]"); if (named && window.CTASApp) { setMode("explore", {}); window.CTASApp.openByName(named.getAttribute("data-open-name")); return; }
       var compare = event.target.closest("[data-compare-event]"); if (compare) { toggleCompare(compare.getAttribute("data-compare-event")); return; }
       var remove = event.target.closest("[data-remove-compare]"); if (remove) { toggleCompare(remove.getAttribute("data-remove-compare")); return; }
       var watch = event.target.closest("[data-watch-event]"); if (watch) { toggleWatch(watch.getAttribute("data-watch-event")); return; }
