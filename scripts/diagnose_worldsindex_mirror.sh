@@ -22,7 +22,7 @@ h "2. installed six-hour agent"
 if [ -f "$DEST" ]; then
   echo "present: $DEST"
   plutil -lint "$DEST" 2>&1
-  echo "unresolved placeholders: $(grep -Ec 'REPLACE_WITH_(HOME|SOURCE)' "$DEST" || true)"
+  echo "unresolved placeholders: $(grep -Ec 'REPLACE_WITH_(HOME|SOURCE|NODE_BIN)' "$DEST" || true)"
   echo "program: $(plutil -extract ProgramArguments.1 raw -o - "$DEST" 2>/dev/null)"
   echo "source: $(plutil -extract EnvironmentVariables.WORLDSINDEX_SOURCE raw -o - "$DEST" 2>/dev/null)"
   echo "interval: $(plutil -extract StartInterval raw -o - "$DEST" 2>/dev/null) seconds"

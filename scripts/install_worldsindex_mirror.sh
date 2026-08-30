@@ -41,6 +41,7 @@ command -v git >/dev/null && ok "git             $(git --version 2>&1)" || { bad
 
 REMOTE=$(git -C "$AUTHORING_SITE" remote get-url origin 2>/dev/null || true)
 [ -n "$REMOTE" ] || { bad "authoring repo has no origin"; exit 1; }
+NODE_BIN=$(dirname "$(command -v node)")
 
 echo
 echo "Checking unattended GitHub access"
@@ -83,13 +84,15 @@ else
   ok "runtime checkout current"
 fi
 
-python3 - "$TEMPLATE" "$DEST" "$HOME" "$SOURCE" <<'PY'
+python3 - "$TEMPLATE" "$DEST" "$HOME" "$SOURCE" "$NODE_BIN" <<'PY'
 from pathlib import Path
 import sys
 
-template, destination, home, source = sys.argv[1:]
+template, destination, home, source, node_bin = sys.argv[1:]
 text = Path(template).read_text()
-text = text.replace("REPLACE_WITH_HOME", home).replace("REPLACE_WITH_SOURCE", source)
+text = (text.replace("REPLACE_WITH_HOME", home)
+            .replace("REPLACE_WITH_SOURCE", source)
+            .replace("REPLACE_WITH_NODE_BIN", node_bin))
 Path(destination).write_text(text)
 PY
 [ $? -eq 0 ] || { bad "could not write $DEST"; exit 1; }
