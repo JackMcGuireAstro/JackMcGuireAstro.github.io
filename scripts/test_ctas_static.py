@@ -702,7 +702,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertEqual(self.universe["source_count"], len(self.universe["sources"]))
         keys = [row["source_key"] for row in self.universe["sources"]]
         self.assertEqual(len(keys), len(set(keys)))
-        self.assertTrue({"rubin-lsst", "pan-starrs", "goto", "master", "blackgem", "wfst", "yse", "chime", "maxi", "einstein-probe", "ads",
+        self.assertTrue({"rubin-lsst", "rubin-rsp-alerts", "pan-starrs", "goto", "master", "blackgem", "wfst", "yse", "chime", "maxi", "einstein-probe", "ads",
                          "boom-gcn", "dsa110-gcn", "integral-gcn", "km3net-gcn", "moa-gcn"} <= set(keys))
         self.assertTrue(all(row["operational_state"] in EXPORTER.SOURCE_STATE_VOCABULARY for row in self.universe["sources"]))
 

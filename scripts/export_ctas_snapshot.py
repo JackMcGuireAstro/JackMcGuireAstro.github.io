@@ -120,7 +120,7 @@ REPRESENTATION_STATE_VOCABULARY = (
 SOURCE_FAMILY_MAP = {
     **{key: "discovery-and-alert-brokers" for key in (
         "tns", "rubin-alerce", "rubin-ampel", "rubin-antares", "rubin-babamul",
-        "rubin-fink", "rubin-fink-crossmatch", "rubin-lasair", "rubin-pitt-google",
+        "rubin-fink", "rubin-fink-crossmatch", "rubin-rsp-alerts", "rubin-lasair", "rubin-pitt-google",
     )},
     **{key: "optical-and-time-domain-surveys" for key in (
         "ztf", "atlas", "asas-sn", "gaia-alerts",
