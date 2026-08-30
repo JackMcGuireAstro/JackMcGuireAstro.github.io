@@ -5,16 +5,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CTAS | Cowboy Transient Alert System | Jack McGuire</title>
-<meta name="description" content="The Cowboy Transient Alert System (CTAS), built by Jack McGuire, brings public transient alerts and follow-up reports together while enforcing data-rights rules. Candidate data refreshes about every 2 minutes.">
+<meta name="description" content="The Cowboy Transient Alert System (CTAS), built by Jack McGuire, brings public transient alerts and follow-up reports together in a searchable, source-attributed catalog that checks for updates every 2 minutes.">
 <link rel="canonical" href="https://jackmcguireastro.github.io/ctas.html">
 <meta property="og:type" content="website">
 <meta property="og:title" content="CTAS | Cowboy Transient Alert System">
-<meta property="og:description" content="CTAS brings public supernova and multimessenger alerts together with released follow-up reports while enforcing data-rights rules. Updated about every 2 minutes.">
+<meta property="og:description" content="Explore public supernova and multimessenger candidates, available follow-up, and original sources. CTAS checks for a new public snapshot every 2 minutes.">
 <meta property="og:url" content="https://jackmcguireastro.github.io/ctas.html">
 <meta property="og:image" content="https://jackmcguireastro.github.io/assets/images/ctas/ctas-card.png">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="assets/css/site.css">
-<link rel="stylesheet" href="ctas/ctas.css?v=20260829-evidence4">
+<link rel="stylesheet" href="ctas/ctas.css?v=20260830-declutter1">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>
@@ -56,22 +56,19 @@
       <div>
         <p class="eyebrow">Cowboy Transient Alert System</p>
         <h1>CTAS</h1>
-        <p class="hero__statement">A public, source-attributed catalog for finding astronomical transient
-          candidates, reviewing the follow-up already available, and deciding what may merit attention next.</p>
-        <div class="feature__badges ctas-badges">
-          <span class="chip chip--experimental">Active development</span>
-          <span class="chip chip--planned">Version <span data-ctas="version">1.5.0</span></span>
-          <span class="chip chip--planned">Automatic public check every 2 minutes</span>
-        </div>
+        <p class="hero__statement">Find public transient candidates, inspect available follow-up, and decide
+          what may merit attention next.</p>
+        <p class="ctas-hero__meta">Active development · version <span data-ctas="version">1.5.0</span></p>
         <div class="ctas-status ctas-status--hero" id="ctas-status"></div>
         <div class="ctas-hero__actions">
-          <a class="btn btn--primary" href="#ranked-candidates">Browse candidates</a>
-          <a class="btn btn--ghost" href="#celestial-sphere">Explore the sky</a>
+          <a class="btn btn--primary" href="ctas.html?mode=explore#ranked-candidates">Browse candidates</a>
+          <a class="btn btn--ghost" href="ctas.html?mode=explore#celestial-sphere">Explore the sky</a>
         </div>
 
-        <div class="ctas-brief" id="about-ctas">
-          <h2>CTAS in brief</h2>
-          <div class="ctas-brief__lead">
+        <details class="ctas-brief" id="about-ctas">
+          <summary>What “transient” and the CTAS score mean</summary>
+          <div class="ctas-brief__body">
+            <div class="ctas-brief__lead">
             <p><strong>Transient</strong> is CTAS’s operational umbrella for a public, time-dependent astronomical
               event or candidate: optical, high-energy, radio, neutrino, gravitational-wave, or multimessenger.
               Inclusion records a report; it does not confirm a discovery, physical class, host, or counterpart.</p>
@@ -82,69 +79,71 @@
               below. Each dossier separates sources declared by CTAS, sources applicable to that event, persisted
               query attempts, and providers that actually contribute retained public evidence. “Not queried,”
               “searched with no match,” “failed,” and “not applicable” never mean the same thing.</p>
-          </div>
-          <details class="ctas-learning">
-            <summary>Learn how CTAS works, how the score is built, and what the catalog does not claim</summary>
-            <div class="ctas-brief__grid">
-              <section><h3>What CTAS is</h3><p>A public research catalog that combines rights-cleared alerts,
-                follow-up evidence, positional context, and explicit provenance for researcher-led triage.</p></section>
-              <section><h3>How a record moves</h3><p>Public intake → rights screening → normalization → contextual
-                searches → transparent priority calculation → sanitized static publication. Conflicts,
-                retractions, provider failures, and insufficient-data states stay visible.</p></section>
-              <section><h3>How the score is calculated</h3><p>CTAS starts at 35, then applies bounded terms for recency,
-                source-reported discovery magnitude, missing or conflicting classification, missing spectrum,
-                observation age, retained quantitative coverage, and messenger diversity. Existing observation
-                coverage reduces—not increases—the score. Retracted or bogus records score zero; results are clipped
-                to 0–100. Every candidate shows its exact terms.</p></section>
-              <section><h3>What CTAS does not do</h3><p>CTAS does not control telescopes, submit observing requests,
-                publish classifications, or turn a provider report into a discovery claim. A positional catalog
-                match is not presented as a host association.</p></section>
-              <section><h3>How it is built</h3><p>Local Python services and scientific libraries ingest public
-                records into a local database. A rights-screened static snapshot is checked for changes about every
-                two minutes and published to GitHub Pages. No browser-side secret manager or private dashboard is required.</p></section>
-              <section><h3>How to use it</h3><p>Open any candidate from the stream, sky, or ranked catalog. Explore
-                the retained data inside CTAS, then use clearly labeled links to visit the exact source record,
-                provider query, downloadable artifact, or documentation when one is retained.</p></section>
             </div>
-          </details>
-        </div>
+            <details class="ctas-learning">
+              <summary>How CTAS works, how the score is built, and what the catalog does not claim</summary>
+              <div class="ctas-brief__grid">
+                <section><h3>What CTAS is</h3><p>A public research catalog that combines rights-cleared alerts,
+                  follow-up evidence, positional context, and explicit provenance for researcher-led triage.</p></section>
+                <section><h3>How a record moves</h3><p>Public intake → rights screening → normalization → contextual
+                  searches → transparent priority calculation → sanitized static publication. Conflicts,
+                  retractions, provider failures, and insufficient-data states stay visible.</p></section>
+                <section><h3>How the score is calculated</h3><p>CTAS starts at 35, then applies bounded terms for recency,
+                  source-reported discovery magnitude, missing or conflicting classification, missing spectrum,
+                  observation age, retained quantitative coverage, and messenger diversity. Existing observation
+                  coverage reduces—not increases—the score. Retracted or bogus records score zero; results are clipped
+                  to 0–100. Every candidate shows its exact terms.</p></section>
+                <section><h3>What CTAS does not do</h3><p>CTAS does not control telescopes, submit observing requests,
+                  publish classifications, or turn a provider report into a discovery claim. A positional catalog
+                  match is not presented as a host association.</p></section>
+                <section><h3>How it is built</h3><p>Local Python services and scientific libraries ingest public
+                  records into a local database. A rights-screened static snapshot is checked for changes about every
+                  two minutes and published to GitHub Pages. No browser-side secret manager or private dashboard is required.</p></section>
+                <section><h3>How to use it</h3><p>Open any candidate from the stream, sky, or ranked catalog. Explore
+                  the retained data inside CTAS, then use clearly labeled links to visit the exact source record,
+                  provider query, downloadable artifact, or documentation when one is retained.</p></section>
+              </div>
+            </details>
+            </div>
+        </details>
       </div>
     </div>
   </section>
 
-  <nav class="ctas-contents" aria-label="CTAS page contents">
-    <div class="wrap wrap--wide">
-      <span>Contents</span>
-      <a href="#about-ctas">Brief</a>
-      <a href="#catalog-overview">Catalog</a>
-      <a href="#active-sources">Sources</a>
-      <a href="#recent-stream">Recent</a>
-      <a href="#celestial-sphere">Sky</a>
-      <a href="#ranked-candidates">Candidates</a>
-      <a href="#methods-and-use">Methods &amp; use</a>
+  <div class="ctas-navigation" aria-label="CTAS navigation and resources">
+    <div class="wrap wrap--wide ctas-navigation__inner">
+      <details class="ctas-navigation__menu">
+        <summary>Jump to</summary>
+        <nav aria-label="CTAS page contents">
+          <a href="ctas.html?mode=explore#recent-stream">Latest</a>
+          <a href="ctas.html?mode=explore#celestial-sphere">Sky</a>
+          <a href="ctas.html?mode=explore#ranked-candidates">Candidates</a>
+          <a href="#ctas-reference">Catalog details</a>
+        </nav>
+      </details>
+      <details class="ctas-navigation__menu">
+        <summary>Resources</summary>
+        <nav aria-label="CTAS resources">
+          <a href="#methods-and-use">Methods</a>
+          <a href="#catalog-downloads">Downloads</a>
+          <a href="ctas/data/certification.json">Snapshot checks</a>
+          <a href="ctas/data/release-history.json">Changelog</a>
+          <a href="ctas/data/source-universe.json">Source universe</a>
+          <a href="https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/tree/main/ctas" target="_blank" rel="noopener">Source code<span class="sr-only"> (opens in a new tab)</span></a>
+        </nav>
+      </details>
     </div>
-  </nav>
-
-  <nav class="ctas-utility" aria-label="CTAS resources">
-    <div class="wrap wrap--wide">
-      <a href="#methods-and-use">Methods</a>
-      <a href="#catalog-downloads">Data downloads</a>
-      <a href="ctas/data/certification.json">Snapshot checks</a>
-      <a href="ctas/data/release-history.json">Changelog</a>
-      <a href="ctas/data/source-universe.json">Source universe</a>
-      <a href="https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/tree/main/ctas" target="_blank" rel="noopener">Source code<span class="sr-only"> (opens in a new tab)</span></a>
-    </div>
-  </nav>
+  </div>
 
   <section class="ctas-modebar" id="ctas-modes" aria-labelledby="ctas-mode-title">
     <div class="wrap wrap--wide ctas-modebar__inner">
-      <div><p class="eyebrow">One catalog · three depths</p><h2 id="ctas-mode-title">Choose how you want to use CTAS</h2></div>
+      <span id="ctas-mode-title" class="ctas-mode-label">View</span>
       <div class="ctas-mode-switcher" role="group" aria-label="CTAS experience">
-        <button type="button" data-ctas-mode="learn" aria-pressed="false"><strong>Learn</strong><span>Guided concepts and examples</span></button>
-        <button type="button" data-ctas-mode="explore" aria-pressed="true"><strong>Explore</strong><span>Sky, stream, and catalog</span></button>
-        <button type="button" data-ctas-mode="research" aria-pressed="false"><strong>Research</strong><span>Compare, query, and export</span></button>
+        <button type="button" data-ctas-mode="learn" aria-pressed="false">Learn</button>
+        <button type="button" data-ctas-mode="explore" aria-pressed="true">Explore</button>
+        <button type="button" data-ctas-mode="research" aria-pressed="false">Research</button>
       </div>
-      <p id="ctas-mode-description" class="ctas-mode-description" aria-live="polite">Explore emphasizes the live public stream, linked sky, and ranked catalog. Every mode uses the same evidence and keeps every section reachable.</p>
+      <p id="ctas-mode-description" class="sr-only" aria-live="polite">Explore emphasizes the live public stream, linked sky, and ranked catalog. Every mode uses the same evidence.</p>
     </div>
   </section>
 
@@ -171,8 +170,15 @@
             <div><dt>Public availability time</dt><dd>The provider-publication or CTAS-receipt clock used by the replay tool; never inferred from observation time alone.</dd></div>
             <div><dt>CTAS score</dt><dd>A reproducible follow-up ordering aid, not probability, confidence, or scientific importance.</dd></div>
           </dl></details>
+          <button type="button" class="ctas-browse-catalog" data-switch-mode="explore">Browse the live catalog</button>
         </div>
       </details>
+      <details class="ctas-panel ctas-reference" id="ctas-reference">
+        <summary>
+          <span><span class="eyebrow">Catalog details</span><strong>Counts, sources, releases, methods, and downloads</strong></span>
+          <small>Everything behind one optional disclosure</small>
+        </summary>
+        <div class="ctas-panel__body ctas-reference__body">
       <details class="ctas-panel ctas-overview" id="catalog-overview">
         <summary>
           <span><span class="eyebrow">Catalog at a glance</span><strong>Public records, evidence, and distributions</strong></span>
@@ -232,25 +238,25 @@
         </summary>
         <div class="ctas-panel__body" id="ctas-release-history"></div>
       </details>
+        </div>
+      </details>
 
       <section class="ctas-stream" id="recent-stream" aria-labelledby="ctas-stream-title">
         <div class="ctas-section-heading">
-          <div><p class="eyebrow">Incoming stream</p><h3 id="ctas-stream-title">Three most recent candidate updates</h3></div>
-          <p>Open any candidate here, on the sky, or in the ranked catalog to reach the same complete public record.</p>
+          <div><p class="eyebrow">Incoming stream</p><h3 id="ctas-stream-title">Latest updates</h3></div>
+          <p>Open any candidate for its complete public record.</p>
         </div>
         <ol class="ctas-stream__list" id="ctas-stream"></ol>
       </section>
 
-      <details class="ctas-panel ctas-sky" id="celestial-sphere" open>
+      <details class="ctas-panel ctas-sky" id="celestial-sphere">
         <summary>
-          <span><span class="eyebrow">Interactive celestial sphere</span><strong>Recent candidates in ICRS coordinates</strong></span>
+          <span><span class="eyebrow">Interactive celestial sphere</span><strong>Sky</strong></span>
           <small>Weekly or monthly · hover, keyboard, or select</small>
         </summary>
         <div class="ctas-panel__body">
           <div class="ctas-sky__head">
-            <p>Mollweide projection with right ascension increasing right-to-left. Color encodes the
-              source-reported discovery magnitude when a plausible value is retained; filters across surveys and
-              bands are exploratory because magnitude systems are heterogeneous and not standardized.</p>
+            <p>Color shows source-reported discovery magnitude. Coordinates are ICRS; magnitude systems may differ by survey.</p>
             <div class="ctas-window" role="group" aria-label="Sky time window">
               <button type="button" class="ctas-window__button" data-sky-days="1" aria-pressed="false">24 hours</button>
               <button type="button" class="ctas-window__button is-active" data-sky-days="7" aria-pressed="true">Weekly</button>
@@ -278,26 +284,11 @@
 
       <section class="ctas-ranked" id="ranked-candidates" aria-labelledby="ranked-title">
         <div class="ctas-section-heading">
-          <div><p class="eyebrow">Public catalog</p><h3 id="ranked-title">Candidates ranked by CTAS score</h3></div>
-          <p>The compact catalog loads first. Complete evidence is fetched only when a candidate is opened.</p>
+          <div><p class="eyebrow">Public catalog</p><h3 id="ranked-title">Candidates</h3></div>
+          <p>Ranked by CTAS score. Open a candidate for its complete evidence.</p>
         </div>
 
         <article id="candidate-workspace" class="ctas-workspace" aria-label="Candidate dossier" hidden></article>
-
-        <details class="ctas-panel ctas-research-workbench" id="ctas-research-tools" data-mode-region="research">
-          <summary>
-            <span><span class="eyebrow">Scientist workbench</span><strong>Query, compare, reuse, and inspect source coverage</strong></span>
-            <small>All computation stays in this browser; raw source evidence is never silently transformed</small>
-          </summary>
-          <div class="ctas-panel__body">
-            <div class="ctas-research-actions">
-              <section><h3>Cohort tools</h3><p>The current linked filter defines one UUID cohort across the table, sky, comparison, and downloads.</p><div class="ctas-evidence-tools"><button type="button" data-copy-filtered-view>Copy filtered view</button><button type="button" data-export-cohort="csv">CSV</button><button type="button" data-export-cohort="json">JSON</button><button type="button" data-export-cohort="vot">VOTable</button><button type="button" data-export-cohort="tom">TOM targets</button></div><p id="ctas-cohort-status" role="status" aria-live="polite"></p></section>
-              <section><h3>Interoperability</h3><p>Use stable public tables in TOPCAT, a TOM Toolkit, or a notebook. Direct SAMP contact is attempted only after an explicit click and retains a download fallback.</p><div class="ctas-evidence-tools"><a href="ctas/data/research/events.vot" download>All-events VOTable</a><a href="ctas/data/research/tom-targets.csv" download>TOM targets</a><a href="ctas/research/ctas-quickstart.ipynb" download>Quickstart notebook</a><button type="button" data-send-samp>Send all-events table to TOPCAT</button></div><p id="ctas-samp-status" role="status" aria-live="polite"></p></section>
-              <section><h3>Browser-local watchlist</h3><p>Saved only in this browser. It is not a shared annotation, observing request, or alert subscription.</p><div id="ctas-watchlist"></div></section>
-            </div>
-            <details class="ctas-source-explorer"><summary>Explore maintained source coverage and current states</summary><div id="ctas-source-explorer"></div></details>
-          </div>
-        </details>
 
         <div class="ctas-toolbar" id="ctas-toolbar" hidden>
           <div class="ctas-presets" role="group" aria-label="Primary candidate views">
@@ -305,11 +296,14 @@
             <button type="button" class="is-active" data-preset="all" aria-pressed="true">All</button>
             <button type="button" data-preset="newest" aria-pressed="false">Newest</button>
             <button type="button" data-preset="priority" aria-pressed="false">Highest priority</button>
-            <button type="button" data-preset="needs-follow-up" aria-pressed="false">Needs follow-up</button>
           </div>
-          <details class="ctas-more-filters">
-            <summary>More quick views</summary>
+          <div class="ctas-search-row">
+            <div class="field"><label for="ctas-q">Search candidates</label><input type="search" id="ctas-q" placeholder="Name, class, messenger…" autocomplete="off"></div>
+          </div>
+          <details class="ctas-filter-drawer">
+            <summary>Filters and more views</summary>
             <div class="ctas-presets" role="group" aria-label="Additional candidate views">
+              <button type="button" data-preset="needs-follow-up" aria-pressed="false">Needs follow-up</button>
               <button type="button" data-preset="updated" aria-pressed="false">Recently updated</button>
               <button type="button" data-preset="classified" aria-pressed="false">Newly classified</button>
               <button type="button" data-preset="retracted" aria-pressed="false">Retracted</button>
@@ -322,15 +316,12 @@
               <button type="button" data-preset="rich" aria-pressed="false">Rich records</button>
               <button type="button" data-preset="event-only" aria-pressed="false">Event only</button>
             </div>
-          </details>
-          <div class="ctas-fields">
-            <div class="field"><label for="ctas-q">Search</label><input type="search" id="ctas-q" placeholder="Name, class, messenger…" autocomplete="off"></div>
+            <div class="ctas-fields ctas-fields--basic">
             <div class="field"><label for="ctas-class">Reported class / alert label</label><select id="ctas-class"><option value="">All labels</option></select></div>
             <div class="field"><label for="ctas-messenger">Messenger</label><select id="ctas-messenger"><option value="">All messengers</option></select></div>
             <div class="field"><label for="ctas-statusfilter">Status</label><select id="ctas-statusfilter"><option value="">All statuses</option></select></div>
-          </div>
-          <details class="ctas-science-filters">
-            <summary>Scientific filters and cone search</summary>
+            </div>
+            <h4>Scientific filters and cone search</h4>
             <div class="ctas-fields ctas-fields--science">
               <div class="field"><label for="ctas-survey">Discovery survey</label><select id="ctas-survey"><option value="">All surveys</option></select></div>
               <div class="field"><label for="ctas-from">Discovered from</label><input id="ctas-from" type="date"></div>
@@ -351,6 +342,20 @@
         <aside id="ctas-comparison-tray" class="ctas-comparison-tray" aria-label="Candidate comparison tray" aria-live="polite" hidden></aside>
         <section id="ctas-comparison-workspace" class="ctas-comparison-workspace" aria-labelledby="ctas-comparison-title" hidden></section>
         <div id="ctas-results"></div>
+        <details class="ctas-panel ctas-research-workbench" id="ctas-research-tools" data-mode-region="research">
+          <summary>
+            <span><span class="eyebrow">Scientist workbench</span><strong>Compare, export, and inspect source coverage</strong></span>
+            <small>Optional research tools</small>
+          </summary>
+          <div class="ctas-panel__body">
+            <div class="ctas-research-actions">
+              <details><summary>Cohort exports</summary><div><p>The current linked filter defines one UUID cohort across the table, sky, comparison, and downloads.</p><div class="ctas-evidence-tools"><button type="button" data-copy-filtered-view>Copy filtered view</button><button type="button" data-export-cohort="csv">CSV</button><button type="button" data-export-cohort="json">JSON</button><button type="button" data-export-cohort="vot">VOTable</button><button type="button" data-export-cohort="tom">TOM targets</button></div><p id="ctas-cohort-status" role="status" aria-live="polite"></p></div></details>
+              <details><summary>TOPCAT, TOM Toolkit, and notebook</summary><div><p>Use stable public tables in TOPCAT, a TOM Toolkit, or a notebook. SAMP contact is attempted only after an explicit click and keeps a download fallback.</p><div class="ctas-evidence-tools"><a href="ctas/data/research/events.vot" download>All-events VOTable</a><a href="ctas/data/research/tom-targets.csv" download>TOM targets</a><a href="ctas/research/ctas-quickstart.ipynb" download>Quickstart notebook</a><button type="button" data-send-samp>Send all-events table to TOPCAT</button></div><p id="ctas-samp-status" role="status" aria-live="polite"></p></div></details>
+              <details><summary>Browser-local watchlist</summary><div><p>Saved only in this browser. It is not a shared annotation, observing request, or alert subscription.</p><div id="ctas-watchlist"></div></div></details>
+            </div>
+            <details class="ctas-source-explorer"><summary>Source coverage and current states</summary><div id="ctas-source-explorer"></div></details>
+          </div>
+        </details>
       </section>
 
       <details class="ctas-panel ctas-methods" id="methods-and-use">
@@ -371,8 +376,8 @@
             AstroEvidence 0.1.0 JSON, ECSV, and IVOA VOTable, with stable UUIDs and a checksum manifest. Missing
             legacy receipt metadata remains null; export does not manufacture provider releases, latency, or rights.</p></section>
           <section><h3>Automated snapshot checks</h3><p>The published report binds the static catalog, interface, source
-            universe, shards, and validation results to exact checksums. The local publisher checks every 120 seconds
-            while its Mac is awake, online, and the visible terminal loop is open. “Verified” means those automated
+            universe, shards, and validation results to exact checksums. The background publisher checks every 120 seconds
+            while its Mac is awake, online, and logged in. “Verified” means those automated
             integrity checks passed for that snapshot; it is not scientific certification or human peer review.</p></section>
           <section id="use-and-cite"><h3>Use and cite</h3><p>Cite CTAS as “Cowboy Transient Alert System
             (Jack McGuire), version 1.5.0,” include the catalog checksum and access date, and cite each original
@@ -415,8 +420,8 @@
 <script src="ctas/catalog-model.js?v=20260830-workbench1"></script>
 <script src="ctas/astro-evidence.js?v=20260829-evidence1"></script>
 <script src="ctas/observability.js?v=20260830-workbench1"></script>
-<script src="ctas/workbench.js?v=20260830-workbench1"></script>
-<script src="ctas/app.js?v=20260830-workbench1"></script>
+<script src="ctas/workbench.js?v=20260830-declutter1"></script>
+<script src="ctas/app.js?v=20260830-declutter1"></script>
 
 </body>
 </html>

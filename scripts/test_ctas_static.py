@@ -578,6 +578,41 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertNotIn("Certified Static Catalog", html + app)
         self.assertNotIn("Static release assurance", html + app)
 
+    def test_public_workspace_defaults_are_calm_without_removing_features(self):
+        html = (ROOT / "ctas.html").read_text()
+        app = (ROOT / "ctas/app.js").read_text()
+        workbench = (ROOT / "ctas/workbench.js").read_text()
+
+        self.assertNotIn('class="ctas-contents"', html)
+        self.assertNotIn('class="ctas-utility"', html)
+        self.assertEqual(html.count('class="ctas-navigation__menu"'), 2)
+        self.assertIn('id="ctas-reference"', html)
+        self.assertIn('class="ctas-filter-drawer"', html)
+        self.assertNotIn('id="celestial-sphere" open', html)
+
+        for element_id in (
+            "about-ctas", "catalog-overview", "active-sources", "recent-stream",
+            "celestial-sphere", "ranked-candidates", "ctas-research-tools",
+            "methods-and-use", "ctas-q", "ctas-class", "ctas-messenger",
+            "ctas-statusfilter", "ctas-survey", "ctas-cone-ra",
+            "ctas-cone-dec", "ctas-cone-radius",
+        ):
+            self.assertIn(f'id="{element_id}"', html)
+
+        self.assertIn('stream.hidden = mode !== "explore"', workbench)
+        self.assertIn('sky.hidden = mode !== "explore"', workbench)
+        self.assertIn('ranked.hidden = mode === "learn"', workbench)
+        self.assertIn('research.hidden = mode !== "research"', workbench)
+        self.assertIn('research.open = false', workbench)
+        self.assertIn('MODE_COPY[requested] ? requested : "explore"', workbench)
+        self.assertNotIn('loadLocal(MODE_KEY, "explore")', workbench)
+
+        self.assertIn('data-dossier-view="brief"', app)
+        self.assertIn('data-dossier-view="identity"><summary>', app)
+        self.assertNotIn('data-dossier-view="identity" open', app)
+        self.assertNotIn('view || "identity"', app)
+        self.assertNotIn('(index === 0 ? " open" : "")', app)
+
     def test_complete_catalog_download_ui_uses_parts_not_a_giant_blob(self):
         html = (ROOT / "ctas.html").read_text()
         app = (ROOT / "ctas/app.js").read_text()
@@ -811,6 +846,11 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn("CURRENT_CODE_BINDING", publisher)
         self.assertIn("HEAD_CODE_BINDING", publisher)
         self.assertIn("CODE_BINDING_CHANGED", publisher)
+        self.assertIn("export PYTHONDONTWRITEBYTECODE=1", publisher)
+        self.assertIn('git fetch --quiet origin "$BRANCH"', publisher)
+        self.assertIn('git rebase "origin/$BRANCH"', publisher)
+        self.assertIn("remote update preserved checksum-bound CTAS code", publisher)
+        self.assertNotIn("git push --force", publisher)
         self.assertIn("deployed-code-binding,local-origin-code-alignment", publisher)
         self.assertIn("local checksum-bound code successor is not published; publication paused", publisher)
         mirror = (ROOT / "scripts/mirror_loop.sh").read_text()
@@ -824,12 +864,22 @@ class CertificateAndArtifactTests(unittest.TestCase):
         agent = (ROOT / "scripts/io.github.jackmcguireastro.ctas-mirror.plist").read_text()
         self.assertIn('git fetch --quiet origin "$BRANCH"', runner)
         self.assertIn('git merge --quiet --ff-only "origin/$BRANCH"', runner)
+        self.assertIn("export PYTHONDONTWRITEBYTECODE=1", runner)
         self.assertIn("trap 'rmdir", runner)
         self.assertNotIn("exec env CTAS_SITE", runner)
         self.assertIn("<key>StartInterval</key>", agent)
         self.assertIn("<integer>120</integer>", agent)
         self.assertNotIn("<key>WatchPaths</key>", agent)
         self.assertIn("Library/Application Support/CTASPublisher/site", agent)
+        installer = (ROOT / "scripts/install_ctas_mirror.sh").read_text()
+        self.assertLess(
+            installer.index('launchctl enable "$DOMAIN/$LABEL"'),
+            installer.index('launchctl bootstrap "$DOMAIN" "$DEST"'),
+        )
+        self.assertIn('grep -q \'state = running\'', installer)
+        ignore = (ROOT / ".gitignore").read_text()
+        self.assertIn("__pycache__/", ignore)
+        self.assertIn("*.py[cod]", ignore)
 
     def test_compact_index_and_all_detail_shards_are_checksum_bound(self):
         self.assertEqual(self.index["candidate_count"], self.snapshot["candidate_count"])

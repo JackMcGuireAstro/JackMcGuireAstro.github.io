@@ -80,6 +80,10 @@ plutil -lint "$DEST" >/dev/null 2>&1 \
   || { bad "generated agent is malformed"; exit 1; }
 
 launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
+# A previously stopped service may remain explicitly disabled even after its
+# job is removed. Re-enable the label before bootstrap so reinstalling the
+# publisher is self-healing instead of failing with an opaque launchd error.
+launchctl enable "$DOMAIN/$LABEL" 2>/dev/null || true
 rmdir "$LOG_DIR/.runner.lock.d" 2>/dev/null || true
 if [ -s "$LOG_DIR/launchd.err.log" ] && grep -q 'Documents/GitHub.*Operation not permitted' "$LOG_DIR/launchd.err.log"; then
   mv "$LOG_DIR/launchd.err.log" "$LOG_DIR/launchd.err.pre-runtime-$(date -u '+%Y%m%dT%H%M%SZ').log"
@@ -87,7 +91,6 @@ if [ -s "$LOG_DIR/launchd.err.log" ] && grep -q 'Documents/GitHub.*Operation not
 fi
 launchctl bootstrap "$DOMAIN" "$DEST" 2>/dev/null \
   || { bad "launchctl bootstrap failed"; exit 1; }
-launchctl enable "$DOMAIN/$LABEL" 2>/dev/null || true
 ok "agent loaded"
 
 echo
@@ -108,6 +111,9 @@ done
 AGENT_STATE=$(launchctl print "$DOMAIN/$LABEL" 2>/dev/null || true)
 if printf '%s\n' "$AGENT_STATE" | grep -q 'last exit code = 0'; then
   ok "first launchd run exited successfully"
+elif printf '%s\n' "$AGENT_STATE" | grep -q 'state = running'; then
+  ok "first launchd run started and is still rebuilding the catalog"
+  info "The full snapshot can take longer than this installer's bounded wait; the agent remains supervised by launchd."
 else
   bad "first launchd run did not report exit 0"
   info "See $LOG_DIR/launchd.err.log and $LOG_DIR/runner.log"

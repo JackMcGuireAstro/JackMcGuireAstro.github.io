@@ -2,6 +2,7 @@
 # Synchronize the dedicated CTAS publisher checkout, then publish one frozen
 # database snapshot. This checkout contains only public repository state.
 set -uo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 SITE="${CTAS_SITE:-$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)}"
