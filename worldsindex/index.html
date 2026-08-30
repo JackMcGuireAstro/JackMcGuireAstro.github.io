@@ -14,8 +14,9 @@
   <header class="topbar">
     <a class="brand" href="../index.html" aria-label="Jack McGuire home"><span class="brand-mark">WI</span><span>WorldsIndex<small>on jackmcguireastro.github.io</small></span></a>
     <nav aria-label="WorldsIndex sections">
-      <a href="#atlas">Atlas</a><a href="#object-evidence">Object evidence</a><a href="#compare">Compare</a><a href="#methods">Methods</a><a href="#coverage">Sources</a><a href="#downloads">Downloads</a>
+      <a href="#start">Start</a><a href="#atlas">Atlas</a><a href="#object-evidence">Object evidence</a><a href="#compare">Compare</a><a href="#methods">Methods</a><a href="#coverage">Sources</a><a href="#downloads">Downloads</a>
     </nav>
+    <div class="audience-switch" role="group" aria-label="Choose explanation depth"><button type="button" data-audience="beginner" aria-pressed="true">Beginner</button><button type="button" data-audience="research" aria-pressed="false">Research</button></div>
     <a class="portfolio-link" href="../index.html">Jack McGuire ↗</a>
   </header>
 
@@ -25,14 +26,26 @@
         <p class="eyebrow">ExoNexus evidence engine · GitHub-native public release</p>
         <h1>Every value has<br><em>a history.</em></h1>
         <p class="lede">Explore confirmed planets, candidates, false positives, controversial claims, and refuted detections across a declared multi-source catalog universe. Compare the retained measurements; inspect their source and uncertainty; never confuse catalog membership with independent confirmation.</p>
-        <div class="hero-actions"><a class="button primary" href="#atlas">Explore all detections</a><a class="button" href="#coverage">Audit source coverage</a></div>
+        <div class="hero-actions"><a class="button primary beginner-only" href="#start">Show me how this works</a><a class="button primary research-only" href="#atlas">Open the full atlas</a><a class="button" href="#coverage">Audit source coverage</a></div>
       </div>
       <aside class="release-card" aria-live="polite">
         <p class="eyebrow">Current static evidence state</p>
         <div class="release-metrics"><strong id="metric-objects">Loading…</strong><span>catalog-union objects</span><strong id="metric-records">—</strong><span>source-record occurrences</span><strong id="metric-sources">—</strong><span>declared source contracts</span></div>
         <p id="release-time" class="muted">Opening the compressed public release…</p>
+        <div id="provider-health" class="provider-health"><span class="health-dot"></span><span>Loading provider health…</span></div>
         <div class="release-state"><span aria-hidden="true">●</span> No ChatGPT-hosted runtime dependency</div>
       </aside>
+    </section>
+
+    <section class="workspace orientation beginner-only" id="start" aria-labelledby="start-title">
+      <div class="section-heading"><div><p class="eyebrow">Start here · no astronomy required</p><h2 id="start-title">Four ways to explore another world</h2></div></div>
+      <div class="journey-grid">
+        <a href="#atlas"><span>01</span><strong>Find a world</strong><p>Search a familiar name or select a point on the sky. Candidates and disputed detections are included—not silently discarded.</p></a>
+        <a href="#object-evidence"><span>02</span><strong>Read its evidence</strong><p>See the clearest current value first, then open the measurements tab to compare what different sources reported.</p></a>
+        <a href="#methods"><span>03</span><strong>Learn how we know</strong><p>Explore what transit, radial-velocity, imaging, microlensing, and other methods actually observe—and their blind spots.</p></a>
+        <a href="#compare"><span>04</span><strong>Compare populations</strong><p>Change the axes and filters to see patterns, while WorldsIndex reports which objects could not be plotted.</p></a>
+      </div>
+      <details class="glossary"><summary>Three terms that prevent most confusion</summary><div><p><strong>Confirmed</strong> means the object satisfies a catalog’s validation or confirmation criteria; it does not make every published number agree.</p><p><strong>Candidate</strong> means a signal may be planetary but still needs validation or follow-up.</p><p><strong>Measurement</strong> is one source’s reported result. Different instruments, models, or papers can produce different values for the same property.</p></div></details>
     </section>
 
     <section class="workspace" id="atlas" aria-labelledby="atlas-title">
@@ -95,7 +108,7 @@
       <div class="section-heading"><div><p class="eyebrow">Declared source universe</p><h2 id="coverage-title">Count sources by what actually happened</h2></div><label>Filter source states<select id="source-state-filter"><option value="all">All states</option></select></label></div>
       <div id="source-summary" class="summary-grid"></div>
       <div id="source-list" class="source-list"></div>
-      <aside class="boundary"><h3>Scientific and hosting boundary</h3><p>GitHub Pages serves the complete frozen public release directly. It cannot safely hold private credentials or run arbitrary secret-backed provider queries. Those providers remain declared with their exact state, scope, limit, and official link; future measurements enter through the guarded refresh pipeline and become static, inspectable release artifacts after validation.</p><ul><li>A catalog row is not independent confirmation.</li><li>An archive holding is not itself a planet detection.</li><li>Confidence describes evidence fitness and provenance, not the probability that a value is true.</li><li>Source-composite values may come from different papers and are not a self-consistent physical solution.</li><li>“All” means the validated records inside the versioned declared source universe shown here.</li></ul></aside>
+      <aside class="boundary"><h3>Scientific and automation boundary</h3><p>The laptop updater can repeatedly query structured catalogs, validate changes, quarantine unsafe releases, and publish a last-known-good static release. No website can honestly guarantee every future paper or provider forever: services change schemas, restrict access, disappear, or publish measurements only in unstructured literature. Every declared provider therefore remains visible with its exact implementation and latest-query state instead of being silently counted as complete.</p><ul><li>A catalog row is not independent confirmation.</li><li>An archive holding is not itself a planet detection.</li><li>Confidence describes evidence fitness and provenance, not the probability that a value is true.</li><li>Source-composite values may come from different papers and are not a self-consistent physical solution.</li><li>“All” means the validated records inside the versioned declared source universe shown here.</li></ul></aside>
     </section>
 
     <section class="workspace accent" id="downloads" aria-labelledby="downloads-title">
