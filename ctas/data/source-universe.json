@@ -1,9 +1,9 @@
 {
-  "artifact_checksum_sha256": "38c958e76e15aed258cae2d0455c3d747ae721e087910eba6b922dbf282a0f93",
+  "artifact_checksum_sha256": "6d9d5760f7b3d6da1b5d536ca121edada92369846201e3c550617fda91680eac",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
-  "contract_set_checksum_sha256": "27f615fdbca35b89d6a15dd913baa72c178e6041b45cf4164b825ca5dc8e6918",
+  "contract_set_checksum_sha256": "2b03db3fc3e079a41421fe76f2ee5d0984e55b04897ff57d45ba70e002a5ca4f",
   "family_count": 10,
-  "generated_at": "2026-08-30T22:01:44Z",
+  "generated_at": "2026-08-30T22:07:40Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -585,7 +585,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "99bdc1012d802a05181bf8b06f82d1807ad79ae34e437f3c37624e27434a3a7d",
+      "contract_checksum_sha256": "d46e384293c4227ad07e445df2d618c51723de8e1dc27cdd6bd6c73a80d5af5e",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -600,7 +600,7 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-08-30T21:51:56.397188Z",
+      "last_attempt_at": "2026-08-30T22:01:58.794758Z",
       "last_successful_at": "2026-08-30T21:51:56.397188Z",
       "last_successful_response": "2026-08-30T21:51:56.397188Z",
       "last_verified": "2026-08-08",
@@ -612,7 +612,7 @@
       "protocol": "Anonymous real-time Fink/LSST REST polling, exact-object Rubin source/forced history, plus anonymous targeted Fink/ZTF archive",
       "public_disposition_counts": {
         "provider-failure": 139,
-        "searched-no-match": 3749,
+        "searched-no-match": 3750,
         "searched-with-data": 203
       },
       "public_record_counts": {
@@ -675,7 +675,7 @@
       "access_mode": "poll",
       "authentication_requirement": "Authenticated POST API with TNS bot API key and mandatory tns_marker User-Agent; bulk public intake uses released CSV deltas.",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "370dd7a387ed843316243cf80147085dc7c9451e2d7c08cee877040335be8263",
+      "contract_checksum_sha256": "12a196d5679a408266c64bff696a920903d4ce99a713046c9eed3891041e9c6f",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery",
@@ -699,7 +699,7 @@
       "public_disposition_counts": {},
       "public_record_counts": {
         "classifications": 219,
-        "designations": 2470
+        "designations": 2471
       },
       "query_scope": "poll",
       "rate_or_cadence_limit": "Rolling 60-second quotas vary by operation; cone searches have a separate lower quota. CTAS must honor returned rate headers.",
@@ -1781,7 +1781,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN public-consumer OAuth client",
       "connector_implementation_state": "implemented-public-topic-credentials-required",
-      "contract_checksum_sha256": "2316630efc3f5304040a6ba0a0ad873ecb268c0a0e7f31cafc0f634b18fd3002",
+      "contract_checksum_sha256": "12fcf8d54fd2b64573fde218d537bba2ec9f7c5b421ac7f0aac8e440e44c94ea",
       "contract_version": "1.0.0",
       "data_types": [
         "gravitational-wave notice",
@@ -1793,8 +1793,8 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-30T21:13:34Z",
-      "last_successful_response": "2026-08-30T21:13:34Z",
+      "last_successful_at": "2026-08-30T22:03:41Z",
+      "last_successful_response": "2026-08-30T22:03:41Z",
       "last_verified": "2026-07-21",
       "name": "LIGO/Virgo/KAGRA Public Alerts",
       "operational_state": "active-no-recent-messages",
@@ -1863,7 +1863,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN Kafka client ID and secret; OAuth tokens refresh automatically and inactive credentials may be disabled.",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "5f1646e841a0ef6541116ff0ab07af95764652978250dd6b31af80e651a227e9",
+      "contract_checksum_sha256": "572bde068eae820c3c119e943f28f3b9c4f77f3aadd32b1ac463cc239ef566f3",
       "contract_version": "1.0.0",
       "data_types": [
         "notice",
@@ -1875,8 +1875,8 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "No proprietary topic is configured; topic authorization does not itself change rights policy",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-30T21:13:34Z",
-      "last_successful_response": "2026-08-30T21:13:34Z",
+      "last_successful_at": "2026-08-30T22:03:41Z",
+      "last_successful_response": "2026-08-30T22:03:41Z",
       "last_verified": "2026-08-29",
       "name": "NASA General Coordinates Network",
       "operational_state": "active-returning-data",
@@ -2156,7 +2156,7 @@
       "access_mode": "on-demand-query",
       "authentication_requirement": "Registered ATLAS forced-photometry token in the Authorization header; credentials remain local.",
       "connector_implementation_state": "implemented-public-credentials-required",
-      "contract_checksum_sha256": "d0ad7660cdf7dac42df601350ec24c753c1865691460187259d5b947f56bf6b3",
+      "contract_checksum_sha256": "2ce7ce8c265e8842638971e21bcb72c3719fe1361f841557acb7e0f1379814ea",
       "contract_version": "1.0.0",
       "data_types": [
         "TNS discovery",
@@ -2183,7 +2183,7 @@
         "temporarily-unavailable": 1
       },
       "public_record_counts": {
-        "candidates": 245,
+        "candidates": 246,
         "observations": 8468
       },
       "query_scope": "on-demand-query",
