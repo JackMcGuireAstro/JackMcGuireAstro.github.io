@@ -6,6 +6,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import re
 from pathlib import Path
 
 
@@ -51,8 +52,37 @@ def main() -> None:
     ).lower()
     assert "worldsindex.therealjackmcg.chatgpt.site" not in public_text
     assert "chatgpt-hosted sites service" not in public_text
-    assert "data/sky-detections.json.gz" in (APP / "index.html").read_text()
-    assert "assets/app.js" in (APP / "index.html").read_text()
+    html = (APP / "index.html").read_text()
+    javascript = (APP / "assets" / "app.js").read_text()
+    assert "data/sky-detections.json.gz" in html
+    assert "assets/app.js" in html
+
+    html_ids = re.findall(r'\bid="([^"]+)"', html)
+    assert len(html_ids) == len(set(html_ids)), "WorldsIndex HTML ids must be unique"
+    required_ids = {
+        "object-search",
+        "sky",
+        "object-dossier",
+        "tab-system",
+        "comparison-table",
+        "plot",
+        "method-detail",
+        "source-list",
+        "provider-health",
+        "release-timeline",
+        "download-all-csv",
+    }
+    assert required_ids.issubset(html_ids)
+    assert {"Discover", "Compare", "Methods", "Data"}.issubset(set(re.findall(r'data-app-section="[^"]+"[^>]*>([^<]+)', html)))
+    assert "Traceability score" not in html + javascript
+    assert "83/100" not in html + javascript
+    assert "else await selectObject" not in javascript, "A clean visit must not preselect a featured object"
+    assert "query.get('compare')||''" in javascript, "Comparison must not start with arbitrary default objects"
+    assert "Source-specific gates required" in javascript
+    assert "convertUncertaintyPair" in javascript, "Comparison uncertainties must use unit-safe conversion"
+    assert "public_release_generated_at" in javascript
+    assert "atlas_generated_at" in javascript
+    assert "scope:'complete_atlas',filters:{status:'all',method:'all',source:'all'" in javascript
 
     print(
         "WorldsIndex static release passed: "
