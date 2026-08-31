@@ -1,9 +1,9 @@
 {
-  "artifact_checksum_sha256": "37bec9740122204db1745d5314ce5d698e6f43a0e39fee1c9dbbbb607368fb4f",
+  "artifact_checksum_sha256": "9e34299b06f36f3559b98c269eb47259110cb7fb522cf645d99a8e7be9117c12",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
-  "contract_set_checksum_sha256": "db63a02c42c7e6570267107ca5430a8224a8ff06054c0d0451b1d3dc1f26c87c",
+  "contract_set_checksum_sha256": "1db8e19769bd80c0cec8e8b5e42724419ee6d012498bb0591b0cf45d6b1b8a9f",
   "family_count": 10,
-  "generated_at": "2026-08-31T03:58:56Z",
+  "generated_at": "2026-08-31T04:08:56Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -585,7 +585,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "5ca115e4fa25bc95d565d9317bb42cd3a64505ab06171670d132318844c436d2",
+      "contract_checksum_sha256": "0f8673884db7543a4610e35e1db1d695123c7c207ea25528cc838c6119c1d8d9",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -600,7 +600,7 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-08-31T03:53:00.955308Z",
+      "last_attempt_at": "2026-08-31T04:03:02.132486Z",
       "last_successful_at": "2026-08-31T02:42:52.395039Z",
       "last_successful_response": "2026-08-31T02:42:52.395039Z",
       "last_verified": "2026-08-08",
@@ -612,7 +612,7 @@
       "protocol": "Anonymous real-time Fink/LSST REST polling, exact-object Rubin source/forced history, plus anonymous targeted Fink/ZTF archive",
       "public_disposition_counts": {
         "provider-failure": 139,
-        "searched-no-match": 3818,
+        "searched-no-match": 3819,
         "searched-with-data": 210
       },
       "public_record_counts": {
@@ -675,7 +675,7 @@
       "access_mode": "poll",
       "authentication_requirement": "Authenticated POST API with TNS bot API key and mandatory tns_marker User-Agent; bulk public intake uses released CSV deltas.",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "7270dd430e418225f46be24314b8a9a67b987ce05cee3c66f315bb614d59d930",
+      "contract_checksum_sha256": "79a05a271f279f4d395ef23362d9206a140b06a768c44c944caf234df76b4b21",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery",
@@ -698,8 +698,8 @@
       "protocol": "HTTPS hourly ZIP CSV",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "classifications": 219,
-        "designations": 2473
+        "classifications": 220,
+        "designations": 2474
       },
       "query_scope": "poll",
       "rate_or_cadence_limit": "Rolling 60-second quotas vary by operation; cone searches have a separate lower quota. CTAS must honor returned rate headers.",
@@ -1781,7 +1781,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN public-consumer OAuth client",
       "connector_implementation_state": "implemented-public-topic-credentials-required",
-      "contract_checksum_sha256": "f37a0986f0067d8e0bc2d073c066d7367746eadecc95c7490eacc984fe9e462c",
+      "contract_checksum_sha256": "b1c62ac56806fb6ebca5fef3e63953919864df75d184111d166df93fcaa59ec7",
       "contract_version": "1.0.0",
       "data_types": [
         "gravitational-wave notice",
@@ -1793,8 +1793,8 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-31T03:13:34Z",
-      "last_successful_response": "2026-08-31T03:13:34Z",
+      "last_successful_at": "2026-08-31T04:03:42Z",
+      "last_successful_response": "2026-08-31T04:03:42Z",
       "last_verified": "2026-07-21",
       "name": "LIGO/Virgo/KAGRA Public Alerts",
       "operational_state": "active-no-recent-messages",
@@ -1863,7 +1863,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN Kafka client ID and secret; OAuth tokens refresh automatically and inactive credentials may be disabled.",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "96855777a84797701ecb95d288e6259d9ddff4b2fdfaf5916931e1c015ce1dac",
+      "contract_checksum_sha256": "cbc267a52132b0082df000c7c63435635725bbc563d70c0528d97428d33ddec2",
       "contract_version": "1.0.0",
       "data_types": [
         "notice",
@@ -1875,8 +1875,8 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "No proprietary topic is configured; topic authorization does not itself change rights policy",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-31T03:13:34Z",
-      "last_successful_response": "2026-08-31T03:13:34Z",
+      "last_successful_at": "2026-08-31T04:03:42Z",
+      "last_successful_response": "2026-08-31T04:03:42Z",
       "last_verified": "2026-08-29",
       "name": "NASA General Coordinates Network",
       "operational_state": "active-returning-data",
@@ -3287,7 +3287,7 @@
       "access_mode": "poll",
       "authentication_requirement": "None for released public notes",
       "connector_implementation_state": "implemented-public-anonymous-with-photometry-tables",
-      "contract_checksum_sha256": "5b9a57a8b35e408b6e078bc590898dc0323d560bf998b1b4e63112f6691a5789",
+      "contract_checksum_sha256": "03aae1dd2f359ff812bb958693ecb33b7334056db559cba146425ad5476ed525",
       "contract_version": "1.0.0",
       "data_types": [
         "public notice",
@@ -3311,7 +3311,7 @@
       "public_disposition_counts": {},
       "public_record_counts": {
         "observations": 48,
-        "publication_revisions": 273,
+        "publication_revisions": 274,
         "publications": 179
       },
       "query_scope": "poll",
