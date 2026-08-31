@@ -29,6 +29,8 @@ assert.strictEqual(catalog.filter(c => model.matchesPreset(c, "all", now)).lengt
 assert.strictEqual(catalog.filter(c => model.matchesPreset(c, "spectra", now)).length, 1,
   "new-spectra preset must inspect the complete catalog, beyond the first rendered page");
 assert.strictEqual(model.matchesPreset(candidate(), "event-only", now), true);
+assert.strictEqual(model.matchesPreset(candidate({discovery_time: "2026-08-23T11:00:00Z"}), "today", now), true);
+assert.strictEqual(model.matchesPreset(candidate({discovery_time: "2026-08-22T11:59:59Z"}), "today", now), false);
 assert.strictEqual(model.matchesPreset(candidate({follow_up_total: 1}), "event-only", now), false);
 assert.strictEqual(model.matchesPreset(candidate({primary_messenger: "multimessenger"}), "multimessenger", now), true);
 assert.strictEqual(model.matchesPreset(candidate({messenger_channels: ["neutrino", "gamma-ray"]}), "multimessenger", now), true);

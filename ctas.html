@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://jackmcguireastro.github.io/assets/images/ctas/ctas-card.png">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="assets/css/site.css">
-<link rel="stylesheet" href="ctas/ctas.css?v=20260830-declutter1">
+<link rel="stylesheet" href="ctas/ctas.css?v=20260830-console1">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>
@@ -50,19 +50,17 @@
 </header>
 
 <main id="main">
-  <section class="hero ctas-hero" id="top">
+  <section class="hero ctas-hero ctas-console-head" id="top">
     <div class="hero__sky" aria-hidden="true"></div>
     <div class="wrap hero__inner ctas-hero__inner">
       <div>
-        <p class="eyebrow">Cowboy Transient Alert System</p>
-        <h1>CTAS</h1>
-        <p class="hero__statement">See what changed in the sky, understand why it may matter, and inspect the original evidence at your preferred depth.</p>
+        <div class="ctas-console-identity">
+          <p class="eyebrow"><span class="ctas-live-dot" aria-hidden="true"></span>Cowboy Transient Alert System</p>
+          <h1>CTAS <span>Live sky</span></h1>
+          <p class="hero__statement">What changed, where it happened, and why it may deserve attention.</p>
+        </div>
         <p class="ctas-hero__meta">Active development · version <span data-ctas="version">1.5.0</span></p>
         <div class="ctas-status ctas-status--hero" id="ctas-status"></div>
-        <div class="ctas-hero__actions">
-          <a class="btn btn--primary" href="#recent-stream">See today’s transients</a>
-          <a class="btn btn--ghost" href="#celestial-sphere">Explore the sky</a>
-        </div>
 
         <details class="ctas-brief" id="about-ctas">
           <summary>What “transient” and the CTAS score mean</summary>
@@ -109,20 +107,19 @@
     </div>
   </section>
 
-  <div class="ctas-navigation" aria-label="CTAS navigation and resources">
+  <div class="ctas-navigation" aria-label="CTAS live console navigation">
     <div class="wrap wrap--wide ctas-navigation__inner">
+      <nav class="ctas-console-links" aria-label="CTAS page contents">
+        <a href="#celestial-sphere">Sky</a>
+        <a href="#recent-stream">Latest</a>
+        <a href="#ranked-candidates">Top 100</a>
+      </nav>
+      <div class="ctas-console-search field"><label class="sr-only" for="ctas-q">Search candidates</label><input type="search" id="ctas-q" placeholder="Search any candidate…" autocomplete="off"></div>
       <details class="ctas-navigation__menu">
-        <summary>Jump to</summary>
-        <nav aria-label="CTAS page contents">
-          <a href="#recent-stream">Latest</a>
-          <a href="#celestial-sphere">Sky</a>
-          <a href="#ranked-candidates">Candidates</a>
-          <a href="#ctas-reference">Catalog details</a>
-        </nav>
-      </details>
-      <details class="ctas-navigation__menu">
-        <summary>Resources</summary>
+        <summary>Learn &amp; data</summary>
         <nav aria-label="CTAS resources">
+          <a href="#ctas-learn">How to read CTAS</a>
+          <a href="#ctas-reference">Catalog details</a>
           <a href="#methods-and-use">Methods</a>
           <a href="#catalog-downloads">Downloads</a>
           <a href="ctas/data/certification.json">Snapshot checks</a>
@@ -229,17 +226,18 @@
 
       <section class="ctas-stream" id="recent-stream" aria-labelledby="ctas-stream-title">
         <div class="ctas-section-heading">
-          <div><p class="eyebrow">Incoming transients</p><h3 id="ctas-stream-title">Reported in the last 24 hours</h3></div>
-          <p>Every matching record with a source-reported discovery time in the rolling 24-hour window appears here. Open one for its evidence and sky context.</p>
+          <div><p class="eyebrow">Signal stream</p><h3 id="ctas-stream-title">Latest arrivals</h3></div>
+          <p>Three newest reports from the rolling 24-hour window. Open one for its evidence and sky context.</p>
         </div>
         <ol class="ctas-stream__list" id="ctas-stream"></ol>
+        <p class="ctas-stream__all"><button type="button" data-preset="today">View every report from the last 24 hours in the catalog</button></p>
       </section>
 
-      <details class="ctas-panel ctas-sky" id="celestial-sphere" open>
-        <summary>
-          <span><span class="eyebrow">Interactive celestial sphere</span><strong>Sky</strong></span>
-          <small>Weekly or monthly · hover, keyboard, or select</small>
-        </summary>
+      <section class="ctas-panel ctas-sky ctas-live-stage" id="celestial-sphere" aria-labelledby="ctas-sky-title">
+        <header class="ctas-live-stage__heading">
+          <span><span class="eyebrow">Interactive celestial sphere</span><strong id="ctas-sky-title">Sky</strong></span>
+          <small>Hover, keyboard, or select any point</small>
+        </header>
         <div class="ctas-panel__body">
           <div class="ctas-sky__head">
             <p>Color shows source-reported discovery magnitude. Coordinates are ICRS; magnitude systems may differ by survey.</p>
@@ -247,15 +245,14 @@
               <button type="button" class="ctas-window__button" data-sky-days="1" aria-pressed="false">24 hours</button>
               <button type="button" class="ctas-window__button is-active" data-sky-days="7" aria-pressed="true">Weekly</button>
               <button type="button" class="ctas-window__button" data-sky-days="30" aria-pressed="false">Monthly</button>
-              <button type="button" class="ctas-window__button" data-sky-days="90" aria-pressed="false">90 days</button>
-              <button type="button" class="ctas-window__button" data-sky-days="36500" aria-pressed="false">All</button>
+              <details class="ctas-window__more"><summary>More</summary><div><button type="button" class="ctas-window__button" data-sky-days="90" aria-pressed="false">90 days</button><button type="button" class="ctas-window__button" data-sky-days="36500" aria-pressed="false">All retained</button></div></details>
             </div>
           </div>
           <div class="ctas-sky__stage" id="ctas-sky-stage">
             <p id="ctas-sky-help" class="sr-only">Use the weekly and monthly buttons to change the time window.
               Focus the map and use the arrow keys to review plotted candidates; press Enter to open the selected record.</p>
             <canvas id="ctas-sky-canvas" tabindex="0" aria-describedby="ctas-sky-help"></canvas>
-            <div class="ctas-sky__tooltip" id="ctas-sky-tooltip" role="status" hidden></div>
+            <div class="ctas-sky__tooltip" id="ctas-sky-tooltip" role="tooltip" hidden></div>
           </div>
           <div class="ctas-sky__foot">
             <p class="ctas-sky__count" id="ctas-sky-count" aria-live="polite"></p>
@@ -266,7 +263,7 @@
           <label class="ctas-sky__accessible-label" for="ctas-sky-accessible">Accessible plotted-candidate list</label>
           <select id="ctas-sky-accessible" class="ctas-sky__accessible"></select>
         </div>
-      </details>
+      </section>
 
       <section class="ctas-ranked" id="ranked-candidates" aria-labelledby="ranked-title">
         <div class="ctas-section-heading">
@@ -284,11 +281,10 @@
           <div class="ctas-presets" role="group" aria-label="Primary candidate views">
             <span>Quick views</span>
             <button type="button" class="is-active" data-preset="all" aria-pressed="true">Leaderboard</button>
-            <button type="button" data-preset="newest" aria-pressed="false">Newest</button>
-            <button type="button" data-preset="priority" aria-pressed="false">Highest priority</button>
-          </div>
-          <div class="ctas-search-row">
-            <div class="field"><label for="ctas-q">Search candidates</label><input type="search" id="ctas-q" placeholder="Name, class, messenger…" autocomplete="off"></div>
+            <button type="button" data-preset="today" aria-pressed="false">Last 24 hours</button>
+            <button type="button" data-preset="no-spectra" aria-pressed="false">Needs spectrum</button>
+            <button type="button" data-preset="unclassified" aria-pressed="false">Unclassified</button>
+            <button type="button" data-preset="multimessenger" aria-pressed="false">Multimessenger</button>
           </div>
           <details class="ctas-filter-drawer">
             <summary>Filters and more views</summary>
@@ -407,11 +403,11 @@
 
 <script src="assets/js/site.js"></script>
 
-<script src="ctas/catalog-model.js?v=20260830-workbench1"></script>
+<script src="ctas/catalog-model.js?v=20260830-console1"></script>
 <script src="ctas/astro-evidence.js?v=20260829-evidence1"></script>
 <script src="ctas/observability.js?v=20260830-workbench1"></script>
 <script src="ctas/workbench.js?v=20260830-declutter1"></script>
-<script src="ctas/app.js?v=20260830-declutter1"></script>
+<script src="ctas/app.js?v=20260830-console1"></script>
 
 </body>
 </html>

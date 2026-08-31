@@ -36,9 +36,19 @@
     scoreMin: null, scoreMax: null, spectrum: "", conflict: "", richness: "",
     coneRa: null, coneDec: null, coneRadius: null,
     shown: PAGE, skyDays: 7, skyPoints: [], skySelected: null,
+    hoveredEventId: null, focusedEventId: null, linkedHighlightId: null,
     skyKeyboardIndex: -1, photBand: {}, activeOpener: null,
     autoRefreshPaused: false, exportBusy: false
   };
+
+  function normalizeWorkspaceOrder() {
+    var host = document.querySelector(".ctas-interface > .wrap");
+    if (!host) return;
+    ["celestial-sphere", "recent-stream", "ranked-candidates", "ctas-learn", "about-ctas", "ctas-reference", "methods-and-use"].forEach(function (id) {
+      var section = document.getElementById(id); if (section) host.appendChild(section);
+    });
+  }
+  normalizeWorkspaceOrder();
 
   var el = {
     status: document.getElementById("ctas-status"),
@@ -916,7 +926,7 @@
       '</h3><p>' + esc(summary.intro) +
       '</p></div><div class="ctas-detail__score"><span>CTAS follow-up score</span><strong>' + esc(num(candidate.ctas_score, 1)) +
       '</strong><small>ordering aid · not probability</small></div></div>' +
-      '<div class="ctas-workspace__actions"><button type="button" data-close-candidate>Back to catalog</button><details class="ctas-more-actions"><summary>More actions</summary><div><button type="button" data-copy-link>Copy link</button><button type="button" data-download-candidate>Download JSON</button><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></details></div>' + renderScienceBrief(candidate) +
+      '<div class="ctas-workspace__actions"><button type="button" data-close-candidate>Close dossier</button><details class="ctas-more-actions"><summary>More actions</summary><div><button type="button" data-copy-link>Copy link</button><button type="button" data-download-candidate>Download JSON</button><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></details></div>' + renderScienceBrief(candidate) +
       '<dl class="ctas-detail__facts ctas-detail__facts--essential">' + fact("Event / messenger", humanKey(candidate.event_type || "Not recorded") + " · " + humanKey(candidate.primary_messenger || "Not recorded")) +
       fact("Reported class / alert label", candidate.classification || "Unclassified") +
       fact("Current record status", humanKey(candidate.status || "unknown")) +
@@ -1029,12 +1039,12 @@
       return Number.isFinite(discovery) && discovery >= cutoff;
     }).sort(function (a, b) { return Date.parse(b.discovery_time) - Date.parse(a.discovery_time); });
     var title = document.getElementById("ctas-stream-title");
-    if (title) title.textContent = "Reported in the last 24 hours (" + stream.length.toLocaleString() + ")";
-    el.stream.innerHTML = stream.map(function (candidate, index) {
+    if (title) title.textContent = "Latest 3 of " + stream.length.toLocaleString() + " reported in the last 24 hours";
+    el.stream.innerHTML = stream.slice(0, 3).map(function (candidate, index) {
       var counts = candidate.follow_up_counts || {};
       var evidence = [counts.observations ? counts.observations + " obs" : "", counts.spectra ? counts.spectra + " spectra" : "",
         counts.messenger_signals ? counts.messenger_signals + " notices" : "", counts.classifications ? counts.classifications + " classifications" : ""].filter(Boolean).join(" · ") || "event record only";
-      return '<li><span class="ctas-stream__number">0' + (index + 1) + '</span><div><button type="button" data-open-event="' + esc(candidate.event_id) + '"><strong>' + esc(candidate.name) + "</strong></button><p>" +
+      return '<li data-candidate-id="' + esc(candidate.event_id) + '"><span class="ctas-stream__number">0' + (index + 1) + '</span><div><button type="button" data-open-event="' + esc(candidate.event_id) + '"><strong>' + esc(candidate.name) + "</strong></button><p>" +
         esc(candidate.classification || "Unclassified") + " · " + esc(candidate.primary_messenger || "messenger unavailable") +
         "</p><small>" + esc(absolute(candidate.updated_at || candidate.discovery_time)) + " · " + esc(evidence) +
         '</small><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></div><strong class="ctas-stream__score">' + esc(num(candidate.ctas_score, 1)) + "<span>CTAS score</span></strong></li>";
@@ -1181,11 +1191,25 @@
     });
   }
 
+  function triageReasons(candidate) {
+    var counts = candidate.follow_up_counts || {}, reasons = [];
+    var discovered = Date.parse(candidate.discovery_time || "");
+    if (Number.isFinite(discovered) && discovered >= Date.now() - 86400000) reasons.push("New <24h");
+    if (!candidate.classification || candidate.classification === "Unclassified") reasons.push("Unclassified");
+    if (!Number(counts.spectra || 0)) reasons.push("No spectrum");
+    if (String(candidate.primary_messenger || "").toLowerCase() === "multimessenger" || (candidate.messenger_channels || []).length >= 2) reasons.push("Multimessenger");
+    if (Number(candidate.conflict_count || 0) > 0) reasons.push("Conflicting evidence");
+    return reasons.slice(0, 3);
+  }
+  function renderTriageReasons(candidate) {
+    var reasons = triageReasons(candidate);
+    return reasons.length ? reasons.map(function (reason) { return '<span class="ctas-reason">' + esc(reason) + "</span>"; }).join("") : '<span class="ctas-reason ctas-reason--quiet">Score-ranked</span>';
+  }
+
   var COLUMNS = [
-    {key: "name", label: "Candidate"}, {key: "classification", label: "Reported class / alert label"},
-    {key: "ctas_score", label: "CTAS score"}, {key: "record_completeness", label: "Public record"},
-    {key: "ra_deg", label: "ICRS position"}, {key: "discovery_time", label: "Reported discovery"},
-    {key: "discovery_magnitude", label: "Reported mag"}, {key: "discovery_survey", label: "Survey"},
+    {key: "name", label: "Candidate"}, {key: "ctas_score", label: "Score"},
+    {key: "triage", label: "Why now", nosort: true}, {key: "classification", label: "Reported class"},
+    {key: "discovery_time", label: "Age / magnitude"}, {key: "record_completeness", label: "Evidence"},
     {key: "links", label: "Original source", nosort: true}
   ];
   function renderTable() {
@@ -1213,15 +1237,15 @@
       var evidence = [counts.observations ? counts.observations + " obs" : "", counts.spectra ? counts.spectra + " spectra" : "",
         counts.messenger_signals ? counts.messenger_signals + " notices" : "", counts.publications ? counts.publications + " reports" : ""].filter(Boolean).join(" · ") || "event only";
       var label = candidate.classification || "Unclassified";
-      return "<tr><td><button type=\"button\" class=\"ctas-candidate\" data-open-event=\"" + esc(candidate.event_id) + "\"><span>" +
-        esc(candidate.name) + "</span><small>Open complete record</small></button><div class=\"ctas-card-actions\"><button type=\"button\" data-compare-event=\"" + esc(candidate.event_id) + "\" aria-pressed=\"false\">Compare</button><button type=\"button\" data-watch-event=\"" + esc(candidate.event_id) + "\" aria-pressed=\"false\">Watch locally</button></div></td><td><span class=\"pill\">" + esc(label) +
-        "</span><small class=\"ctas-label-kind\">" + esc(humanKey(candidate.reported_label_kind || "provider-reported")) +
-        "</small></td><td class=\"num\">" + esc(num(candidate.ctas_score, 1)) + "</td><td><strong>" +
-        esc((candidate.record_completeness || {}).label || "Not assessed") + "</strong><small class=\"ctas-table-sub\">" + esc(evidence) +
-        "</small></td><td class=\"num\">" + esc(sexagesimal(candidate.ra_deg, candidate.dec_deg)) + "</td><td>" +
-        esc(candidate.discovery_time ? absolute(candidate.discovery_time) : "—") + "</td><td class=\"num\">" +
-        esc(num(candidate.discovery_magnitude, 2) || "—") + "</td><td>" + esc(candidate.discovery_survey || "—") +
-        "</td><td>" + renderReferences(candidate.links || []) + "</td></tr>";
+      return '<tr data-candidate-id="' + esc(candidate.event_id) + '"><td><button type="button" class="ctas-candidate" data-open-event="' + esc(candidate.event_id) + '"><span>' +
+        esc(candidate.name) + '</span><small>' + esc(candidate.discovery_survey || "Survey unavailable") + " · " + esc(sexagesimal(candidate.ra_deg, candidate.dec_deg) || "position unavailable") +
+        '</small></button><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></td><td class="num ctas-score-cell">' + esc(num(candidate.ctas_score, 1)) +
+        '<small>ordering aid</small></td><td><div class="ctas-reasons">' + renderTriageReasons(candidate) + '</div></td><td><span class="pill">' + esc(label) +
+        '</span><small class="ctas-label-kind">' + esc(humanKey(candidate.reported_label_kind || "provider-reported")) +
+        '</small></td><td><strong>' + esc(candidate.discovery_time ? relative(candidate.discovery_time) : "Time unavailable") +
+        '</strong><small class="ctas-table-sub">' + esc(num(candidate.discovery_magnitude, 2) ? num(candidate.discovery_magnitude, 2) + " mag · source reported" : "Magnitude unavailable") +
+        '</small></td><td><strong>' + esc((candidate.record_completeness || {}).label || "Not assessed") + '</strong><small class="ctas-table-sub">' + esc(evidence) +
+        '</small></td><td>' + renderReferences(candidate.links || []) + "</td></tr>";
     }).join("");
     el.results.innerHTML = '<div class="ctas-table-wrap"><table class="ctas-table"><caption>Public CTAS candidates. Positions are ICRS; source-reported discovery magnitudes may use heterogeneous bands and systems.</caption><thead><tr>' +
       head + "</tr></thead><tbody>" + body + "</tbody></table></div>" + (rows.length > state.shown
@@ -1229,6 +1253,7 @@
           ? "Browse the complete retained catalog (" + rows.length.toLocaleString() + "; 100 at a time)"
           : "Show the next " + Math.min(PAGE, rows.length - state.shown).toLocaleString()) + "</button></p>" : "");
     if (window.CTASWorkbench && window.CTASWorkbench.refreshActions) window.CTASWorkbench.refreshActions();
+    repaintCandidateLinks(false);
   }
 
   function skyRows() {
@@ -1252,6 +1277,21 @@
     var stops = [[255, 211, 105], [88, 210, 226], [132, 94, 247]];
     var a = t < 0.5 ? stops[0] : stops[1], b = t < 0.5 ? stops[1] : stops[2], u = t < 0.5 ? t * 2 : (t - 0.5) * 2;
     return "rgb(" + a.map(function (value_, i) { return Math.round(value_ + (b[i] - value_) * u); }).join(",") + ")";
+  }
+  function emphasizedEventId() {
+    return state.focusedEventId || state.hoveredEventId ||
+      (state.activeSummary && state.activeSummary.event_id) ||
+      (state.skySelected && state.skySelected.event_id) || null;
+  }
+  function repaintCandidateLinks(redrawSky) {
+    var eventId = emphasizedEventId();
+    var unchanged = eventId === state.linkedHighlightId;
+    state.linkedHighlightId = eventId;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-candidate-id]"), function (element) {
+      element.classList.toggle("is-candidate-emphasized", Boolean(eventId && element.getAttribute("data-candidate-id") === eventId));
+      element.classList.toggle("is-active-candidate", Boolean(state.activeSummary && element.getAttribute("data-candidate-id") === state.activeSummary.event_id));
+    });
+    if (!unchanged || redrawSky === true) { if (redrawSky !== false) drawSky(); }
   }
   function drawCurve(context, samples, project) {
     context.beginPath();
@@ -1287,7 +1327,12 @@
     });
     state.skyPoints.forEach(function (point) {
       var selected = state.skySelected && state.skySelected.event_id === point.candidate.event_id;
-      context.beginPath(); context.arc(point.x, point.y, selected ? 6.5 : 4.2, 0, Math.PI * 2);
+      var emphasized = state.linkedHighlightId === point.candidate.event_id;
+      if (emphasized) {
+        context.beginPath(); context.arc(point.x, point.y, selected ? 10 : 8, 0, Math.PI * 2);
+        context.strokeStyle = "rgba(255,255,255,.9)"; context.lineWidth = 1.4; context.stroke();
+      }
+      context.beginPath(); context.arc(point.x, point.y, selected ? 6.5 : emphasized ? 5.4 : 4.2, 0, Math.PI * 2);
       context.fillStyle = magnitudeColor(point.candidate.discovery_magnitude); context.fill();
       context.strokeStyle = selected ? "#fff" : "rgba(255,255,255,.56)"; context.lineWidth = selected ? 2.2 : 0.7; context.stroke();
     });
@@ -1298,6 +1343,7 @@
       el.skyAccessible.innerHTML = '<option value="">Choose a plotted candidate…</option>' + rows.map(function (candidate) {
         return '<option value="' + esc(candidate.event_id) + '">' + esc(candidate.name + " — " + (candidate.classification || "Unclassified") + " — score " + num(candidate.ctas_score, 1)) + "</option>";
       }).join("");
+      if (state.skySelected && rows.some(function (candidate) { return candidate.event_id === state.skySelected.event_id; })) el.skyAccessible.value = state.skySelected.event_id;
     }
   }
   function nearestSkyPoint(event) {
@@ -1312,7 +1358,7 @@
   function selectSky(candidate, open, opener) {
     state.skySelected = candidate;
     state.skyKeyboardIndex = state.skyPoints.map(function (point) { return point.candidate.event_id; }).indexOf(candidate.event_id);
-    drawSky();
+    repaintCandidateLinks();
     if (open) openCandidate(candidate, true, opener, false);
   }
   function bindSky() {
@@ -1328,13 +1374,14 @@
     if (!el.sky) return;
     el.sky.addEventListener("pointermove", function (event) {
       var hit = nearestSkyPoint(event);
-      if (!hit) { el.skyTip.hidden = true; el.sky.style.cursor = "default"; return; }
+      if (!hit) { el.skyTip.hidden = true; el.sky.style.cursor = "default"; state.hoveredEventId = null; repaintCandidateLinks(); return; }
       var candidate = hit.point.candidate; el.sky.style.cursor = "pointer"; el.skyTip.hidden = false;
+      if (state.hoveredEventId !== candidate.event_id) { state.hoveredEventId = candidate.event_id; repaintCandidateLinks(); }
       el.skyTip.style.left = Math.min(hit.x + 14, el.sky.clientWidth - 220) + "px"; el.skyTip.style.top = Math.max(8, hit.y - 64) + "px";
       el.skyTip.innerHTML = "<strong>" + esc(candidate.name) + "</strong><span>" + esc(candidate.classification || "Unclassified") +
         " · reported mag " + esc(num(candidate.discovery_magnitude, 2) || "unknown") + "</span><span>" + esc(sexagesimal(candidate.ra_deg, candidate.dec_deg)) + "</span><span>Click to open the dossier and comparison controls</span>";
     });
-    el.sky.addEventListener("pointerleave", function () { el.skyTip.hidden = true; });
+    el.sky.addEventListener("pointerleave", function () { el.skyTip.hidden = true; state.hoveredEventId = null; repaintCandidateLinks(); });
     el.sky.addEventListener("click", function (event) { var hit = nearestSkyPoint(event); if (hit) selectSky(hit.point.candidate, true, el.sky); });
     el.sky.addEventListener("keydown", function (event) {
       var keys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "Enter", " "];
@@ -1359,8 +1406,6 @@
     });
     var timer;
     window.addEventListener("resize", function () { clearTimeout(timer); timer = setTimeout(drawSky, 120); });
-    var skyDetails = document.getElementById("celestial-sphere");
-    if (skyDetails) skyDetails.addEventListener("toggle", function () { if (skyDetails.open) setTimeout(drawSky, 0); });
   }
 
   function getJSON(name, attempts) {
@@ -1529,13 +1574,13 @@
     var focusReplacement = !quietRefresh || el.workspace.contains(document.activeElement);
     if (opener) rememberCandidateOpener(opener, summary);
     else if (!state.activeOpener) rememberCandidateOpener(null, summary);
-    state.activeSummary = summary; state.activeDetail = null; setCandidateRoute(summary, Boolean(replaceRoute));
+    state.activeSummary = summary; state.activeDetail = null; repaintCandidateLinks(); setCandidateRoute(summary, Boolean(replaceRoute));
     var requestedBand = new URL(window.location.href).searchParams.get("band");
     if (requestedBand) state.photBand[summary.event_id] = requestedBand;
     var requestedEventId = summary.event_id;
     el.workspace.hidden = false;
     el.workspace.innerHTML = '<div class="ctas-loading" role="status" aria-live="polite" tabindex="-1" data-dossier-focus><strong>Loading ' + esc(summary.name) + "…</strong><span>Fetching its checksum-bound public evidence shard.</span></div>";
-    if (scroll) el.workspace.scrollIntoView({behavior: reducedMotion() ? "auto" : "smooth", block: "start"});
+    if (scroll && !(window.matchMedia && window.matchMedia("(min-width: 961px)").matches)) el.workspace.scrollIntoView({behavior: reducedMotion() ? "auto" : "smooth", block: "start"});
     if (focusReplacement) focusDossierTarget();
     loadChunk(summary.detail_chunk).then(function (document_) {
       if (!state.activeSummary || state.activeSummary.event_id !== requestedEventId || el.workspace.hidden) return;
@@ -1553,7 +1598,7 @@
   }
   function closeCandidate() {
     var opener = state.activeOpener, summary = state.activeSummary;
-    state.activeSummary = null; state.activeDetail = null; el.workspace.hidden = true; el.workspace.innerHTML = "";
+    state.activeSummary = null; state.activeDetail = null; el.workspace.hidden = true; el.workspace.innerHTML = ""; repaintCandidateLinks();
     window.dispatchEvent(new CustomEvent("ctas:candidate-closed"));
     var url = new URL(window.location.href);
     ["event", "view", "band", "alias", "source", "candidate"].forEach(function (key) { url.searchParams.delete(key); });
@@ -1569,6 +1614,7 @@
     state.exportBusy = false;
     el.workspace.hidden = true;
     el.workspace.innerHTML = "";
+    repaintCandidateLinks();
   }
   function openRouteCandidate(scroll) {
     var route = routeMatches();
@@ -1703,10 +1749,30 @@
     if (el.coneDec) el.coneDec.addEventListener("input", function () { state.coneDec = inputNumber(el.coneDec); rerenderForFilters(); });
     if (el.coneRadius) el.coneRadius.addEventListener("input", function () { state.coneRadius = inputNumber(el.coneRadius); rerenderForFilters(); });
     if (el.clear) el.clear.addEventListener("click", clearFilters);
+    document.addEventListener("pointerover", function (event) {
+      var row = event.target.closest && event.target.closest("[data-candidate-id]");
+      if (!row || (event.relatedTarget && row.contains(event.relatedTarget))) return;
+      state.hoveredEventId = row.getAttribute("data-candidate-id"); repaintCandidateLinks();
+    });
+    document.addEventListener("pointerout", function (event) {
+      var row = event.target.closest && event.target.closest("[data-candidate-id]");
+      if (!row || (event.relatedTarget && row.contains(event.relatedTarget))) return;
+      state.hoveredEventId = null; repaintCandidateLinks();
+    });
+    document.addEventListener("focusin", function (event) {
+      var row = event.target.closest && event.target.closest("[data-candidate-id]");
+      if (!row) return; state.focusedEventId = row.getAttribute("data-candidate-id"); repaintCandidateLinks();
+    });
+    document.addEventListener("focusout", function (event) {
+      var row = event.target.closest && event.target.closest("[data-candidate-id]");
+      if (!row || (event.relatedTarget && row.contains(event.relatedTarget))) return;
+      state.focusedEventId = null; repaintCandidateLinks();
+    });
     Array.prototype.forEach.call(document.querySelectorAll("[data-preset]"), function (button) {
       button.addEventListener("click", function () {
         state.preset = button.getAttribute("data-preset") || "all"; state.shown = PAGE;
         if (["all", "priority", "needs-follow-up"].indexOf(state.preset) !== -1) { state.sortKey = "ctas_score"; state.sortDir = -1; }
+        if (state.preset === "today") { state.sortKey = "discovery_time"; state.sortDir = -1; }
         if (state.preset === "newest") state.sortKey = "discovery_time";
         if (state.preset === "updated") state.sortKey = "updated_at";
         if (state.preset === "classified") state.sortKey = "latest_classification_at";

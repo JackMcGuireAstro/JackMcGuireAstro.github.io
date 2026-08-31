@@ -15,6 +15,7 @@
   function matchesPreset(candidate, preset, now) {
     var current = Number(now === undefined ? Date.now() : now);
     var sevenDays = current - 7 * 86400000;
+    var oneDay = current - 86400000;
     var thirtyDays = current - 30 * 86400000;
     var counts = candidate.follow_up_counts || {};
     var completeness = candidate.record_completeness || {};
@@ -26,6 +27,7 @@
     var messenger = date(candidate.latest_messenger_at);
 
     if (!preset || preset === "all" || preset === "priority") return true;
+    if (preset === "today") return Boolean(discovered && discovered.getTime() >= oneDay);
     if (preset === "newest") return Boolean(discovered && discovered.getTime() >= thirtyDays);
     if (preset === "updated") return Boolean(updated && updated.getTime() >= sevenDays);
     if (preset === "classified") return Boolean(classified && classified.getTime() >= sevenDays);
