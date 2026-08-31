@@ -2,57 +2,57 @@
   "artifacts": {
     "alias_index": {
       "path": "ctas/data/alias-index.json",
-      "sha256": "56c6f253658a69ae228a94e69d4ccce79ddf6448d76888799c4f9ca5a9364715"
+      "sha256": "be7f44eaa528d57777a871d3a454f2d0461bd4331abb4d786b65e1c60746a1f8"
     },
     "catalog_bootstrap": {
       "path": "ctas/data/catalog-bootstrap.json",
-      "sha256": "543290dcbada9f108870643383537dcba2870f005d2a6fd8197e4f1e6d36f733"
+      "sha256": "03fd35c766241fc7e5d11c031db4b50e043300557aa8c6f2b949aca593949e41"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "543290dcbada9f108870643383537dcba2870f005d2a6fd8197e4f1e6d36f733"
+      "sha256": "03fd35c766241fc7e5d11c031db4b50e043300557aa8c6f2b949aca593949e41"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "a5ead2c56c7909dbcd1ca7c9647adc52d5b7c1833985539d743fd2e6c750ff76"
+      "report_checksum_sha256": "d4183db541cda8a16fa27517b69e0b799cdbae5c2b9ec4681e69fb1891db7688"
     },
     "complete_catalog_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "c826c92f102caf638896eba44da6b435df02293aef0e73c19028d670cf696a69"
+      "sha256": "2551c9dae70dd79d478cc8498dba15bd4f4d4732b5abce3a0b3593279a25b3bc"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "f995422c1079cb1f563198d6e65246e6e762952b61d77e487cd1577b6849bcd3"
+      "sha256": "82856f08324e8716a2a51d492e1dac596a3b97192c30b92c211ad98e87dc0a57"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "062a7972ab94fcfc98d7f152e1488c1b0dc953f9cc963b44fc33a0b843694578"
+      "sha256": "5f466c80ccf3f66c4750b23ca04e3efb2ad1ac461ce77a14c344c8091ae2c42e"
     },
     "research_tables": {
       "path": "ctas/data/research/manifest.json",
-      "sha256": "6897233a21e5196dce1c27d49938d643e449997cb8ce75be018369f6e35ba586"
+      "sha256": "4abfd96418daf734d56cc3148849cdd9c3e2254982a707175d4cf4bdc64422cc"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "b80af0dd7306e88b84b051fae27b945436b0252d17221a54406bd3ac207bfbf9"
+      "sha256": "2c0f67418fd55cb047e9a71640923b73974fd5624bc20b8abf4f5843813a9cfb"
     }
   },
   "cadence": "about every 2 minutes",
   "candidate_count": 3121,
-  "catalog_content_checksum_sha256": "aeef8ce7d7d7d5e5ed5f4e0e25f39495ac754f31da267ff0507c6f2ef7eece9f",
+  "catalog_content_checksum_sha256": "24d5e361c5f1fe963da87666585394a58b2e2bd90326c0348c9f9258e30d31c3",
   "degraded_source_count": 3,
-  "export_checked_at": "2026-08-31T01:42:51Z",
-  "last_successful_update": "2026-08-31T01:42:51Z",
-  "latest_record_update": "2026-08-31T01:36:13.252918Z",
+  "export_checked_at": "2026-08-31T01:49:18Z",
+  "last_successful_update": "2026-08-31T01:49:18Z",
+  "latest_record_update": "2026-08-31T01:42:43.649700Z",
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "11a4831ecf753b43615a1599a18c301f0a7be2af0b552486cb6287302a9c2e2e",
+  "publication_state_checksum_sha256": "e689213f67c51d56705cd68c4dbc9aae584e1892d884fc2ec37399c1cfeb849e",
   "schema_version": 2,
   "source_accounting": {
     "applicableSourceEvaluations": 168440,
     "dataBearingSourceEvaluations": 4385,
     "declaredSources": 82,
-    "executedQueryReceipts": 30608,
+    "executedQueryReceipts": 30609,
     "outcomeCounts": {
       "AMBIGUOUS": 115,
       "DATA_RETURNED": 923,
@@ -67,7 +67,7 @@
   },
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "contract_set_checksum_sha256": "98ed00be7e4f803e1267fa350bc4acadad4b1e83d68c03039c1e33a48199ffcd",
+    "contract_set_checksum_sha256": "91e7074115f162f30db320c50914d8a72e067d5f8afb3ec3db6195b4a856f0a0",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 82
   },
@@ -489,7 +489,7 @@
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
       "record_counts": {
-        "observations": 3209
+        "observations": 3211
       },
       "source": "rubin-fink",
       "state": "connected"
@@ -1439,13 +1439,13 @@
   ],
   "static_snapshot_verification": {
     "check_count": 36,
-    "content_release_id": "1420083d7ba1f67ee2841701e5a73aefd22c76e2527a0a05dcb165a1bb92554a",
+    "content_release_id": "26d4965e93e19b94c3c4460c6c69547677dcf8936fe35b9248a52f031c846bcf",
     "failed_gate_ids": [],
     "passed_check_count": 36,
-    "report_checksum_sha256": "a5ead2c56c7909dbcd1ca7c9647adc52d5b7c1833985539d743fd2e6c750ff76",
+    "report_checksum_sha256": "d4183db541cda8a16fa27517b69e0b799cdbae5c2b9ec4681e69fb1891db7688",
     "schema": "ctas.static-snapshot-verification@1.1.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-31T02:12:51Z"
+    "valid_until": "2026-08-31T02:19:18Z"
   },
   "statistics": {
     "archive_products": 0,
@@ -1479,7 +1479,7 @@
       "radio": 60,
       "x-ray": 37
     },
-    "observations": 13496,
+    "observations": 13498,
     "priority_bands": {
       "high_50_74": 2565,
       "low_0_24": 21,
@@ -1494,7 +1494,7 @@
       "applicableSourceEvaluations": 168440,
       "dataBearingSourceEvaluations": 4385,
       "declaredSources": 82,
-      "executedQueryReceipts": 30608,
+      "executedQueryReceipts": 30609,
       "outcomeCounts": {
         "AMBIGUOUS": 115,
         "DATA_RETURNED": 923,
@@ -1651,5 +1651,5 @@
       "survey": "TESSELLATE"
     }
   ],
-  "valid_until": "2026-08-31T02:12:51Z"
+  "valid_until": "2026-08-31T02:19:18Z"
 }
