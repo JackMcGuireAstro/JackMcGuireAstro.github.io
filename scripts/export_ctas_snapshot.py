@@ -413,6 +413,28 @@ def tns_object_id(value: str) -> str | None:
     return match.group(1) if match else None
 
 
+def conflicting_tns_object_ids(alias_rows: Any) -> list[str]:
+    """Return every distinct TNS object asserted as *preferred* for one event.
+
+    Two separately designated TNS objects must never collapse into one public
+    identity.  A record still carrying more than one preferred TNS designation
+    is an unresolved association, not a formatting problem, so CTAS fails
+    closed: it publishes no object-specific TNS link for that record and states
+    the ambiguity instead of guessing which object a reader wanted.
+    """
+
+    object_ids: set[str] = set()
+    for row in alias_rows:
+        if str(row["provider"] or "").strip().lower() != "tns":
+            continue
+        if not row["is_preferred"]:
+            continue
+        object_id = tns_object_id(str(row["external_id"] or ""))
+        if object_id:
+            object_ids.add(object_id)
+    return sorted(object_ids)
+
+
 def candidate_bucket(identity: str) -> str:
     """Return a stable UUID-derived bucket so renames do not move dossiers."""
 
@@ -1098,6 +1120,13 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         ):
             alias_map.setdefault(a["event_id"], []).append(a)
 
+    # Unresolved provider identity is fail-closed, never silently resolved.
+    ambiguous_tns_identity: dict[str, list[str]] = {}
+    for event_id, alias_rows in alias_map.items():
+        object_ids = conflicting_tns_object_ids(alias_rows)
+        if len(object_ids) > 1:
+            ambiguous_tns_identity[str(event_id)] = object_ids
+
     classifications = rows_by_event(
         cur,
         ids,
@@ -1501,7 +1530,14 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
                 "is_preferred": bool(a["is_preferred"]),
                 "asserted_at": iso(a["created_at"]),
             }
-            if template:
+            if provider == "tns" and str(r["id"]) in ambiguous_tns_identity:
+                entry["identity_ambiguous"] = True
+                entry["link_suppressed_reason"] = (
+                    "This record still carries more than one preferred TNS designation "
+                    f"({', '.join(ambiguous_tns_identity[str(r['id'])])}); CTAS publishes no "
+                    "object-specific TNS link until the association is resolved."
+                )
+            elif template:
                 linked_id = tns_object_id(str(ext)) if provider == "tns" else str(ext)
                 if linked_id:
                     entry["url"] = template.format(id=linked_id)
@@ -1570,9 +1606,13 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             ledger = evidence_by_provider.setdefault(provider, {"count": 0, "types": {}, "url": None})
             ledger["count"] += 1
             ledger["types"]["designations"] = ledger["types"].get("designations", 0) + 1
-            if provider == "tns":
+            if provider == "tns" and str(r["id"]) not in ambiguous_tns_identity:
                 linked_id = tns_object_id(str(alias["external_id"] or ""))
-                if linked_id:
+                own_id = tns_object_id(str(r["preferred_name"] or ""))
+                # The coverage row carries no designation of its own, so a
+                # mismatched object id would read as this candidate's TNS
+                # record.  Never let a later alias overwrite the ledger.
+                if linked_id and own_id in (None, linked_id):
                     ledger["url"] = PUBLIC_LINKS["tns"][1].format(id=linked_id)
 
         coverage = []
@@ -1731,7 +1771,31 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
                     "alias": value,
                     "provider_bindings": {provider: sorted(bound_ids) for provider, bound_ids in sorted(provider_sets.items())},
                 })
-        state = "CONFLICTING" if provider_disagreements else "AMBIGUOUS" if scoped_conflicts or unscoped_collisions else "RESOLVED"
+        designation_conflicts = []
+        preferred_by_provider: dict[str, set[str]] = {}
+        for alias in candidate.get("designations", []):
+            if not alias.get("is_preferred"):
+                continue
+            provider = str(alias.get("source_key") or "").strip().casefold()
+            designation = str(alias.get("designation") or "").strip()
+            key = tns_object_id(designation) if provider == "tns" else designation.casefold()
+            if provider and key:
+                preferred_by_provider.setdefault(provider, set()).add(key)
+        for provider, keys in sorted(preferred_by_provider.items()):
+            if len(keys) > 1:
+                designation_conflicts.append({
+                    "source_key": provider,
+                    "object_ids": sorted(keys),
+                    "resolution": (
+                        "Fail closed: CTAS publishes no object-specific link for this "
+                        "record until the association is reconciled at the source."
+                    ),
+                })
+        state = (
+            "CONFLICTING" if provider_disagreements or designation_conflicts
+            else "AMBIGUOUS" if scoped_conflicts or unscoped_collisions
+            else "RESOLVED"
+        )
         candidate["identity_resolution"] = {
             "schema": "ctas.provider-scoped-identity@1.0.0",
             "state": state,
@@ -1739,6 +1803,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             "scoped_alias_conflicts": scoped_conflicts,
             "unscoped_alias_collisions": unscoped_collisions,
             "provider_disagreements": provider_disagreements,
+            "provider_designation_conflicts": designation_conflicts,
         }
 
     provider_counts: dict[str, dict[str, int]] = {}
