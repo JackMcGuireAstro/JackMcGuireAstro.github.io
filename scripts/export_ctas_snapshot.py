@@ -824,128 +824,408 @@ def completeness_for(candidate: dict[str, Any]) -> dict[str, Any]:
 
 
 def score_explanation_for(candidate: dict[str, Any]) -> str:
-    """Explain published score factors without interpreting scientific merit."""
+    """State the arithmetic this release performed, and nothing beyond it."""
 
-    labels = {
-        "recency_points": "recency",
-        "brightness_points": "reported discovery brightness",
-        "classification_gap_points": "missing classification",
-        "classification_conflict_points": "classification conflict",
-        "spectroscopy_gap_points": "no retained public spectrum",
-        "observation_gap_points": "time since retained observation",
-        "multimessenger_points": "multiple messenger information",
-        "coverage_reduction": "existing quantitative observation coverage",
-    }
-    factors = candidate.get("score_factors", {})
+    model = candidate.get("score_model") or {}
+    if model.get("status_override"):
+        return (
+            f"This record is {model['status_override']}; the review score is held at 0 and it is "
+            "excluded from the follow-up leaderboard."
+        )
+    applied = [
+        term for term in model.get("terms", [])
+        if term.get("applicable") and abs(float(term.get("points") or 0.0)) >= 0.005
+    ]
     parts = []
-    for key, label in labels.items():
-        value = factors.get(key)
-        try:
-            number = float(value)
-        except (TypeError, ValueError):
-            continue
-        if abs(number) < 1e-9:
-            continue
-        if key == "coverage_reduction":
-            parts.append(f"{label} reduces the score by {abs(number):g} points")
-        else:
-            direction = "adds" if number > 0 else "reduces by"
-            parts.append(f"{label} {direction} {abs(number):g} points")
-    if factors.get("status"):
-        parts.append(f"the {factors['status']} status applies an override")
-    if not parts:
-        return "The published factor record contains no non-zero adjustment beyond the CTAS baseline."
-    return "The published factor record shows that " + "; ".join(parts) + "."
+    for term in applied:
+        points = float(term["points"])
+        verb = "adds" if points > 0 else "reduces the score by"
+        parts.append(f"{term['label'].lower()} {verb} {abs(points):g}")
+    bonus = float(model.get("multimessenger_bonus") or 0.0)
+    if bonus:
+        parts.append(f"two or more retained messenger channels add {bonus:g}")
+    skipped = [row["label"].lower() for row in model.get("not_applicable", [])]
+    sentence = (
+        f"From a {model.get('baseline', SCORE_BASELINE):g}-point baseline, " + "; ".join(parts) + "."
+        if parts else
+        f"No term adjusted the {model.get('baseline', SCORE_BASELINE):g}-point baseline."
+    )
+    if skipped:
+        sentence += (
+            " Not applicable to this kind of record: " + ", ".join(sorted(set(skipped))) + "."
+        )
+    return sentence
 
 
-SCORE_TERM_DEFINITIONS = (
-    ("recency_points", "Recency", 1.0, "source-reported discovery time"),
-    ("brightness_points", "Reported brightness", 1.0, "source-reported discovery magnitude"),
-    ("classification_gap_points", "Missing classification", 1.0, "retained classification state"),
-    ("classification_conflict_points", "Classification conflict", 1.0, "retained active classification assertions"),
-    ("spectroscopy_gap_points", "Missing spectrum", 1.0, "retained public spectrum count"),
-    ("coverage_reduction", "Existing observation coverage", -1.0, "retained quantitative observation count"),
-    ("observation_gap_points", "Observation age", 1.0, "latest retained observation time"),
-)
+SCORE_METHOD_VERSION = "ctas.follow-up-score@2.0.0"
+SCORE_BASELINE = 35.0
+SCORE_VALIDITY_MINUTES = 30
+# Spectroscopy is a meaningful gap only where a spectrum of *this* source is the
+# observation a follow-up programme would take.  A neutrino track, a fast radio
+# burst, a raw detector trigger, a terrestrial flash and a solar flare have no
+# such spectrum to be missing, so awarding "no retained public spectrum" points
+# to them ranked them for an observation nobody would schedule.
+SPECTROSCOPY_APPLICABLE_CHANNELS = frozenset({"optical"})
+# A follow-up gap is a reason to observe only while there is still something to
+# observe.  Recomputing recency honestly removed the one term that favoured new
+# records, and left a leaderboard whose median discovery age was over four
+# years: an unclassified 2021 transient collected the full "missing
+# classification", "missing spectrum" and "observation age" weight forever,
+# because nothing had been observed since.  Those terms describe a live target,
+# so beyond this window they are reported as not applicable — with the window
+# stated — instead of silently ranking archival records above tonight's
+# discoveries.  This is an operational ranking policy, not a physical claim,
+# and it is versioned with the score method.
+FOLLOW_UP_WINDOW_DAYS = 180.0
+CLASSIFICATION_APPLICABLE_ROLES = frozenset({"follow-up-target-candidate"})
+UNCLASSIFIED_LABELS = frozenset({"", "unclassified", "unknown", "at", "candidate"})
 
 
-def score_model_for(candidate: dict[str, Any]) -> dict[str, Any]:
-    """Reconstruct the operational follow-up score from its persisted factors.
+def _score_term(
+    code: str, label: str, points: float, basis: str, applicable: bool,
+    reason: str | None = None,
+) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "code": code,
+        "label": label,
+        "points": round(float(points), 2) if applicable else 0.0,
+        "basis": basis,
+        "applicable": bool(applicable),
+    }
+    if not applicable:
+        row["not_applicable_because"] = reason or "This term does not apply to this kind of record."
+    return row
 
-    Terminal source states are applied last.  This deliberately repairs legacy
-    rows created before that ordering was enforced in the ingestion service;
-    every other mismatch remains fail-closed through the release gate.
+
+def _active_classification_labels(candidate: dict[str, Any]) -> list[str]:
+    """Return the labels a reader would see as currently asserted.
+
+    A retracted or superseded row is not an active assertion, and a label
+    carried at zero probability is a stated alternative that the provider has
+    ruled out — neither can contradict anything.
     """
 
-    factors = dict(candidate.get("score_factors") or {})
-    terms: list[dict[str, Any]] = []
-    for code, label, sign, basis in SCORE_TERM_DEFINITIONS:
-        raw = factors.get(code, 0.0)
-        try:
-            points = sign * float(raw or 0.0)
-        except (TypeError, ValueError):
-            points = 0.0
-        terms.append({
-            "code": code,
-            "label": label,
-            "points": round(points, 2),
-            "basis": basis,
-        })
+    labels: list[str] = []
+    for row in (candidate.get("follow_up") or {}).get("classifications", []):
+        if row.get("retracted") or row.get("superseded"):
+            continue
+        probability = row.get("probability")
+        if probability is not None:
+            try:
+                if float(probability) <= 0.0:
+                    continue
+            except (TypeError, ValueError):
+                pass
+        label = str(row.get("classification") or "").strip().casefold()
+        if label and label not in UNCLASSIFIED_LABELS:
+            labels.append(label)
+    return labels
 
-    baseline = 35.0
+
+def _classifications_are_incompatible(labels: list[str]) -> bool:
+    """True only when two active labels cannot both describe the same object.
+
+    A subtype refinement is not a contradiction, so a label that extends
+    another (SN Ia and SN Ia-91T) is treated as one assertion.
+    """
+
+    distinct = sorted(set(labels))
+    for index, first in enumerate(distinct):
+        for second in distinct[index + 1:]:
+            if not (first.startswith(second) or second.startswith(first)):
+                return True
+    return False
+
+
+def _retained_messenger_channels(candidate: dict[str, Any]) -> list[str]:
+    follow_up = candidate.get("follow_up") or {}
+    counts = candidate.get("follow_up_counts") or {}
+    channels: set[str] = set()
+    for row in follow_up.get("messenger_signals", []):
+        messenger = str(row.get("messenger") or "").strip().casefold()
+        if messenger:
+            channels.add(messenger)
+    if int(counts.get("observations") or 0) or int(counts.get("spectra") or 0):
+        channels.add("electromagnetic")
+    return sorted(channels)
+
+
+def _latest_retained_observation(candidate: dict[str, Any]) -> datetime | None:
+    latest: datetime | None = None
+    for row in (candidate.get("follow_up") or {}).get("observations", []):
+        if row.get("superseded"):
+            continue
+        parsed = parse_utc(row.get("observed_at"))
+        if parsed is not None and (latest is None or parsed > latest):
+            latest = parsed
+    return latest
+
+
+def score_model_for(candidate: dict[str, Any], as_of: datetime) -> dict[str, Any]:
+    """Recompute the review-ordering score for THIS release.
+
+    Every time-dependent term is evaluated against ``as_of``.  The persisted
+    factor record is written once at ingestion, so reusing it froze recency at
+    whatever the clock said when the record last changed: a candidate
+    discovered on 2 August still carried its full first-day recency weight a
+    month later, and the audited Top 100 had a median discovery age of about
+    18 days.  A score is only meaningful with the clock it was computed for, so
+    it is published with ``score_as_of`` and a validity window.
+    """
+
+    role = str(candidate.get("record_role") or "")
+    channel = str(candidate.get("ranking_channel") or "")
+    status = str(candidate.get("status") or "candidate").lower()
+    persisted = dict(candidate.get("score_factors") or {})
+    counts = candidate.get("follow_up_counts") or {}
+    terms: list[dict[str, Any]] = []
+
+    latest_observation = _latest_retained_observation(candidate)
+    newest_evidence = max(
+        [value for value in (parse_utc(candidate.get("discovery_time")), latest_observation)
+         if value is not None],
+        default=None,
+    )
+    evidence_age_days = (
+        None if newest_evidence is None
+        else max(0.0, (as_of - newest_evidence).total_seconds() / 86400.0)
+    )
+    followable = evidence_age_days is not None and evidence_age_days <= FOLLOW_UP_WINDOW_DAYS
+    stale_reason = (
+        f"The newest retained evidence for this record is {evidence_age_days:.0f} days old, "
+        f"beyond the {FOLLOW_UP_WINDOW_DAYS:.0f}-day follow-up window, so a follow-up gap is "
+        "not a reason to observe it tonight."
+        if evidence_age_days is not None else
+        "No retained clock places this record inside the follow-up window."
+    )
+
+    # --- recency, from the release clock ---------------------------------
+    discovered = parse_utc(candidate.get("discovery_time"))
+    age_hours: float | None = None
+    if discovered is None:
+        terms.append(_score_term(
+            "recency_points", "Recency", 0.0, "source-reported discovery time", False,
+            "No source-reported discovery time is retained for this record.",
+        ))
+    else:
+        age_hours = max(0.0, (as_of - discovered).total_seconds() / 3600.0)
+        terms.append(_score_term(
+            "recency_points", "Recency",
+            max(0.0, 24.0 - min(24.0, age_hours / 3.0)),
+            f"source-reported discovery time, {age_hours:.2f} h before this release",
+            True,
+        ))
+
+    # --- reported discovery brightness -----------------------------------
+    magnitude = candidate.get("discovery_magnitude")
+    if magnitude is None:
+        terms.append(_score_term(
+            "brightness_points", "Reported brightness", 0.0,
+            "source-reported discovery magnitude", False,
+            "No source-reported discovery magnitude is retained for this record.",
+        ))
+    elif not followable:
+        terms.append(_score_term(
+            "brightness_points", "Reported brightness", 0.0,
+            "source-reported discovery magnitude", False, stale_reason,
+        ))
+    else:
+        terms.append(_score_term(
+            "brightness_points", "Reported brightness",
+            max(-8.0, min(20.0, (21.0 - float(magnitude)) * 2.5)),
+            f"source-reported discovery magnitude {float(magnitude):.4g}", True,
+        ))
+
+    # --- missing classification ------------------------------------------
+    classified = str(candidate.get("classification") or "").strip().casefold() not in UNCLASSIFIED_LABELS
+    if role not in CLASSIFICATION_APPLICABLE_ROLES:
+        terms.append(_score_term(
+            "classification_gap_points", "Missing classification", 0.0,
+            "retained classification state", False,
+            f"A {role.replace('-', ' ')} is not ranked by whether it carries an "
+            "astronomical classification.",
+        ))
+    elif not followable:
+        terms.append(_score_term(
+            "classification_gap_points", "Missing classification", 0.0,
+            "retained classification state", False, stale_reason,
+        ))
+    else:
+        terms.append(_score_term(
+            "classification_gap_points", "Missing classification",
+            0.0 if classified else 12.0, "retained classification state", True,
+        ))
+
+    # --- classification conflict -----------------------------------------
+    active_labels = _active_classification_labels(candidate)
+    conflict = _classifications_are_incompatible(active_labels)
+    terms.append(_score_term(
+        "classification_conflict_points", "Classification conflict",
+        8.0 if conflict else 0.0,
+        f"{len(set(active_labels))} active classification assertion(s) with non-zero probability",
+        True,
+    ))
+
+    # --- missing spectrum -------------------------------------------------
+    spectroscopy_applies = (
+        role in CLASSIFICATION_APPLICABLE_ROLES and channel in SPECTROSCOPY_APPLICABLE_CHANNELS
+    )
+    has_spectrum = int(counts.get("spectra") or 0) > 0
+    if spectroscopy_applies and not followable:
+        terms.append(_score_term(
+            "spectroscopy_gap_points", "Missing spectrum", 0.0,
+            "retained public spectrum count", False, stale_reason,
+        ))
+    elif not spectroscopy_applies:
+        terms.append(_score_term(
+            "spectroscopy_gap_points", "Missing spectrum", 0.0,
+            "retained public spectrum count", False,
+            "Spectroscopy of this record is not the observation a follow-up "
+            f"programme would schedule for a {role.replace('-', ' ')} in the "
+            f"{channel.replace('-', ' ')} channel.",
+        ))
+    else:
+        terms.append(_score_term(
+            "spectroscopy_gap_points", "Missing spectrum",
+            0.0 if has_spectrum else 7.0, "retained public spectrum count", True,
+        ))
+
+    # --- existing observation coverage ------------------------------------
+    observation_count = int(counts.get("observations") or 0)
+    terms.append(_score_term(
+        "coverage_reduction", "Existing observation coverage",
+        -min(12.0, observation_count * 1.5),
+        f"{observation_count} retained quantitative observation(s)", True,
+    ))
+
+    # --- time since the last retained observation --------------------------
+    if latest_observation is None:
+        terms.append(_score_term(
+            "observation_gap_points", "Observation age", 0.0,
+            "latest retained observation time", False,
+            "No retained observation clock exists for this record.",
+        ))
+        gap_hours = None
+    elif not followable:
+        terms.append(_score_term(
+            "observation_gap_points", "Observation age", 0.0,
+            "latest retained observation time", False, stale_reason,
+        ))
+        gap_hours = None
+    else:
+        gap_hours = max(0.0, (as_of - latest_observation).total_seconds() / 3600.0)
+        terms.append(_score_term(
+            "observation_gap_points", "Observation age", min(10.0, gap_hours / 12.0),
+            f"latest retained observation, {gap_hours:.2f} h before this release", True,
+        ))
+
+    # --- messenger diversity ----------------------------------------------
+    channels = _retained_messenger_channels(candidate)
+    if len(channels) >= 2:
+        messenger_bonus = min(20.0, 4.0 * len(channels))
+        messenger_note = "retained channels: " + ", ".join(channels)
+    else:
+        messenger_bonus = 0.0
+        messenger_note = (
+            "One retained channel"
+            + (f" ({channels[0]})" if channels else "")
+            + "; a diversity bonus requires at least two independently retained channels."
+        )
+
+    baseline = SCORE_BASELINE
     core_preclip = baseline + sum(float(term["points"]) for term in terms)
     core_postclip = max(0.0, min(100.0, core_preclip))
-    try:
-        messenger_bonus = float(factors.get("multimessenger_points") or 0.0)
-    except (TypeError, ValueError):
-        messenger_bonus = 0.0
-    status = str(candidate.get("status") or "candidate").lower()
     status_override = status if status in {"retracted", "bogus"} else None
+    if role == "retracted-event":
+        status_override = status_override or "retracted"
+    final_preclip = core_postclip + messenger_bonus
+    final_score = round(0.0 if status_override else max(0.0, min(100.0, final_preclip)), 2)
+
     try:
         recorded = round(float(candidate.get("ctas_score") or 0.0), 2)
     except (TypeError, ValueError):
         recorded = 0.0
-    final_from_terms = core_postclip + messenger_bonus
-    calculated = round(0.0 if status_override else max(0.0, min(100.0, final_from_terms)), 2)
-    # Persisted factors are rounded to hundredths independently of the score.
-    # Retain an explicit one-cent reconciliation residual rather than implying
-    # that the displayed rounded terms had more precision than they do.
-    rounding_residual = 0.0
-    if not status_override and abs(recorded - calculated) <= 0.011:
-        rounding_residual = round(recorded - calculated, 2)
-    final_preclip = final_from_terms + rounding_residual
-    calculated = round(0.0 if status_override else max(0.0, min(100.0, final_preclip)), 2)
-    corrected_terminal_legacy = bool(status_override and abs(recorded - calculated) > 0.01)
-    if corrected_terminal_legacy:
-        candidate["ctas_score"] = calculated
-        factors["status"] = status_override
-        candidate["score_factors"] = factors
-    published = round(float(candidate.get("ctas_score") or 0.0), 2)
-    reconciled = abs(published - calculated) <= 0.01
+
+    why_now: list[str] = []
+    if status_override:
+        why_now.append(f"Reported {status_override}; held out of the follow-up leaderboard.")
+    else:
+        if not followable:
+            why_now.append(
+                f"Archival: newest retained evidence is {evidence_age_days:.0f} days old."
+                if evidence_age_days is not None else
+                "Archival: no retained clock places this record in the follow-up window."
+            )
+        if age_hours is not None and age_hours <= 72.0:
+            why_now.append(f"Reported {age_hours:.0f} h ago.")
+        if magnitude is not None and float(magnitude) <= 18.0:
+            why_now.append(f"Reported at magnitude {float(magnitude):.2f}.")
+        if spectroscopy_applies and not has_spectrum:
+            why_now.append("No public spectrum is retained yet.")
+        if role in CLASSIFICATION_APPLICABLE_ROLES and not classified:
+            why_now.append("No astronomical classification is retained yet.")
+        if conflict:
+            why_now.append("Active classification assertions disagree.")
+        if messenger_bonus:
+            why_now.append("More than one messenger channel is retained.")
+        if gap_hours is not None and gap_hours >= 48.0:
+            why_now.append(f"No retained observation for {gap_hours / 24.0:.0f} days.")
+    why_now = why_now[:3]
+
     return {
-        "schema": "ctas.follow-up-score@1.0.0",
+        "schema": SCORE_METHOD_VERSION,
+        "method_version": SCORE_METHOD_VERSION,
+        "record_role": role,
+        "ranking_channel": channel,
+        "follow_up_window_days": FOLLOW_UP_WINDOW_DAYS,
+        "evidence_age_days": None if evidence_age_days is None else round(evidence_age_days, 2),
+        "inside_follow_up_window": bool(followable),
+        "score_as_of": as_of.replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "valid_until": (
+            (as_of + timedelta(minutes=SCORE_VALIDITY_MINUTES))
+            .replace(microsecond=0).isoformat().replace("+00:00", "Z")
+        ),
+        "validity": "valid-for-this-release",
+        "default_leaderboard_eligible": bool(candidate.get("default_leaderboard_eligible")),
         "baseline": baseline,
         "terms": terms,
+        "applicable_terms": [term["code"] for term in terms if term["applicable"]],
+        "not_applicable": [
+            {
+                "code": term["code"],
+                "label": term["label"],
+                "reason": term["not_applicable_because"],
+            }
+            for term in terms if not term["applicable"]
+        ],
         "core_preclip": round(core_preclip, 2),
         "core_postclip": round(core_postclip, 2),
         "multimessenger_bonus": round(messenger_bonus, 2),
-        "persisted_factor_rounding_residual": rounding_residual,
+        "multimessenger_basis": messenger_note,
         "final_preclip": round(final_preclip, 2),
-        "final_score": calculated,
+        "final_score": final_score,
         "status_override": status_override,
-        "recorded_score_before_publication_correction": recorded,
-        "publication_correction_applied": corrected_terminal_legacy,
-        "reconciled": reconciled,
+        "recorded_score_at_ingest": recorded,
+        "recorded_factors_at_ingest": persisted,
+        "recomputed_for_this_release": True,
+        "reconciled": True,
         "tolerance": 0.01,
-        "score_method_version": factors.get("score_method_version") or "ctas-operational-score-v1",
-        "factor_record_as_of": factors.get("calculation_as_of") or candidate.get("updated_at"),
-        "factor_precision_note": (
-            "Persisted score factors are rounded to hundredths; a displayed residual of at most "
-            "0.01 reconciles their sum to the persisted score without inventing precision."
+        "why_now": why_now,
+        "arithmetic": (
+            f"{baseline:g} baseline "
+            + " ".join(
+                f"{'+' if float(term['points']) >= 0 else '-'} {abs(float(term['points'])):g}"
+                f" ({term['code']})"
+                for term in terms if term["applicable"]
+            )
+            + (f" + {messenger_bonus:g} (multimessenger_points)" if messenger_bonus else "")
+            + f" = {final_score:g}"
+            + (" -> 0 (terminal status override)" if status_override else "")
         ),
         "claim_boundary": (
-            "Operational follow-up ordering arithmetic only; not a probability, "
-            "classification confidence, or measure of scientific importance."
+            "A reproducible review-ordering aid computed for this release only; not a "
+            "probability, classification confidence, discovery authority, or measure of "
+            "scientific importance."
         ),
     }
 
@@ -1861,6 +2141,11 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             "non_claim": "Inclusion or positional context does not establish discovery, classification, counterpart, or host identity.",
         }
 
+        role, ranking_channel = record_role_for(rec)
+        rec["record_role"] = role
+        rec["ranking_channel"] = ranking_channel
+        rec["default_leaderboard_eligible"] = role in TARGET_ROLES
+
         out.append(rec)
 
     scoped_alias_bindings: dict[tuple[str, str], set[str]] = {}
@@ -2738,6 +3023,13 @@ def semantic_catalog_candidates(candidates: list[dict[str, Any]]) -> list[dict[s
             # The projection timestamp says when this export was assembled,
             # not that the underlying event evidence changed.
             astro_evidence.pop("generatedAt", None)
+        # The review score is recomputed against each release clock. Its
+        # inputs are all separately checksummed here, so including the ticking
+        # output would make every heartbeat look like a new catalog.
+        candidate.pop("ctas_score", None)
+        candidate.pop("score_model", None)
+        candidate.pop("score_explanation", None)
+        candidate.pop("score_factors", None)
         matrix = candidate.get("source_matrix")
         matrix_rows = matrix.get("rows", []) if isinstance(matrix, dict) else (matrix or [])
         for source_row in matrix_rows:
@@ -2954,11 +3246,12 @@ def main() -> int:
     # Reconstruct derived ranking arithmetic before any aggregate or recent
     # view is produced.  This also applies the documented terminal-state repair
     # to legacy rows that predate the ingestion-order fix.
+    generated_dt = datetime.now(UTC).replace(microsecond=0)
     for candidate in candidates:
-        candidate["score_model"] = score_model_for(candidate)
+        candidate["score_model"] = score_model_for(candidate, generated_dt)
+        candidate["ctas_score"] = candidate["score_model"]["final_score"]
         candidate["score_explanation"] = score_explanation_for(candidate)
 
-    generated_dt = datetime.now(UTC).replace(microsecond=0)
     generated_at = generated_dt.isoformat().replace("+00:00", "Z")
     payload = {
         "schema_version": SCHEMA_VERSION,
@@ -3300,20 +3593,10 @@ def main() -> int:
             "selectionProvenance": compatibility_metadata["selectionProvenance"],
         }
         candidate["evidence_timeline"] = timeline_for(candidate)
-        initial_score_model = candidate.get("score_model") or {}
-        recomputed_score_model = score_model_for(candidate)
-        if initial_score_model.get("publication_correction_applied"):
-            recomputed_score_model["recorded_score_before_publication_correction"] = (
-                initial_score_model.get("recorded_score_before_publication_correction")
-            )
-            recomputed_score_model["publication_correction_applied"] = True
-        candidate["score_model"] = recomputed_score_model
+        candidate["score_model"] = score_model_for(candidate, generated_dt)
+        candidate["ctas_score"] = candidate["score_model"]["final_score"]
         candidate["score_explanation"] = score_explanation_for(candidate)
         candidate["science_brief"] = science_brief_for(candidate)
-        role, channel = record_role_for(candidate)
-        candidate["record_role"] = role
-        candidate["ranking_channel"] = channel
-        candidate["default_leaderboard_eligible"] = role in TARGET_ROLES
         accounting_totals["applicableSourceEvaluations"] += int(accounting["applicableSources"])
         accounting_totals["executedQueryReceipts"] += int(accounting["executedQueryReceipts"])
         accounting_totals["dataBearingSourceEvaluations"] += int(accounting["dataBearingSources"])
@@ -4184,11 +4467,34 @@ def main() -> int:
         )
     )
     shard_target_integrity = bool(chunk_raw) and max(map(len, chunk_raw.values())) <= CANDIDATE_SHARD_TARGET_MAX_BYTES
-    score_reconciliation = all(
-        (candidate.get("score_model") or {}).get("reconciled") is True
-        and abs(float(candidate.get("ctas_score") or 0.0) - float((candidate.get("score_model") or {}).get("final_score") or 0.0)) <= 0.01
-        and (str(candidate.get("status") or "").lower() not in {"retracted", "bogus"} or float(candidate.get("ctas_score") or 0.0) == 0.0)
+    def _score_reproduces(candidate: dict[str, Any]) -> bool:
+        model = candidate.get("score_model") or {}
+        applied = [term for term in model.get("terms", []) if term.get("applicable")]
+        core = float(model.get("baseline", 0.0)) + sum(float(term["points"]) for term in applied)
+        final = max(0.0, min(100.0, max(0.0, min(100.0, core)) + float(model.get("multimessenger_bonus") or 0.0)))
+        if model.get("status_override"):
+            final = 0.0
+        return (
+            abs(round(final, 2) - float(model.get("final_score") or 0.0)) <= 0.01
+            and abs(float(candidate.get("ctas_score") or 0.0) - float(model.get("final_score") or 0.0)) <= 0.01
+            and model.get("score_as_of") == payload["generated_at"]
+            and (str(candidate.get("status") or "").lower() not in {"retracted", "bogus"}
+                 or float(candidate.get("ctas_score") or 0.0) == 0.0)
+        )
+
+    score_reconciliation = all(_score_reproduces(candidate) for candidate in candidates)
+    score_applicability = all(
+        all(
+            term["code"] != "spectroscopy_gap_points" or term["applicable"] is False
+            for term in (candidate.get("score_model") or {}).get("terms", [])
+        )
         for candidate in candidates
+        if str(candidate.get("ranking_channel") or "") != "optical"
+        or str(candidate.get("record_role") or "") != "follow-up-target-candidate"
+    ) and all(
+        float((candidate.get("score_model") or {}).get("multimessenger_bonus") or 0.0) == 0.0
+        for candidate in candidates
+        if len(_retained_messenger_channels(candidate)) < 2
     )
     science_brief_integrity = all(
         (candidate.get("science_brief") or {}).get("schema") == "ctas.candidate-science-brief@1.0.0"
@@ -4283,7 +4589,8 @@ def main() -> int:
         gate("live-summary-integrity", live_summary_integrity, f"{len(summary_ids)} summary records resolve, pages and manifest checksums agree, and no terrestrial, solar or retracted record enters the default leaderboard"),
         gate("detail-shard-performance-budget", shard_target_integrity, f"largest of {len(chunk_raw)} UUID shards is {max(map(len, chunk_raw.values()), default=0)} bytes; budget={CANDIDATE_SHARD_TARGET_MAX_BYTES}"),
         gate("github-blob-size-limit", artifact_size_integrity, f"every bound public artifact is below GitHub's {GITHUB_MAX_BLOB_BYTES}-byte limit"),
-        gate("score-arithmetic-reconciliation", score_reconciliation, f"{sum((candidate.get('score_model') or {}).get('reconciled') is True for candidate in candidates)}/{len(candidates)} scores reconstruct within 0.01 with terminal overrides applied last"),
+        gate("score-term-applicability", score_applicability, "missing-spectrum points are confined to optical follow-up target candidates and a messenger-diversity bonus requires two independently retained channels"),
+        gate("score-arithmetic-reconciliation", score_reconciliation, f"{len(candidates)} scores recomputed against this release clock ({payload['generated_at']}) and reproduced exactly from their applicable terms"),
         gate("candidate-science-brief-integrity", science_brief_integrity, f"{len(candidates)} deterministic known, uncertain, missing, and recent-change summaries"),
         gate("evidence-replay-no-future-leakage", replay_integrity, "historical availability uses provider-publication or CTAS-receipt clocks, never observation time alone"),
         gate("source-matrix-round-trip-integrity", source_matrix_round_trip, f"{len(candidates)} source matrices reproduce exactly from {len(source_matrix_patterns)} shared no-evidence patterns"),

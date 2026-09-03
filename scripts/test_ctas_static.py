@@ -11,6 +11,7 @@ import unittest
 import uuid
 import xml.etree.ElementTree as ET
 from copy import deepcopy
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -127,8 +128,13 @@ class DispositionAndLinkTests(unittest.TestCase):
         self.assertFalse(EXPORTER.recursive_safety_problems({"components": [{"id": "spectrum"}]}))
 
     def test_score_explanation_describes_coverage_as_a_reduction(self):
-        explanation = EXPORTER.score_explanation_for(event(score_factors={"coverage_reduction": 7.5}))
-        self.assertIn("reduces the score by 7.5 points", explanation)
+        candidate = event(follow_up_counts={"observations": 5, "spectra": 0, "messenger_signals": 0})
+        candidate["record_role"], candidate["ranking_channel"] = EXPORTER.record_role_for(candidate)
+        candidate["score_model"] = EXPORTER.score_model_for(
+            candidate, datetime(2026, 9, 3, tzinfo=timezone.utc)
+        )
+        explanation = EXPORTER.score_explanation_for(candidate)
+        self.assertIn("existing observation coverage reduces the score by 7.5", explanation)
         self.assertNotIn("coverage adds", explanation)
 
     def test_runtime_errors_are_sanitized_for_public_status(self):
@@ -150,52 +156,148 @@ class DispositionAndLinkTests(unittest.TestCase):
 
 
 class ScoreModelTests(unittest.TestCase):
-    def test_terminal_status_override_is_applied_last_and_repairs_legacy_score(self):
+    """The score is recomputed for each release, and only where it means something."""
+
+    RELEASE = datetime(2026, 9, 3, 0, 0, tzinfo=timezone.utc)
+
+    def scored(self, **updates):
+        candidate = event(**updates)
+        role, channel = EXPORTER.record_role_for(candidate)
+        candidate["record_role"] = role
+        candidate["ranking_channel"] = channel
+        candidate["default_leaderboard_eligible"] = role in EXPORTER.TARGET_ROLES
+        candidate["score_model"] = EXPORTER.score_model_for(candidate, self.RELEASE)
+        candidate["ctas_score"] = candidate["score_model"]["final_score"]
+        return candidate
+
+    def term(self, model, code):
+        return next(row for row in model["terms"] if row["code"] == code)
+
+    def test_recency_decays_with_wall_clock_alone(self):
+        """No candidate mutation, a later release, less recency."""
+        candidate = event(discovery_time="2026-09-02T12:00:00Z")
+        candidate["record_role"], candidate["ranking_channel"] = EXPORTER.record_role_for(candidate)
+        early = EXPORTER.score_model_for(candidate, datetime(2026, 9, 2, 18, 0, tzinfo=timezone.utc))
+        late = EXPORTER.score_model_for(candidate, datetime(2026, 9, 3, 18, 0, tzinfo=timezone.utc))
+        self.assertGreater(
+            self.term(early, "recency_points")["points"],
+            self.term(late, "recency_points")["points"],
+        )
+        self.assertGreater(late["score_as_of"], early["score_as_of"])
+
+    def test_an_august_discovery_cannot_keep_its_august_recency_in_september(self):
+        """The audited failure: AT2026wtb held +19.65 recency a month later."""
+        candidate = self.scored(name="AT2026wtb", discovery_time="2026-08-02T00:00:00Z",
+                                score_factors={"recency_points": 19.65})
+        self.assertEqual(self.term(candidate["score_model"], "recency_points")["points"], 0.0)
+        self.assertEqual(
+            candidate["score_model"]["recorded_factors_at_ingest"]["recency_points"], 19.65,
+            "the frozen factor stays visible as provenance, but never scores",
+        )
+
+    def test_missing_spectrum_is_not_applicable_off_the_optical_channel(self):
+        for event_type in ("fast-radio-burst", "high-energy-neutrino-track",
+                           "high-energy-trigger", "terrestrial-gamma-ray-flash",
+                           "solar-flare", "x-ray-transient", "gamma-ray-transient"):
+            with self.subTest(event_type=event_type):
+                candidate = self.scored(event_type=event_type)
+                term = self.term(candidate["score_model"], "spectroscopy_gap_points")
+                self.assertFalse(term["applicable"])
+                self.assertEqual(term["points"], 0.0)
+                self.assertIn("spectroscopy_gap_points",
+                              {row["code"] for row in candidate["score_model"]["not_applicable"]})
+
+    def test_missing_spectrum_still_applies_to_an_optical_target(self):
+        candidate = self.scored(event_type="optical-transient")
+        term = self.term(candidate["score_model"], "spectroscopy_gap_points")
+        self.assertTrue(term["applicable"])
+        self.assertEqual(term["points"], 7.0)
+
+    def test_single_channel_records_receive_no_messenger_diversity_bonus(self):
+        for name, event_type, messenger in (
+            ("CALET-260101", "high-energy-trigger", "gamma-ray"),
+            ("Chime-1175472802", "fast-radio-burst", "radio"),
+            ("EP260830a", "x-ray-transient", "x-ray"),
+        ):
+            with self.subTest(name=name):
+                candidate = self.scored(
+                    name=name, event_type=event_type, primary_messenger=messenger,
+                    follow_up={"messenger_signals": [{"messenger": messenger}]},
+                    follow_up_counts={"messenger_signals": 1, "observations": 0, "spectra": 0},
+                    score_factors={"multimessenger_points": 4.0},
+                )
+                self.assertEqual(candidate["score_model"]["multimessenger_bonus"], 0.0)
+                self.assertIn("at least two", candidate["score_model"]["multimessenger_basis"])
+
+    def test_two_independently_retained_channels_do_earn_the_bonus(self):
+        candidate = self.scored(
+            follow_up={"messenger_signals": [{"messenger": "neutrino"}], "observations": [
+                {"observed_at": "2026-09-02T00:00:00Z"}]},
+            follow_up_counts={"messenger_signals": 1, "observations": 1, "spectra": 0},
+        )
+        self.assertEqual(candidate["score_model"]["multimessenger_bonus"], 8.0)
+
+    def test_a_zero_probability_alternative_is_not_a_classification_conflict(self):
+        candidate = self.scored(follow_up={"classifications": [
+            {"classification": "TGF", "probability": 1.0},
+            {"classification": "n/a", "probability": 0.0},
+        ]})
+        self.assertEqual(self.term(candidate["score_model"], "classification_conflict_points")["points"], 0.0)
+
+    def test_a_subtype_refinement_is_not_a_classification_conflict(self):
+        candidate = self.scored(follow_up={"classifications": [
+            {"classification": "SN Ia", "probability": 0.7},
+            {"classification": "SN Ia-91T", "probability": 0.3},
+        ]})
+        self.assertEqual(self.term(candidate["score_model"], "classification_conflict_points")["points"], 0.0)
+
+    def test_two_incompatible_active_assertions_are_a_conflict(self):
+        candidate = self.scored(follow_up={"classifications": [
+            {"classification": "SN Ia", "probability": 0.6},
+            {"classification": "SN II", "probability": 0.4},
+        ]})
+        self.assertEqual(self.term(candidate["score_model"], "classification_conflict_points")["points"], 8.0)
+
+    def test_a_retracted_assertion_cannot_create_a_conflict(self):
+        candidate = self.scored(follow_up={"classifications": [
+            {"classification": "SN Ia", "probability": 0.6},
+            {"classification": "SN II", "probability": 0.4, "retracted": 1},
+        ]})
+        self.assertEqual(self.term(candidate["score_model"], "classification_conflict_points")["points"], 0.0)
+
+    def test_terminal_records_are_zero_and_never_leaderboard_targets(self):
         for terminal_status in ("retracted", "bogus"):
             with self.subTest(status=terminal_status):
-                candidate = event(
-                    status=terminal_status,
-                    ctas_score=88.0,
-                    score_factors={
-                        "recency_points": 12.0,
-                        "classification_gap_points": 8.0,
-                        "coverage_reduction": 3.0,
-                        "multimessenger_points": 5.0,
-                    },
-                )
-                model = EXPORTER.score_model_for(candidate)
-                self.assertEqual(model["status_override"], terminal_status)
-                self.assertGreater(model["final_preclip"], 0.0)
-                self.assertEqual(model["final_score"], 0.0)
-                self.assertEqual(model["recorded_score_before_publication_correction"], 88.0)
-                self.assertTrue(model["publication_correction_applied"])
-                self.assertTrue(model["reconciled"])
+                candidate = self.scored(status=terminal_status, discovery_time="2026-09-02T23:00:00Z")
                 self.assertEqual(candidate["ctas_score"], 0.0)
-                self.assertEqual(candidate["score_factors"]["status"], terminal_status)
+                self.assertEqual(candidate["score_model"]["status_override"], terminal_status)
+                self.assertEqual(candidate["record_role"], "retracted-event")
+                self.assertFalse(candidate["default_leaderboard_eligible"])
 
-    def test_nonterminal_score_mismatch_is_not_silently_rewritten(self):
-        candidate = event(status="candidate", ctas_score=88.0, score_factors={})
-        model = EXPORTER.score_model_for(candidate)
-        self.assertIsNone(model["status_override"])
-        self.assertFalse(model["publication_correction_applied"])
-        self.assertFalse(model["reconciled"])
-        self.assertEqual(candidate["ctas_score"], 88.0)
+    def test_known_terrestrial_and_solar_records_stay_out_of_the_leaderboard(self):
+        for event_type in ("terrestrial-gamma-ray-flash", "solar-flare"):
+            with self.subTest(event_type=event_type):
+                candidate = self.scored(event_type=event_type)
+                self.assertFalse(candidate["default_leaderboard_eligible"])
+                self.assertEqual(candidate["ranking_channel"], "contextual-non-target")
 
-    def test_already_zero_terminal_score_does_not_claim_a_publication_repair(self):
-        candidate = event(status="retracted", ctas_score=0.0, score_factors={"recency_points": 12.0})
-        model = EXPORTER.score_model_for(candidate)
-        self.assertEqual(model["status_override"], "retracted")
-        self.assertEqual(model["final_score"], 0.0)
-        self.assertFalse(model["publication_correction_applied"])
-        self.assertTrue(model["reconciled"])
+    def test_every_score_reproduces_exactly_from_its_applicable_terms(self):
+        candidate = self.scored(discovery_time="2026-09-02T21:00:00Z", discovery_magnitude=16.4,
+                                follow_up_counts={"observations": 3, "spectra": 0, "messenger_signals": 0})
+        model = candidate["score_model"]
+        applied = [row for row in model["terms"] if row["applicable"]]
+        core = model["baseline"] + sum(row["points"] for row in applied)
+        expected = round(max(0.0, min(100.0, max(0.0, min(100.0, core)) + model["multimessenger_bonus"])), 2)
+        self.assertEqual(model["final_score"], expected)
+        self.assertEqual(candidate["ctas_score"], expected)
+        self.assertIn("= " + f"{expected:g}", model["arithmetic"])
 
-    def test_one_cent_persisted_factor_rounding_is_explicit_not_hidden(self):
-        candidate = event(status="candidate", ctas_score=35.01, score_factors={})
-        model = EXPORTER.score_model_for(candidate)
-        self.assertEqual(model["persisted_factor_rounding_residual"], 0.01)
-        self.assertEqual(model["final_score"], 35.01)
-        self.assertTrue(model["reconciled"])
-        self.assertIn("rounded to hundredths", model["factor_precision_note"])
+    def test_the_score_is_published_with_the_clock_it_was_computed_for(self):
+        model = self.scored()["score_model"]
+        self.assertEqual(model["score_as_of"], "2026-09-03T00:00:00Z")
+        self.assertEqual(model["valid_until"], "2026-09-03T00:30:00Z")
+        self.assertEqual(model["method_version"], EXPORTER.SCORE_METHOD_VERSION)
+        self.assertIn("not a probability", model["claim_boundary"])
 
 
 class ScienceBriefTests(unittest.TestCase):
@@ -737,18 +839,35 @@ class CertificateAndArtifactTests(unittest.TestCase):
             self.assertEqual(candidate["follow_up_total"], sum(candidate["follow_up_counts"].values()))
 
     def test_every_published_score_reconciles_and_terminal_records_are_zero(self):
+        release_clock = self.index["catalog_as_of"]
+        del release_clock
+        problems = []
         for candidate in self.snapshot["candidates"]:
             model = candidate["score_model"]
-            with self.subTest(event_id=candidate["event_id"]):
-                self.assertEqual(model["schema"], "ctas.follow-up-score@1.0.0")
-                self.assertTrue(model["reconciled"])
-                self.assertLessEqual(
-                    abs(float(candidate["ctas_score"]) - float(model["final_score"])),
-                    float(model["tolerance"]) + 1e-9,
-                )
-                if str(candidate.get("status") or "").lower() in {"retracted", "bogus"}:
-                    self.assertEqual(candidate["ctas_score"], 0.0)
-                    self.assertEqual(model["status_override"], str(candidate["status"]).lower())
+            applied = [row for row in model["terms"] if row["applicable"]]
+            core = float(model["baseline"]) + sum(float(row["points"]) for row in applied)
+            expected = round(
+                max(0.0, min(100.0, max(0.0, min(100.0, core)) + float(model["multimessenger_bonus"]))), 2
+            )
+            if model["status_override"]:
+                expected = 0.0
+            if model["schema"] != EXPORTER.SCORE_METHOD_VERSION:
+                problems.append((candidate["event_id"], "schema", model["schema"]))
+            elif abs(float(candidate["ctas_score"]) - expected) > float(model["tolerance"]):
+                problems.append((candidate["event_id"], "arithmetic", candidate["ctas_score"], expected))
+            elif str(candidate.get("status") or "").lower() in {"retracted", "bogus"} \
+                    and candidate["ctas_score"] != 0.0:
+                problems.append((candidate["event_id"], "terminal", candidate["ctas_score"]))
+        self.assertEqual(problems[:5], [], f"{len(problems)} records did not reproduce their score")
+
+    def test_every_published_score_carries_one_release_clock(self):
+        stamps = {candidate["score_model"]["score_as_of"] for candidate in self.snapshot["candidates"]}
+        self.assertEqual(len(stamps), 1, "one release computes one score clock")
+
+    def test_no_non_target_record_reaches_the_published_leaderboard(self):
+        by_id = {row["event_id"]: row for row in self.index_candidates}
+        for event_id in self.summary["leaderboard"]["event_ids"]:
+            self.assertTrue(by_id[event_id]["default_leaderboard_eligible"])
 
     def test_every_science_brief_matches_completeness_and_is_claim_bounded(self):
         for candidate in self.snapshot["candidates"]:
