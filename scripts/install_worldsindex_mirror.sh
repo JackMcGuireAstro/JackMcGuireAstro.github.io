@@ -1,6 +1,6 @@
 #!/bin/bash
 # Install the persistent WorldsIndex publisher: a two-minute launchd cycle that follows the
-# local source files, with the full provider/test gate every six hours.
+# local source files, with the full provider/test gate every hour.
 set -uo pipefail
 
 LABEL="io.github.jackmcguireastro.worldsindex-mirror"
@@ -188,7 +188,7 @@ cat <<EOF
 Done. WorldsIndex now checks locally and publishes without ChatGPT or Codex scheduling.
 
   Schedule       every 2 minutes: follow the local source files and publish when they changed
-                 and every static gate passed; every 6 hours: provider monitor, promotion gates,
+                 and every static gate passed; every hour: provider monitor, promotion gates,
                  test suite, build, atlas regeneration — while this Mac is awake, online, logged in
   Source mode    $SOURCE_MODE
   Editable source $AUTHORING_SOURCE

@@ -14,7 +14,7 @@
   <key>RunAtLoad</key>
   <true/>
   <!-- Every two minutes the runner follows the local source files (fast path, ~1 s when nothing
-       changed, ~20 s when it rebuilds); every WORLDSINDEX_FULL_EVERY seconds it runs the full
+       changed, ~20 s when it rebuilds); every WORLDSINDEX_FULL_EVERY seconds (default one hour) it runs the full
        gate: provider monitor, promotion gates, test suite, build, atlas regeneration. -->
   <key>StartInterval</key>
   <integer>120</integer>
@@ -32,7 +32,7 @@
     <key>GIT_SSH_COMMAND</key><string>ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -i REPLACE_WITH_HOME/.ssh/id_ed25519</string>
     <key>WORLDSINDEX_SITE</key><string>REPLACE_WITH_HOME/Library/Application Support/WorldsIndexPublisher/site</string>
     <key>WORLDSINDEX_SOURCE</key><string>REPLACE_WITH_SOURCE</string>
-    <key>WORLDSINDEX_FULL_EVERY</key><string>21600</string>
+    <key>WORLDSINDEX_FULL_EVERY</key><string>3600</string>
   </dict>
   <key>StandardOutPath</key>
   <string>REPLACE_WITH_HOME/Library/Logs/worldsindex-mirror/launchd.out.log</string>

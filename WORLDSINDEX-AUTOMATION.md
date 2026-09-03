@@ -22,11 +22,12 @@ Every cycle (fast path, `publish_worldsindex.sh --fast`):
    the science test, the syntax checks and the artifact guard, stages only the explicit
    allowlist, commits, and pushes. Any failure publishes nothing.
 
-Every six hours (`WORLDSINDEX_FULL_EVERY`), or when no full run has completed yet, the cycle
+Every hour (`WORLDSINDEX_FULL_EVERY`, 3600 s), or when no full run has completed yet, the cycle
 runs the full path instead: the provider monitor over every declared source, the Exoplanet.eu
 promotion gate when that source changed, ExoNexus type checking, tests, lint and production
-build, atlas regeneration — and then the fast path publishes whatever those produced. So a
-change the monitor accepts is on the public site within two minutes of the full run finishing,
+build, atlas regeneration — and then the fast path publishes whatever those produced. So an
+upstream change is detected within the hour and is on the public site within two minutes of
+the gate accepting it,
 and a change you make locally (a new snapshot, a rollback, an edited contract) is published on
 the next two-minute cycle without waiting for the monitor.
 

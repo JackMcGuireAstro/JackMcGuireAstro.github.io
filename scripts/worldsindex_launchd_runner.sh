@@ -64,10 +64,10 @@ fi
 
 # Cadence: every scheduled cycle runs the fast path, which follows the local source files and
 # publishes only when the publication inputs changed and every static gate passed. Once every
-# WORLDSINDEX_FULL_EVERY seconds (default six hours) — or when no full run has ever completed —
+# WORLDSINDEX_FULL_EVERY seconds (default one hour) — or when no full run has ever completed —
 # the cycle runs the full path instead: provider monitor, promotion gates, ExoNexus test suite,
 # build, and atlas regeneration, whose outputs the next fast cycle then publishes.
-FULL_EVERY="${WORLDSINDEX_FULL_EVERY:-21600}"
+FULL_EVERY="${WORLDSINDEX_FULL_EVERY:-3600}"
 FULL_STAMP="$LOG_DIR/.last-full-run"
 MODE=fast
 if [ ! -f "$FULL_STAMP" ]; then

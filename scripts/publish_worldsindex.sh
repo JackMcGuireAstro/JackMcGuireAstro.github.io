@@ -16,7 +16,7 @@ FORCE=0
 #            provider traffic and no ExoNexus test suite; runs every cycle (CTAS parity).
 # MODE=full: the fast path preceded by the provider monitor, the Exoplanet.eu promotion gate,
 #            typecheck/tests/lint/build, and atlas regeneration; runs every WORLDSINDEX_FULL_EVERY
-#            seconds (default six hours) or on demand.
+#            seconds (default one hour) or on demand.
 MODE="${WORLDSINDEX_MODE:-full}"
 
 for argument in "$@"; do
