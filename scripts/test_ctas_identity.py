@@ -8,8 +8,11 @@ must never turn such a record into a confident object-specific link: it fails
 closed, keeps both designations as provenance, and says the identity is
 unresolved.
 
-The fixture is real retained public data, reduced to the 14 unresolved records
-plus a control sample, so these assertions exercise the production code path.
+The fixture is real retained public data, frozen before the production database
+was repaired (scripts/repair_tns_identity_merges.py split all 14 pairs into
+separate events). It is kept in that state deliberately: these assertions exist
+to prove the exporter still fails closed if such a merge ever recurs, not to
+describe the current catalog.
 """
 from __future__ import annotations
 
@@ -25,6 +28,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import check_ctas_links  # noqa: E402
+import export_ctas_snapshot as export_module  # noqa: E402
 from export_ctas_snapshot import (  # noqa: E402
     conflicting_tns_object_ids,
     export,
@@ -141,6 +145,24 @@ class IdentityResolutionTests(unittest.TestCase):
         )
         self.assertEqual(problems, [], f"structural link problems: {problems[:5]}")
         self.assertGreater(len(tns_links), 0)
+
+    def test_an_at_to_sn_promotion_is_one_object_not_a_conflict(self):
+        """TNS renames AT2026wsy to SN2026wsy for the same object, in every feed."""
+        for provider in ("tns", "tns-public-reports", "tns-astronotes"):
+            with self.subTest(provider=provider):
+                self.assertEqual(
+                    export_module.provider_object_identity(provider, "AT2026wsy"),
+                    export_module.provider_object_identity(provider, "SN2026wsy"),
+                )
+        self.assertNotEqual(
+            export_module.provider_object_identity("tns", "AT2022hkk"),
+            export_module.provider_object_identity("tns", "AT2022zwf"),
+        )
+
+    def test_a_non_linking_provider_is_not_reported_as_a_defect(self):
+        """GCN issues several notice ids for one event and publishes no object link."""
+        self.assertNotIn("gcn", export_module.LINKED_PROVIDERS)
+        self.assertIn("tns", export_module.LINKED_PROVIDERS)
 
     def test_helper_only_counts_preferred_designations(self):
         rows = [

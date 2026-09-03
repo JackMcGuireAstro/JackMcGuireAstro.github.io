@@ -412,6 +412,9 @@ PUBLIC_LINKS = {
 }
 
 TNS_OBJECT = re.compile(r"^(?:AT|SN)?(\d{4}[a-z]+)$", re.IGNORECASE)
+# Only a provider CTAS can turn into an object-specific link can be harmed by a
+# disagreeing designation; everything else is provenance text.
+LINKED_PROVIDERS = frozenset({"tns"})
 
 # Merged records are audit rows pointing at a surviving parent, not separate
 # astronomical events. CTAS's own query layer hides them; so do we.
@@ -566,6 +569,21 @@ def expand_source_matrix(
         else:
             out.append(next(quiet_iter))
     return out
+
+
+def provider_object_identity(provider: str, designation: str) -> str | None:
+    """Return a provider's own object identity for one designation.
+
+    TNS promotes AT2026wsy to SN2026wsy for the same object, across every
+    TNS-family feed, so the prefix must not make one object look like two.
+    """
+
+    value = str(designation or "").strip()
+    if not value:
+        return None
+    if provider.strip().casefold().startswith("tns"):
+        return (tns_object_id(value) or value).casefold()
+    return value.casefold()
 
 
 def candidate_bucket(identity: str) -> str:
@@ -2190,23 +2208,38 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
                     "provider_bindings": {provider: sorted(bound_ids) for provider, bound_ids in sorted(provider_sets.items())},
                 })
         designation_conflicts = []
+        multiple_designations = []
         preferred_by_provider: dict[str, set[str]] = {}
         for alias in candidate.get("designations", []):
             if not alias.get("is_preferred"):
                 continue
             provider = str(alias.get("source_key") or "").strip().casefold()
-            designation = str(alias.get("designation") or "").strip()
-            key = tns_object_id(designation) if provider == "tns" else designation.casefold()
+            key = provider_object_identity(provider, alias.get("designation"))
             if provider and key:
                 preferred_by_provider.setdefault(provider, set()).add(key)
         for provider, keys in sorted(preferred_by_provider.items()):
-            if len(keys) > 1:
+            if len(keys) < 2:
+                continue
+            if provider in LINKED_PROVIDERS:
                 designation_conflicts.append({
                     "source_key": provider,
                     "object_ids": sorted(keys),
                     "resolution": (
                         "Fail closed: CTAS publishes no object-specific link for this "
                         "record until the association is reconciled at the source."
+                    ),
+                })
+            else:
+                # A provider that issues several notice identifiers for one
+                # event (GCN does) is not in disagreement with itself, and CTAS
+                # publishes no object-specific link for it, so this is retained
+                # as provenance rather than reported as a defect.
+                multiple_designations.append({
+                    "source_key": provider,
+                    "designations": sorted(keys),
+                    "note": (
+                        "This provider retains more than one designation for the record and "
+                        "CTAS publishes no object-specific link for it."
                     ),
                 })
         state = (
@@ -2222,6 +2255,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             "unscoped_alias_collisions": unscoped_collisions,
             "provider_disagreements": provider_disagreements,
             "provider_designation_conflicts": designation_conflicts,
+            "multiple_preferred_designations": multiple_designations,
         }
 
     provider_counts: dict[str, dict[str, int]] = {}
