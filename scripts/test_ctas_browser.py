@@ -152,6 +152,84 @@ class BrowserTests(unittest.TestCase):
         status = self.page.locator("#ctas-complete-status").inner_text()
         self.assertRegex(status, r"Complete catalog loaded: [\d,]+ retained records")
 
+    def test_the_ctas_bar_is_not_covered_by_the_site_header(self):
+        """Both are sticky. They must stack, not occupy the same band."""
+        for width, height in ((1280, 900), (390, 844)):
+            with self.subTest(viewport=f"{width}x{height}"):
+                self.page.set_viewport_size({"width": width, "height": height})
+                self.page.evaluate("() => window.scrollTo(0, 1400)")
+                self.page.wait_for_timeout(400)
+                geometry = self.page.evaluate(
+                    "() => {const g = document.querySelector('.site-header');"
+                    "const c = document.querySelector('.ctas-navigation');"
+                    "if (!g || !c) return null;"
+                    "const gr = g.getBoundingClientRect(), cr = c.getBoundingClientRect();"
+                    "const mid = document.elementFromPoint(cr.left + 40, cr.top + cr.height / 2);"
+                    "return {overlap: Math.max(0, Math.min(gr.bottom, cr.bottom)"
+                    " - Math.max(gr.top, cr.top)),"
+                    " reachable: !!(mid && mid.closest('.ctas-navigation'))};}"
+                )
+                self.assertIsNotNone(geometry)
+                self.assertLessEqual(geometry["overlap"], 1, "the sticky layers overlap")
+                self.assertTrue(geometry["reachable"], "the CTAS bar is not clickable")
+
+    def test_the_page_has_one_h1_and_an_unbroken_heading_outline(self):
+        headings = self.page.evaluate(
+            "() => [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')]"
+            ".map(h => [h.tagName, (h.textContent || '').trim().slice(0, 48)])"
+        )
+        self.assertEqual(sum(tag == "H1" for tag, _ in headings), 1)
+        self.assertGreaterEqual(sum(tag == "H2" for tag, _ in headings), 6,
+                                "major CTAS sections must carry a section heading")
+        previous = 0
+        skips = []
+        for tag, text_ in headings:
+            level = int(tag[1])
+            if previous and level > previous + 1:
+                skips.append((previous, tag, text_))
+            previous = level
+        self.assertEqual(skips, [], f"skipped heading levels: {skips}")
+
+    def test_no_javascript_still_reaches_every_published_artifact(self):
+        context = self.browser.new_context(java_script_enabled=False,
+                                           viewport={"width": 1280, "height": 900})
+        page = context.new_page()
+        try:
+            page.goto(self.url, wait_until="domcontentloaded", timeout=60000)
+            links = page.evaluate(
+                "() => [...document.querySelectorAll('.ctas-noscript a[href]')]"
+                ".map(a => a.getAttribute('href'))"
+            )
+            self.assertGreaterEqual(len(links), 8,
+                                    "the no-JavaScript fallback must list the static artifacts")
+            for href in links:
+                if href.startswith(("http", "mailto:", "#")):
+                    continue
+                with self.subTest(href=href):
+                    response = page.request.get(self.url.rsplit("/", 1)[0] + "/" + href)
+                    self.assertEqual(response.status, 200)
+        finally:
+            context.close()
+
+    def test_axe_reports_no_wcag_violation(self):
+        axe = next(
+            (path for path in (ROOT / "node_modules" / "axe-core" / "axe.min.js",
+                               ROOT.parent / "node_modules" / "axe-core" / "axe.min.js")
+             if path.exists()),
+            None,
+        )
+        if axe is None:
+            self.skipTest("axe-core is not installed; run: npm install axe-core")
+        self.page.add_script_tag(content=axe.read_text())
+        result = self.page.evaluate(
+            "async () => await axe.run(document, {runOnly: {type: 'tag',"
+            " values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']}})"
+        )
+        summary = [
+            f"{v['id']} ({len(v['nodes'])} nodes): {v['help']}" for v in result["violations"]
+        ]
+        self.assertEqual(summary, [])
+
     def test_no_viewport_scrolls_sideways(self):
         for width, height in VIEWPORTS:
             with self.subTest(viewport=f"{width}x{height}"):

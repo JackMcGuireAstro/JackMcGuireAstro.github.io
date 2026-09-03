@@ -3,6 +3,17 @@
    Only what the live interface needs; everything else is inherited.
    ========================================================================== */
 
+/* One sticky application stack.  The global site header and the CTAS bar are
+   separate sticky layers that both sat at top:0, so the CTAS bar -- the whole
+   section navigation -- was completely covered by the site header at every
+   scroll position.  The CTAS layer is offset by the measured header height
+   instead; app.js keeps the measurement current and this value is the fallback
+   before it runs. */
+:root {
+  --ctas-app-header-height: 3.95rem;
+  --ctas-sticky-stack: calc(var(--ctas-app-header-height) + 3.5rem);
+}
+
 /* ------------------------------------------------------------ status panel */
 .ctas-hero { padding-bottom: clamp(2rem, 5vw, 4rem); }
 .ctas-hero .hero__inner { padding-bottom: 0; }
@@ -35,7 +46,7 @@
 }
 .ctas-contents {
   position: sticky;
-  top: 0;
+  top: var(--ctas-app-header-height);
   z-index: 20;
   border-block: 1px solid var(--border);
   background: rgba(5,12,22,.94);
@@ -52,7 +63,7 @@
   text-decoration: none;
 }
 .ctas-contents a:hover, .ctas-contents a:focus-visible { border-color: var(--gold); color: var(--gold); }
-[id] { scroll-margin-top: 5.5rem; }
+[id] { scroll-margin-top: var(--ctas-sticky-stack); }
 .ctas-status {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
@@ -428,7 +439,16 @@ table.ctas-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; mi
 .ctas-source-census > summary::-webkit-details-marker { display: none; }
 .ctas-source-census > summary::after { content: "+"; color: var(--gold); font-size: 1.5rem; line-height: 1; }
 .ctas-source-census[open] > summary::after { content: "−"; }
-.ctas-source-census > summary strong { display: block; margin-top: .15rem; color: var(--ink); font-size: 1.05rem; }
+.ctas-source-census > summary strong,
+.ctas-source-census > summary h3 {
+  display: block;
+  margin: .15rem 0 0;
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: normal;
+}
 .ctas-source-census > summary small { max-width: 28rem; color: var(--ink-3); text-align: right; }
 .ctas-source-census__body { padding: 0 1.4rem 1.4rem; border-top: 1px solid var(--border); }
 .ctas-source-census .ctas-sources li > div { min-width: 0; }
@@ -648,7 +668,17 @@ select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .ctas-panel[open] > summary::after { content: "−" !important; }
 .ctas-panel > summary span { min-width: 0; }
 .ctas-panel > summary .eyebrow { display: block; margin: 0 0 .12rem; }
-.ctas-panel > summary strong { display: block; color: var(--ink); font-size: 1.03rem; }
+.ctas-panel > summary strong,
+.ctas-panel > summary h2,
+.ctas-panel > summary h3 {
+  display: block;
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.03rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: normal;
+}
 .ctas-panel > summary small { margin-left: auto; max-width: 34rem; color: var(--ink-3); font-size: .77rem; text-align: right; }
 .ctas-panel__body { padding: 1.2rem; border-top: 1px solid var(--border); }
 .ctas-overview, .ctas-source-census { margin: 1rem 0; }
@@ -1417,7 +1447,7 @@ table.ctas-table { min-width: 1080px; }
 
 .ctas-navigation {
   position: sticky;
-  top: 0;
+  top: var(--ctas-app-header-height);
   z-index: 90;
   border-block: 1px solid rgba(138,213,223,.16);
   background: rgba(4,11,20,.92);
@@ -1606,4 +1636,26 @@ table.ctas-table { min-width: 900px; }
 @media (forced-colors: active) {
   .ctas-table tbody tr.is-candidate-emphasized,
   .ctas-stream__list li.is-candidate-emphasized { outline: 3px solid Highlight; outline-offset: -3px; }
+}
+
+/* --------------------------------------------------------------- noscript */
+/* Static artifacts stay reachable when the interface cannot run. */
+.ctas-noscript {
+  max-width: 72rem;
+  margin: 1.5rem auto;
+  padding: clamp(1.2rem, 3vw, 2rem);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.ctas-noscript h2 { margin-top: 0; }
+.ctas-noscript ul { padding-left: 1.1rem; }
+.ctas-noscript li { margin-bottom: .45rem; }
+
+/* The course link used to sit inside the studio's <summary>. A link inside a
+   disclosure control is a nested interactive control: the outer control owns
+   the click, so the link is unreachable by keyboard and ambiguous by pointer.
+   It leads the panel body instead, where it is an ordinary link. */
+.ctas-learn-studio__course {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
 }

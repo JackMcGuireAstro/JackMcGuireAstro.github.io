@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://jackmcguireastro.github.io/assets/images/ctas/ctas-card.png">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="assets/css/site.css?v=20260903-notebook">
-<link rel="stylesheet" href="ctas/ctas.css?v=20260903-notebook">
+<link rel="stylesheet" href="ctas/ctas.css?v=20260903-sticky">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>
@@ -51,6 +51,38 @@
 </header>
 
 <main id="main">
+  <noscript>
+    <section class="ctas-noscript" aria-labelledby="ctas-noscript-title">
+      <h2 id="ctas-noscript-title">CTAS without JavaScript</h2>
+      <p>The catalog interface is generated in the browser, so the sky map, filters
+        and candidate dossiers need JavaScript. Every artifact behind them is a
+        static file you can read or download directly, and each one is
+        checksum-bound to the release it belongs to.</p>
+      <ul>
+        <li><a href="ctas/data/status.json">Current status</a> — freshness, catalog
+          checksum, source health, and any rows the local store could not return.</li>
+        <li><a href="ctas/data/live-summary.json">Live summary</a> — the first-screen
+          release: Top 100 per ranking channel, every report from the last 24 hours,
+          and pointers to everything else.</li>
+        <li><a href="ctas/data/catalog-pages/manifest.json">Complete catalog pages</a>
+          and the <a href="ctas/data/catalog-index.json">complete compact index</a>.</li>
+        <li><a href="ctas/data/research/events.csv">Events (CSV)</a>,
+          <a href="ctas/data/research/events.vot">Events (VOTable)</a>,
+          <a href="ctas/data/research/tom-targets.csv">TOM targets (CSV)</a>,
+          <a href="ctas/data/research/aliases.csv">Aliases (CSV)</a>,
+          <a href="ctas/data/research/sources.csv">Sources (CSV)</a>.</li>
+        <li><a href="ctas/data/candidate-chunks/manifest.json">Complete-catalog
+          manifest</a> — every detail module with its byte length and SHA-256.</li>
+        <li><a href="ctas/data/source-universe.json">Source universe</a> — every
+          documented source, its role, and what it contributed.</li>
+        <li><a href="ctas/data/certification.json">Verification report</a> — the
+          release gates and what each one checked.</li>
+      </ul>
+      <p>CTAS reports what public sources published. It does not confirm discoveries
+        or classifications, and the CTAS score orders review — it is not a
+        probability, a confirmation, or a measure of scientific importance.</p>
+    </section>
+  </noscript>
   <section class="hero ctas-hero ctas-console-head" id="top">
     <div class="hero__sky" aria-hidden="true"></div>
     <div class="wrap hero__inner ctas-hero__inner">
@@ -136,10 +168,11 @@
     <div class="wrap wrap--wide">
       <details class="ctas-panel ctas-learn-studio" id="ctas-learn">
         <summary>
-          <span><span class="eyebrow">Guided learning studio</span><strong>Read a transient record without over-reading it</strong></span>
-          <small>Four real catalog examples plus one explicitly synthetic identity lesson · <a href="learn/#transients">Take the full five-lesson course</a></small>
+          <span><span class="eyebrow">Guided learning studio</span><h2>Read a transient record without over-reading it</h2></span>
+          <small>Four real catalog examples plus one explicitly synthetic identity lesson</small>
         </summary>
         <div class="ctas-panel__body">
+          <p class="ctas-learn-studio__course"><a href="learn/#transients">Take the full five-lesson course</a></p>
           <div class="ctas-guides">
             <article><span class="pill">Rich record</span><h3>Follow evidence from alert to spectra</h3><p>Use a real event with retained spectra to compare summary claims with source-native rows.</p><button type="button" data-open-name="SN2026xby">Open SN2026xby</button></article>
             <article><span class="pill">Upper limit</span><h3>Detection is not the same as a limit</h3><p>See how CTAS preserves nondetections and limiting magnitudes without plotting them as detections.</p><button type="button" data-open-name="AT2026zwn">Open AT2026zwn</button></article>
@@ -159,13 +192,13 @@
       </details>
       <details class="ctas-panel ctas-reference" id="ctas-reference">
         <summary>
-          <span><span class="eyebrow">Catalog details</span><strong>Counts, sources, releases, methods, and downloads</strong></span>
+          <span><span class="eyebrow">Catalog details</span><h2>Counts, sources, releases, methods, and downloads</h2></span>
           <small>Everything behind one optional disclosure</small>
         </summary>
         <div class="ctas-panel__body ctas-reference__body">
       <details class="ctas-panel ctas-overview" id="catalog-overview">
         <summary>
-          <span><span class="eyebrow">Catalog at a glance</span><strong>Public records, evidence, and distributions</strong></span>
+          <span><span class="eyebrow">Catalog at a glance</span><h3>Public records, evidence, and distributions</h3></span>
           <small id="ctas-overview-summary">Loading current public counts…</small>
         </summary>
         <div class="ctas-panel__body">
@@ -195,7 +228,7 @@
 
       <details class="ctas-panel ctas-source-census" id="active-sources">
         <summary>
-          <span><span class="eyebrow">Source transparency</span><strong>Sources represented in this snapshot</strong></span>
+          <span><span class="eyebrow">Source transparency</span><h3>Sources represented in this snapshot</h3></span>
           <small>Current connector health is kept separate from retained public records</small>
         </summary>
         <div class="ctas-panel__body ctas-source-census__body">
@@ -217,7 +250,7 @@
 
       <details class="ctas-panel ctas-release-history" id="catalog-changes">
         <summary>
-          <span><span class="eyebrow">Publication history</span><strong>What changed in recent catalog releases</strong></span>
+          <span><span class="eyebrow">Publication history</span><h3>What changed in recent catalog releases</h3></span>
           <small>Catalog intake is not the same as a new astronomical discovery</small>
         </summary>
         <div class="ctas-panel__body" id="ctas-release-history"></div>
@@ -227,7 +260,7 @@
 
       <section class="ctas-stream" id="recent-stream" aria-labelledby="ctas-stream-title">
         <div class="ctas-section-heading">
-          <div><p class="eyebrow">Signal stream</p><h3 id="ctas-stream-title">Latest arrivals</h3></div>
+          <div><p class="eyebrow">Signal stream</p><h2 id="ctas-stream-title">Latest arrivals</h2></div>
           <p>Three newest reports from the rolling 24-hour window. Open one for its evidence and sky context.</p>
         </div>
         <ol class="ctas-stream__list" id="ctas-stream"></ol>
@@ -236,7 +269,7 @@
 
       <section class="ctas-panel ctas-sky ctas-live-stage" id="celestial-sphere" aria-labelledby="ctas-sky-title">
         <header class="ctas-live-stage__heading">
-          <span><span class="eyebrow">Interactive celestial sphere</span><strong id="ctas-sky-title">Sky</strong></span>
+          <span><span class="eyebrow">Interactive celestial sphere</span><h2 id="ctas-sky-title">Sky</h2></span>
           <small>Hover, keyboard, or select any point</small>
         </header>
         <div class="ctas-panel__body">
@@ -268,7 +301,7 @@
 
       <section class="ctas-ranked" id="ranked-candidates" aria-labelledby="ranked-title">
         <div class="ctas-section-heading">
-          <div><p class="eyebrow">Follow-up leaderboard</p><h3 id="ranked-title">Top 100 CTAS-ranked candidates</h3></div>
+          <div><p class="eyebrow">Follow-up leaderboard</p><h2 id="ranked-title">Top 100 CTAS-ranked candidates</h2></div>
           <p>A focused starting point for citizen scientists and researchers. CTAS score orders review; it is not a discovery claim, probability, or scientific importance rating. The complete retained catalog appears only after you request it.</p>
         </div>
         <details class="ctas-use-guide">
@@ -308,7 +341,7 @@
             <div class="field"><label for="ctas-messenger">Messenger</label><select id="ctas-messenger"><option value="">All messengers</option></select></div>
             <div class="field"><label for="ctas-statusfilter">Status</label><select id="ctas-statusfilter"><option value="">All statuses</option></select></div>
             </div>
-            <h4>Scientific filters and cone search</h4>
+            <h3>Scientific filters and cone search</h3>
             <div class="ctas-fields ctas-fields--science">
               <div class="field"><label for="ctas-survey">Discovery survey</label><select id="ctas-survey"><option value="">All surveys</option></select></div>
               <div class="field"><label for="ctas-from">Discovered from</label><input id="ctas-from" type="date"></div>
@@ -351,7 +384,7 @@
 
       <details class="ctas-panel ctas-methods" id="methods-and-use">
         <summary>
-          <span><span class="eyebrow">Methods, integrity checks, and reuse</span><strong>Interpretation, provenance, rights, and citation</strong></span>
+          <span><span class="eyebrow">Methods, integrity checks, and reuse</span><h2>Interpretation, provenance, rights, and citation</h2></span>
           <small>Technical depth without adding to the main browsing path</small>
         </summary>
         <div class="ctas-panel__body ctas-methods__grid">

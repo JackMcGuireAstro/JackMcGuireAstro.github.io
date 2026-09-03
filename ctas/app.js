@@ -1450,6 +1450,22 @@
     var rows = (state.catalogManifest || {}).chunks || [];
     return rows.find(function (row) { return text(row.path).replace(/^ctas\/data\//, "") === path; });
   }
+  function trackApplicationHeaderHeight() {
+    // The CTAS bar sticks below the global site header rather than underneath
+    // it. The header's height changes with viewport width, so measure it
+    // rather than freezing a number that is wrong on the next breakpoint.
+    var header = document.querySelector(".site-header");
+    if (!header) return;
+    function apply() {
+      var height = Math.round(header.getBoundingClientRect().height);
+      if (height > 0) {
+        document.documentElement.style.setProperty("--ctas-app-header-height", height + "px");
+      }
+    }
+    apply();
+    if (window.ResizeObserver) new ResizeObserver(apply).observe(header);
+    window.addEventListener("resize", apply, {passive: true});
+  }
   function loadCompleteCatalog() {
     // The first screen holds the Top 100 per channel and the last 24 hours.
     // Everything else arrives only here, in bounded checksum-bound pages, so a
@@ -1848,6 +1864,7 @@
     if (el.coneRa) el.coneRa.addEventListener("input", function () { state.coneRa = inputNumber(el.coneRa); rerenderForFilters(); });
     if (el.coneDec) el.coneDec.addEventListener("input", function () { state.coneDec = inputNumber(el.coneDec); rerenderForFilters(); });
     if (el.coneRadius) el.coneRadius.addEventListener("input", function () { state.coneRadius = inputNumber(el.coneRadius); rerenderForFilters(); });
+    trackApplicationHeaderHeight();
     if (el.clear) el.clear.addEventListener("click", clearFilters);
     var downloadPanel = document.getElementById("catalog-downloads");
     if (downloadPanel) {
