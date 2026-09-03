@@ -22,6 +22,7 @@ done
 
 PUBLIC_FILES=(
   worldsindex/data/manifest.json
+  worldsindex/data/catalog-index.json.gz
   worldsindex/data/registry.json.gz
   worldsindex/data/sky-detections.json.gz
   worldsindex/data/source-monitor.json
@@ -116,6 +117,51 @@ if grep -R -I -E 'ADS_API_TOKEN[[:space:]]*=|Bearer[[:space:]]+[A-Za-z0-9._-]{20
 fi
 
 cd "$SITE" || die "cannot enter the website checkout"
+
+# ---- Generic artifact guard -------------------------------------------------------------
+# 1. Every artifact the manifest declares must be in the allowlist. The set is derived from
+#    the manifest itself (manifest.artifacts, falling back to the hash/shard fields), so a
+#    new builder output cannot be referenced by the manifest yet omitted from publication.
+REQUIRED_ARTIFACTS=$(python3 - "$SITE/worldsindex/data/manifest.json" <<'PY_GUARD'
+import json, sys
+m = json.load(open(sys.argv[1]))
+required = {"worldsindex/data/manifest.json"}
+if isinstance(m.get("artifacts"), dict):
+    required.update("worldsindex/data/" + p for p in m["artifacts"])
+else:
+    if "atlasSha256" in m: required.add("worldsindex/data/sky-detections.json.gz")
+    if "catalogIndexSha256" in m: required.add("worldsindex/data/catalog-index.json.gz")
+    required.update("worldsindex/data/details/%s.json.gz" % s for s in m.get("detailShards", []))
+print("\n".join(sorted(required)))
+PY_GUARD
+) || die "could not derive the required artifact set from the release manifest"
+[ -n "$REQUIRED_ARTIFACTS" ] || die "release manifest declares no artifacts"
+MISSING_FROM_ALLOWLIST=""
+while IFS= read -r required; do
+  [ -f "$required" ] || die "manifest-declared artifact is absent from the build: $required"
+  allowed=0
+  for public_file in "${PUBLIC_FILES[@]}"; do [ "$required" = "$public_file" ] && allowed=1; done
+  [ "$allowed" -eq 1 ] || MISSING_FROM_ALLOWLIST="$MISSING_FROM_ALLOWLIST $required"
+done <<<"$REQUIRED_ARTIFACTS"
+[ -z "$MISSING_FROM_ALLOWLIST" ] \
+  || die "manifest-declared artifacts are not in the publication allowlist; refusing to publish a release the site could not load:$MISSING_FROM_ALLOWLIST"
+
+# 2. Nothing the build left dirty or untracked under worldsindex/data may fall outside the
+#    allowlist, or the commit would advance the manifest while leaving stale bytes behind.
+UNLISTED_DIRTY=""
+while IFS= read -r line; do
+  [ -n "$line" ] || continue
+  path=${line:3}
+  allowed=0
+  for public_file in "${PUBLIC_FILES[@]}"; do [ "$path" = "$public_file" ] && allowed=1; done
+  [ "$allowed" -eq 1 ] || UNLISTED_DIRTY="$UNLISTED_DIRTY $path"
+done < <(git status --porcelain --untracked-files=all -- worldsindex/data)
+[ -z "$UNLISTED_DIRTY" ] \
+  || die "build changed files outside the publication allowlist; refusing a partial release:$UNLISTED_DIRTY"
+REQUIRED_COUNT=$(printf '%s\n' "$REQUIRED_ARTIFACTS" | grep -c .)
+say "artifact guard: $REQUIRED_COUNT manifest-declared artifacts are all present and allowlisted"
+# ----------------------------------------------------------------------------------------
+
 if git diff --quiet HEAD -- "${PUBLIC_FILES[@]}" 2>/dev/null && [ "$FORCE" -eq 0 ]; then
   say "validated public release already matches HEAD; nothing to publish"
   exit 0
@@ -125,7 +171,8 @@ OBJECTS=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifes
 RECORDS=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifest.json"))["detailRecordCount"])' 2>/dev/null || echo '?')
 
 if [ "$DRY" -eq 1 ]; then
-  say "--dry-run: validated $OBJECTS objects and $RECORDS native rows; would stage ${#PUBLIC_FILES[@]} allowlisted artifacts"
+  say "--dry-run: validated $OBJECTS objects and $RECORDS native rows; would stage ${#PUBLIC_FILES[@]} allowlisted artifacts covering $REQUIRED_COUNT manifest-declared artifacts"
+  printf '%s\n' "$REQUIRED_ARTIFACTS" | sed 's/^/  would stage: /' >>"$LOG"
   git restore --source=HEAD --worktree -- "${PUBLIC_FILES[@]}" 2>/dev/null || true
   exit 0
 fi
@@ -133,6 +180,8 @@ fi
 STAGED_OTHER=$(git diff --cached --name-only)
 [ -z "$STAGED_OTHER" ] || die "other files are already staged; refusing automated commit: $(printf '%s' "$STAGED_OTHER" | tr '\n' ' ')"
 git add -- "${PUBLIC_FILES[@]}" || die "could not stage the explicit WorldsIndex artifact allowlist"
+LEFT_BEHIND=$(git status --porcelain --untracked-files=all -- worldsindex/data | grep -v '^[MADRC] ' || true)
+[ -z "$LEFT_BEHIND" ] || die "artifacts remain unstaged after allowlist staging; refusing a partial release: $(printf '%s' "$LEFT_BEHIND" | tr '\n' ' ')"
 
 while IFS= read -r staged; do
   allowed=0
