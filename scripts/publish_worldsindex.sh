@@ -92,6 +92,53 @@ if [ "$MONITOR_STATE" = "QUARANTINED" ]; then
   say "one or more providers failed; publishing the typed failure receipt while retaining every catalog measurement from the last-good reconciled snapshots"
 fi
 
+# ---- Sustained-quarantine alert ---------------------------------------------------------
+# An honest status file nobody reads is not an alert. If the attempt is quarantined and the
+# last validated run is older than one scheduled interval (six hours), raise a macOS
+# notification and leave an alert file beside the logs; clear the file once a run validates.
+ALERT_FILE="$LOG_DIR/QUARANTINE_ALERT.txt"
+if [ "$MONITOR_STATE" = "QUARANTINED" ]; then
+  QUARANTINE_DETAIL=$(python3 - "$SOURCE/outputs/sync/latest-attempt.json" "$SOURCE/outputs/sync/last-good.json" <<'PY_ALERT'
+import json, sys, datetime
+attempt = json.load(open(sys.argv[1]))
+try: last_good = json.load(open(sys.argv[2]))
+except Exception: last_good = {}
+last_good_at = last_good.get("completedAt")
+age_min = -1
+if last_good_at:
+    then = datetime.datetime.fromisoformat(last_good_at.replace("Z", "+00:00"))
+    age_min = int((datetime.datetime.now(datetime.timezone.utc) - then).total_seconds() // 60)
+failing = [f'{o.get("sourceId")}: {o.get("state")}' + (f' HTTP {o.get("httpStatus")}' if o.get("httpStatus") else '') + (f' — {o.get("error")}' if o.get("error") else '')
+           for o in attempt.get("observations", []) if o.get("required") and o.get("state") != "AVAILABLE"]
+print(age_min)
+print(last_good_at or "never")
+print(" | ".join(failing) or "required provider failure (no detail recorded)")
+PY_ALERT
+)
+  AGE_MIN=$(printf '%s\n' "$QUARANTINE_DETAIL" | sed -n '1p')
+  LAST_GOOD_AT=$(printf '%s\n' "$QUARANTINE_DETAIL" | sed -n '2p')
+  FAILING=$(printf '%s\n' "$QUARANTINE_DETAIL" | sed -n '3p')
+  if [ "$AGE_MIN" -lt 0 ] || [ "$AGE_MIN" -gt 360 ]; then
+    AGE_H=$(( AGE_MIN > 0 ? AGE_MIN / 60 : 0 ))
+    say "ALERT  quarantined for ${AGE_H}h (last validated run: $LAST_GOOD_AT); failing required checks: $FAILING"
+    {
+      printf 'WorldsIndex quarantine alert\n'
+      printf 'written: %s\n' "$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+      printf 'quarantined for: %sh (last validated run %s)\n' "$AGE_H" "$LAST_GOOD_AT"
+      printf 'failing required checks: %s\n' "$FAILING"
+      printf 'effect: catalog promotion withheld; the public site keeps serving the last validated release.\n'
+      printf 'log: %s\n' "$LOG"
+    } >"$ALERT_FILE"
+    if command -v osascript >/dev/null; then
+      SHORT=$(printf '%s' "$FAILING" | cut -c1-180 | sed 's/"/\\"/g')
+      osascript -e "display notification \"$SHORT\" with title \"WorldsIndex quarantined ${AGE_H}h\" subtitle \"Catalog promotion withheld — see QUARANTINE_ALERT.txt\"" >/dev/null 2>&1 || true
+    fi
+  fi
+else
+  [ -f "$ALERT_FILE" ] && { rm -f "$ALERT_FILE"; say "quarantine cleared; alert file removed"; }
+fi
+# ----------------------------------------------------------------------------------------
+
 say "running ExoNexus scientific and production gates"
 (cd "$SOURCE" && npm run typecheck && npm test && npm run lint && npm run build) >>"$LOG" 2>&1 \
   || die "ExoNexus validation failed; nothing published"
