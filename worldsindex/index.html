@@ -6,75 +6,71 @@
   <meta name="description" content="WorldsIndex is a provenance-aware atlas of confirmed exoplanets, candidates, disputed claims, measurements, methods, and source evidence.">
   <meta name="theme-color" content="#050a12">
   <link rel="canonical" href="https://jackmcguireastro.github.io/worldsindex/">
-  <link rel="stylesheet" href="assets/app.css?v=20260830-observatory1">
+  <link rel="stylesheet" href="assets/app.css?v=20260831-evidence3">
   <title>WorldsIndex · Explore worlds beyond the Solar System</title>
 </head>
-<body data-active-page="atlas">
+<body data-active-page="discover">
   <a class="skip-link" href="#main">Skip to WorldsIndex</a>
 
   <header class="topbar">
-    <a class="brand" href="?section=atlas" data-app-section="atlas" aria-label="WorldsIndex home">
+    <a class="brand" href="?section=discover" data-app-section="discover" aria-label="WorldsIndex home">
       <span class="brand-mark" aria-hidden="true"><i></i></span>
       <span>WorldsIndex<small>Powered by ExoNexus</small></span>
     </a>
     <nav class="app-tabs" aria-label="WorldsIndex views">
-      <a href="?section=atlas" data-app-section="atlas" aria-current="page">Discover</a>
+      <a href="?section=discover" data-app-section="discover" aria-current="page">Discover</a>
+      <a href="?section=sky" data-app-section="sky">Sky</a>
       <a href="?section=compare" data-app-section="compare">Compare</a>
       <a href="?section=methods" data-app-section="methods">Methods</a>
       <a href="?section=sources" data-app-section="sources">Data</a>
     </nav>
-    <button class="nav-search" type="button" data-focus-search aria-label="Find a world"><span aria-hidden="true">⌕</span> Find a world</button>
+    <button class="nav-search" type="button" data-focus-search aria-label="Find a world"><span aria-hidden="true">⌕</span><span class="nav-search-label">Find a world</span></button>
     <a class="portfolio-link" href="../index.html" aria-label="Jack McGuire home">JM ↗</a>
   </header>
 
   <main id="main">
-    <section class="hero app-page" data-page="atlas" aria-labelledby="hero-title">
+    <section class="hero app-page" data-page="discover" aria-labelledby="hero-title">
       <div class="hero-copy">
-        <p class="eyebrow">A living map of worlds beyond our own</p>
-        <h1 id="hero-title">Explore the worlds<br><em>we can actually trace.</em></h1>
-        <p class="lede">Search confirmed planets, candidates, contested signals, and false positives. Start with the clearest available picture, then inspect every retained measurement and source behind it.</p>
+        <p class="eyebrow">A traceable atlas of worlds beyond our own</p>
+        <h1 id="hero-title">Find a world.<br><em>Follow its evidence.</em></h1>
+        <p class="lede">Search confirmed planets, candidates, contested signals, and false positives. Open the clearest available picture first, with every retained measurement and source still within reach.</p>
         <div class="hero-search search-panel">
           <label for="object-search">Search by planet, host star, alias, or catalog identifier</label>
           <div class="search-row">
             <span class="search-glyph" aria-hidden="true">⌕</span>
-            <input id="object-search" type="search" autocomplete="off" spellcheck="false" placeholder="Try HD 209458 b, TRAPPIST-1, or TOI-700…">
+            <input id="object-search" type="search" role="combobox" aria-autocomplete="list" aria-controls="search-results" aria-expanded="false" aria-haspopup="listbox" autocomplete="off" spellcheck="false" placeholder="Try HD 209458 b, TRAPPIST-1, or TOI-700…">
             <button id="search-button" class="button primary" type="button">Search</button>
           </div>
           <div id="search-results" class="search-results" role="listbox" hidden></div>
         </div>
         <div class="hero-actions" aria-label="Start exploring">
-          <a class="button primary" href="#sky-explorer">Explore the sky <span aria-hidden="true">↓</span></a>
+          <a class="button primary" href="?section=sky" data-app-section="sky">Explore the sky <span aria-hidden="true">→</span></a>
           <a class="button" href="?section=compare" data-app-section="compare">Compare worlds</a>
           <a class="text-link" href="?section=sources" data-app-section="sources">See the current data release <span aria-hidden="true">↗</span></a>
         </div>
       </div>
-      <div class="hero-visual" aria-hidden="true">
-        <div class="orbit orbit-one"></div>
-        <div class="orbit orbit-two"></div>
-        <div class="orbit orbit-three"></div>
-        <div class="hero-star"></div>
-        <div class="hero-planet"><span></span></div>
-        <div class="coordinate-readout">PARAMETRIC ORBIT<br>READABLE SCALE<br><b>SCIENTIFIC ILLUSTRATION</b></div>
-      </div>
-      <div class="release-strip" aria-live="polite">
-        <div><strong id="metric-objects">Loading…</strong><span>catalog-union objects</span></div>
-        <div><strong id="metric-records">—</strong><span>source-native rows</span></div>
-        <div><strong id="metric-sources">—</strong><span>declared source contracts</span></div>
-        <p id="release-time">Opening the versioned public release…</p>
+      <div id="release-summary" class="release-strip" data-loading-state="loading" aria-live="polite" aria-busy="true">
+        <div><strong id="metric-objects">Loading…</strong><span>resolved object identities</span></div>
+        <div><strong id="metric-records">—</strong><span>ambiguous or unreviewed records</span></div>
+        <div><strong id="metric-sources">—</strong><span>contributing / declared sources</span></div>
+        <p id="release-time">Opening the current evidence release…</p>
       </div>
     </section>
 
-    <section class="workspace app-page" data-page="atlas" id="sky-explorer" aria-labelledby="atlas-title">
+    <section class="workspace app-page sky-page" data-page="sky" id="sky-explorer" aria-labelledby="atlas-title" hidden>
       <div class="section-heading compact-heading">
-        <div><p class="eyebrow">Interactive celestial sphere</p><h2 id="atlas-title">The detection sky</h2><p class="section-intro">Select a point, search by name, or refine the catalog. Every visible point retains its scientific status and source membership.</p></div>
+        <div><p class="eyebrow">Interactive celestial sphere</p><h1 id="atlas-title">The detection sky</h1><p class="section-intro">Select a point, search by name, or refine the catalog. Every visible point retains its scientific status and source membership.</p></div>
         <p id="atlas-count" class="count-badge">Loading atlas…</p>
       </div>
+      <div id="atlas-loading" class="loading-shell" role="status" aria-live="polite"><span class="loading-pulse" aria-hidden="true"></span><span>Preparing the sky projection…</span></div>
       <details class="filter-drawer">
-        <summary><span>Refine the sky</span><small>Status, method, source, and discovery year</small></summary>
+        <summary><span>Refine the sky</span><small>Status, identity, method, source, and discovery year</small></summary>
         <div class="filter-grid" aria-label="Atlas filters">
           <label>Status<select id="atlas-status"><option value="all">All statuses</option></select></label>
           <label>Method<select id="atlas-method"><option value="all">All methods</option></select></label>
           <label>Source<select id="atlas-source"><option value="all">All retained sources</option></select></label>
+          <label>Identity mode<select id="identity-mode"><option value="resolved">Resolved worlds</option><option value="all">All identities and records</option><option value="ambiguous">Ambiguous identities</option><option value="unreviewed">Unreviewed records</option></select></label>
+          <label>Method basis<select id="method-basis"><option value="claims">Any retained method claim</option><option value="primary">Primary catalog method</option></select></label>
           <label>Discovery year from<input id="atlas-year-start" type="number" min="1780" max="2100" value="1780"></label>
           <label>Through<input id="atlas-year-end" type="number" min="1780" max="2100" value="2100"></label>
           <button id="atlas-reset" class="button" type="button">Reset filters</button>
@@ -95,30 +91,33 @@
     </section>
 
     <section class="workspace app-page object-page" data-page="object" id="object-evidence" aria-labelledby="object-name" hidden>
-      <a class="back-link" href="?section=atlas" data-app-section="atlas">← Back to the sky</a>
+      <a class="back-link" href="?section=sky" data-app-section="sky">← Back to the sky</a>
       <div class="object-heading">
-        <div><p class="eyebrow">Object workspace</p><h1 id="object-name">Selected world</h1><p id="object-subtitle" class="muted"></p></div>
+        <div><p class="eyebrow">Object workspace</p><h1 id="object-name" tabindex="-1">Selected world</h1><p id="object-subtitle" class="muted"></p></div>
         <span id="object-status" class="status-pill">No object selected</span>
       </div>
-      <div id="object-empty" class="empty-state"><p>Choose an object from Discover or Compare to open its workspace.</p></div>
+      <div id="object-empty" class="empty-state"><p>Choose an object from Discover, Sky, or Compare to open its workspace.</p></div>
       <div id="object-dossier" hidden>
         <div class="object-toolbar">
           <button id="add-to-compare" class="button primary" type="button">Add to comparison</button>
           <button id="copy-link" class="button" type="button">Copy link</button>
           <button id="download-object" class="button" type="button">Download JSON</button>
         </div>
-        <nav class="tabs object-tabs" aria-label="Object workspace views" role="tablist">
-          <button class="active" data-tab="overview" type="button" role="tab" aria-selected="true">Overview</button>
-          <button data-tab="system" type="button" role="tab" aria-selected="false">System &amp; orbit</button>
-          <button data-tab="measurements" type="button" role="tab" aria-selected="false">Measurements</button>
-          <button data-tab="sources" type="button" role="tab" aria-selected="false">Evidence</button>
-          <button data-tab="provenance" type="button" role="tab" aria-selected="false">Identity &amp; provenance</button>
-        </nav>
-        <div id="tab-overview" class="tab-panel" role="tabpanel"></div>
-        <div id="tab-system" class="tab-panel" role="tabpanel" hidden></div>
-        <div id="tab-measurements" class="tab-panel" role="tabpanel" hidden></div>
-        <div id="tab-sources" class="tab-panel" role="tabpanel" hidden></div>
-        <div id="tab-provenance" class="tab-panel" role="tabpanel" hidden></div>
+        <div class="tab-rail">
+          <nav class="tabs object-tabs" aria-label="Object workspace views" role="tablist">
+            <button id="object-tab-overview" class="active" data-tab="overview" type="button" role="tab" aria-selected="true" aria-controls="tab-overview">Overview</button>
+            <button id="object-tab-system" data-tab="system" type="button" role="tab" aria-selected="false" aria-controls="tab-system">System &amp; orbit</button>
+            <button id="object-tab-measurements" data-tab="measurements" type="button" role="tab" aria-selected="false" aria-controls="tab-measurements">Measurements</button>
+            <button id="object-tab-sources" data-tab="sources" type="button" role="tab" aria-selected="false" aria-controls="tab-sources">Evidence</button>
+            <button id="object-tab-provenance" data-tab="provenance" type="button" role="tab" aria-selected="false" aria-controls="tab-provenance">Identity &amp; provenance</button>
+          </nav>
+          <span class="tab-overflow-hint" aria-hidden="true">Swipe for more →</span>
+        </div>
+        <div id="tab-overview" class="tab-panel" role="tabpanel" aria-labelledby="object-tab-overview"></div>
+        <div id="tab-system" class="tab-panel" role="tabpanel" aria-labelledby="object-tab-system" hidden></div>
+        <div id="tab-measurements" class="tab-panel" role="tabpanel" aria-labelledby="object-tab-measurements" hidden></div>
+        <div id="tab-sources" class="tab-panel" role="tabpanel" aria-labelledby="object-tab-sources" hidden></div>
+        <div id="tab-provenance" class="tab-panel" role="tabpanel" aria-labelledby="object-tab-provenance" hidden></div>
       </div>
     </section>
 
@@ -132,14 +131,19 @@
       </nav>
       <section id="compare-objects-panel" class="compare-view-panel direct-compare" aria-labelledby="direct-compare-title">
         <div class="compare-intro"><div><p class="eyebrow">Object-to-object workspace</p><h2 id="direct-compare-title">Choose up to four worlds</h2><p class="muted">Values use consistent units and remain linked to their displayed source. Missing evidence stays visible.</p></div>
-          <div class="compare-picker"><label for="compare-search">Add a planet, candidate, or host</label><input id="compare-search" type="search" autocomplete="off" placeholder="Try TRAPPIST-1 e…"><div id="compare-results" class="compare-results" role="listbox" hidden></div></div>
+          <div class="compare-picker"><label for="compare-search">Add a planet, candidate, or host</label><input id="compare-search" type="search" role="combobox" aria-autocomplete="list" aria-controls="compare-results" aria-expanded="false" aria-haspopup="listbox" autocomplete="off" placeholder="Try TRAPPIST-1 e…"><div id="compare-results" class="compare-results" role="listbox" hidden></div></div>
         </div>
         <div id="compare-selected" class="compare-selected"></div>
+        <div id="comparison-cards" class="comparison-cards" aria-live="polite" hidden></div>
         <div id="comparison-table" class="comparison-table"></div>
       </section>
       <section id="compare-population-panel" class="compare-view-panel population-panel" hidden>
-        <div class="section-heading compact-heading"><div><p class="eyebrow">Population context</p><h2>See the selection effects</h2></div><button id="download-plot" class="button" type="button">Download plotted data</button></div>
+        <div class="section-heading compact-heading"><div><p class="eyebrow">Population context</p><h2>See the selection effects</h2></div><button id="download-plot" class="button" type="button" disabled>Download plotted data</button></div>
         <div id="plot-guide" class="plot-guide"></div>
+        <div class="plot-context">
+          <div id="plot-legend" class="plot-legend" aria-label="Population plot status legend"><span><i class="confirmed"></i>Confirmed</span><span><i class="candidate"></i>Candidate</span><span><i class="false"></i>False positive or refuted</span><span><i class="other"></i>Contested or other</span></div>
+          <div id="plot-active-sample" class="active-sample">Active sample follows the current Sky filters.</div>
+        </div>
         <div class="plot-controls">
           <label>X axis<select id="plot-x"></select></label><label>Y axis<select id="plot-y"></select></label>
           <label class="check"><input id="plot-x-log" type="checkbox" checked> Logarithmic X</label><label class="check"><input id="plot-y-log" type="checkbox" checked> Logarithmic Y</label>
@@ -147,6 +151,11 @@
         <div class="plot-wrap"><canvas id="plot" aria-label="Interactive exoplanet population scatter plot"></canvas></div>
         <p id="plot-accounting" class="accounting"></p>
         <p class="fineprint">This is the retained detected population, not the true underlying population. Missing and excluded rows are counted explicitly above.</p>
+        <details id="plot-table-fallback" class="plot-table-fallback">
+          <summary>Browse the active plotted sample as a table</summary>
+          <div class="table-wrap"><table><thead><tr><th>Object</th><th>Status</th><th>Primary displayed method</th><th id="plot-table-x-heading">X value</th><th id="plot-table-y-heading">Y value</th></tr></thead><tbody id="plot-table-body"><tr><td colspan="5" class="muted">The accessible table is prepared with the active sample.</td></tr></tbody></table></div>
+          <p class="fineprint">The table may show a bounded, named sample while the downloadable artifact preserves every plotted row.</p>
+        </details>
       </section>
     </section>
 
@@ -155,8 +164,11 @@
         <div><p class="eyebrow">How worlds become detectable</p><h1 id="methods-title">Methods, signals, and blind spots.</h1><p class="section-intro">Each technique reveals a different slice of the planet population. Explore what it measures, what it favors, and where interpretation can fail.</p></div>
       </div>
       <input id="learning-depth" type="hidden" value="research">
-      <div id="method-tabs" class="method-tabs" role="tablist" aria-label="Detection methods"></div>
-      <article id="method-detail" class="method-detail"></article>
+      <div class="tab-rail method-tab-rail">
+        <div id="method-tabs" class="method-tabs" role="tablist" aria-label="Detection methods"></div>
+        <span class="tab-overflow-hint" aria-hidden="true">Swipe for more methods →</span>
+      </div>
+      <article id="method-detail" class="method-detail" role="tabpanel"></article>
     </section>
 
     <section class="workspace app-page" data-page="sources" id="coverage" aria-labelledby="coverage-title" hidden>
@@ -169,10 +181,17 @@
         <button type="button" data-data-view="downloads" aria-pressed="false">Downloads</button>
       </nav>
       <section id="data-coverage-panel" class="data-view-panel">
-        <div class="data-toolbar"><div id="source-summary" class="summary-grid"></div><label>Sources shown<select id="source-state-filter"><option value="active">Active sources</option><option value="inactive">Inactive contracts</option><option value="all">All declared sources</option></select></label></div>
-        <div id="source-list" class="source-list"></div>
+        <p id="source-plain-summary" class="plain-language-summary">Contributing sources supply rows to this release. Monitored sources responded to a check but may not yet contribute measurements. Unavailable and planned sources remain visible without being counted as coverage.</p>
+        <div class="data-toolbar"><div id="source-summary" class="summary-grid"></div><label>Sources shown<select id="source-state-filter"><option value="contributing">Contributing sources</option><option value="monitored">Monitored sources</option><option value="unavailable">Unavailable this attempt</option><option value="planned">Planned coverage</option><option value="all">All declared sources</option></select></label></div>
+        <div id="source-list" class="source-list source-groups">
+          <details class="source-group" data-source-group="contributing" open><summary><span><strong>Contributing</strong><small>Validated rows are present in this release.</small></span><span id="source-group-contributing-count" class="group-count">—</span></summary><div id="source-group-contributing" class="source-group-rows"></div></details>
+          <details class="source-group" data-source-group="monitored"><summary><span><strong>Monitored</strong><small>The provider responded; ingestion is a separate state.</small></span><span id="source-group-monitored-count" class="group-count">—</span></summary><div id="source-group-monitored" class="source-group-rows"></div></details>
+          <details class="source-group" data-source-group="unavailable"><summary><span><strong>Unavailable this attempt</strong><small>The last validated atlas remains active.</small></span><span id="source-group-unavailable-count" class="group-count">—</span></summary><div id="source-group-unavailable" class="source-group-rows"></div></details>
+          <details class="source-group" data-source-group="planned"><summary><span><strong>Planned</strong><small>A declared contract exists, but no validated adapter contributes rows.</small></span><span id="source-group-planned-count" class="group-count">—</span></summary><div id="source-group-planned" class="source-group-rows"></div></details>
+        </div>
       </section>
       <section id="data-updates-panel" class="data-view-panel" hidden>
+        <p id="update-plain-summary" class="plain-language-summary">Checks discover provider changes. Only measurements that preserve identity, units, uncertainty, and provenance can enter the public atlas; failed checks never replace the last validated release.</p>
         <div id="release-timeline" class="summary-grid release-timeline"></div>
         <div class="update-grid">
           <article><p class="eyebrow">Latest provider attempt</p><div id="provider-health" class="provider-health"><span class="health-dot"></span><span>Loading provider health…</span></div></article>
@@ -193,7 +212,7 @@
   </main>
 
   <footer><p><strong>WorldsIndex</strong><span>Powered by ExoNexus</span></p><p>Versioned evidence · source-native measurements · reproducible downloads</p><a href="../index.html">Jack McGuire ↗</a></footer>
-  <div id="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="assets/app.js?v=20260830-observatory1"></script>
+  <div id="toast" role="status" aria-live="polite" aria-hidden="true"></div>
+  <script type="module" src="assets/app.js?v=20260831-evidence3"></script>
 </body>
 </html>
