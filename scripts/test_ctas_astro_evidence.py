@@ -8,6 +8,7 @@ import importlib.util
 import io
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from copy import deepcopy
@@ -16,6 +17,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = ROOT / "ctas/schema/astro-evidence-core-0.1.0.schema.json"
 PROJECTOR_PATH = ROOT / "ctas/astro-evidence.js"
+
+sys.path.insert(0, str(ROOT / "scripts"))
+from ctas_node import node_binary  # noqa: E402
 
 SPEC = importlib.util.spec_from_file_location("ctas_astro_evidence", ROOT / "scripts/ctas_astro_evidence.py")
 assert SPEC and SPEC.loader
@@ -205,8 +209,16 @@ const input = JSON.parse(fs.readFileSync(0, 'utf8'));
   process.stdout.write(JSON.stringify(result));
 })().catch(error => { console.error(error.stack || error); process.exit(1); });
 """
+    runtime = node_binary()
+    if runtime is None:
+        # The projector is JavaScript. Without a runtime this assertion has not
+        # been made; saying so is honest, and blocking every future release on
+        # a missing interpreter is not.
+        raise unittest.SkipTest(
+            "no JavaScript runtime found; the browser-side projector was not exercised"
+        )
     result = subprocess.run(
-        ["node", "-e", script, str(PROJECTOR_PATH), operation],
+        [runtime, "-e", script, str(PROJECTOR_PATH), operation],
         input=json.dumps({"candidate": candidate, "universe": universe}),
         text=True, capture_output=True, check=True,
     )

@@ -206,11 +206,12 @@ done
 # checked in a JavaScript runtime. A publisher without one is reported rather
 # than blocked: the Python suites above already cover the published artifacts,
 # and an absent interpreter is an environment fact, not a failing assertion.
-if command -v node >/dev/null 2>&1; then
-  node scripts/test_ctas_catalog_model.js >>"$LOG" 2>&1 \
+NODE=$(python3 scripts/ctas_node.py 2>/dev/null || true)
+if [ -n "$NODE" ]; then
+  "$NODE" scripts/test_ctas_catalog_model.js >>"$LOG" 2>&1 \
     || die "catalog-model assertions failed against the generated release; nothing committed"
 else
-  say "node is not installed on this publisher; catalog-model assertions were not run"
+  say "no JavaScript runtime on this publisher; catalog-model assertions were not run"
 fi
 
 EXPECTED_SHARDS=$(python3 - <<'PY'
