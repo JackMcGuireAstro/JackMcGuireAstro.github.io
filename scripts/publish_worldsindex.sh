@@ -86,8 +86,25 @@ doc=json.load(open(sys.argv[1]))
 print(",".join(sorted(str(row.get("sourceId")) for row in doc.get("observations",[]) if row.get("changed") is True)))
 ' "$SOURCE/outputs/sync/latest-attempt.json" 2>/dev/null || true)
 if [ "$MONITOR_STATE" = "VALIDATED_CHANGED" ]; then
-  say "upstream change markers detected: ${CHANGED_SOURCES:-unspecified}; publishing the receipt but retaining the reconciled catalog until its source-specific promotion gate passes"
+  say "upstream change markers detected: ${CHANGED_SOURCES:-unspecified}; each source's promotion gate decides separately"
 fi
+
+# ---- Source-specific promotion gates ------------------------------------------------------
+# Exoplanet.eu is the only source with an automatic gate so far. The gate retrieves, diffs row
+# by row, proposes and bounds a new release contract, rebuilds strictly, replays the database
+# from empty, activates, and verifies — or leaves everything exactly as it was. Its exit code is
+# informational here: a withheld, rejected, or failed promotion is a valid outcome that keeps
+# the previous release active, and the outcome is recorded for the public status file.
+case ",$CHANGED_SOURCES," in
+  *,exoplanet-eu,*)
+    say "running the Exoplanet.eu promotion gate"
+    PROMOTE_EXIT=0
+    (cd "$SOURCE" && npm run exoplanet-eu:promote) >>"$LOG" 2>&1 || PROMOTE_EXIT=$?
+    PROMOTE_OUTCOME=$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d.get("outcome","UNKNOWN")+": "+d.get("detail",""))' "$SOURCE/outputs/promotion/exoplanet-eu/latest.json" 2>/dev/null || echo "UNRECORDED")
+    say "Exoplanet.eu promotion gate exit $PROMOTE_EXIT — $PROMOTE_OUTCOME"
+    ;;
+esac
+# ----------------------------------------------------------------------------------------
 if [ "$MONITOR_STATE" = "QUARANTINED" ]; then
   say "one or more providers failed; publishing the typed failure receipt while retaining every catalog measurement from the last-good reconciled snapshots"
 fi

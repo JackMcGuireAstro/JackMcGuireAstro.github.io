@@ -15,8 +15,18 @@ const detailRoot = join(outputRoot, 'details');
 await mkdir(detailRoot, { recursive: true });
 await copyFile(join(sourceRoot, 'public/data/sky-detections.json.gz'), join(outputRoot, 'sky-detections.json.gz'));
 if (process.env.WORLDSINDEX_SKIP_MONITOR_COPY !== '1') {
-  await copyFile(join(sourceRoot, 'public/data/sync/latest.json'), join(outputRoot, 'source-monitor.json'));
+  // The monitor's public status, plus the latest recorded outcome of each source-specific
+  // promotion gate (the monitor cannot promote; the gate runs after it in the publisher).
+  const monitorStatus = JSON.parse(await readFile(join(sourceRoot, 'public/data/sync/latest.json'), 'utf8'));
+  const promotionLatest = await readFile(join(sourceRoot, 'outputs/promotion/exoplanet-eu/latest.json'), 'utf8').then(JSON.parse).catch(() => null);
+  if (monitorStatus.datasetPromotion && typeof monitorStatus.datasetPromotion === 'object') {
+    monitorStatus.datasetPromotion.latestOutcome = promotionLatest;
+  }
+  await writeFile(join(outputRoot, 'source-monitor.json'), `${JSON.stringify(monitorStatus, null, 2)}\n`);
 }
+// Every consumer of the Exoplanet.eu projection reads the active-snapshot pointer.
+const exoplanetEuPointer = JSON.parse(await readFile(join(sourceRoot, 'data/snapshots/exoplanet-eu/ACTIVE.json'), 'utf8'));
+if (exoplanetEuPointer.schemaVersion !== 'worldsindex-active-snapshot.v1' || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(exoplanetEuPointer.directory)) throw new Error('Unsupported Exoplanet.eu active-snapshot pointer');
 
 function loadGzipJson(relativePath) {
   return readFile(join(sourceRoot, relativePath)).then((bytes) => JSON.parse(gunzipSync(bytes).toString('utf8')));
@@ -234,7 +244,7 @@ for (const [table, records] of [['toi', toiRecords], ['cumulative', koiRecords],
   }
 }
 
-const exoplanetEu = parseCsv(await readFile(join(sourceRoot, 'data/snapshots/exoplanet-eu/2026-08-30-all-status/catalog.csv'), 'utf8'));
+const exoplanetEu = parseCsv(await readFile(join(sourceRoot, 'data/snapshots/exoplanet-eu', exoplanetEuPointer.directory, 'catalog.csv'), 'utf8'));
 const euFields = ['planet_status','mass','mass_error_min','mass_error_max','mass_sini','mass_sini_error_min','mass_sini_error_max','radius','radius_error_min','radius_error_max','orbital_period','orbital_period_error_min','orbital_period_error_max','semi_major_axis','semi_major_axis_error_min','semi_major_axis_error_max','eccentricity','eccentricity_error_min','eccentricity_error_max','inclination','inclination_error_min','inclination_error_max','discovered','updated','temp_calculated','temp_measured','publication','detection_type','mass_measurement_type','radius_measurement_type','alternate_names','molecules','star_name','ra','dec','star_distance','star_mass','star_radius','star_teff'];
 for (const row of exoplanetEu) {
   const slug = row.name.normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');

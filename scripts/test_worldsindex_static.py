@@ -133,7 +133,9 @@ def main() -> None:
     assert "83/100" not in html + javascript
     assert "else await selectObject" not in javascript, "A clean visit must not preselect a featured object"
     assert "query.get('compare')||''" in javascript, "Comparison must not start with arbitrary default objects"
-    assert "scientific promotion pending" in javascript
+    assert "promotion gate decides separately" in javascript
+    assert "withheld for review; previous release retained" in javascript, "the UI must be able to say a change was withheld"
+    assert "rehearsal, not an official retrieval" in javascript, "a rehearsal outcome must never read as a real promotion"
     assert "executePrimarySearch" in javascript
     assert "exactSearchResult" in javascript
     assert "selectObject(first.dataset.object" not in javascript, "Ambiguous searches must not silently open the first result"
