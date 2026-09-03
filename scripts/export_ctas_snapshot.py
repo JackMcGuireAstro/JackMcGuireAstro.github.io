@@ -3868,7 +3868,7 @@ def main() -> int:
         "scripts/check_ctas_links.py", "scripts/rebuild_ctas_release_history.py",
         "scripts/test_ctas_static.py", "scripts/test_ctas_catalog_model.js",
         "scripts/test_ctas_links.py", "scripts/test_ctas_astro_evidence.py",
-        "scripts/test_ctas_identity.py",
+        "scripts/test_ctas_identity.py", "scripts/test_ctas_browser.py",
         "scripts/mirror_loop.sh", "scripts/publish_ctas.sh", "scripts/ctas_launchd_runner.sh",
         "scripts/install_ctas_mirror.sh", "scripts/diagnose_ctas_mirror.sh",
         "scripts/io.github.jackmcguireastro.ctas-mirror.plist", "CTAS-AUTOMATION.md",

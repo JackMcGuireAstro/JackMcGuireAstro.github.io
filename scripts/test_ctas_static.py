@@ -590,6 +590,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
             "scripts/test_ctas_links.py",
             "scripts/test_ctas_astro_evidence.py",
             "scripts/test_ctas_identity.py",
+            "scripts/test_ctas_browser.py",
         ):
             self.assertIn(relative, self.certificate["files"])
             self.assertEqual(
@@ -720,7 +721,11 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn('id="catalog-downloads"', html)
         self.assertIn("Download complete-catalog manifest", html)
         self.assertIn("function renderCatalogDownloads()", app)
-        self.assertIn('getJSON("candidate-chunks/manifest.json" + suffix)', app)
+        # The 4096-shard manifest is fetched on demand, never to draw a first
+        # screen: it is needed only to verify a shard or list the downloads.
+        self.assertIn("function ensureCatalogManifest()", app)
+        self.assertIn('getJSON("candidate-chunks/manifest.json")', app)
+        self.assertNotIn('getJSON("candidate-chunks/manifest.json" + suffix)', app)
         self.assertIn("safeCatalogDownloadPath(row.path)", app)
         self.assertIn('download>Download part', app)
         self.assertNotIn("ctas/data/candidates.json", html + app)

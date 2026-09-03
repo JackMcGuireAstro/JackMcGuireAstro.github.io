@@ -1061,7 +1061,9 @@
     if (!el.downloadStatus || !el.downloadParts) return;
     var manifest = state.catalogManifest;
     if (!manifest || !Array.isArray(manifest.chunks)) {
-      el.downloadStatus.textContent = "The download manifest is temporarily unavailable; catalog browsing remains usable.";
+      el.downloadStatus.textContent = state.catalogManifestPromise
+        ? "Loading the complete-catalog download manifest…"
+        : "The complete-catalog download manifest loads on request; catalog browsing does not need it.";
       el.downloadParts.innerHTML = "";
       return;
     }
@@ -1427,6 +1429,23 @@
       return Array.prototype.map.call(new Uint8Array(digest), function (value) { return value.toString(16).padStart(2, "0"); }).join("");
     });
   }
+  function ensureCatalogManifest() {
+    if (state.catalogManifest) return Promise.resolve(state.catalogManifest);
+    if (!state.catalogManifestPromise) {
+      state.catalogManifestPromise = getJSON("candidate-chunks/manifest.json").then(function (manifest) {
+        if (!manifest || manifest.catalog_content_checksum_sha256 !== (state.snapshot || {}).catalog_content_checksum_sha256) {
+          throw new Error("The detail manifest belongs to a different catalog release. Refresh after publication finishes.");
+        }
+        state.catalogManifest = manifest;
+        renderCatalogDownloads();
+        return manifest;
+      }).catch(function (error) {
+        state.catalogManifestPromise = null;
+        throw error;
+      });
+    }
+    return state.catalogManifestPromise;
+  }
   function chunkMetadata(path) {
     var rows = (state.catalogManifest || {}).chunks || [];
     return rows.find(function (row) { return text(row.path).replace(/^ctas\/data\//, "") === path; });
@@ -1506,6 +1525,7 @@
   function loadChunk(path) {
     if (!state.chunks[path]) {
       state.chunks[path] = (function () {
+        return ensureCatalogManifest().then(function () {
         var metadata = chunkMetadata(path);
         if (!metadata || !/^[0-9a-f]{64}$/.test(text(metadata.sha256))) return Promise.reject(new Error("The release manifest does not bind this detail shard."));
         return fetch(DATA_DIR + path, {cache: "no-cache"}).then(function (response) {
@@ -1524,6 +1544,7 @@
               return document_;
             });
           });
+        });
         });
       }()).catch(function (error) { delete state.chunks[path]; throw error; });
     }
@@ -1828,6 +1849,17 @@
     if (el.coneDec) el.coneDec.addEventListener("input", function () { state.coneDec = inputNumber(el.coneDec); rerenderForFilters(); });
     if (el.coneRadius) el.coneRadius.addEventListener("input", function () { state.coneRadius = inputNumber(el.coneRadius); rerenderForFilters(); });
     if (el.clear) el.clear.addEventListener("click", clearFilters);
+    var downloadPanel = document.getElementById("catalog-downloads");
+    if (downloadPanel) {
+      downloadPanel.addEventListener("toggle", function () {
+        if (downloadPanel.open && !state.catalogManifest) {
+          renderCatalogDownloads();
+          ensureCatalogManifest().catch(function (error) {
+            if (el.downloadStatus) el.downloadStatus.textContent = "The download manifest could not be loaded: " + (error.message || "unknown error");
+          });
+        }
+      });
+    }
     if (el.loadComplete) {
       el.loadComplete.addEventListener("click", function () {
         el.loadComplete.disabled = true;
@@ -1990,8 +2022,9 @@
     if (!checksum) problems.push("browser bootstrap has no catalog checksum");
     if (status && status.catalog_content_checksum_sha256 !== checksum) problems.push("status belongs to a different catalog checksum");
     if (manifest && manifest.catalog_content_checksum_sha256 !== checksum) problems.push("detail manifest belongs to a different catalog checksum");
+    // The detail manifest is fetched lazily, so its absence here is normal.
     if (Number(index && index.candidate_count) !== Number(status && status.candidate_count)) problems.push("status and bootstrap candidate counts differ");
-    if (Number(index && index.candidate_count) !== Number(manifest && manifest.candidate_count)) problems.push("manifest and bootstrap candidate counts differ");
+    if (manifest && Number(index && index.candidate_count) !== Number(manifest.candidate_count)) problems.push("manifest and bootstrap candidate counts differ");
     var expectedUniverse = ((index || {}).source_universe || {}).contract_set_checksum_sha256;
     if (expectedUniverse && universe && universe.contract_set_checksum_sha256 !== expectedUniverse) problems.push("source universe contract set differs from the bootstrap binding");
     if (problems.length) throw new Error("CTAS detected a staggered or mixed static release: " + problems.join("; ") + ". Refresh after publication finishes.");
@@ -2007,7 +2040,7 @@
       }), getJSON("status.json" + suffix).catch(function () { return null; }),
       getJSON("source-universe.json" + suffix).catch(function () { return null; }),
       getJSON("release-history.json" + suffix).catch(function () { return null; }),
-      getJSON("candidate-chunks/manifest.json" + suffix).catch(function () { return null; })
+      Promise.resolve(null)
     ]).then(function (result) { assertReleaseConsistency(result[0], result[1], result[2], result[4]); return result; });
   }
   function boot() {
@@ -2036,6 +2069,7 @@
           var index = result[0];
           state.snapshot = index; state.candidates = window.CTASCatalogModel.inflateBootstrap(index); state.chunks = {}; state.aliasIndex = null; state.aliasPromise = null;
           state.sourceMatrixPatterns = null; state.sourceMatrixPatternsPromise = null; state.completeCatalogLoaded = false;
+          state.catalogManifestPromise = null;
           state.sourceUniverse = result[2]; state.releaseHistory = result[3]; state.catalogManifest = result[4]; state.status = result[1] || status;
           populateFilters(); restoreFiltersFromRoute(); renderStatus(); renderOverview(); renderCatalogDownloads(); renderSourceUniverse(); renderReleaseHistory(); renderTable(); drawSky();
           window.dispatchEvent(new CustomEvent("ctas:snapshot", {detail: {snapshot: state.snapshot, status: state.status,
