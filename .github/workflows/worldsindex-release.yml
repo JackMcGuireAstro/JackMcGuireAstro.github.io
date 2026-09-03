@@ -1,25 +1,32 @@
-name: Validate WorldsIndex release
+name: Validate and deploy site
+
+# Validation is the gate, not a post-mortem. GitHub Pages is deployed by the `deploy`
+# job below, which only runs when `validate` succeeds, so a commit that fails the static
+# release tests never becomes the live site; the previous successful deployment stays up.
+# This requires the repository's Pages source to be set to "GitHub Actions".
+#
+# Rollback: re-run the last green workflow run from the Actions tab (it redeploys that
+# commit's tree), or `git revert` the offending commit and push. Every successful deploy
+# leaves its commit SHA in the deployment history and in the `verify-live` job output.
 
 on:
   push:
     branches: [main]
-    paths:
-      - "worldsindex/**"
-      - "scripts/build_worldsindex_static.mjs"
-      - "scripts/test_worldsindex_static.py"
-      - "scripts/test_worldsindex_science.mjs"
-      - ".github/workflows/worldsindex-release.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
+# One deployment at a time; never cancel an in-flight deploy.
 concurrency:
-  group: worldsindex-release-${{ github.ref }}
-  cancel-in-progress: true
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  validate-static-release:
+  validate:
+    name: Validate WorldsIndex and CTAS static releases
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -30,10 +37,67 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Validate static data and GitHub-native application
+      - name: WorldsIndex static data, manifest-declared artifacts, and application
         run: |
           python3 scripts/test_worldsindex_static.py
           node scripts/test_worldsindex_science.mjs
           node --check worldsindex/assets/app.js
           node --check worldsindex/assets/science.js
+          node --check scripts/build_worldsindex_static.mjs
+      - name: CTAS static release
+        run: python3 scripts/test_ctas_static.py
+      - name: Whitespace and credential-shaped content
+        run: |
           git diff --check
+          if find worldsindex ctas -type f \( -name '.env*' -o -name '*.pem' -o -name '*.key' \) -print -quit | grep -q .; then
+            echo "credential-shaped file under the public tree" >&2; exit 1
+          fi
+          if grep -R -I -E 'ADS_API_TOKEN[[:space:]]*=|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}' worldsindex ctas >/dev/null 2>&1; then
+            echo "credential-shaped text under the public tree" >&2; exit 1
+          fi
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  verify-live:
+    name: Verify the live WorldsIndex release matches this commit
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare live manifest and catalog index against the deployed commit
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url || 'https://jackmcguireastro.github.io/' }}
+        run: |
+          set -euo pipefail
+          base="${PAGE_URL%/}/worldsindex/data"
+          expected_manifest=$(sha256sum worldsindex/data/manifest.json | cut -d' ' -f1)
+          expected_index=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifest.json"))["catalogIndexSha256"])')
+          for attempt in $(seq 1 12); do
+            live_manifest=$(curl -fsSL -H 'Cache-Control: no-cache' "$base/manifest.json?verify=$GITHUB_SHA" | sha256sum | cut -d' ' -f1 || true)
+            if [ "$live_manifest" = "$expected_manifest" ]; then break; fi
+            echo "attempt $attempt: live manifest $live_manifest != expected $expected_manifest; waiting for CDN"; sleep 20
+          done
+          [ "$live_manifest" = "$expected_manifest" ] || { echo "live manifest never matched commit $GITHUB_SHA" >&2; exit 1; }
+          live_index=$(curl -fsSL -H 'Cache-Control: no-cache' "$base/catalog-index.json.gz?verify=$GITHUB_SHA" | sha256sum | cut -d' ' -f1)
+          [ "$live_index" = "$expected_index" ] || { echo "live catalog index $live_index != manifest $expected_index" >&2; exit 1; }
+          objects=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifest.json"))["objectCount"])')
+          rows=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifest.json"))["detailRecordCount"])')
+          echo "live WorldsIndex release verified for $GITHUB_SHA: $objects objects, $rows native rows, catalog index $expected_index"

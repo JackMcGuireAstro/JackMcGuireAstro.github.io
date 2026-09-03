@@ -16,12 +16,26 @@ Mac is awake, online, and the user is logged in. It:
    monitor crashes that cannot produce a valid receipt;
 4. runs ExoNexus type checking, tests, lint, production build, and atlas build;
 5. creates and validates the GitHub-native static release;
-6. stages only the explicit WorldsIndex data allowlist; and
-7. pushes the resulting commit to `main` over unattended SSH.
+6. refuses to commit unless every artifact the release manifest declares is
+   present and in the explicit allowlist, and nothing else under
+   `worldsindex/data` was left modified or untracked;
+7. stages only that allowlist; and
+8. pushes the resulting commit to `main` over unattended SSH.
 
-GitHub then runs the WorldsIndex release-validation workflow. GitHub Pages
-publishes the repository; it does not query scientific providers or hold their
-credentials.
+GitHub then runs the `Validate and deploy site` workflow. **Validation is the
+deployment gate**: the `deploy` job runs only when `validate` succeeds, so a
+commit that fails the static release tests never becomes the live site and the
+previous successful deployment stays up. A final `verify-live` job fetches the
+deployed manifest and catalog index and confirms their hashes match the commit.
+GitHub Pages does not query scientific providers or hold their credentials.
+
+This requires the repository's Pages source to be **GitHub Actions** (Settings →
+Pages → Build and deployment → Source). With the older "Deploy from a branch"
+setting, Pages would publish every push to `main` before validation finished.
+
+Rollback: re-run the last green workflow run from the Actions tab, which
+redeploys that commit's tree unchanged, or `git revert` the offending commit and
+push. Nothing is ever force-pushed.
 
 Because macOS blocks background launch agents from reading Documents, the
 installer makes a launchd-readable operational copy of ExoNexus at
