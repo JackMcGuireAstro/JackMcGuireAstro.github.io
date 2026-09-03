@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sky Notebook · Learn to read the sky's evidence with CTAS and WorldsIndex</title>
+<meta name="description" content="A short, free course for students and citizen scientists: ten lessons on reading transient alerts and exoplanet claims, each built around a real object you open in CTAS or WorldsIndex.">
+<link rel="canonical" href="https://jackmcguireastro.github.io/learn/">
+<meta property="og:title" content="Sky Notebook · Learn to read the sky's evidence">
+<meta property="og:description" content="Ten short lessons, two tracks, real objects. Make your call, open the record, see what the evidence actually says.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jackmcguireastro.github.io/learn/">
+<link rel="stylesheet" href="learn.css?v=20260903">
+</head>
+<body>
+<a class="skip" href="#main">Skip to the course</a>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="bar__home" href="../index.html">Jack McGuire <small>Sky Notebook</small></a>
+    <nav class="tracks" aria-label="Course tracks">
+      <a href="#transients" data-track="transients">Transients</a>
+      <a href="#worlds" data-track="worlds">Worlds</a>
+    </nav>
+    <div class="progress" aria-live="polite">
+      <span class="progress__bar" aria-hidden="true"><i id="progress-fill"></i></span>
+      <span id="progress-text">0 of 10 done</span>
+      <button type="button" id="progress-reset" hidden>reset</button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ================================================================ hero -->
+<section class="hero">
+  <div class="wrap">
+    <h1>The sky changes. Learn to tell what it's actually saying.</h1>
+    <p>Ten short lessons. Every one is built on a real object you can open in CTAS or WorldsIndex. You make your call first, then check it against the evidence.</p>
+    <div class="hero__ctas">
+      <a class="btn btn--star" href="#transients">Start with things that flash</a>
+      <a class="btn" href="#worlds">Start with other worlds</a>
+    </div>
+
+    <figure class="hero__sky" aria-labelledby="hero-cap">
+      <svg viewBox="0 0 1200 380" role="img" aria-label="A field of stars; one of them is brightening">
+        <defs>
+          <radialGradient id="glow"><stop offset="0" stop-color="#fff5cf"/><stop offset=".35" stop-color="#e8a93a" stop-opacity=".8"/><stop offset="1" stop-color="#e8a93a" stop-opacity="0"/></radialGradient>
+        </defs>
+        <rect width="1200" height="380" fill="#0d1524"/>
+        <g fill="#dfe7f5" id="stars"></g>
+        <g class="animate" style="animation: pulse 3.2s ease-in-out infinite; transform-origin: 830px 150px;">
+          <circle cx="830" cy="150" r="46" fill="url(#glow)"/>
+          <circle cx="830" cy="150" r="4" fill="#fff8e1"/>
+        </g>
+        <g fill="#9fb0cc" font-family="ui-monospace, Menlo, monospace" font-size="13">
+          <text x="860" y="118">something changed here</text>
+          <line x1="852" y1="124" x2="842" y2="140" stroke="#9fb0cc" stroke-width="1"/>
+        </g>
+        <style>@keyframes pulse { 0%,100% { transform: scale(.55); opacity:.5 } 50% { transform: scale(1); opacity:1 } }</style>
+      </svg>
+    </figure>
+    <p class="hero__caption" id="hero-cap">A report that a point of light changed is where every lesson here begins. What happens next is the interesting part.</p>
+  </div>
+</section>
+
+<!-- ============================================================ TRANSIENTS -->
+<section class="track" id="transients" data-track="transients">
+  <div class="wrap">
+    <div class="track__head">
+      <div class="track__glyph" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none" stroke="#e8a93a" stroke-width="2" stroke-linecap="round"><path d="M16 4v6M16 22v6M4 16h6M22 16h6M7.5 7.5l4 4M20.5 20.5l4 4M7.5 24.5l4-4M20.5 11.5l4-4"/><circle cx="16" cy="16" r="3" fill="#e8a93a" stroke="none"/></svg>
+      </div>
+      <div>
+        <h2>Track one: things that flash</h2>
+        <p>Supernovae, neutrino alerts, gravitational waves. CTAS collects public reports of anything in the sky that changed. These five lessons teach you to read one of those reports without believing more than it says.</p>
+        <ol class="track__list" aria-label="Lessons in this track">
+          <li><a href="#t1" data-lesson="t1">1 · What a report is</a></li>
+          <li><a href="#t2" data-lesson="t2">2 · Seen, or not seen</a></li>
+          <li><a href="#t3" data-lesson="t3">3 · Who said what</a></li>
+          <li><a href="#t4" data-lesson="t4">4 · Taking it back</a></li>
+          <li><a href="#t5" data-lesson="t5">5 · The score</a></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<article class="lesson" id="t1" data-lesson="t1">
+  <div class="wrap measure">
+    <p class="lesson__kicker"><b>Lesson 1</b> Things that flash <span class="done" hidden>✓ done</span></p>
+    <h3>A report is not a discovery</h3>
+    <p class="lead">Every night, telescopes around the world compare tonight's sky to last night's and shout about the differences. CTAS listens to those shouts.</p>
+    <p>A <span class="term">transient</span> is anything in the sky that changes on a human timescale: a star that explodes, a flash of gamma rays, a neutrino that arrives from a direction it shouldn't. When a survey spots one, it publishes a <span class="term">report</span>: a position, a brightness, a time, and the name of whoever saw it.</p>
+    <p>Here's the habit this whole course is about. A report means <em>someone said they saw something</em>. It does not mean the thing is real, that anyone knows what it is, or that it's important. Most reports turn out to be boring. A few turn out to be the most interesting objects of the year. At the moment the report lands, you can't tell which.</p>
+    <div class="aside"><p>CTAS never upgrades a report into a discovery. If a provider says "we saw a new source," CTAS records exactly that, with the provider's name attached, and nothing more.</p></div>
+
+    <div class="call">
+      <p class="call__q">Open the latest 24 hours in CTAS and pick any one record. Who reported it?</p>
+      <p class="call__hint">The provider's name is on every record. You're just practicing finding it.</p>
+      <div class="dial" role="group" aria-label="Your call">
+        <button type="button" data-choice="a">A big survey<small>ZTF, ATLAS, Pan-STARRS, Rubin…</small></button>
+        <button type="button" data-choice="b">A space mission<small>Fermi, Swift, IceCube…</small></button>
+        <button type="button" data-choice="c">A person or small team<small>an amateur or a TNS submitter</small></button>
+      </div>
+      <div class="call__actions">
+        <a class="btn btn--night btn--sm" href="../ctas.html?preset=today#recent-stream" target="_blank" rel="noopener">Open the last 24 hours in CTAS <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h7v7M13 3 5 11"/></svg></a>
+        <button type="button" class="btn btn--star btn--sm" data-reveal disabled>Log my answer</button>
+      </div>
+      <div class="reveal" hidden data-correct="any">
+        <span class="reveal__verdict is-confirmed">Any of these is a real answer.</span>
+        <p>The point is that you found the provider. On CTAS every record shows its source, and clicking through takes you to the original report on the provider's own site, not to a copy. When you cite a transient in real work, you cite that original, not CTAS.</p>
+        <p class="fine">Surveys report the most objects by far, but a single AstroNote from one astronomer can be the most useful thing on the page.</p>
+      </div>
+    </div>
+  </div>
+</article>
+
+<article class="lesson" id="t2" data-lesson="t2">
+  <div class="wrap measure">
+    <p class="lesson__kicker"><b>Lesson 2</b> Things that flash <span class="done" hidden>✓ done</span></p>
+    <h3>"We didn't see it" is real information</h3>
+    <p class="lead">When a telescope points at a spot and finds nothing, that isn't a failure. It's a measurement with a number attached.</p>
+    <p>Call it an <span class="term">upper limit</span>. It says: whatever is there, it's fainter than this. Upper limits are how astronomers learn when an explosion started (it wasn't there on Tuesday, it was there on Thursday) and how fast it's fading.</p>
+    <p>The trap is plotting a limit as if it were a detection. Then a rising supernova looks like it's flickering, and a fading one looks like it recovered. CTAS keeps limits on a separate line and draws them as arrows pointing down, meaning "the real value is somewhere below here."</p>
+
+    <figure class="figure figure--night">
+      <svg viewBox="0 0 640 260" role="img" aria-label="A light curve with three detections and two upper limits shown as downward arrows">
+        <rect width="640" height="260" fill="#0d1524"/>
+        <g stroke="#243250" stroke-width="1"><line x1="60" y1="30" x2="60" y2="215"/><line x1="60" y1="215" x2="610" y2="215"/></g>
+        <g fill="#9fb0cc" font-family="ui-monospace, Menlo, monospace" font-size="12">
+          <text x="70" y="42">brighter</text><text x="70" y="208">fainter</text><text x="560" y="240">time →</text>
+        </g>
+        <!-- limits -->
+        <g stroke="#6c7a9c" stroke-width="2" fill="none">
+          <path d="M140 150v40M133 182l7 8 7-8"/>
+          <path d="M210 150v40M203 182l7 8 7-8"/>
+        </g>
+        <!-- detections -->
+        <path d="M290 120 Q 350 40 400 55 T 520 130 T 590 190" fill="none" stroke="#e8a93a" stroke-width="2" stroke-dasharray="4 4" opacity=".6"/>
+        <g fill="#fff5cf">
+          <circle cx="290" cy="120" r="5"/><circle cx="380" cy="52" r="5"/><circle cx="470" cy="90" r="5"/><circle cx="560" cy="170" r="5"/>
+        </g>
+        <g fill="#9fb0cc" font-family="ui-monospace, Menlo, monospace" font-size="12">
+          <text x="120" y="135">not seen</text><text x="300" y="150">first detection</text>
+        </g>
+      </svg>
+      <figcaption>Two nights of "nothing brighter than this," then four nights of a real object. Together they tell you the explosion began between the second arrow and the first dot.</figcaption>
+    </figure>
+
+    <div class="call">
+      <p class="call__q">AT2026zwn has both detections and limits in its record. Before you look: did anyone see it fade below their limit afterwards?</p>
+      <p class="call__hint">Open the record and find the photometry. Limits are the arrows.</p>
+      <div class="dial" role="group" aria-label="Your call">
+        <button type="button" data-choice="a">Yes, it faded<small>a limit comes after the last detection</small></button>
+        <button type="button" data-choice="b">No, still visible<small>every point after discovery is a detection</small></button>
+        <button type="button" data-choice="c">Can't tell yet<small>the retained data doesn't say</small></button>
+      </div>
+      <div class="call__actions">
+        <a class="btn btn--night btn--sm" href="../ctas.html?alias=AT2026zwn#dossier" target="_blank" rel="noopener">Open AT2026zwn in CTAS <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h7v7M13 3 5 11"/></svg></a>
+        <button type="button" class="btn btn--star btn--sm" data-reveal disabled>Log my answer</button>
+      </div>
+      <div class="reveal" hidden data-correct="any">
+        <span class="reveal__verdict is-unsettled">Whatever you found is the answer today.</span>
+        <p>This record keeps changing as providers add data, so there's no fixed key. What matters is that you now read a limit as "fainter than this," not as a data point, and that you can tell the two apart on the plot.</p>
+        <p class="fine">If the answer surprised you, notice that the surprise came from the arrows, not the dots. That's the skill.</p>
+      </div>
+    </div>
+  </div>
+</article>
+
+<article class="lesson" id="t3" data-lesson="t3">
+  <div class="wrap measure">
+    <p class="lesson__kicker"><b>Lesson 3</b> Things that flash <span class="done" hidden>✓ done</span></p>
+    <h3>Two sources, two answers, and that's fine</h3>
+    <p class="lead">A <span class="term">classification</span> is somebody's claim about what a thing is. Two experts can look at the same object and disagree. A catalog that quietly picks a winner is hiding something from you.</p>
+    <p>Neutrino alerts are the clearest example. IceCube reports a neutrino and a patch of sky it probably came from. Other teams then look at that patch and report what they find: sometimes a flaring galaxy, sometimes nothing. Their positions, sizes, and confidence levels don't always agree.</p>
+    <p>CTAS keeps every assertion side by side with the name of whoever asserted it. When two disagree, the record says so out loud. That's the whole design: the catalog would rather show you a conflict than pretend to resolve it.</p>
+
+    <div class="call">
+      <p class="call__q">IceCube-250416A has a retained conflict. What kind of thing do you expect the sources to disagree about?</p>
+      <p class="call__hint">Make your guess, then open the record and find the conflict panel.</p>
+      <div class="dial" role="group" aria-label="Your call">
+        <button type="button" data-choice="a">Where it is<small>positions or error regions</small></button>
+        <button type="button" data-choice="b">What it is<small>classification or counterpart</small></button>
+        <button type="button" data-choice="c">When it happened<small>timing or availability</small></button>
+      </div>
+      <div class="call__actions">
+        <a class="btn btn--night btn--sm" href="../ctas.html?alias=IceCube-250416A#dossier" target="_blank" rel="noopener">Open IceCube-250416A in CTAS <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h7v7M13 3 5 11"/></svg></a>
+        <button type="button" class="btn btn--star btn--sm" data-reveal disabled>Log my answer</button>
+      </div>
+      <div class="reveal" hidden data-correct="any">
+        <span class="reveal__verdict is-unsettled">Check what you found against your guess.</span>
+        <p>For neutrino events, disagreements are usually about the first two: where the sky region is and whether a candidate counterpart is really associated. CTAS shows each provider's version and does not average them.</p>
+        <p class="fine">A "conflict" flag in CTAS isn't an error. It means the record is honest about what the community actually knows.</p>
+      </div>
+    </div>
+  </div>
+</article>
+
+<article class="lesson" id="t4" data-lesson="t4">
+  <div class="wrap measure">
+    <p class="lesson__kicker"><b>Lesson 4</b> Things that flash <span class="done" hidden>✓ done</span></p>
+    <h3>Taking it back doesn't make it disappear</h3>
+    <p class="lead">Sometimes a report is wrong. A satellite glitch, a cosmic ray on the detector, a piece of space junk. The provider issues a <span class="term">retraction</span>.</p>
+    <p>A bad catalog deletes the record. Now nobody can learn from the mistake, and anyone who built on it has no trail to follow. CTAS does the opposite: the retraction is added on top, the record's score drops to zero, and everything that came before stays visible.</p>
+    <p>There's a replay tool on each record that lets you scrub back in time and see what CTAS knew at any moment. For a retracted event, you can watch the score climb, then collapse when the retraction arrived.</p>
+    <div class="aside"><p>Think of it like a lab notebook. You cross out the wrong line with a single stroke so it can still be read. You never tear out the page.</p></div>
+
+    <div class="call">
+      <p class="call__q">NuEm-220601A-118386 was retracted. Before the retraction arrived, was its CTAS score high or low?</p>
+      <p class="call__hint">Use the replay control on the record to scrub backwards.</p>
+      <div class="dial" role="group" aria-label="Your call">
+        <button type="button" data-choice="a">High<small>fresh, rare, little information: everything the score rewards</small></button>
+        <button type="button" data-choice="b">Low<small>the score somehow knew</small></button>
+        <button type="button" data-choice="c">Zero the whole time<small>retractions apply retroactively</small></button>
+      </div>
+      <div class="call__actions">
+        <a class="btn btn--night btn--sm" href="../ctas.html?alias=NuEm-220601A-118386#dossier" target="_blank" rel="noopener">Open NuEm-220601A-118386 in CTAS <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h7v7M13 3 5 11"/></svg></a>
+        <button type="button" class="btn btn--star btn--sm" data-reveal disabled>Log my answer</button>
+      </div>
+      <div class="reveal" hidden data-correct="a">
+        <span class="reveal__verdict is-withdrawn">Before the retraction, it looked like a priority.</span>
+        <p>That's the honest lesson. A brand-new multimessenger alert with almost no follow-up is exactly what the score is built to surface, and this one was a mistake. The score is a queue for attention, not a lie detector. Only the retraction, arriving later, could zero it.</p>
+        <p class="fine">Retroactive scoring would erase the fact that people reasonably chased this. CTAS keeps the replay so the reasoning stays visible.</p>
+      </div>
+    </div>
+  </div>
+</article>
+
+<article class="lesson" id="t5" data-lesson="t5">
+  <div class="wrap measure">
+    <p class="lesson__kicker"><b>Lesson 5</b> Things that flash <span class="done" hidden>✓ done</span></p>
+    <h3>The score is a to-do list, not a truth meter</h3>
+    <p class="lead">Every CTAS record has a number from 0 to 100. People want it to mean "how real" or "how important." It means neither.</p>
+    <p>The <span class="term">CTAS score</span> answers one question: <em>if you have a telescope free tonight, which records would benefit most from another look?</em> It starts every record at 35 and moves it up or down for things like how recent the report is, how bright it was, whether anyone has taken a spectrum yet, and how many different kinds of messenger (light, neutrinos, gravitational waves) are involved.</p>
+    <p>The part that surprises people: <strong>having lots of data lowers the score.</strong> A well-studied supernova with three spectra doesn't need your telescope. A fresh, bright, unclassified blob does. So the highest scores go to the least-understood objects, on purpose.</p>
+    <p>Every record shows its exact score arithmetic, term by term. You can check the number yourself.</p>
+
+    <div class="call">
+      <p class="call__q">SN2026xby is a rich record with spectra already retained. Will its score be high or low?</p>
+      <p class="call__hint">Then open it and expand the score factors to see each term.</p>
+      <div class="dial" role="group" aria-label="Your call">
+        <button type="button" data-choice="a">High<small>it's a confirmed supernova, that's important</small></button>
+        <button type="button" data-choice="b">Middling to low<small>it's well studied, so it needs less attention</small></button>
+        <button type="button" data-choice="c">Exactly 35<small>the baseline never moves for classified objects</small></button>
+      </div>
+      <div class="call__actions">
+        <a class="btn btn--night btn--sm" href="../ctas.html?alias=SN2026xby#dossier" target="_blank" rel="noopener">Open SN2026xby in CTAS <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h7v7M13 3 5 11"/></svg></a>
+        <button type="button" class="btn btn--star btn--sm" data-reveal disabled>Log my answer</button>
+      </div>
+      <div class="reveal" hidden data-correct="b">
+        <span class="reveal__verdict is-confirmed">Well-studied means lower, and that's the design.</span>
+        <p>Existing spectra and a settled classification both subtract from the score. That doesn't make the supernova less interesting; it makes it less <em>urgent</em>. Scientific importance is your judgment to make. The score just tells you where a spare hour of telescope time does the most good.</p>
+        <p class="fine">You've finished the transient track. The habits transfer directly to the next one: worlds are just very slow transients with better publicists.</p>
+      </div>
+    </div>
+  </div>
+</article>
+
+<!-- ============================================================== WORLDS -->
+<section class="track" id="worlds" data-track="worlds">
+  <div class="wrap">
+    <div class="track__head">
+      <div class="track__glyph" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none" stroke="#78d8f5" stroke-width="2"><circle cx="16" cy="16" r="6" fill="#78d8f5" stroke="none"/><ellipse cx="16" cy="16" rx="13" ry="5" transform="rotate(-20 16 16)"/></svg>
+      </div>
+      <div>
+        <h2>Track two: other worlds</h2>
+        <p>WorldsIndex holds around 35,000 objects: confirmed planets, candidates, and a surprising number that were announced and later turned out not to exist. These five lessons teach you how planets are found and how a planet claim can fall apart.</p>
+        <ol class="track__list" aria-label="Lessons in this track">
+          <li><a href="#w1" data-lesson="w1">1 · Finding a world</a></li>
+          <li><a href="#w2" data-lesson="w2">2 · Confirmed vs candidate</a></li>
+          <li><a href="#w3" data-lesson="w3">3 · The planet that wasn't</a></li>
+          <li><a href="#w4" data-lesson="w4">4 · Two catalogs, two verdicts</a></li>
+          <li><a href="#w5" data-lesson="w5">5 · Reading the plot</a></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<article class="lesson" id="w1" data-lesson="w1">
+  <div class="wrap measure">
+    <p class="lesson__kicker"><b>Lesson 1</b> Other worlds <span class="done" hidden>✓ done</span></p>
+    <h3>You almost never see the planet</h3>
+    <p class="lead">Nearly every known exoplanet was found by watching its star do something slightly odd. The planet itself stays invisible.</p>
+    <p>The two workhorse methods: a <span class="term">transit</span> is a tiny, repeating dip in a star's brightness as the planet crosses in front of it. <span class="term">Radial velocity</span> is a tiny, repeating wobble in the star's motion as the planet tugs it around. Transits tell you the planet's size. Wobbles tell you its mass. Get both and you know what it's made of.</p>
+    <p>Drag the slider to see how the dip depends on the planet's size. Notice how small an Earth is.</p>
+
+    <figure class="figure figure--night">
+      <svg viewBox="0 0 640 220" role="img" aria-label="Transit light curve demo" id="transit-svg">
+        <rect width="640" height="220" fill="#0d1524"/>
+        <!-- star and planet -->
+        <circle cx="120" cy="90" r="46" fill="#ffe7a8"/>
+        <circle id="transit-planet" cx="120" cy="90" r="6" fill="#0d1524" stroke="#3a4b6e" stroke-width="1"/>
+        <!-- light curve -->
+        <g stroke="#243250" stroke-width="1"><line x1="230" y1="30" x2="230" y2="190"/><line x1="230" y1="190" x2="610" y2="190"/></g>
+        <path id="transit-curve" d="" fill="none" stroke="#78d8f5" stroke-width="2.5" stroke-linejoin="round"/>
+        <g fill="#9fb0cc" font-family="ui-monospace, Menlo, monospace" font-size="12">
+          <text x="240" y="44">brightness</text><text x="560" y="210">time →</text>
+          <text id="transit-label" x="240" y="180"></text>
+        </g>
+      </svg>
+      <div class="transit-ctl">
+        <label for="transit-size">Planet size</label>
+        <input id="transit-size" type="range" min="1" max="12" step="0.5" value="1" aria-describedby="transit-out">
+        <output id="transit-out" for="transit-size">1.0 Earths</output>
+      </div>
+      <figcaption>An Earth-sized planet crossing a Sun-sized star blocks about 0.008% of the light. Jupiter blocks about 1%. Transit surveys have to measure to a hundredth of a percent to find rocky worlds.</figcaption>
+    </figure>
+
+    <div class="call">
+      <p class="call__q">51 Peg b (1995) was the first planet found around a Sun-like star. Which method found it?</p>
+      <p class="call__hint">Open its record and check the method field before you reveal.</p>
+      <div class="dial" role="group" aria-label="Your call">
+        <button type="button" data-choice="a">Transit<small>a dip in the star's light</small></button>
+        <button type="button" data-choice="b">Radial velocity<small>a wobble in the star's motion</small></button>
+        <button type="button" data-choice="c">Direct imaging<small>a photo of the planet itself</small></button>
+      </div>
+      <div class="call__actions">
+        <a class="btn btn--night btn--sm" href="../worldsindex/?section=object&object=object-51-peg-b" target="_blank" rel="noopener">Open 51 Peg b in WorldsIndex <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h7v7M13 3 5 11"/></svg></a>
+        <button type="button" class="btn btn--star btn--sm" data-reveal disabled>Log my answer</button>
+      </div>
+      <div class="reveal" hidden data-correct="b">
+        <span class="reveal__verdict is-confirmed">Radial velocity, from a spectrograph in France.</span>
+        <p>51 Peg b never transits from our point of view, so we still don't know its size, only a lower limit on its mass. That's typical: each method gives you part of the picture, and the catalogs record which part.</p>
+        <p class="fine">Its discoverers, Michel Mayor and Didier Queloz, shared the 2019 Nobel Prize in Physics for this measurement.</p>
+      </div>
+    </div>
+  </div>
+</article>
+
+<article class="lesson" id="w2" data-lesson="w2">
+  <div class="wrap measure">
+    <p class="lesson__kicker"><b>Lesson 2</b> Other worlds <span class="done" hidden>✓ done</span></p>
+    <h3>"Candidate" means the work isn't done</h3>
+    <p class="lead">A survey like Kepler or TESS finds a dip and flags it. That's a <span class="term">candidate</span>. It becomes <span class="term">confirmed</span> only after someone rules out everything else that could make a dip.</p>
+    <p>And there are a lot of other things. A background eclipsing binary blended into the same pixel. A grazing stellar companion. An instrument hiccup with a suspiciously regular period. Roughly one in ten TESS candidates turns out to be one of these, so a candidate list is not a planet list.</p>
+    <p>There's a second wrinkle. The same planet can appear in several catalogs under slightly different names, and WorldsIndex won't merge them unless the evidence says they're the same object. So a famous planet can show up more than once, each entry carrying its own source. That's a feature: you can see exactly which catalog said what.</p>
+
+    <div class="call">
+      <p class="call__q">Search WorldsIndex for TRAPPIST-1 e. How many separate entries do you get?</p>
+      <p class="call__hint">Type the name in the search box and count the results with that exact name.</p>
+      <div class="dial" role="group" aria-label="Your call">
+        <button type="button" data-choice="a">Exactly one<small>it's one planet</small></button>
+        <button type="button" data-choice="b">Two or three<small>one per source that reported it</small></button>
+        <button type="button" data-choice="c">Seven<small>one for each TRAPPIST-1 planet</small></button>
+      </div>
+      <div class="call__actions">
+        <a class="btn btn--night btn--sm" href="../worldsindex/?section=object&object=object-trappist-1-e" target="_blank" rel="noopener">Open TRAPPIST-1 e in WorldsIndex <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h7v7M13 3 5 11"/></svg></a>
+        <button type="button" class="btn btn--star btn--sm" data-reveal disabled>Log my answer</button>
+      </div>
+      <div class="reveal" hidden data-correct="b">
+        <span class="reveal__verdict is-confirmed">Three, in the current release.</span>
+        <p>One entry comes from the K2 candidate table, one from exoplanet.eu, and one merges the NASA and Open Exoplanet Catalogue records. All three are marked confirmed. They're the same world, but WorldsIndex keeps the identities separate until a reconciliation rule, not a guess, says to join them.</p>
+        <p class="fine">Open the Provenance tab on any of them to see the source-object identifiers that make this explicit.</p>
+      </div>
+    </div>
+  </div>
+</article>
+
+<article class="lesson" id="w3" data-lesson="w3">
+  <div class="wrap measure">
+    <p class="lesson__kicker"><b>Lesson 3</b> Other worlds <span class="done" hidden>✓ done</span></p>
+    <h3>The habitable planet that wasn't there</h3>
+    <p class="lead">In 2010 a team announced Gliese 581 g: a rocky world in the habitable zone of a nearby red dwarf, the first of its kind. It made headlines everywhere.</p>
+    <p>The signal was a small, slow wobble in the star. Four years later, another team showed that stars like Gliese 581 wobble on their own: magnetic spots rotate in and out of view and mimic a planet's tug. Once they corrected for the star's activity, the planet's signal vanished.</p>
+    <p>That makes Gliese 581 g <span class="term">refuted</span>: not merely unconfirmed, but actively shown to be something else. Most catalogs simply removed it. WorldsIndex keeps it, labeled, with the sources that argued each side, because the refutation is itself a piece of science worth being able to find.</p>
+    <div class="aside"><p>A refuted planet is the exoplanet version of a retracted transient. Same rule: cross it out, don't tear out the page.</p></div>
+
+    <div class="call">
+      <p class="call__q">What ultimately explained the Gliese 581 g signal?</p>
+      <p class="call__hint">Open the record and read the status notes and sources.</p>
+      <div class="dial" role="group" aria-label="Your call">
+        <button type="button" data-choice="a">A different planet<small>the period belonged to a neighbor</small></button>
+        <button type="button" data-choice="b">The star itself<small>rotating starspots faking a wobble</small></button>
+        <button type="button" data-choice="c">A software bug<small>a mistake in the original analysis code</small></button>
+      </div>
+      <div class="call__actions">
+        <a class="btn btn--night btn--sm" href="../worldsindex/?section=object&object=object-exoplanet-eu-gj-581-g-d24d33a0117f" target="_blank" rel="noopener">Open GJ 581 g in WorldsIndex <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h7v7M13 3 5 11"/></svg></a>
+        <button type="button" class="btn btn--star btn--sm" data-reveal disabled>Log my answer</button>
+      </div>
+      <div class="reveal" hidden data-correct="b">
+        <span class="reveal__verdict is-withdrawn">The star was the impostor.</span>
+        <p>Stellar activity is the single biggest source of false radial-velocity planets, especially around small, active stars where the habitable zone sits close in. The lesson generalizes: the more exciting a claim, the more you should ask what else could produce the same signal.</p>
+        <p class="fine">The original team disputed the refutation for a while. The catalogs' consensus moved to "refuted" over several years, and the record keeps that history.</p>
+      </div>
+    </div>
+  </div>
+</article>
+
+<article class="lesson" id="w4" data-lesson="w4">
+  <div class="wrap measure">
+    <p class="lesson__kicker"><b>Lesson 4</b> Other worlds <span class="done" hidden>✓ done</span></p>
+    <h3>Two catalogs, two verdicts</h3>
+    <p class="lead">Kepler-452 b was announced in 2015 as "Earth's cousin": similar size, similar orbit, similar star. NASA called it confirmed. Not everyone agreed.</p>
+    <p>Here's why. Kepler saw only a few transits, all of them faint. The planet was never "confirmed" by measuring its mass; it was <span class="term">statistically validated</span>, meaning the team calculated that a false positive was very unlikely. In 2018 another group reran that calculation with a more careful model of Kepler's own noise and found the odds weren't good enough to call it confirmed. Real, probably. Confirmed, not by their standard.</p>
+    <p>So today one catalog lists Kepler-452 b as confirmed and another as controversial. Neither is wrong. They're using different rules, and WorldsIndex shows you both rather than choosing for you.</p>
+
+    <figure class="figure">
+      <svg viewBox="0 0 640 150" role="img" aria-label="The same planet, Kepler-452 b, shown with two different catalog verdicts">
+        <rect width="640" height="150" fill="#e6edf6"/>
+        <circle cx="320" cy="75" r="30" fill="#3d7fd6"/>
+        <text x="320" y="128" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#16213a">Kepler-452 b</text>
+        <g font-family="system-ui, sans-serif" font-size="13" font-weight="700">
+          <rect x="60" y="52" width="150" height="46" rx="10" fill="rgba(30,156,114,.14)"/>
+          <text x="135" y="72" text-anchor="middle" fill="#1e9c72">exoplanet.eu</text>
+          <text x="135" y="90" text-anchor="middle" fill="#1e9c72" font-weight="500">confirmed</text>
+          <rect x="430" y="52" width="150" height="46" rx="10" fill="rgba(61,127,214,.14)"/>
+          <text x="505" y="72" text-anchor="middle" fill="#3d7fd6">Open Exoplanet Catalogue</text>
+          <text x="505" y="90" text-anchor="middle" fill="#3d7fd6" font-weight="500">controversial</text>
+        </g>
+        <g stroke="#aebbd1" stroke-width="1.5" stroke-dasharray="4 4"><line x1="212" y1="75" x2="288" y2="75"/><line x1="352" y1="75" x2="428" y2="75"/></g>
+      </svg>
+      <figcaption>Same planet, same data, two honest verdicts. The disagreement is about the threshold for "confirmed," not about whether the transit is real.</figcaption>
+    </figure>
+
+    <div class="call">
+      <p class="call__q">Fomalhaut b was photographed directly in 2008. It's now marked controversial. Why?</p>
+      <p class="call__hint">This one isn't in the text above. Open the record, then make your call.</p>
+      <div class="dial" role="group" aria-label="Your call">
+        <button type="button" data-choice="a">It faded away<small>a planet shouldn't disappear</small></button>
+        <button type="button" data-choice="b">Its orbit is wrong<small>it crosses the star's dust ring</small></button>
+        <button type="button" data-choice="c">Both, actually<small>it faded and spread out over years</small></button>
+      </div>
+      <div class="call__actions">
+        <a class="btn btn--night btn--sm" href="../worldsindex/?section=object&object=object-oec-fecf7f8cd36f50c94b34" target="_blank" rel="noopener">Open Fomalhaut b in WorldsIndex <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h7v7M13 3 5 11"/></svg></a>
+        <button type="button" class="btn btn--star btn--sm" data-reveal disabled>Log my answer</button>
+      </div>
+      <div class="reveal" hidden data-correct="c">
+        <span class="reveal__verdict is-unsettled">It faded and it spread out.</span>
+        <p>Over a decade of Hubble images, the dot got fainter and larger. Planets don't do that; clouds of debris do. The leading explanation now is that Hubble caught the aftermath of two large icy bodies colliding. Some researchers still argue for a planet inside the cloud, which is why it's controversial rather than refuted.</p>
+        <p class="fine">Direct imaging finds few planets, but the ones it finds have a hard time hiding what they are, because you can watch them move.</p>
+      </div>
+    </div>
+  </div>
+</article>
+
+<article class="lesson" id="w5" data-lesson="w5">
+  <div class="wrap measure">
+    <p class="lesson__kicker"><b>Lesson 5</b> Other worlds <span class="done" hidden>✓ done</span></p>
+    <h3>Reading the plot everyone shows</h3>
+    <p class="lead">Put orbital period on one axis and planet size on the other, both on log scales, and the whole known population lands on one chart. It has a shape, and the shape is mostly about our telescopes, not the universe.</p>
+    <p>Three things to look for. The <strong>bottom-right is empty</strong>: small planets on long orbits. They exist, we're sure of it, but their transits are too shallow and too rare for us to catch yet. The <strong>top-left is crowded</strong>: giant planets on orbits of a few days, so-called hot Jupiters. They're rare in reality, but they're the easiest possible thing to find, so the early surveys found them first. And there's a thin <strong>gap</strong> around one and a half to two Earth radii, which seems to be real: planets there tend to lose their atmospheres and shrink, or keep them and stay puffy.</p>
+    <p>Every point on the WorldsIndex plot keeps its status color. Try filtering to candidates only and watch which regions thin out.</p>
+
+    <div class="call">
+      <p class="call__q">Filter the plot to confirmed planets only, then to candidates only. Which corner of the plot changes the most?</p>
+      <p class="call__hint">Use the status filter above the sky map; the plot below it follows the same filter.</p>
+      <div class="dial" role="group" aria-label="Your call">
+        <button type="button" data-choice="a">Top-left<small>hot giants</small></button>
+        <button type="button" data-choice="b">Bottom-left<small>small planets on short orbits</small></button>
+        <button type="button" data-choice="c">Right side<small>long-period planets of any size</small></button>
+      </div>
+      <div class="call__actions">
+        <a class="btn btn--night btn--sm" href="../worldsindex/?section=compare&compare_view=population&plot_x=orbitalPeriodDays&plot_y=radiusEarth&plot_x_log=1&plot_y_log=1" target="_blank" rel="noopener">Open the period–radius plot <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h7v7M13 3 5 11"/></svg></a>
+        <button type="button" class="btn btn--star btn--sm" data-reveal disabled>Log my answer</button>
+      </div>
+      <div class="reveal" hidden data-correct="b">
+        <span class="reveal__verdict is-confirmed">The small, short-period planets are where candidates pile up.</span>
+        <p>That's TESS and Kepler doing their job: they find shallow dips by the thousand, and confirming each one takes follow-up time nobody has enough of. The candidate backlog is a map of where the field's effort is going next.</p>
+        <p class="fine">You've finished both tracks. The wrap-up below has the habits in one place, and what to do with them.</p>
+      </div>
+    </div>
+  </div>
+</article>
+
+<!-- ============================================================= wrap-up -->
+<section class="finish" id="finish">
+  <div class="wrap measure">
+    <h2>What you can now do that most people can't</h2>
+    <p>You can open a record of something in the sky and read it for exactly what it says. That sounds small. It's the skill that separates people who understand a headline from people who repeat it.</p>
+    <div class="notes">
+      <h3>Field notes to keep</h3>
+      <ol>
+        <li>A report is a claim with a name attached. Find the name.</li>
+        <li>"Not seen" is a measurement. Read limits as "fainter than this."</li>
+        <li>Two sources can disagree. A catalog that hides that is hiding something from you.</li>
+        <li>Retractions and refutations are science. Keep them, labeled.</li>
+        <li>A priority score is a queue, not a truth meter.</li>
+        <li>Ask what else could make this signal. The star usually can.</li>
+        <li>The shape of a population plot is mostly the shape of our instruments.</li>
+      </ol>
+    </div>
+    <h2 style="font-size:1.35rem;margin-top:2.5rem">Go do something with it</h2>
+    <div class="next">
+      <a href="../ctas.html#ranked-candidates"><strong>Watch the sky tonight</strong><span>The CTAS leaderboard shows what's fresh and under-studied right now. Pick one and follow it for a week.</span></a>
+      <a href="https://exoplanets.nasa.gov/exoplanet-watch/" rel="noopener" target="_blank"><strong>Time a transit yourself</strong><span>NASA's Exoplanet Watch lets you contribute real transit timing with a small telescope or even archived data.</span></a>
+      <a href="https://www.wis-tns.org/" rel="noopener" target="_blank"><strong>See where reports come from</strong><span>The Transient Name Server is the official register. Every SN and AT name in CTAS traces back here.</span></a>
+      <a href="../worldsindex/?section=methods"><strong>Go deeper on methods</strong><span>WorldsIndex's methods pages cover microlensing, astrometry, and the blind spots of each technique.</span></a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    Sky Notebook is part of <a href="../index.html">jackmcguireastro.github.io</a>. Every object in the course is a real record in <a href="../ctas.html">CTAS</a> or <a href="../worldsindex/">WorldsIndex</a>; records change as providers publish, so an answer that surprises you is a good reason to look closer, not a mistake. Your progress is saved only in this browser.
+  </div>
+</footer>
+
+<script src="learn.js?v=20260903" defer></script>
+</body>
+</html>

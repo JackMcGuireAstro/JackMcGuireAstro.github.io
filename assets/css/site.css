@@ -1,49 +1,50 @@
 /* ==========================================================================
    jackmcguireastro.github.io, shared stylesheet
    Static site, no framework. Native font stacks only.
-   Palette: deep navy/charcoal, off-white text, muted Wyoming gold accent,
-   restrained cool-blue secondary.
+   Palette: night navy, off-white text, star-gold accent, cool-blue secondary.
+   Shared with the Learn course (learn/learn.css), which uses the light
+   "paper" inverse of these tokens.
    ========================================================================== */
 
 /* ---------------------------------------------------------------- tokens */
 :root {
-  --bg:            #0d1219;
-  --bg-hero:       #0a0f16;
-  --surface:       #141b26;
-  --surface-2:     #1a2331;
-  --surface-3:     #202b3b;
+  --bg:            #0d1524;
+  --bg-hero:       #0a111d;
+  --surface:       #142035;
+  --surface-2:     #1a2842;
+  --surface-3:     #213150;
 
-  --border:        rgba(255, 255, 255, 0.09);
-  --border-strong: rgba(255, 255, 255, 0.18);
+  --border:        rgba(180, 200, 235, 0.10);
+  --border-strong: rgba(180, 200, 235, 0.22);
 
-  --ink:           #e9edf4;
-  --ink-2:         #b6c2d2;
-  --ink-3:         #909dae;
+  --ink:           #eaf0fb;
+  --ink-2:         #b9c6dc;
+  --ink-3:         #8d9cb8;
 
-  --gold:          #d7b45c;
-  --gold-2:        #b8933f;
-  --gold-soft:     rgba(215, 180, 92, 0.12);
+  --gold:          #e8a93a;
+  --gold-2:        #c98f2a;
+  --gold-soft:     rgba(232, 169, 58, 0.14);
 
-  --blue:          #8ab4dd;
-  --blue-soft:     rgba(138, 180, 221, 0.12);
+  --blue:          #78b4ee;
+  --blue-soft:     rgba(120, 180, 238, 0.14);
 
-  --green:         #7fc4a0;
-  --green-soft:    rgba(127, 196, 160, 0.12);
+  --green:         #4fc79a;
+  --green-soft:    rgba(79, 199, 154, 0.14);
 
-  --coral:         #ee8d72;
-  --coral-deep:    #d86c50;
-  --coral-soft:    rgba(238, 141, 114, 0.13);
+  --coral:         #ee6f5d;
+  --coral-deep:    #d6503e;
+  --coral-soft:    rgba(238, 111, 93, 0.14);
   --violet:        #ab9aef;
   --mint:          #7fd6b2;
 
-  --font-body:  system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+  --font-body:  "Avenir Next", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Avenir Next", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono:  ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 
   --wrap:       1080px;
   --wrap-wide:  1200px;
-  --radius:     10px;
-  --radius-lg:  14px;
+  --radius:     12px;
+  --radius-lg:  16px;
 
   --step: clamp(3rem, 6vw, 5rem);   /* vertical section rhythm */
 }
@@ -71,12 +72,13 @@ img, svg, video { max-width: 100%; height: auto; display: block; }
 
 h1, h2, h3, h4 {
   font-family: var(--font-display);
-  line-height: 1.2;
+  line-height: 1.15;
   margin: 0 0 0.6em;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-weight: 800;               /* heavy, tight display — shared with the Learn course */
+  letter-spacing: -0.022em;
   text-wrap: balance;
 }
+h4 { font-weight: 700; letter-spacing: -0.01em; }
 
 h1 { font-size: clamp(2rem, 4.6vw, 3.1rem); }
 h2 { font-size: clamp(1.55rem, 3vw, 2.15rem); }
