@@ -1486,6 +1486,13 @@ def timeline_for(candidate: dict[str, Any]) -> list[dict[str, Any]]:
     return entries
 
 
+# Rows the local store physically cannot return.  A damaged page is not the
+# same as "no evidence", and silently exporting a thinner record would be a
+# false statement about what CTAS holds, so every unreadable range is recorded
+# here and published as an explicit local-store exception.
+LOCAL_STORE_READ_FAILURES: list[dict[str, Any]] = []
+
+
 def rows_by_event(
     cur: sqlite3.Cursor,
     event_ids: list[str],
@@ -1496,7 +1503,25 @@ def rows_by_event(
     for index in range(0, len(event_ids), chunk_size):
         chunk = event_ids[index:index + chunk_size]
         placeholders = ",".join("?" * len(chunk))
-        for row in cur.execute(statement.format(ids=placeholders), chunk):
+        try:
+            fetched = cur.execute(statement.format(ids=placeholders), chunk).fetchall()
+        except sqlite3.DatabaseError as exc:
+            # Narrow the damage to the smallest set of records it can be
+            # attributed to, so the report names events rather than a chunk.
+            fetched = []
+            unreadable: list[str] = []
+            for event_id in chunk:
+                try:
+                    fetched.extend(cur.execute(statement.format(ids="?"), [event_id]).fetchall())
+                except sqlite3.DatabaseError:
+                    unreadable.append(str(event_id))
+            LOCAL_STORE_READ_FAILURES.append({
+                "statement_fragment": " ".join(statement.split())[:120],
+                "error": str(exc),
+                "unreadable_event_ids": unreadable,
+                "unreadable_event_count": len(unreadable),
+            })
+        for row in fetched:
             event_id = str(row["event_id"])
             item = {
                 key: clean(row[key])
@@ -3637,6 +3662,18 @@ def main() -> int:
         for outcome, count in accounting["outcomeCounts"].items():
             accounting_totals["outcomeCounts"][outcome] = accounting_totals["outcomeCounts"].get(outcome, 0) + int(count)
     accounting_totals["outcomeCounts"] = dict(sorted(accounting_totals["outcomeCounts"].items()))
+    payload["local_store_exceptions"] = {
+        "statement": (
+            "Rows the local store could not return for this release. These records are "
+            "published with the evidence CTAS could read; the unreadable rows are declared "
+            "here rather than presented as an absence of evidence."
+        ),
+        "failure_count": len(LOCAL_STORE_READ_FAILURES),
+        "unreadable_event_count": sum(
+            row["unreadable_event_count"] for row in LOCAL_STORE_READ_FAILURES
+        ),
+        "failures": LOCAL_STORE_READ_FAILURES,
+    }
     payload["source_accounting"] = accounting_totals
     payload["statistics"]["source_accounting"] = accounting_totals
     payload["catalog_content_checksum_sha256"] = catalog_semantic_checksum(candidates)
@@ -4046,6 +4083,7 @@ def main() -> int:
         "surveys": payload["surveys"],
         "source_universe": payload["source_universe"],
         "source_accounting": payload["source_accounting"],
+        "local_store_exceptions": payload["local_store_exceptions"],
     }
     problems.extend(recursive_safety_problems(status, "status"))
     if problems:
@@ -4057,6 +4095,13 @@ def main() -> int:
     print(f"database        : {db.name}")
     print(f"real events     : {counts['total_real_events']:,}")
     print(f"published       : {counts['published']:,}   (skipped {counts['skipped']})")
+    if LOCAL_STORE_READ_FAILURES:
+        unreadable = payload["local_store_exceptions"]["unreadable_event_count"]
+        print(
+            f"local store     : {len(LOCAL_STORE_READ_FAILURES)} unreadable range(s) covering "
+            f"{unreadable} record(s); declared in status.json",
+            file=sys.stderr,
+        )
     print(f"detail shards   : {sum(map(len, chunk_raw.values()))/1024:.0f} KB in {len(chunk_raw)} files")
     if candidates:
         print("\nsample record:")
@@ -4623,6 +4668,14 @@ def main() -> int:
         gate("live-summary-integrity", live_summary_integrity, f"{len(summary_ids)} summary records resolve, pages and manifest checksums agree, and no terrestrial, solar or retracted record enters the default leaderboard"),
         gate("detail-shard-performance-budget", shard_target_integrity, f"largest of {len(chunk_raw)} UUID shards is {max(map(len, chunk_raw.values()), default=0)} bytes; budget={CANDIDATE_SHARD_TARGET_MAX_BYTES}"),
         gate("github-blob-size-limit", artifact_size_integrity, f"every bound public artifact is below GitHub's {GITHUB_MAX_BLOB_BYTES}-byte limit"),
+        gate("local-store-exceptions-declared", (
+            isinstance(status.get("local_store_exceptions"), dict)
+            and status["local_store_exceptions"]["failure_count"] == len(LOCAL_STORE_READ_FAILURES)
+            and all(
+                isinstance(row.get("unreadable_event_ids"), list)
+                for row in status["local_store_exceptions"]["failures"]
+            )
+        ), f"{len(LOCAL_STORE_READ_FAILURES)} unreadable local-store range(s) are declared in the public status rather than published as an absence of evidence"),
         gate("score-term-applicability", score_applicability, "missing-spectrum points are confined to optical follow-up target candidates and a messenger-diversity bonus requires two independently retained channels"),
         gate("score-arithmetic-reconciliation", score_reconciliation, f"{len(candidates)} scores recomputed against this release clock ({payload['generated_at']}) and reproduced exactly from their applicable terms"),
         gate("candidate-science-brief-integrity", science_brief_integrity, f"{len(candidates)} deterministic known, uncertain, missing, and recent-change summaries"),
@@ -4717,6 +4770,10 @@ def main() -> int:
         for path, size in sorted(oversized.items()):
             print(f"  - {path}: {size} bytes", file=sys.stderr)
         return 1
+    # catalog-bootstrap.json was a byte-for-byte copy of catalog-index.json.
+    # Remove any copy a previous release left in this output directory so the
+    # superseded artifact cannot linger beside the summary that replaced it.
+    (out / "catalog-bootstrap.json").unlink(missing_ok=True)
     atomic_write(out / "live-summary.json", live_summary_raw)
     atomic_write(out / "catalog-index.json", catalog_index_raw)
     page_dir = out / "catalog-pages"

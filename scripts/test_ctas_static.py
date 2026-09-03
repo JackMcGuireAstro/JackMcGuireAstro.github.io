@@ -155,6 +155,49 @@ class DispositionAndLinkTests(unittest.TestCase):
         )
 
 
+class LocalStoreExceptionTests(unittest.TestCase):
+    """A damaged page is not the same as "no evidence"."""
+
+    def setUp(self):
+        EXPORTER.LOCAL_STORE_READ_FAILURES.clear()
+
+    tearDown = setUp
+
+    class _Cursor:
+        """A cursor whose multi-id read fails, exactly as a damaged page does."""
+
+        def __init__(self, unreadable):
+            self.unreadable = set(unreadable)
+
+        def execute(self, statement, parameters):
+            if len(parameters) > 1:
+                raise __import__("sqlite3").DatabaseError("database disk image is malformed")
+            event_id = parameters[0]
+            if event_id in self.unreadable:
+                raise __import__("sqlite3").DatabaseError("database disk image is malformed")
+            return self
+
+        def fetchall(self):
+            return []
+
+    def test_an_unreadable_range_is_narrowed_to_its_records_and_declared(self):
+        cursor = self._Cursor({"bad-1", "bad-2"})
+        rows = EXPORTER.rows_by_event(
+            cursor, ["ok-1", "bad-1", "ok-2", "bad-2"], "SELECT x FROM t WHERE event_id IN ({ids})"
+        )
+        self.assertEqual(rows, {})
+        self.assertEqual(len(EXPORTER.LOCAL_STORE_READ_FAILURES), 1)
+        failure = EXPORTER.LOCAL_STORE_READ_FAILURES[0]
+        self.assertEqual(sorted(failure["unreadable_event_ids"]), ["bad-1", "bad-2"])
+        self.assertEqual(failure["unreadable_event_count"], 2)
+        self.assertIn("malformed", failure["error"])
+
+    def test_a_readable_store_declares_no_exception(self):
+        cursor = self._Cursor(set())
+        EXPORTER.rows_by_event(cursor, ["ok-1"], "SELECT x FROM t WHERE event_id IN ({ids})")
+        self.assertEqual(EXPORTER.LOCAL_STORE_READ_FAILURES, [])
+
+
 class ScoreModelTests(unittest.TestCase):
     """The score is recomputed for each release, and only where it means something."""
 
@@ -859,6 +902,16 @@ class CertificateAndArtifactTests(unittest.TestCase):
                     and candidate["ctas_score"] != 0.0:
                 problems.append((candidate["event_id"], "terminal", candidate["ctas_score"]))
         self.assertEqual(problems[:5], [], f"{len(problems)} records did not reproduce their score")
+
+    def test_the_release_declares_its_local_store_exceptions(self):
+        exceptions = self.status["local_store_exceptions"]
+        self.assertEqual(exceptions["failure_count"], len(exceptions["failures"]))
+        self.assertEqual(
+            exceptions["unreadable_event_count"],
+            sum(row["unreadable_event_count"] for row in exceptions["failures"]),
+        )
+        for row in exceptions["failures"]:
+            self.assertEqual(len(row["unreadable_event_ids"]), row["unreadable_event_count"])
 
     def test_every_published_score_carries_one_release_clock(self):
         stamps = {candidate["score_model"]["score_as_of"] for candidate in self.snapshot["candidates"]}
