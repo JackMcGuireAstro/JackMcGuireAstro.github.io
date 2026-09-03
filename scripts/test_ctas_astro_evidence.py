@@ -229,6 +229,13 @@ class AstroEvidenceTests(unittest.TestCase):
             import jsonschema
         except ImportError as exc:  # pragma: no cover - scientific test environment owns this dependency
             self.skipTest(str(exc))
+        if not hasattr(jsonschema, "Draft202012Validator"):
+            # An older jsonschema cannot check the 2020-12 draft this schema
+            # declares. Skipping says so; erroring would read as a schema fault.
+            self.skipTest(
+                f"jsonschema {getattr(jsonschema, '__version__', 'unknown')} has no "
+                "Draft202012Validator; install jsonschema>=4 to validate this draft"
+            )
         schema = json.loads(SCHEMA_PATH.read_text())
         validator = jsonschema.Draft202012Validator(schema, format_checker=jsonschema.FormatChecker())
         self.assertEqual(list(validator.iter_errors(self.document)), [])

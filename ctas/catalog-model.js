@@ -282,8 +282,33 @@
     return selected;
   }
 
+  function expandSourceMatrix(compact, patterns) {
+    // A record's source matrix is published as its own informative rows plus a
+    // reference to a shared "declared, never queried, nothing retained"
+    // pattern. Rebuilding it here keeps every consumer working with the
+    // complete ordered matrix while the release stores each repeated statement
+    // once instead of once per record.
+    if (Array.isArray(compact)) return compact.slice();
+    if (!compact || typeof compact !== "object") return [];
+    var quiet = ((patterns || {})[String(compact.no_evidence_pattern || "")] || []).slice();
+    var total = Number(compact.row_count || 0);
+    var placed = {}, rows = Array.isArray(compact.rows) ? compact.rows : [];
+    rows.forEach(function (row) {
+      var copy = {}, index = Number(row.row_index);
+      Object.keys(row).forEach(function (key) { if (key !== "row_index") copy[key] = row[key]; });
+      placed[index] = copy;
+    });
+    var out = [], next = 0;
+    for (var position = 0; position < total; position += 1) {
+      if (Object.prototype.hasOwnProperty.call(placed, position)) out.push(placed[position]);
+      else if (next < quiet.length) out.push(quiet[next++]);
+    }
+    return out;
+  }
+
   return {
     evidenceAt: evidenceAt,
+    expandSourceMatrix: expandSourceMatrix,
     filteredCandidates: filteredCandidates,
     greatCircleDistanceDeg: greatCircleDistanceDeg,
     inflateBootstrap: inflateBootstrap,

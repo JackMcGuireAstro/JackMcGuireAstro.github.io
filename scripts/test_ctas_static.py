@@ -372,9 +372,14 @@ class CertificateAndArtifactTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.data_dir = ROOT / "ctas/data"
-        cls.bootstrap_raw = (cls.data_dir / "catalog-bootstrap.json").read_bytes()
+        cls.summary_raw = (cls.data_dir / "live-summary.json").read_bytes()
+        cls.summary = json.loads(cls.summary_raw)
+        cls.page_manifest = json.loads((cls.data_dir / "catalog-pages/manifest.json").read_text())
+        cls.source_matrix_patterns = json.loads(
+            (cls.data_dir / "source-matrix-patterns.json").read_text()
+        )["patterns"]
         cls.index_raw = (cls.data_dir / "catalog-index.json").read_bytes()
-        cls.index = json.loads(cls.bootstrap_raw)
+        cls.index = json.loads(cls.index_raw)
         cls.index_candidates = EXPORTER.inflate_catalog_candidates(cls.index)
         cls.manifest = json.loads((cls.data_dir / "candidate-chunks/manifest.json").read_text())
         if cls.manifest.get("schema") != EXPORTER.CANDIDATE_MANIFEST_SCHEMA:
@@ -491,11 +496,63 @@ class CertificateAndArtifactTests(unittest.TestCase):
             EXPORTER.certificate_status(self.certificate["gates"]),
         )
 
-    def test_columnar_bootstrap_is_small_lossless_and_compatibly_mirrored(self):
+    def test_first_screen_loads_a_summary_not_the_complete_catalog(self):
+        """The page must be usable without downloading every retained record."""
+        self.assertEqual(self.summary["schema"], EXPORTER.LIVE_SUMMARY_SCHEMA)
+        self.assertLessEqual(len(self.summary_raw), EXPORTER.LIVE_SUMMARY_MAX_BYTES)
+        self.assertFalse((self.data_dir / "catalog-bootstrap.json").exists(),
+                         "the duplicated bootstrap bytes must not be republished")
+        self.assertEqual(
+            self.summary["catalog_content_checksum_sha256"],
+            self.index["catalog_content_checksum_sha256"],
+        )
+        # The summary reports the complete catalog size but carries only the
+        # first-screen records.
+        self.assertEqual(self.summary["candidate_count"], self.index["candidate_count"])
+        self.assertLess(len(self.summary["candidate_rows"]), self.summary["candidate_count"])
+        self.assertEqual(self.summary["candidate_columns"], list(EXPORTER.CATALOG_CANDIDATE_COLUMNS))
+        summary_ids = {
+            row[EXPORTER.CATALOG_CANDIDATE_COLUMNS.index("event_id")]
+            for row in self.summary["candidate_rows"]
+        }
+        for group in (
+            self.summary["leaderboard"]["event_ids"],
+            self.summary["recent_reports"]["event_ids"],
+            *self.summary["channel_leaderboards"].values(),
+        ):
+            self.assertTrue(set(group) <= summary_ids)
+        self.assertLessEqual(len(self.summary["leaderboard"]["event_ids"]), EXPORTER.TOP_RANK_LIMIT)
+        self.assertEqual(
+            len(self.summary["recent_reports"]["newest_event_ids"]),
+            min(EXPORTER.NEWEST_REPORT_COUNT, self.summary["recent_reports"]["count"]),
+        )
+
+    def test_default_leaderboard_excludes_non_target_records(self):
+        """A terrestrial flash or a retraction is searchable, never a target."""
+        by_id = {row["event_id"]: row for row in self.index_candidates}
+        for event_id in self.summary["leaderboard"]["event_ids"]:
+            role = by_id[event_id]["record_role"]
+            self.assertEqual(role, "follow-up-target-candidate", f"{event_id} is {role}")
+
+    def test_complete_catalog_is_paginated_within_budget(self):
+        pages = self.page_manifest["pages"]
+        self.assertEqual(
+            sum(row["candidate_count"] for row in pages), self.index["candidate_count"]
+        )
+        seen = []
+        for row in pages:
+            raw = (ROOT / row["path"]).read_bytes()
+            self.assertEqual(len(raw), row["bytes"])
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), row["sha256"])
+            self.assertLessEqual(len(raw), EXPORTER.CATALOG_PAGE_MAX_BYTES)
+            page = json.loads(raw)
+            self.assertEqual(page["candidate_columns"], self.index["candidate_columns"])
+            seen.extend(page["candidate_rows"])
+        self.assertEqual(seen, self.index["candidate_rows"])
+
+    def test_columnar_index_is_lossless(self):
         self.assertEqual(self.index["schema"], EXPORTER.CATALOG_INDEX_SCHEMA)
         self.assertNotIn("candidates", self.index)
-        self.assertEqual(self.bootstrap_raw, self.index_raw)
-        self.assertLessEqual(len(self.bootstrap_raw), EXPORTER.CATALOG_BOOTSTRAP_MAX_BYTES)
         self.assertEqual(self.index["candidate_columns"], list(EXPORTER.CATALOG_CANDIDATE_COLUMNS))
         self.assertEqual(self.index["candidate_count"], len(self.index["candidate_rows"]))
         self.assertEqual(self.index["candidate_count"], len(self.index_candidates))
@@ -532,6 +589,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
             "scripts/test_ctas_catalog_model.js",
             "scripts/test_ctas_links.py",
             "scripts/test_ctas_astro_evidence.py",
+            "scripts/test_ctas_identity.py",
         ):
             self.assertIn(relative, self.certificate["files"])
             self.assertEqual(
@@ -867,7 +925,8 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn(".backup '$PUBLISH_DB'", publisher)
         self.assertEqual(publisher.count('--database "$PUBLISH_DB"'), 2)
         for name in (
-            "catalog-bootstrap.json", "catalog-index.json", "alias-index.json",
+            "live-summary.json", "catalog-index.json", "alias-index.json",
+            "catalog-pages/manifest.json", "source-matrix-patterns.json",
             "research/manifest.json", "research/events.csv", "research/aliases.csv",
             "research/sources.csv", "research/events.vot", "research/tom-targets.csv",
             "candidate-chunks/manifest.json",
@@ -878,7 +937,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertNotIn("candidates.json", publisher)
         self.assertIn("--catalog-index ctas/data/catalog-index.json", publisher)
         self.assertIn("--candidate-manifest ctas/data/candidate-chunks/manifest.json", publisher)
-        self.assertIn('for bucket_index in {0..255}', publisher)
+        self.assertIn('for bucket_index in {0..4095}', publisher)
         self.assertIn('PUBLIC_FILES+=("ctas/data/candidate-chunks/$bucket.json")', publisher)
         self.assertIn('HEARTBEAT_INTERVAL="${CTAS_HEARTBEAT_INTERVAL:-900}"', publisher)
         self.assertEqual(publisher.count('--release-base-ref origin/main'), 2)
@@ -942,7 +1001,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256(index_raw).hexdigest(), self.manifest["catalog_index"]["sha256"])
         self.assertEqual(
             [row["path"] for row in self.manifest["chunks"]],
-            [f"ctas/data/candidate-chunks/{index:02x}.json" for index in range(EXPORTER.CANDIDATE_BUCKET_COUNT)],
+            [f"ctas/data/candidate-chunks/{index:03x}.json" for index in range(EXPORTER.CANDIDATE_BUCKET_COUNT)],
         )
         for row in self.manifest["chunks"]:
             path = ROOT / row["path"]
@@ -978,14 +1037,15 @@ class CertificateAndArtifactTests(unittest.TestCase):
             "the retired oversized monolith must not remain publicly reachable",
         )
         explicit = [
-            "ctas/data/catalog-bootstrap.json", "ctas/data/catalog-index.json",
+            "ctas/data/live-summary.json", "ctas/data/catalog-index.json",
+            "ctas/data/catalog-pages/manifest.json", "ctas/data/source-matrix-patterns.json",
             "ctas/data/alias-index.json", "ctas/data/research/manifest.json",
             "ctas/data/candidate-chunks/manifest.json",
             "ctas/data/status.json", "ctas/data/source-universe.json",
             "ctas/data/release-history.json", "ctas/data/link-health.json",
             "ctas/data/certification.json",
         ] + [row["path"] for row in self.research_manifest["tables"]] + [
-            f"ctas/data/candidate-chunks/{index:02x}.json"
+            f"ctas/data/candidate-chunks/{index:03x}.json"
             for index in range(EXPORTER.CANDIDATE_BUCKET_COUNT)
         ]
         for relative in explicit:
@@ -1031,7 +1091,9 @@ class CertificateAndArtifactTests(unittest.TestCase):
         }
         for candidate in self.snapshot["candidates"]:
             accounting = candidate["source_accounting"]
-            matrix = candidate["source_matrix"]
+            matrix = EXPORTER.expand_source_matrix(
+                candidate["source_matrix"], self.source_matrix_patterns
+            )
             receipt_extensions = candidate["compatibility_provenance"]["receiptProvenance"]
             self.assertEqual(accounting["declaredSources"], self.universe["source_count"])
             self.assertEqual(accounting["applicableSources"], len(matrix))
@@ -1070,14 +1132,14 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertEqual(stale["event_id"], "1a6053f4-5660-4228-ad6a-c0a2f9c553f5")
         self.assertTrue(any(
             row["retainedEvidenceState"] == "STALE_LAST_GOOD_RETAINED"
-            for row in stale["source_matrix"]
+            for row in EXPORTER.expand_source_matrix(stale["source_matrix"], self.source_matrix_patterns)
         ))
 
         no_match = by_name["AT2026zxx"]
         self.assertEqual(no_match["event_id"], "2ce4c4eb-dd3a-485e-9f34-e46ba0553883")
         self.assertTrue(any(
             row["currentQueryOutcome"] == "SEARCHED_NO_MATCH"
-            for row in no_match["source_matrix"]
+            for row in EXPORTER.expand_source_matrix(no_match["source_matrix"], self.source_matrix_patterns)
         ))
 
         revision = by_name["NuEm-220601A-118386"]

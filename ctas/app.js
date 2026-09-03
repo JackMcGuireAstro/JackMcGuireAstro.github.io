@@ -68,6 +68,8 @@
     downloadParts: document.getElementById("ctas-download-parts"),
     toolbar: document.getElementById("ctas-toolbar"),
     results: document.getElementById("ctas-results"),
+    loadComplete: document.getElementById("ctas-load-complete"),
+    completeStatus: document.getElementById("ctas-complete-status"),
     workspace: document.getElementById("candidate-workspace"),
     count: document.getElementById("ctas-count"),
     clear: document.getElementById("ctas-clear"),
@@ -1053,7 +1055,7 @@
 
   function safeCatalogDownloadPath(value) {
     var path = text(value);
-    return /^ctas\/data\/(?:catalog-index\.json|candidate-chunks\/(?:manifest|[0-9a-f]{2})\.json)$/.test(path) ? path : null;
+    return /^ctas\/data\/(?:live-summary\.json|catalog-index\.json|source-matrix-patterns\.json|catalog-pages\/(?:manifest|\d{4})\.json|candidate-chunks\/(?:manifest|[0-9a-f]{2,4})\.json)$/.test(path) ? path : null;
   }
   function renderCatalogDownloads() {
     if (!el.downloadStatus || !el.downloadParts) return;
@@ -1429,6 +1431,78 @@
     var rows = (state.catalogManifest || {}).chunks || [];
     return rows.find(function (row) { return text(row.path).replace(/^ctas\/data\//, "") === path; });
   }
+  function loadCompleteCatalog() {
+    // The first screen holds the Top 100 per channel and the last 24 hours.
+    // Everything else arrives only here, in bounded checksum-bound pages, so a
+    // reader who never asks never downloads the complete catalog.
+    if (state.completeCatalogPromise) return state.completeCatalogPromise;
+    var release = (state.snapshot || {}).catalog_content_checksum_sha256;
+    state.completeCatalogPromise = getJSON("catalog-pages/manifest.json").then(function (manifest) {
+      if (!manifest || manifest.catalog_content_checksum_sha256 !== release) {
+        throw new Error("The catalog pages belong to a different release. Refresh after publication finishes.");
+      }
+      var pages = Array.isArray(manifest.pages) ? manifest.pages : [];
+      if (!pages.length) throw new Error("The catalog page manifest lists no pages.");
+      var columns = manifest.candidate_columns, loaded = 0;
+      function report() {
+        if (el.completeStatus) {
+          el.completeStatus.textContent = "Loading complete catalog… page " + loaded + " of " + pages.length + ".";
+        }
+      }
+      report();
+      return pages.reduce(function (chain, row) {
+        return chain.then(function (collected) {
+          var path = "catalog-pages/" + String(row.page).padStart(4, "0") + ".json";
+          return fetch(DATA_DIR + path, {cache: "no-cache"}).then(function (response) {
+            if (!response.ok) throw new Error(path + " returned HTTP " + response.status);
+            return response.arrayBuffer();
+          }).then(function (bytes) {
+            if (bytes.byteLength !== Number(row.bytes)) throw new Error("Catalog page " + row.page + " byte length does not match its manifest.");
+            return sha256Hex(bytes).then(function (checksum) {
+              if (checksum !== row.sha256) throw new Error("Catalog page " + row.page + " SHA-256 does not match its manifest.");
+              var document_ = JSON.parse(new TextDecoder("utf-8", {fatal: true}).decode(bytes));
+              loaded += 1; report();
+              return collected.concat(window.CTASCatalogModel.inflateBootstrap({
+                candidate_columns: columns, candidate_rows: document_.candidate_rows
+              }));
+            });
+          });
+        });
+      }, Promise.resolve([])).then(function (all) {
+        var byId = {};
+        state.candidates.forEach(function (candidate) { byId[candidate.event_id] = candidate; });
+        all.forEach(function (candidate) { byId[candidate.event_id] = candidate; });
+        state.candidates = Object.keys(byId).map(function (key) { return byId[key]; });
+        state.completeCatalogLoaded = true;
+        if (el.completeStatus) {
+          el.completeStatus.textContent = "Complete catalog loaded: " + state.candidates.length.toLocaleString() + " retained records.";
+        }
+        if (el.loadComplete) { el.loadComplete.disabled = true; el.loadComplete.textContent = "Complete catalog loaded"; }
+        populateFilters(); restoreFiltersFromRoute(); renderOverview(); renderTable(); drawSky();
+        return state.candidates;
+      });
+    }).catch(function (error) {
+      state.completeCatalogPromise = null;
+      if (el.completeStatus) el.completeStatus.textContent = "The complete catalog could not be loaded: " + (error.message || "unknown error") + " The records already shown remain usable.";
+      throw error;
+    });
+    return state.completeCatalogPromise;
+  }
+  function loadSourceMatrixPatterns() {
+    if (!state.sourceMatrixPatternsPromise) {
+      state.sourceMatrixPatternsPromise = getJSON("source-matrix-patterns.json").then(function (document_) {
+        if (document_ && document_.catalog_content_checksum_sha256 !== (state.snapshot || {}).catalog_content_checksum_sha256) {
+          throw new Error("Source-matrix patterns belong to a different catalog release.");
+        }
+        state.sourceMatrixPatterns = (document_ || {}).patterns || {};
+        return state.sourceMatrixPatterns;
+      }).catch(function (error) {
+        state.sourceMatrixPatternsPromise = null;
+        throw error;
+      });
+    }
+    return state.sourceMatrixPatternsPromise;
+  }
   function loadChunk(path) {
     if (!state.chunks[path]) {
       state.chunks[path] = (function () {
@@ -1443,7 +1517,12 @@
             if (checksum !== metadata.sha256) throw new Error("Detail-shard SHA-256 does not match the release manifest; refresh after publication finishes.");
             var document_ = JSON.parse(new TextDecoder("utf-8", {fatal: true}).decode(bytes));
             if (Number(document_.candidate_count) !== Number(metadata.candidate_count)) throw new Error("Detail-shard candidate count does not match the release manifest.");
-            return document_;
+            return loadSourceMatrixPatterns().then(function (patterns) {
+              (document_.candidates || []).forEach(function (candidate) {
+                candidate.source_matrix = window.CTASCatalogModel.expandSourceMatrix(candidate.source_matrix, patterns);
+              });
+              return document_;
+            });
           });
         });
       }()).catch(function (error) { delete state.chunks[path]; throw error; });
@@ -1749,6 +1828,12 @@
     if (el.coneDec) el.coneDec.addEventListener("input", function () { state.coneDec = inputNumber(el.coneDec); rerenderForFilters(); });
     if (el.coneRadius) el.coneRadius.addEventListener("input", function () { state.coneRadius = inputNumber(el.coneRadius); rerenderForFilters(); });
     if (el.clear) el.clear.addEventListener("click", clearFilters);
+    if (el.loadComplete) {
+      el.loadComplete.addEventListener("click", function () {
+        el.loadComplete.disabled = true;
+        loadCompleteCatalog().catch(function () { el.loadComplete.disabled = false; });
+      });
+    }
     document.addEventListener("pointerover", function (event) {
       var row = event.target.closest && event.target.closest("[data-candidate-id]");
       if (!row || (event.relatedTarget && row.contains(event.relatedTarget))) return;
@@ -1914,7 +1999,12 @@
   function fetchReleaseBundle(cacheBust) {
     var suffix = cacheBust ? "?coherence=" + encodeURIComponent(cacheBust) : "";
     return Promise.all([
-      getJSON("catalog-bootstrap.json" + suffix), getJSON("status.json" + suffix).catch(function () { return null; }),
+      getJSON("live-summary.json" + suffix, 1).catch(function () {
+        // Transitional: a release published before the summary-first layout
+        // still carries the old columnar bootstrap. Never leave the page blank
+        // because one artifact name changed between releases.
+        return getJSON("catalog-bootstrap.json" + suffix);
+      }), getJSON("status.json" + suffix).catch(function () { return null; }),
       getJSON("source-universe.json" + suffix).catch(function () { return null; }),
       getJSON("release-history.json" + suffix).catch(function () { return null; }),
       getJSON("candidate-chunks/manifest.json" + suffix).catch(function () { return null; })
@@ -1945,6 +2035,7 @@
         fetchReleaseBundle(Date.now()).then(function (result) {
           var index = result[0];
           state.snapshot = index; state.candidates = window.CTASCatalogModel.inflateBootstrap(index); state.chunks = {}; state.aliasIndex = null; state.aliasPromise = null;
+          state.sourceMatrixPatterns = null; state.sourceMatrixPatternsPromise = null; state.completeCatalogLoaded = false;
           state.sourceUniverse = result[2]; state.releaseHistory = result[3]; state.catalogManifest = result[4]; state.status = result[1] || status;
           populateFilters(); restoreFiltersFromRoute(); renderStatus(); renderOverview(); renderCatalogDownloads(); renderSourceUniverse(); renderReleaseHistory(); renderTable(); drawSky();
           window.dispatchEvent(new CustomEvent("ctas:snapshot", {detail: {snapshot: state.snapshot, status: state.status,

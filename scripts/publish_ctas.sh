@@ -22,8 +22,10 @@ SITE="${CTAS_SITE:-$HOME/Documents/GitHub/JackMcGuireAstro.github.io}"
 DB="${CTAS_DB:-$HOME/.codex/.chatgpt-projects/g-p-6a5d91be2e688191b7333527fcd488b3/data/soc.db}"
 BRANCH="${CTAS_BRANCH:-main}"
 PUBLIC_FILES=(
-  ctas/data/catalog-bootstrap.json
+  ctas/data/live-summary.json
   ctas/data/catalog-index.json
+  ctas/data/catalog-pages/manifest.json
+  ctas/data/source-matrix-patterns.json
   ctas/data/alias-index.json
   ctas/data/candidate-chunks/manifest.json
   ctas/data/research/manifest.json
@@ -38,10 +40,16 @@ PUBLIC_FILES=(
   ctas/data/link-health.json
   ctas/data/certification.json
 )
-for bucket_index in {0..255}; do
-  printf -v bucket '%02x' "$bucket_index"
+for bucket_index in {0..4095}; do
+  printf -v bucket '%03x' "$bucket_index"
   PUBLIC_FILES+=("ctas/data/candidate-chunks/$bucket.json")
 done
+# Complete-catalog pages are bounded and few; publish every page the exporter
+# produced rather than a fixed count, so a growing catalog cannot silently drop
+# its tail from the release.
+while IFS= read -r page; do
+  [ -n "$page" ] && PUBLIC_FILES+=("$page")
+done < <(find ctas/data/catalog-pages -maxdepth 1 -name '[0-9][0-9][0-9][0-9].json' 2>/dev/null | sort)
 
 # Floor between published commits, not a schedule. 0 = publish as soon as the
 # data actually changes. Nothing happens at all unless the data changed.
@@ -150,19 +158,65 @@ python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ct
   --release-base-ref origin/main >>"$LOG" 2>&1 \
   || die "verification-report rebuild failed; nothing committed"
 
+# ------------------------------------------------- retire superseded artifacts
+# The partition width and the first-screen artifact can change between code
+# releases. Any previously published data file the current manifest no longer
+# declares would otherwise stay on the site forever, serving a stale dossier at
+# a live URL. Retire exactly those, and add them to the allowlist so the
+# deletion is committed under the same explicit rule as everything else.
+RETIRED=$(python3 - <<'PYRETIRE'
+import json
+import subprocess
+from pathlib import Path
+
+manifest = json.loads(Path("ctas/data/candidate-chunks/manifest.json").read_text())
+pages = json.loads(Path("ctas/data/catalog-pages/manifest.json").read_text())
+current = {row["path"] for row in manifest.get("chunks", [])}
+current |= {row["path"] for row in pages.get("pages", [])}
+current |= {
+    "ctas/data/candidate-chunks/manifest.json",
+    "ctas/data/catalog-pages/manifest.json",
+}
+tracked = subprocess.run(
+    ["git", "ls-files", "ctas/data/candidate-chunks", "ctas/data/catalog-pages",
+     "ctas/data/catalog-bootstrap.json"],
+    capture_output=True, text=True, check=True,
+).stdout.split()
+for path in sorted(set(tracked) - current):
+    Path(path).unlink(missing_ok=True)
+    print(path)
+PYRETIRE
+) || die "could not determine which published artifacts this release retires"
+if [ -n "$RETIRED" ]; then
+  while IFS= read -r retired; do
+    [ -n "$retired" ] && PUBLIC_FILES+=("$retired")
+  done <<<"$RETIRED"
+  say "retiring $(printf '%s\n' "$RETIRED" | grep -c .) superseded public data files"
+fi
+
+# ------------------------------------------------------------------ tests
+# A release may not be committed on the strength of its own report alone. The
+# suites below read the artifacts that were just written, so they run after the
+# export and before anything is staged.
+for suite in scripts/test_ctas_static.py scripts/test_ctas_links.py scripts/test_ctas_identity.py scripts/test_ctas_astro_evidence.py; do
+  python3 "$suite" >>"$LOG" 2>&1 || die "$suite failed against the generated release; nothing committed"
+done
+node scripts/test_ctas_catalog_model.js >>"$LOG" 2>&1 \
+  || die "catalog-model assertions failed against the generated release; nothing committed"
+
 EXPECTED_SHARDS=$(python3 - <<'PY'
 import json
 from pathlib import Path
 
 manifest = json.loads(Path("ctas/data/candidate-chunks/manifest.json").read_text())
 actual = sorted(row.get("path") for row in manifest.get("chunks", []))
-expected = [f"ctas/data/candidate-chunks/{index:02x}.json" for index in range(256)]
+expected = [f"ctas/data/candidate-chunks/{index:03x}.json" for index in range(4096)]
 if actual != expected:
-    raise SystemExit("detail-shard manifest is not the exact 00..ff release set")
+    raise SystemExit("detail-shard manifest is not the exact 000..fff release set")
 print(len(actual))
 PY
 ) || die "detail-shard manifest does not match the explicit publisher allowlist"
-[ "$EXPECTED_SHARDS" = "256" ] || die "detail-shard manifest does not declare 256 shards"
+[ "$EXPECTED_SHARDS" = "4096" ] || die "detail-shard manifest does not declare 4096 shards"
 
 CERT_STATUS=$(python3 -c "import json;print(json.load(open('ctas/data/certification.json'))['status'])" 2>/dev/null || echo "unreadable")
 if [ "$CERT_STATUS" != "verified-static-snapshot" ]; then

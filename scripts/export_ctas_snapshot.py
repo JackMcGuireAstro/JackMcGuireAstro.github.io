@@ -68,10 +68,62 @@ CANDIDATE_DOWNLOAD_MANIFEST_SCHEMA = "ctas.public-complete-catalog-manifest@1.0.
 # both the lazy-detail index and the authoritative complete-catalog download.
 CANDIDATE_MANIFEST_SCHEMA = CANDIDATE_DOWNLOAD_MANIFEST_SCHEMA
 RELEASE_HISTORY_SCHEMA = "ctas.public-release-history@1.0.0"
-CANDIDATE_BUCKET_COUNT = 256
+CANDIDATE_BUCKET_COUNT = 4096
+LIVE_SUMMARY_SCHEMA = "ctas.public-live-summary@1.0.0"
+CATALOG_PAGE_SCHEMA = "ctas.public-catalog-page@1.0.0"
+CATALOG_PAGE_MANIFEST_SCHEMA = "ctas.public-catalog-page-manifest@1.0.0"
+LIVE_SUMMARY_PATH = "ctas/data/live-summary.json"
+CATALOG_PAGE_MANIFEST_PATH = "ctas/data/catalog-pages/manifest.json"
+LIVE_SUMMARY_MAX_BYTES = 2 * 1024 * 1024
+CATALOG_PAGE_MAX_BYTES = 1024 * 1024
+TOP_RANK_LIMIT = 100
+RECENT_REPORT_WINDOW_HOURS = 24
+NEWEST_REPORT_COUNT = 3
+
+# A retained record is not automatically a follow-up target.  CTAS keeps
+# detector triggers, terrestrial flashes and solar activity because they are
+# public time-domain reports, but a terrestrial gamma-ray flash must never sit
+# in an observing leaderboard.  The role says what kind of record this is; the
+# channel says which cohort it may be ranked inside.
+RECORD_ROLE_BY_EVENT_TYPE = {
+    "optical-transient": ("follow-up-target-candidate", "optical"),
+    "x-ray-transient": ("follow-up-target-candidate", "x-ray-gamma-ray"),
+    "gamma-ray-transient": ("follow-up-target-candidate", "x-ray-gamma-ray"),
+    "gamma-ray-burst-candidate": ("localization-region-alert", "x-ray-gamma-ray"),
+    "high-energy-trigger": ("unvalidated-detector-trigger", "x-ray-gamma-ray"),
+    "high-energy-count-rate-trigger": ("unvalidated-detector-trigger", "x-ray-gamma-ray"),
+    "fast-radio-burst": ("unvalidated-detector-trigger", "radio"),
+    "high-energy-neutrino": ("localization-region-alert", "neutrino-multimessenger"),
+    "high-energy-neutrino-track": ("localization-region-alert", "neutrino-multimessenger"),
+    "high-energy-neutrino-cascade": ("localization-region-alert", "neutrino-multimessenger"),
+    "neutrino-gamma-coincidence-candidate": ("localization-region-alert", "neutrino-multimessenger"),
+    "terrestrial-gamma-ray-flash": ("known-terrestrial-event", "contextual-non-target"),
+    "solar-flare": ("known-solar-event", "contextual-non-target"),
+}
+RECORD_ROLE_FALLBACK = ("contextual-non-target-record", "contextual-non-target")
+# Only these roles may appear in the default follow-up leaderboard.
+TARGET_ROLES = frozenset({"follow-up-target-candidate"})
+SOURCE_MATRIX_SCHEMA = "ctas.candidate-source-matrix@2.0.0"
+SOURCE_MATRIX_PATTERN_SCHEMA = "ctas.public-source-matrix-patterns@1.0.0"
+SOURCE_MATRIX_PATTERNS_PATH = "ctas/data/source-matrix-patterns.json"
+SOURCE_MATRIX_ROW_KEYS = (
+    "sourceContractId", "sourceName", "documentationUrl", "applicabilityRule",
+    "currentQueryOutcome", "currentQueryCheckedAt", "executedReceiptCount",
+    "retainedRecordCount", "retainedRecordTypes", "retainedEvidenceLatestAt",
+    "retainedEvidenceState",
+)
+# A source evaluated but never queried, holding nothing, is the same statement
+# for almost every record.  Publishing that identical statement 13,931 times
+# was 58.6% of all dossier bytes and said nothing a shared pattern cannot.
+SOURCE_MATRIX_NO_EVIDENCE_OUTCOMES = frozenset({
+    "LINK_ONLY_NOT_QUERIED", "NOT_QUERIED", "NOT_CONFIGURED",
+})
 CATALOG_BOOTSTRAP_MAX_BYTES = 2 * 1024 * 1024
 # A single evidence-rich dossier can exceed 2 MiB before compression; the
-# stable 256-way UUID partition therefore uses a truthful 4 MiB raw ceiling.
+# stable UUID partition therefore uses a truthful 4 MiB raw ceiling. A 256-way
+# split left single shards near 6 MiB once the complete catalog was published,
+# so the partition is 4096-way: one module stays small enough to open quickly
+# and a damaged module can only affect the few dossiers inside it.
 CANDIDATE_SHARD_TARGET_MAX_BYTES = 4 * 1024 * 1024
 GITHUB_MAX_BLOB_BYTES = 100 * 1024 * 1024
 SOURCE_STATE_VOCABULARY = (
@@ -435,10 +487,91 @@ def conflicting_tns_object_ids(alias_rows: Any) -> list[str]:
     return sorted(object_ids)
 
 
+def record_role_for(candidate: dict[str, Any]) -> tuple[str, str]:
+    """Return (record_role, ranking_channel) for one retained record."""
+
+    status = str(candidate.get("status") or "").strip().lower()
+    event_type = str(candidate.get("event_type") or "").strip().lower()
+    _role, channel = RECORD_ROLE_BY_EVENT_TYPE.get(event_type, RECORD_ROLE_FALLBACK)
+    if status in {"retracted", "bogus"}:
+        return "retracted-event", channel
+    role, channel = RECORD_ROLE_BY_EVENT_TYPE.get(event_type, RECORD_ROLE_FALLBACK)
+    return role, channel
+
+
+def source_matrix_row_carries_no_evidence(row: dict[str, Any]) -> bool:
+    """True when a source row records only "declared, nothing retained"."""
+
+    return (
+        row.get("currentQueryOutcome") in SOURCE_MATRIX_NO_EVIDENCE_OUTCOMES
+        and row.get("currentQueryCheckedAt") is None
+        and int(row.get("executedReceiptCount") or 0) == 0
+        and int(row.get("retainedRecordCount") or 0) == 0
+        and not row.get("retainedRecordTypes")
+        and row.get("retainedEvidenceLatestAt") is None
+        and row.get("retainedEvidenceState") == "NO_RETAINED_EVIDENCE"
+    )
+
+
+def compact_source_matrix(
+    rows: list[dict[str, Any]], patterns: dict[str, list[dict[str, Any]]],
+) -> dict[str, Any]:
+    """Split one record's source matrix into a shared pattern and its own rows.
+
+    Nothing is dropped: every retained row either keeps its exact position in
+    ``rows`` or belongs to the ordered no-evidence pattern, and
+    ``expand_source_matrix`` reproduces the original list exactly.
+    """
+
+    quiet: list[dict[str, Any]] = []
+    informative: list[dict[str, Any]] = []
+    for index, row in enumerate(rows):
+        if source_matrix_row_carries_no_evidence(row):
+            quiet.append(row)
+        else:
+            informative.append({"row_index": index, **row})
+    key = hashlib.sha256(
+        json.dumps(quiet, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()[:16]
+    patterns.setdefault(key, quiet)
+    return {
+        "schema": SOURCE_MATRIX_SCHEMA,
+        "pattern_document": SOURCE_MATRIX_PATTERNS_PATH,
+        "no_evidence_pattern": key,
+        "row_count": len(rows),
+        "rows": informative,
+    }
+
+
+def expand_source_matrix(
+    compact: Any, patterns: dict[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Reproduce the complete ordered source matrix for one record."""
+
+    if isinstance(compact, list):
+        return list(compact)
+    if not isinstance(compact, dict):
+        return []
+    quiet = list(patterns.get(str(compact.get("no_evidence_pattern") or "")) or [])
+    total = int(compact.get("row_count") or 0)
+    placed: dict[int, dict[str, Any]] = {}
+    for row in compact.get("rows") or []:
+        entry = {key: value for key, value in row.items() if key != "row_index"}
+        placed[int(row.get("row_index", -1))] = entry
+    out: list[dict[str, Any]] = []
+    quiet_iter = iter(quiet)
+    for index in range(total):
+        if index in placed:
+            out.append(placed[index])
+        else:
+            out.append(next(quiet_iter))
+    return out
+
+
 def candidate_bucket(identity: str) -> str:
     """Return a stable UUID-derived bucket so renames do not move dossiers."""
 
-    return f"{int(hashlib.sha256(identity.encode()).hexdigest()[:8], 16) % CANDIDATE_BUCKET_COUNT:02x}"
+    return f"{int(hashlib.sha256(identity.encode()).hexdigest()[:8], 16) % CANDIDATE_BUCKET_COUNT:03x}"
 
 
 def reported_label_kind(candidate: dict[str, Any]) -> str:
@@ -1958,7 +2091,7 @@ def candidate_chunk_artifacts(
     """Serialize deterministic UUID buckets for complete public dossiers."""
 
     bucket_rows: dict[str, list[dict[str, Any]]] = {
-        f"{index:02x}": [] for index in range(CANDIDATE_BUCKET_COUNT)
+        f"{index:03x}": [] for index in range(CANDIDATE_BUCKET_COUNT)
     }
     for candidate in candidates:
         bucket_rows[candidate_bucket(str(candidate["event_id"]))].append(candidate)
@@ -1991,6 +2124,7 @@ CATALOG_CANDIDATE_COLUMNS = (
     "n_classifications", "n_classification_history", "n_observations", "n_spectra",
     "n_messenger_signals", "n_publications", "n_publication_revisions", "n_host_context",
     "n_catalog_counterparts", "n_archive_products",
+    "record_role", "ranking_channel", "default_leaderboard_eligible",
     "record_label", "record_present", "record_applicable", "record_not_assessed",
     "record_fraction", "primary_source_key", "primary_source_url",
     "primary_source_designation", "identity_state", "conflict_count",
@@ -2604,7 +2738,9 @@ def semantic_catalog_candidates(candidates: list[dict[str, Any]]) -> list[dict[s
             # The projection timestamp says when this export was assembled,
             # not that the underlying event evidence changed.
             astro_evidence.pop("generatedAt", None)
-        for source_row in candidate.get("source_matrix", []):
+        matrix = candidate.get("source_matrix")
+        matrix_rows = matrix.get("rows", []) if isinstance(matrix, dict) else (matrix or [])
+        for source_row in matrix_rows:
             # Age is a view of a retained timestamp at export time. The
             # timestamp itself remains checksum-bearing; the ticking duration
             # must not manufacture a new catalog release every heartbeat.
@@ -3115,6 +3251,7 @@ def main() -> int:
         "outcomeCounts": {},
     }
     projection_problems: list[str] = []
+    source_matrix_patterns: dict[str, list[dict[str, Any]]] = {}
     for candidate in candidates:
         event_id = str(candidate["event_id"])
         candidate_attempts = counts["all_attempts"].get(event_id, [])
@@ -3147,15 +3284,17 @@ def main() -> int:
             "projectionMethod": "The exporter projects source-native retained rows once; the browser deterministically assembles those measurements with versioned source contracts and persisted receipts.",
         }
         candidate["source_accounting"] = accounting
-        candidate["source_matrix"] = [
-            {key: row.get(key) for key in (
-                "sourceContractId", "sourceName", "documentationUrl", "applicabilityRule", "currentQueryOutcome",
-                "currentQueryCheckedAt", "executedReceiptCount", "retainedRecordCount",
-                "retainedRecordTypes", "retainedEvidenceLatestAt",
-                "retainedEvidenceState",
-            )}
+        complete_source_matrix = [
+            {key: row.get(key) for key in SOURCE_MATRIX_ROW_KEYS}
             for row in source_matrix
         ]
+        candidate["source_matrix"] = compact_source_matrix(
+            complete_source_matrix, source_matrix_patterns,
+        )
+        if expand_source_matrix(candidate["source_matrix"], source_matrix_patterns) != complete_source_matrix:
+            projection_problems.append(
+                f"{candidate.get('name')}: source matrix does not round-trip through its shared pattern"
+            )
         candidate["compatibility_provenance"] = {
             "receiptProvenance": compatibility_metadata["receiptProvenance"],
             "selectionProvenance": compatibility_metadata["selectionProvenance"],
@@ -3171,6 +3310,10 @@ def main() -> int:
         candidate["score_model"] = recomputed_score_model
         candidate["score_explanation"] = score_explanation_for(candidate)
         candidate["science_brief"] = science_brief_for(candidate)
+        role, channel = record_role_for(candidate)
+        candidate["record_role"] = role
+        candidate["ranking_channel"] = channel
+        candidate["default_leaderboard_eligible"] = role in TARGET_ROLES
         accounting_totals["applicableSourceEvaluations"] += int(accounting["applicableSources"])
         accounting_totals["executedQueryReceipts"] += int(accounting["executedQueryReceipts"])
         accounting_totals["dataBearingSourceEvaluations"] += int(accounting["dataBearingSources"])
@@ -3213,6 +3356,307 @@ def main() -> int:
         json.dumps(catalog_index, sort_keys=True, separators=(",", ":")) + "\n"
     ).encode()
     index_candidates = inflate_catalog_candidates(catalog_index)
+
+    # ---------------------------------------------------------------- pages
+    # The complete compact index is retained as one checksum-bound artifact for
+    # tooling, but a browser must never be made to download it to draw a first
+    # screen.  Partition it into bounded pages the page loads only after an
+    # explicit "Browse complete catalog".
+    catalog_pages: list[dict[str, Any]] = []
+    page_raw: dict[str, bytes] = {}
+    page_rows: list[list[Any]] = []
+    page_bytes = 0
+    def _flush_page() -> None:
+        nonlocal page_rows, page_bytes
+        if not page_rows:
+            return
+        number = len(catalog_pages) + 1
+        path = f"ctas/data/catalog-pages/{number:04d}.json"
+        document = {
+            "schema": CATALOG_PAGE_SCHEMA,
+            "page": number,
+            "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
+            "candidate_columns": list(CATALOG_CANDIDATE_COLUMNS),
+            "candidate_count": len(page_rows),
+            "candidate_rows": page_rows,
+        }
+        raw = (json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n").encode()
+        page_raw[path] = raw
+        catalog_pages.append({
+            "path": path,
+            "page": number,
+            "candidate_count": len(page_rows),
+            "bytes": len(raw),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "first_event_id": str(page_rows[0][CATALOG_CANDIDATE_COLUMNS.index("event_id")]),
+            "last_event_id": str(page_rows[-1][CATALOG_CANDIDATE_COLUMNS.index("event_id")]),
+        })
+        page_rows = []
+        page_bytes = 0
+
+    for row in candidate_rows:
+        encoded = len(json.dumps(row, separators=(",", ":")).encode()) + 1
+        if page_rows and page_bytes + encoded > CATALOG_PAGE_MAX_BYTES - 4096:
+            _flush_page()
+        page_rows.append(row)
+        page_bytes += encoded
+    _flush_page()
+
+    catalog_page_manifest = {
+        "schema": CATALOG_PAGE_MANIFEST_SCHEMA,
+        "generated_at": payload["generated_at"],
+        "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
+        "statement": (
+            "Pages carry the complete compact catalog in catalog-index order. The "
+            "first screen never loads them; they are fetched only when a reader "
+            "asks to browse the complete catalog."
+        ),
+        "candidate_columns": list(CATALOG_CANDIDATE_COLUMNS),
+        "candidate_count": len(candidate_rows),
+        "page_count": len(catalog_pages),
+        "page_max_bytes": CATALOG_PAGE_MAX_BYTES,
+        "pages": catalog_pages,
+        "complete_index": {
+            "path": "ctas/data/catalog-index.json",
+            "bytes": len(catalog_index_raw),
+            "sha256": hashlib.sha256(catalog_index_raw).hexdigest(),
+        },
+    }
+    catalog_page_manifest_raw = (
+        json.dumps(catalog_page_manifest, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode()
+
+    # -------------------------------------------------------- live summary
+    column_index = {name: position for position, name in enumerate(CATALOG_CANDIDATE_COLUMNS)}
+    rows_by_event = {
+        str(candidate["event_id"]): row
+        for candidate, row in zip(candidates, candidate_rows)
+    }
+    recent_cutoff = generated_dt - timedelta(hours=RECENT_REPORT_WINDOW_HOURS)
+
+    def discovery_time_of(candidate: dict[str, Any]) -> datetime | None:
+        return parse_utc(candidate.get("discovery_time"))
+
+    def by_score(cohort: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return sorted(
+            cohort,
+            key=lambda candidate: (
+                -float(candidate.get("ctas_score") or 0.0),
+                str(candidate.get("name") or ""),
+            ),
+        )
+
+    recent_candidates = sorted(
+        [
+            candidate for candidate in candidates
+            if (discovery_time_of(candidate) or datetime.min.replace(tzinfo=UTC)) >= recent_cutoff
+        ],
+        key=lambda candidate: str(candidate.get("discovery_time") or ""),
+        reverse=True,
+    )
+    leaderboard = by_score([
+        candidate for candidate in candidates if candidate.get("default_leaderboard_eligible")
+    ])[:TOP_RANK_LIMIT]
+    channels = sorted({str(candidate.get("ranking_channel") or "") for candidate in candidates})
+    channel_top = {
+        channel: [
+            str(candidate["event_id"])
+            for candidate in by_score([
+                candidate for candidate in candidates
+                if str(candidate.get("ranking_channel") or "") == channel
+            ])[:TOP_RANK_LIMIT]
+        ]
+        for channel in channels
+    }
+
+    summary_ids: list[str] = []
+    for group in (
+        [str(candidate["event_id"]) for candidate in leaderboard],
+        [str(candidate["event_id"]) for candidate in recent_candidates],
+        *channel_top.values(),
+    ):
+        for event_id in group:
+            if event_id not in summary_ids:
+                summary_ids.append(event_id)
+
+    sky_windows = {"24h": 1, "7d": 7, "30d": 30, "90d": 90}
+    sky_column_names = (
+        "event_id", "name", "ra_deg", "dec_deg", "discovery_magnitude",
+        "discovery_time", "ctas_score", "classification", "record_role",
+    )
+    sky_rows: list[list[Any]] = []
+    sky_counts: dict[str, dict[str, int]] = {}
+    longest_window = max(sky_windows.values())
+    horizon = generated_dt - timedelta(days=longest_window)
+    unlocalized = 0
+    for candidate in candidates:
+        discovered = discovery_time_of(candidate)
+        localized = candidate.get("ra_deg") is not None and candidate.get("dec_deg") is not None
+        if discovered is not None and discovered >= horizon:
+            if localized:
+                sky_rows.append([candidate.get(name) for name in sky_column_names])
+            else:
+                unlocalized += 1
+    for label, days in sky_windows.items():
+        cutoff = generated_dt - timedelta(days=days)
+        plotted = 0
+        missing = 0
+        for candidate in candidates:
+            discovered = discovery_time_of(candidate)
+            if discovered is None or discovered < cutoff:
+                continue
+            if candidate.get("ra_deg") is not None and candidate.get("dec_deg") is not None:
+                plotted += 1
+            else:
+                missing += 1
+        sky_counts[label] = {"plotted": plotted, "unlocalized": missing}
+    all_localized = sum(
+        1 for candidate in candidates
+        if candidate.get("ra_deg") is not None and candidate.get("dec_deg") is not None
+    )
+    sky_counts["all"] = {
+        "plotted": all_localized,
+        "unlocalized": len(candidates) - all_localized,
+    }
+
+    role_counts: dict[str, int] = {}
+    channel_counts: dict[str, int] = {}
+    for candidate in candidates:
+        role = str(candidate.get("record_role") or "")
+        channel = str(candidate.get("ranking_channel") or "")
+        role_counts[role] = role_counts.get(role, 0) + 1
+        channel_counts[channel] = channel_counts.get(channel, 0) + 1
+
+    def material_change_clock(change: dict[str, Any]) -> tuple[str, str]:
+        """Return (timestamp, which clock it came from) — never an unlabelled time."""
+
+        for key, clock in (
+            ("provider_publication_time", "provider publication time"),
+            ("ctas_receipt_time", "CTAS receipt time"),
+            ("scientific_time", "source-reported event time"),
+        ):
+            value = change.get(key)
+            if value:
+                return str(value), clock
+        return "", "no retained clock"
+
+    material_updates = [
+        {
+            "event_id": str(candidate["event_id"]),
+            "name": candidate.get("name"),
+            "at": material_change_clock(candidate["most_recent_meaningful_change"])[0],
+            "at_clock": material_change_clock(candidate["most_recent_meaningful_change"])[1],
+            **candidate["most_recent_meaningful_change"],
+        }
+        for candidate in sorted(
+            [c for c in candidates if c.get("most_recent_meaningful_change")],
+            key=lambda c: material_change_clock(c["most_recent_meaningful_change"])[0],
+            reverse=True,
+        )[:12]
+    ]
+
+    live_summary = {
+        "schema": LIVE_SUMMARY_SCHEMA,
+        "schema_version": SCHEMA_VERSION,
+        # The first-screen document deliberately mirrors the complete index's
+        # release identity fields so a browser can prove it holds one coherent
+        # release without downloading the catalog.  candidate_count is the
+        # complete catalog; candidate_rows is only what the first screen shows.
+        "catalog_as_of": catalog_index["catalog_as_of"],
+        "latest_record_update": payload["latest_record_update"],
+        "origin": payload["origin"],
+        "cadence": payload["cadence"],
+        "candidate_count": len(candidate_rows),
+        "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
+        "recent_stream": payload["recent_stream"],
+        "provider_statistics": payload["provider_statistics"],
+        "surveys": payload["surveys"],
+        "source_universe": payload["source_universe"],
+        "source_accounting": payload["source_accounting"],
+        "detail_manifest": "ctas/data/candidate-chunks/manifest.json",
+        "alias_index": "ctas/data/alias-index.json",
+        "research_tables": "ctas/data/research/manifest.json",
+        "summary_record_count": len(summary_ids),
+        "release": {
+            "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
+            "source_universe_contract_set": source_universe["contract_set_checksum_sha256"],
+            "score_method_version": "ctas.follow-up-score@1.0.0",
+            "record_role_method_version": "ctas.record-role@1.0.0",
+            "source_matrix_schema": SOURCE_MATRIX_SCHEMA,
+        },
+        "clocks": {
+            "last_ingestion_check": payload["export_checked_at"],
+            "last_successful_publication": payload["generated_at"],
+            "last_material_catalog_change": payload["latest_record_update"],
+            "latest_source_reported_event": max(
+                (str(candidate.get("discovery_time") or "") for candidate in candidates),
+                default="",
+            ) or None,
+            "latest_material_evidence_update": (material_updates[0].get("at") if material_updates else None),
+            "valid_until": payload["valid_until"],
+            "cadence": payload["cadence"],
+        },
+        "statistics": payload["statistics"],
+        "record_role_counts": dict(sorted(role_counts.items())),
+        "ranking_channel_counts": dict(sorted(channel_counts.items())),
+        "candidate_columns": list(CATALOG_CANDIDATE_COLUMNS),
+        "candidate_rows": [rows_by_event[event_id] for event_id in summary_ids],
+        "leaderboard": {
+            "policy": (
+                "The default leaderboard ranks only follow-up target candidates. "
+                "Detector triggers, localization-region alerts, known terrestrial "
+                "and solar events and retracted records stay searchable but never "
+                "enter it."
+            ),
+            "limit": TOP_RANK_LIMIT,
+            "event_ids": [str(candidate["event_id"]) for candidate in leaderboard],
+        },
+        "channel_leaderboards": channel_top,
+        "recent_reports": {
+            "window_hours": RECENT_REPORT_WINDOW_HOURS,
+            "clock": "source-reported discovery time",
+            "count": len(recent_candidates),
+            "newest_event_ids": [
+                str(candidate["event_id"]) for candidate in recent_candidates[:NEWEST_REPORT_COUNT]
+            ],
+            "event_ids": [str(candidate["event_id"]) for candidate in recent_candidates],
+        },
+        "material_evidence_updates": material_updates,
+        "sky": {
+            "clock": "source-reported discovery time",
+            "windows": sorted(sky_windows),
+            "counts": sky_counts,
+            "columns": list(sky_column_names),
+            "rows": sky_rows,
+            "note": (
+                "Rows cover the last 90 days. The all-retained window is drawn from "
+                "the complete catalog pages, which load only on request."
+            ),
+        },
+        "complete_catalog": {
+            "statement": "Loaded only when a reader asks to browse the complete catalog.",
+            "candidate_count": len(candidate_rows),
+            "page_manifest": {
+                "path": CATALOG_PAGE_MANIFEST_PATH,
+                "bytes": len(catalog_page_manifest_raw),
+                "sha256": hashlib.sha256(catalog_page_manifest_raw).hexdigest(),
+                "page_count": len(catalog_pages),
+            },
+            "complete_index": {
+                "path": "ctas/data/catalog-index.json",
+                "bytes": len(catalog_index_raw),
+                "sha256": hashlib.sha256(catalog_index_raw).hexdigest(),
+            },
+            "detail_manifest": "ctas/data/candidate-chunks/manifest.json",
+            "alias_index": "ctas/data/alias-index.json",
+            "research_tables": "ctas/data/research/manifest.json",
+            "source_universe": "ctas/data/source-universe.json",
+            "source_matrix_patterns": SOURCE_MATRIX_PATTERNS_PATH,
+        },
+    }
+    live_summary_raw = (
+        json.dumps(live_summary, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode()
     alias_index, alias_index_raw = alias_index_artifact(
         candidates, payload["catalog_content_checksum_sha256"],
     )
@@ -3309,6 +3753,22 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     site_root = Path(__file__).resolve().parents[1]
     source_universe_raw = (json.dumps(source_universe, indent=2, sort_keys=True) + "\n").encode()
+    source_matrix_pattern_document = {
+        "schema": SOURCE_MATRIX_PATTERN_SCHEMA,
+        "generated_at": payload["generated_at"],
+        "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
+        "statement": (
+            "Each pattern is the ordered list of declared sources that this release "
+            "evaluated for a record, executed no query against, and retained nothing "
+            "from. Records reference a pattern by id instead of repeating it."
+        ),
+        "row_keys": list(SOURCE_MATRIX_ROW_KEYS),
+        "pattern_count": len(source_matrix_patterns),
+        "patterns": {key: rows for key, rows in sorted(source_matrix_patterns.items())},
+    }
+    source_matrix_patterns_raw = (
+        json.dumps(source_matrix_pattern_document, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode()
     try:
         release_history_raw_from_ref = git_blob(
             site_root, args.release_base_ref, "ctas/data/release-history.json"
@@ -3408,6 +3868,7 @@ def main() -> int:
         "scripts/check_ctas_links.py", "scripts/rebuild_ctas_release_history.py",
         "scripts/test_ctas_static.py", "scripts/test_ctas_catalog_model.js",
         "scripts/test_ctas_links.py", "scripts/test_ctas_astro_evidence.py",
+        "scripts/test_ctas_identity.py",
         "scripts/mirror_loop.sh", "scripts/publish_ctas.sh", "scripts/ctas_launchd_runner.sh",
         "scripts/install_ctas_mirror.sh", "scripts/diagnose_ctas_mirror.sh",
         "scripts/io.github.jackmcguireastro.ctas-mirror.plist", "CTAS-AUTOMATION.md",
@@ -3430,13 +3891,16 @@ def main() -> int:
         # Bind the exact working bytes that generated this report. Separate
         # gates below honestly fail while those bytes differ from HEAD/origin.
         **working_code,
-        "ctas/data/catalog-bootstrap.json": catalog_index_raw,
+        LIVE_SUMMARY_PATH: live_summary_raw,
+        CATALOG_PAGE_MANIFEST_PATH: catalog_page_manifest_raw,
+        **page_raw,
         "ctas/data/catalog-index.json": catalog_index_raw,
         "ctas/data/alias-index.json": alias_index_raw,
         "ctas/data/candidate-chunks/manifest.json": candidate_manifest_raw,
         **chunk_raw,
         **research_files,
         "ctas/data/source-universe.json": source_universe_raw,
+        SOURCE_MATRIX_PATTERNS_PATH: source_matrix_patterns_raw,
         "ctas/data/release-history.json": release_history_raw,
     }
 
@@ -3629,20 +4093,30 @@ def main() -> int:
         }
         for path, raw in sorted(chunk_raw.items())
     ]
-    reconstructed_candidates = [
-        candidate
-        for path in sorted(chunk_raw)
-        for candidate in json.loads(chunk_raw[path]).get("candidates", [])
-    ]
-    reconstructed_by_id = {
-        str(candidate.get("event_id") or ""): candidate
-        for candidate in reconstructed_candidates
+    # Verify the shards one at a time.  Materialising every reconstructed
+    # dossier at once doubled peak memory for a complete catalog and was the
+    # reason a full export could not finish.  Proving each shard reproduces its
+    # source records exactly is the same guarantee at a fraction of the cost:
+    # once every shard round-trips, the in-memory records *are* the
+    # reconstruction, so the assembled checksum may be taken from them.
+    originals_by_id = {
+        str(candidate.get("event_id") or ""): candidate for candidate in candidates
     }
+    reconstructed_ids: set[str] = set()
+    reconstructed_count = 0
+    reconstruction_faithful = True
+    for path in sorted(chunk_raw):
+        for candidate in json.loads(chunk_raw[path]).get("candidates", []):
+            event_id = str(candidate.get("event_id") or "")
+            reconstructed_count += 1
+            reconstructed_ids.add(event_id)
+            if originals_by_id.get(event_id) != candidate:
+                reconstruction_faithful = False
     index_ids = [str(row.get("event_id") or "") for row in index_candidates]
     reconstructed_in_index_order = [
-        reconstructed_by_id[event_id]
+        originals_by_id[event_id]
         for event_id in index_ids
-        if event_id in reconstructed_by_id
+        if event_id in originals_by_id
     ]
     shard_integrity = (
         catalog_index.get("schema") == CATALOG_INDEX_SCHEMA
@@ -3653,8 +4127,9 @@ def main() -> int:
         and candidate_manifest.get("chunk_count") == CANDIDATE_BUCKET_COUNT
         and candidate_manifest.get("chunks") == manifest_chunk_rows
         and sum(row["candidate_count"] for row in manifest_chunk_rows) == len(candidates)
-        and len(reconstructed_candidates) == len(reconstructed_by_id) == len(candidates)
-        and set(index_ids) == set(reconstructed_by_id)
+        and reconstruction_faithful
+        and reconstructed_count == len(reconstructed_ids) == len(candidates)
+        and set(index_ids) == reconstructed_ids
         and candidate_manifest.get("catalog_index") == {
             "path": "ctas/data/catalog-index.json",
             "candidate_count": len(index_candidates),
@@ -3673,7 +4148,41 @@ def main() -> int:
     artifact_size_integrity = all(
         len(raw) < GITHUB_MAX_BLOB_BYTES for raw in bound_files.values()
     )
-    bootstrap_size_integrity = len(catalog_index_raw) <= CATALOG_BOOTSTRAP_MAX_BYTES
+    # The first screen loads live-summary.json, not the complete catalog, so the
+    # bootstrap budget is measured against exactly those bytes.
+    bootstrap_size_integrity = len(live_summary_raw) <= LIVE_SUMMARY_MAX_BYTES
+    catalog_page_budget = bool(page_raw) and all(
+        len(raw) <= CATALOG_PAGE_MAX_BYTES for raw in page_raw.values()
+    )
+    summary_event_ids = set(rows_by_event)
+    live_summary_integrity = (
+        live_summary["release"]["catalog_content_checksum_sha256"]
+        == payload["catalog_content_checksum_sha256"]
+        and all(
+            event_id in summary_event_ids
+            for group in (
+                live_summary["leaderboard"]["event_ids"],
+                live_summary["recent_reports"]["event_ids"],
+                *live_summary["channel_leaderboards"].values(),
+            )
+            for event_id in group
+        )
+        and len(live_summary["candidate_rows"]) == len(summary_ids)
+        and live_summary["complete_catalog"]["page_manifest"]["sha256"]
+        == hashlib.sha256(catalog_page_manifest_raw).hexdigest()
+        and all(
+            row["sha256"] == hashlib.sha256(page_raw[row["path"]]).hexdigest()
+            and row["bytes"] == len(page_raw[row["path"]])
+            for row in catalog_pages
+        )
+        and sum(row["candidate_count"] for row in catalog_pages) == len(candidate_rows)
+        and not any(
+            candidate.get("record_role") in {
+                "known-terrestrial-event", "known-solar-event", "retracted-event",
+            }
+            for candidate in leaderboard
+        )
+    )
     shard_target_integrity = bool(chunk_raw) and max(map(len, chunk_raw.values())) <= CANDIDATE_SHARD_TARGET_MAX_BYTES
     score_reconciliation = all(
         (candidate.get("score_model") or {}).get("reconciled") is True
@@ -3745,28 +4254,39 @@ def main() -> int:
         )
     )
 
+    source_matrix_round_trip = all(
+        isinstance(candidate.get("source_matrix"), dict)
+        and len(expand_source_matrix(candidate["source_matrix"], source_matrix_patterns))
+        == int(candidate["source_matrix"].get("row_count") or 0)
+        == int((candidate.get("source_accounting") or {}).get("applicableSources") or -1)
+        for candidate in candidates
+    )
+
     gates = [
         gate("required-public-artifacts", all(path in bound_files for path in (
             "ctas.html", "ctas/app.js", "ctas/workbench.js", "ctas/observability.js",
             "ctas/ctas.css", "ctas/data/observatories.json",
             "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
             "ctas/schema/astro-evidence-core-0.1.0.schema.json",
-            "ctas/data/catalog-bootstrap.json", "ctas/data/catalog-index.json",
+            LIVE_SUMMARY_PATH, CATALOG_PAGE_MANIFEST_PATH, "ctas/data/catalog-index.json",
             "ctas/data/alias-index.json", "ctas/data/research/manifest.json",
             "ctas/data/research/events.vot", "ctas/data/research/tom-targets.csv",
             "ctas/data/candidate-chunks/manifest.json",
             "ctas/data/source-universe.json", "ctas/data/link-health.json",
-            "ctas/data/release-history.json",
+            SOURCE_MATRIX_PATTERNS_PATH, "ctas/data/release-history.json",
         )), "HTML, JavaScript, CSS, observatory definitions, research quickstart, frozen AstroEvidence schema, compact index, astronomy research exports, complete-catalog reconstruction manifest and chunks, source universe, history, and link-health artifact"),
         gate("catalog-population", bool(candidates) and not counts["catalog_truncated"] and len(candidates) == counts["eligible_public_events"] and len(names) == len(set(names)), f"{len(candidates)} complete eligible records; truncated={counts['catalog_truncated']}"),
         gate("candidate-public-contract", required_contract, f"{sum(bool(c.get('name')) and 'ctas_score' in c for c in candidates)}/{len(candidates)} identity and score records"),
         gate("complete-catalog-reconstruction-integrity", shard_integrity, f"{len(candidates)} complete records exactly once across {len(chunk_raw)} checksum-bound chunks in catalog-index UUID order"),
-        gate("bootstrap-performance-budget", bootstrap_size_integrity, f"columnar browser bootstrap is {len(catalog_index_raw)} bytes; budget={CATALOG_BOOTSTRAP_MAX_BYTES}"),
+        gate("bootstrap-performance-budget", bootstrap_size_integrity, f"first-screen live summary is {len(live_summary_raw)} bytes; budget={LIVE_SUMMARY_MAX_BYTES}; the complete {len(catalog_index_raw)}-byte index is not loaded to draw a first screen"),
+        gate("catalog-page-budget", catalog_page_budget, f"largest of {len(page_raw)} complete-catalog pages is {max(map(len, page_raw.values()), default=0)} bytes; budget={CATALOG_PAGE_MAX_BYTES}"),
+        gate("live-summary-integrity", live_summary_integrity, f"{len(summary_ids)} summary records resolve, pages and manifest checksums agree, and no terrestrial, solar or retracted record enters the default leaderboard"),
         gate("detail-shard-performance-budget", shard_target_integrity, f"largest of {len(chunk_raw)} UUID shards is {max(map(len, chunk_raw.values()), default=0)} bytes; budget={CANDIDATE_SHARD_TARGET_MAX_BYTES}"),
         gate("github-blob-size-limit", artifact_size_integrity, f"every bound public artifact is below GitHub's {GITHUB_MAX_BLOB_BYTES}-byte limit"),
         gate("score-arithmetic-reconciliation", score_reconciliation, f"{sum((candidate.get('score_model') or {}).get('reconciled') is True for candidate in candidates)}/{len(candidates)} scores reconstruct within 0.01 with terminal overrides applied last"),
         gate("candidate-science-brief-integrity", science_brief_integrity, f"{len(candidates)} deterministic known, uncertain, missing, and recent-change summaries"),
         gate("evidence-replay-no-future-leakage", replay_integrity, "historical availability uses provider-publication or CTAS-receipt clocks, never observation time alone"),
+        gate("source-matrix-round-trip-integrity", source_matrix_round_trip, f"{len(candidates)} source matrices reproduce exactly from {len(source_matrix_patterns)} shared no-evidence patterns"),
         gate("alias-index-integrity", alias_integrity, f"{alias_index.get('alias_count', 0)} provider-scoped aliases bound to the catalog checksum"),
         gate("research-table-integrity", research_integrity, f"{len(research_manifest.get('tables', []))} research tables and interoperability exports checksum-bound to the catalog"),
         gate("derived-magnitude-safety", magnitude_safety, f"{payload['statistics']['magnitude_values_excluded']} implausible source values retained only as flagged raw reports"),
@@ -3835,6 +4355,7 @@ def main() -> int:
         "complete_catalog_manifest": {"path": "ctas/data/candidate-chunks/manifest.json", "sha256": hashlib.sha256(candidate_manifest_raw).hexdigest()},
         "research_tables": {"path": "ctas/data/research/manifest.json", "sha256": hashlib.sha256(research_manifest_raw).hexdigest()},
         "source_universe": {"path": "ctas/data/source-universe.json", "sha256": hashlib.sha256(source_universe_raw).hexdigest()},
+        "source_matrix_patterns": {"path": SOURCE_MATRIX_PATTERNS_PATH, "sha256": hashlib.sha256(source_matrix_patterns_raw).hexdigest()},
         "release_history": {"path": "ctas/data/release-history.json", "sha256": hashlib.sha256(release_history_raw).hexdigest()},
         "link_health": {"path": "ctas/data/link-health.json", "sha256": hashlib.sha256(link_health_raw).hexdigest() if link_health_raw else None},
         "certification": {"path": "ctas/data/certification.json", "report_checksum_sha256": certificate["report_checksum_sha256"]},
@@ -3855,8 +4376,13 @@ def main() -> int:
         for path, size in sorted(oversized.items()):
             print(f"  - {path}: {size} bytes", file=sys.stderr)
         return 1
-    atomic_write(out / "catalog-bootstrap.json", catalog_index_raw)
+    atomic_write(out / "live-summary.json", live_summary_raw)
     atomic_write(out / "catalog-index.json", catalog_index_raw)
+    page_dir = out / "catalog-pages"
+    page_dir.mkdir(parents=True, exist_ok=True)
+    atomic_write(page_dir / "manifest.json", catalog_page_manifest_raw)
+    for relative, raw in page_raw.items():
+        write_output_artifact(out, relative, raw)
     atomic_write(out / "alias-index.json", alias_index_raw)
     chunk_dir = out / "candidate-chunks"
     chunk_dir.mkdir(parents=True, exist_ok=True)
@@ -3867,8 +4393,11 @@ def main() -> int:
         write_output_artifact(out, relative, raw)
     atomic_write(out / "status.json", status_raw)
     atomic_write(out / "source-universe.json", source_universe_raw)
+    atomic_write(out / "source-matrix-patterns.json", source_matrix_patterns_raw)
     atomic_write(out / "release-history.json", release_history_raw)
     atomic_write(out / "certification.json", certificate_raw)
+    print(f"first screen    : {len(live_summary_raw)} bytes live-summary.json ({len(summary_ids)} records)")
+    print(f"complete catalog: {len(catalog_index_raw)} bytes across {len(catalog_pages)} pages")
     print(f"\nwrote compact bootstrap/index, alias index, research tables, complete-catalog manifest, {len(chunk_raw)} checksum-bound detail chunks, status, source universe, history, and verification report")
     print(f"snapshot verification: {certificate['status']} ({sum(g['passed'] for g in gates)}/{len(gates)} checks)")
     return 0
