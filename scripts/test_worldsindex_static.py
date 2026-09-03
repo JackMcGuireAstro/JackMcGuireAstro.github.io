@@ -49,10 +49,20 @@ def main() -> None:
     # guard: a manifest cannot reference an artifact that is missing, stale, or unlisted.
     artifacts = manifest["artifacts"]
     assert isinstance(artifacts, dict) and artifacts, "manifest must declare its artifacts"
+    # macOS/iCloud sync conflict copies ("catalog-index 2.json.gz") are not build outputs and are
+    # never staged by the publisher or checked out by CI; report them but do not fail on them.
+    sync_duplicate = re.compile(r" \d+(\.[^.]+)+$")
+    sync_duplicates = sorted(
+        path.relative_to(DATA).as_posix()
+        for path in DATA.rglob("*")
+        if path.is_file() and sync_duplicate.search(path.name)
+    )
+    if sync_duplicates:
+        print(f"warning: {len(sync_duplicates)} sync duplicate(s) under worldsindex/data are ignored: {sync_duplicates[:4]}")
     on_disk = sorted(
         path.relative_to(DATA).as_posix()
         for path in DATA.rglob("*")
-        if path.is_file() and path.name != "manifest.json" and not path.name.startswith(".")
+        if path.is_file() and path.name != "manifest.json" and not path.name.startswith(".") and not sync_duplicate.search(path.name)
     )
     assert sorted(artifacts) == on_disk, (
         f"manifest.artifacts and worldsindex/data disagree: "
@@ -67,7 +77,7 @@ def main() -> None:
     assert {f"details/{shard}.json.gz" for shard in manifest["detailShards"]} <= set(artifacts)
     assert len(registry["sources"]["entries"]) == 42
     assert len(registry["methods"]["entries"]) == 13
-    detail_paths = sorted((DATA / "details").glob("*.json.gz"))
+    detail_paths = sorted(path for path in (DATA / "details").glob("*.json.gz") if not sync_duplicate.search(path.name))
     assert len(detail_paths) == len(manifest["detailShards"]) == 256
     detail_object_count = 0
     packaged_record_ids: dict[str, set[str]] = {}
