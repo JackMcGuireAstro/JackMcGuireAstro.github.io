@@ -1,5 +1,6 @@
 #!/bin/bash
-# Install the persistent six-hour WorldsIndex source monitor and publisher.
+# Install the persistent WorldsIndex publisher: a two-minute launchd cycle that follows the
+# local source files, with the full provider/test gate every six hours.
 set -uo pipefail
 
 LABEL="io.github.jackmcguireastro.worldsindex-mirror"
@@ -11,6 +12,15 @@ DEST="$HOME/Library/LaunchAgents/$LABEL.plist"
 RUNTIME_ROOT="$HOME/Library/Application Support/WorldsIndexPublisher"
 RUNTIME_SITE="$RUNTIME_ROOT/site"
 RUNTIME_SOURCE="$RUNTIME_ROOT/source"
+# WORLDSINDEX_SOURCE_MODE=copy   (default) launchd runs against an rsync copy of the editable
+#                                source; required while that source lives under ~/Documents,
+#                                ~/Desktop or ~/Downloads, which background agents cannot read.
+#                                Promotions the agent makes land in the copy, not in git.
+# WORLDSINDEX_SOURCE_MODE=direct launchd runs against the editable checkout itself, so the
+#                                site follows every local change and promotions are committed
+#                                into the real repository. Requires the checkout to live
+#                                outside the TCC-protected folders.
+SOURCE_MODE="${WORLDSINDEX_SOURCE_MODE:-copy}"
 LOG_DIR="$HOME/Library/Logs/worldsindex-mirror"
 DOMAIN="gui/$(id -u)"
 
@@ -87,6 +97,19 @@ else
 fi
 
 echo
+case "$SOURCE_MODE" in copy|direct) ;; *) bad "WORLDSINDEX_SOURCE_MODE must be copy or direct"; exit 1 ;; esac
+if [ "$SOURCE_MODE" = "direct" ]; then
+  case "$AUTHORING_SOURCE" in
+    "$HOME/Documents"/*|"$HOME/Desktop"/*|"$HOME/Downloads"/*)
+      bad "direct mode needs the source checkout outside ~/Documents, ~/Desktop and ~/Downloads (launchd cannot read them): $AUTHORING_SOURCE"
+      info "move the checkout (for example to ~/Projects/) or use WORLDSINDEX_SOURCE_MODE=copy"
+      exit 1 ;;
+  esac
+  [ -d "$AUTHORING_SOURCE/.git" ] || { bad "direct mode expects a git checkout at $AUTHORING_SOURCE"; exit 1; }
+  RUNTIME_SOURCE="$AUTHORING_SOURCE"
+  echo "Using the editable checkout directly (no operational copy)"
+  ok "runtime source $RUNTIME_SOURCE"
+else
 echo "Refreshing the launchd-readable ExoNexus mirror"
 SOURCE_WAS_PRESENT=0
 [ -f "$RUNTIME_SOURCE/package.json" ] && SOURCE_WAS_PRESENT=1
@@ -113,6 +136,8 @@ if [ -f "$RUNTIME_SOURCE/.env.local" ]; then
   chmod 600 "$RUNTIME_SOURCE/.env.local" || { bad "could not protect the local credential file"; exit 1; }
 fi
 ok "operational source $RUNTIME_SOURCE"
+info "note: in copy mode the agent's promotions and receipts stay in this copy; rerun the installer to refresh code, or use direct mode"
+fi
 
 python3 - "$TEMPLATE" "$DEST" "$HOME" "$RUNTIME_SOURCE" "$NODE_BIN" <<'PY'
 from pathlib import Path
@@ -162,7 +187,10 @@ cat <<EOF
 
 Done. WorldsIndex now checks locally and publishes without ChatGPT or Codex scheduling.
 
-  Schedule       every 6 hours while this Mac is awake, online, and logged in
+  Schedule       every 2 minutes: follow the local source files and publish when they changed
+                 and every static gate passed; every 6 hours: provider monitor, promotion gates,
+                 test suite, build, atlas regeneration — while this Mac is awake, online, logged in
+  Source mode    $SOURCE_MODE
   Editable source $AUTHORING_SOURCE
   Runtime source  $RUNTIME_SOURCE
   Runtime        $RUNTIME_SITE

@@ -7,43 +7,54 @@ are not part of this path.
 
 ## What runs
 
-`io.github.jackmcguireastro.worldsindex-mirror` runs every six hours while the
-Mac is awake, online, and the user is logged in. It:
+`io.github.jackmcguireastro.worldsindex-mirror` runs **every two minutes** while the Mac is
+awake, online, and the user is logged in — the same shape as the CTAS mirror
+(local files → static export → validation gate → launchd loop → commit and push → Pages).
+
+Every cycle (fast path, `publish_worldsindex.sh --fast`):
 
 1. refreshes the dedicated public-site checkout from `origin/main`;
-2. runs every implemented ExoNexus provider monitor locally;
-3. publishes typed quarantined provider outcomes as status only, while rejecting
-   monitor crashes that cannot produce a valid receipt;
-4. runs ExoNexus type checking, tests, lint, production build, and atlas build;
-5. creates and validates the GitHub-native static release;
-6. refuses to commit unless every artifact the release manifest declares is
-   present and in the explicit allowlist, and nothing else under
-   `worldsindex/data` was left modified or untracked;
-7. stages only that allowlist; and
-8. pushes the resulting commit to `main` over unattended SSH.
+2. fingerprints the publication inputs in the local ExoNexus source — the atlas gzip, the
+   Exoplanet.eu active-snapshot pointer, the release contract, every snapshot manifest, the
+   monitor status, the latest promotion outcome — plus the site's builder and assets;
+3. exits in well under a second when nothing changed since the last publication;
+4. otherwise rebuilds the static release from those local files, runs the static release test,
+   the science test, the syntax checks and the artifact guard, stages only the explicit
+   allowlist, commits, and pushes. Any failure publishes nothing.
 
-GitHub then runs the `Validate and deploy site` workflow. **Validation is the
-deployment gate**: the `deploy` job runs only when `validate` succeeds, so a
-commit that fails the static release tests never becomes the live site and the
-previous successful deployment stays up. A final `verify-live` job fetches the
-deployed manifest and catalog index and confirms their hashes match the commit.
-GitHub Pages does not query scientific providers or hold their credentials.
+Every six hours (`WORLDSINDEX_FULL_EVERY`), or when no full run has completed yet, the cycle
+runs the full path instead: the provider monitor over every declared source, the Exoplanet.eu
+promotion gate when that source changed, ExoNexus type checking, tests, lint and production
+build, atlas regeneration — and then the fast path publishes whatever those produced. So a
+change the monitor accepts is on the public site within two minutes of the full run finishing,
+and a change you make locally (a new snapshot, a rollback, an edited contract) is published on
+the next two-minute cycle without waiting for the monitor.
 
-This requires the repository's Pages source to be **GitHub Actions** (Settings →
-Pages → Build and deployment → Source). With the older "Deploy from a branch"
-setting, Pages would publish every push to `main` before validation finished.
+GitHub then runs the `Validate and deploy site` workflow. **Validation is the deployment
+gate**: the `deploy` job runs only when `validate` succeeds, so a commit that fails the static
+release tests never becomes the live site and the previous successful deployment stays up. A
+final `verify-live` job fetches the deployed manifest and catalog index and confirms their
+hashes match the commit. This requires the repository's Pages source to be **GitHub Actions**
+(Settings → Pages → Build and deployment → Source).
 
-Rollback: re-run the last green workflow run from the Actions tab, which
-redeploys that commit's tree unchanged, or `git revert` the offending commit and
-push. Nothing is ever force-pushed.
+Rollback: re-run the last green workflow run from the Actions tab, or `git revert` and push.
+Nothing is ever force-pushed.
 
-Because macOS blocks background launch agents from reading Documents, the
-installer makes a launchd-readable operational copy of ExoNexus at
-`~/Library/Application Support/WorldsIndexPublisher/source`. The editable
-canonical project remains under Documents. Rerun the installer after changing
-source code or frozen inputs; provider receipts continue advancing in the
-operational copy between installs. `.env.local` remains local with mode 0600 and
-is never copied into the public-site checkout.
+### Which local files it follows
+
+`WORLDSINDEX_SOURCE_MODE=copy` (the default): macOS blocks background launch agents from
+reading `~/Documents`, so the installer makes an operational copy of ExoNexus at
+`~/Library/Application Support/WorldsIndexPublisher/source` and the agent follows *that*.
+Code and frozen inputs mirror the editable checkout at install time; receipts and promotions
+advance in the copy and do not reach git. Rerun the installer after changing source code.
+
+`WORLDSINDEX_SOURCE_MODE=direct`: the agent runs against the editable git checkout itself, so
+the site follows every local change and each promotion or rollback is committed into the
+repository by explicit path. This needs the checkout to live outside `~/Documents`,
+`~/Desktop` and `~/Downloads` (for example `~/Projects/`); the installer refuses otherwise.
+This is the mode that makes "constantly updated from my local files" literally true.
+
+`.env.local` remains local with mode 0600 and is never copied into the public-site checkout.
 
 ## Scientific boundary
 
@@ -80,11 +91,16 @@ Inspect it without printing credentials:
 ./scripts/diagnose_worldsindex_mirror.sh
 ```
 
-Run a non-publishing end-to-end build in a suitable clean checkout:
+Run a non-publishing end-to-end build in a suitable clean checkout (`--fast` follows the
+local files only; `--full` also runs the monitor, the promotion gate and the test suite):
 
 ```sh
-./scripts/publish_worldsindex.sh --dry-run
+./scripts/publish_worldsindex.sh --fast --dry-run
+./scripts/publish_worldsindex.sh --full --dry-run
 ```
+
+Force the next scheduled cycle to run the full path: `touch`-free — delete
+`~/Library/Logs/worldsindex-mirror/.last-full-run`, or run the installer again.
 
 Disable the service while retaining its recoverable checkout:
 

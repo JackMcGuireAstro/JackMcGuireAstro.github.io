@@ -11,14 +11,24 @@ LOG="$LOG_DIR/publish.log"
 LOCKDIR="$LOG_DIR/.publish.lock.d"
 DRY=0
 FORCE=0
+# MODE=fast: follow the local source files — fingerprint the publication inputs, rebuild the
+#            static release only when they changed, run the static gates, commit, push. No
+#            provider traffic and no ExoNexus test suite; runs every cycle (CTAS parity).
+# MODE=full: the fast path preceded by the provider monitor, the Exoplanet.eu promotion gate,
+#            typecheck/tests/lint/build, and atlas regeneration; runs every WORLDSINDEX_FULL_EVERY
+#            seconds (default six hours) or on demand.
+MODE="${WORLDSINDEX_MODE:-full}"
 
 for argument in "$@"; do
   case "$argument" in
     --dry-run) DRY=1 ;;
     --force) FORCE=1 ;;
+    --fast) MODE=fast ;;
+    --full) MODE=full ;;
     *) printf 'unknown option: %s\n' "$argument" >&2; exit 2 ;;
   esac
 done
+case "$MODE" in fast|full) ;; *) printf 'WORLDSINDEX_MODE must be fast or full\n' >&2; exit 2 ;; esac
 
 PUBLIC_FILES=(
   worldsindex/data/manifest.json
@@ -59,15 +69,49 @@ trap cleanup EXIT
 
 [ -d "$SITE/.git" ] || die "dedicated website checkout is missing: $SITE"
 [ -f "$SOURCE/package.json" ] || die "ExoNexus source project is missing: $SOURCE"
-[ -x "$SOURCE/scripts/run-source-monitor-noninteractive.sh" ] || die "source-monitor wrapper is missing or not executable"
 command -v node >/dev/null || die "node is unavailable"
-command -v npm >/dev/null || die "npm is unavailable"
+if [ "$MODE" = "full" ]; then
+  [ -x "$SOURCE/scripts/run-source-monitor-noninteractive.sh" ] || die "source-monitor wrapper is missing or not executable"
+  command -v npm >/dev/null || die "npm is unavailable"
+fi
 command -v python3 >/dev/null || die "python3 is unavailable"
 
 export GIT_TERMINAL_PROMPT=0
 : "${GIT_SSH_COMMAND:=ssh -o BatchMode=yes -o ConnectTimeout=15 -o ConnectionAttempts=2 -o ServerAliveInterval=10 -o ServerAliveCountMax=2}"
 export GIT_SSH_COMMAND
 
+# ---- Publication-input fingerprint --------------------------------------------------------
+# The static release is a pure function of these local files plus the site's builder and
+# assets. If none changed since the last publication and no full run is due, there is nothing
+# to publish; the loop exits quietly within a second.
+INPUT_STAMP="$LOG_DIR/.published-inputs.sha256"
+input_fingerprint() {
+  {
+    for file in "$SOURCE/public/data/sky-detections.json.gz" "$SOURCE/public/data/sync/latest.json" \
+                "$SOURCE/data/snapshots/exoplanet-eu/ACTIVE.json" "$SOURCE/data/atlas/release-contract.json" \
+                "$SOURCE/outputs/promotion/exoplanet-eu/latest.json" \
+                "$SITE/scripts/build_worldsindex_static.mjs" "$SITE/worldsindex/index.html" "$SITE/worldsindex/assets/app.js" \
+                "$SITE/worldsindex/assets/science.js" "$SITE/worldsindex/assets/app.css"; do
+      [ -f "$file" ] && shasum -a 256 "$file" 2>/dev/null || sha256sum "$file" 2>/dev/null || printf 'missing  %s\n' "$file"
+    done
+    ( cd "$SOURCE" && find data/snapshots -maxdepth 2 -name manifest.json -print0 2>/dev/null | sort -z | xargs -0 shasum -a 256 2>/dev/null || true )
+  } | shasum -a 256 2>/dev/null | cut -d' ' -f1 || true
+}
+if [ "$MODE" = "fast" ]; then
+  CURRENT_INPUTS=$(input_fingerprint)
+  [ -n "$CURRENT_INPUTS" ] || die "could not fingerprint the publication inputs"
+  LAST_INPUTS=$(cat "$INPUT_STAMP" 2>/dev/null || true)
+  if [ "$CURRENT_INPUTS" = "$LAST_INPUTS" ] && [ "$FORCE" -eq 0 ]; then
+    printf 'no change: publication inputs unchanged since the last publication (%s)\n' "${CURRENT_INPUTS:0:12}"
+    exit 0
+  fi
+  say "fast path: publication inputs changed (${LAST_INPUTS:0:12} → ${CURRENT_INPUTS:0:12}); rebuilding the static release from the local source files"
+  MONITOR_STATE=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("state","UNKNOWN"))' "$SOURCE/outputs/sync/latest-attempt.json" 2>/dev/null || echo "UNKNOWN")
+  CHANGED_SOURCES=""
+fi
+# ----------------------------------------------------------------------------------------
+
+if [ "$MODE" = "full" ]; then
 say "checking all declared provider monitors locally"
 MONITOR_EXIT=0
 (cd "$SOURCE" && ./scripts/run-source-monitor-noninteractive.sh) >>"$LOG" 2>&1 || MONITOR_EXIT=$?
@@ -163,6 +207,8 @@ say "running ExoNexus scientific and production gates"
 say "regenerating the source-resolved atlas from the active frozen snapshots"
 (cd "$SOURCE" && npm run sky:generate) >>"$LOG" 2>&1 \
   || die "atlas generation failed; nothing published"
+date -u '+%Y-%m-%dT%H:%M:%SZ' >"$LOG_DIR/.last-full-run"
+fi  # MODE=full
 
 say "building the GitHub-native static release"
 (cd "$SITE" && WORLDSINDEX_SOURCE_DIR="$SOURCE" node scripts/build_worldsindex_static.mjs) >>"$LOG" 2>&1 \
@@ -213,13 +259,19 @@ done <<<"$REQUIRED_ARTIFACTS"
 # 2. Nothing the build left dirty or untracked under worldsindex/data may fall outside the
 #    allowlist, or the commit would advance the manifest while leaving stale bytes behind.
 UNLISTED_DIRTY=""
+SYNC_DUPLICATES=""
 while IFS= read -r line; do
   [ -n "$line" ] || continue
   path=${line:3}
+  path=${path#\"}; path=${path%\"}
+  # macOS/iCloud sync conflict copies ("catalog-index 2.json.gz") are untracked, never staged,
+  # never checked out by CI; report them, do not let them block a release.
+  case "$path" in *" "[0-9]*.*) SYNC_DUPLICATES="$SYNC_DUPLICATES $path"; continue ;; esac
   allowed=0
   for public_file in "${PUBLIC_FILES[@]}"; do [ "$path" = "$public_file" ] && allowed=1; done
   [ "$allowed" -eq 1 ] || UNLISTED_DIRTY="$UNLISTED_DIRTY $path"
 done < <(git status --porcelain --untracked-files=all -- worldsindex/data)
+[ -z "$SYNC_DUPLICATES" ] || say "warning: sync duplicate files under worldsindex/data are ignored:$SYNC_DUPLICATES"
 [ -z "$UNLISTED_DIRTY" ] \
   || die "build changed files outside the publication allowlist; refusing a partial release:$UNLISTED_DIRTY"
 REQUIRED_COUNT=$(printf '%s\n' "$REQUIRED_ARTIFACTS" | grep -c .)
@@ -228,6 +280,7 @@ say "artifact guard: $REQUIRED_COUNT manifest-declared artifacts are all present
 
 if git diff --quiet HEAD -- "${PUBLIC_FILES[@]}" 2>/dev/null && [ "$FORCE" -eq 0 ]; then
   say "validated public release already matches HEAD; nothing to publish"
+  input_fingerprint >"$INPUT_STAMP" 2>/dev/null || true
   exit 0
 fi
 
@@ -244,7 +297,7 @@ fi
 STAGED_OTHER=$(git diff --cached --name-only)
 [ -z "$STAGED_OTHER" ] || die "other files are already staged; refusing automated commit: $(printf '%s' "$STAGED_OTHER" | tr '\n' ' ')"
 git add -- "${PUBLIC_FILES[@]}" || die "could not stage the explicit WorldsIndex artifact allowlist"
-LEFT_BEHIND=$(git status --porcelain --untracked-files=all -- worldsindex/data | grep -v '^[MADRC] ' || true)
+LEFT_BEHIND=$(git status --porcelain --untracked-files=all -- worldsindex/data | grep -v '^[MADRC] ' | grep -v -E ' [0-9]+\.[^/]*$' || true)
 [ -z "$LEFT_BEHIND" ] || die "artifacts remain unstaged after allowlist staging; refusing a partial release: $(printf '%s' "$LEFT_BEHIND" | tr '\n' ' ')"
 
 while IFS= read -r staged; do
@@ -288,4 +341,5 @@ if [ "$PUSH_STATUS" -ne 0 ]; then
   die "push failed; commit $SHA remains local and nothing was forced"
 fi
 
-say "published $SHA; GitHub Actions and Pages now validate and deploy the static release"
+input_fingerprint >"$INPUT_STAMP" 2>/dev/null || true
+say "published $SHA; GitHub Actions validates and deploys the static release"

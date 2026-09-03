@@ -62,5 +62,21 @@ else
   fi
 fi
 
-env WORLDSINDEX_SITE="$SITE" WORLDSINDEX_SOURCE="$SOURCE" WORLDSINDEX_BRANCH="$BRANCH" WORLDSINDEX_LOG_DIR="$LOG_DIR" \
+# Cadence: every scheduled cycle runs the fast path, which follows the local source files and
+# publishes only when the publication inputs changed and every static gate passed. Once every
+# WORLDSINDEX_FULL_EVERY seconds (default six hours) — or when no full run has ever completed —
+# the cycle runs the full path instead: provider monitor, promotion gates, ExoNexus test suite,
+# build, and atlas regeneration, whose outputs the next fast cycle then publishes.
+FULL_EVERY="${WORLDSINDEX_FULL_EVERY:-21600}"
+FULL_STAMP="$LOG_DIR/.last-full-run"
+MODE=fast
+if [ ! -f "$FULL_STAMP" ]; then
+  MODE=full
+else
+  LAST_FULL=$(date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$(cat "$FULL_STAMP")" '+%s' 2>/dev/null || date -u -d "$(cat "$FULL_STAMP")" '+%s' 2>/dev/null || echo 0)
+  [ $(( $(date -u '+%s') - LAST_FULL )) -ge "$FULL_EVERY" ] && MODE=full
+fi
+[ "${WORLDSINDEX_FORCE_FULL:-0}" = "1" ] && MODE=full
+say "cycle mode: $MODE"
+env WORLDSINDEX_SITE="$SITE" WORLDSINDEX_SOURCE="$SOURCE" WORLDSINDEX_BRANCH="$BRANCH" WORLDSINDEX_LOG_DIR="$LOG_DIR" WORLDSINDEX_MODE="$MODE" \
   /bin/bash "$SITE/scripts/publish_worldsindex.sh"
