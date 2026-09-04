@@ -1,9 +1,9 @@
 {
-  "artifact_checksum_sha256": "54accd1511dfa65d7aefb26abf3cb48f77056f180aff55e70ead60ee99b278d1",
+  "artifact_checksum_sha256": "17db6f73fba966113a15eb93f47c86cae6a999386f31485b8ab4580b7cdc4b2d",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
-  "contract_set_checksum_sha256": "f77571771cae76c37c59ababaee6148fcff73b55d654b3a049413f380b25e28c",
+  "contract_set_checksum_sha256": "0839b21e5661df61ca6dbf62c0ccd5d5227f1eba27a59916faf1e5de4e1fd2d9",
   "family_count": 10,
-  "generated_at": "2026-08-31T17:01:43Z",
+  "generated_at": "2026-09-04T04:00:26Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -26,7 +26,7 @@
     "none"
   ],
   "schema": "ctas.public-source-universe@1.0.0",
-  "source_count": 82,
+  "source_count": 131,
   "sources": [
     {
       "access_mode": "archive",
@@ -70,7 +70,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous public access",
       "connector_implementation_state": "implemented-public-reduced-metadata-on-demand",
-      "contract_checksum_sha256": "781c768d4d8980c0856d905563c131e913b8db8a82fc8db3bd1203414f0bdb8b",
+      "contract_checksum_sha256": "15044df7102cd375e86cdac9c3dbec2b0c3159c9fc590f5c258b0c2fb5dec6a3",
       "contract_version": "1.0.0",
       "data_types": [
         "released reduced-product metadata",
@@ -81,7 +81,7 @@
       "documentation_url": "https://archive.eso.org/cms/eso-data-access-policy.html",
       "implementation_state": "implemented",
       "known_limitations": "Authenticated TAP can expose PI-authorized proprietary metadata; this adapter sends no credentials, repeats the release-date check locally, and does not download product bytes",
-      "last_attempt_at": "2026-08-31T16:59:16.542733Z",
+      "last_attempt_at": "2026-09-03T12:55:57.170376Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-04",
@@ -92,9 +92,9 @@
       "product_contracts": [],
       "protocol": "Anonymous IVOA TAP / ObsCore",
       "public_disposition_counts": {
-        "provider-failure": 186,
-        "searched-no-match": 2932,
-        "temporarily-unavailable": 19
+        "provider-failure": 206,
+        "searched-no-match": 3309,
+        "temporarily-unavailable": 20
       },
       "public_record_counts": {},
       "query_scope": "on-demand-archive-query",
@@ -149,7 +149,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous for public data",
       "connector_implementation_state": "implemented-public-metadata-on-demand",
-      "contract_checksum_sha256": "81e3ae238c4871d7352aee5591df8b62388238b67d347c022c36a2776b4076d4",
+      "contract_checksum_sha256": "9521d7eb887ad33cbfee63c9f57fb475ae59405ea608184e6b07ad796df825e8",
       "contract_version": "1.0.0",
       "data_types": [
         "public X-ray observation metadata",
@@ -158,7 +158,7 @@
       "documentation_url": "https://heasarc.gsfc.nasa.gov/docs/xamin-api.html",
       "implementation_state": "implemented",
       "known_limitations": "Visible master-table rows can still be proprietary or not yet archive-ready; future/blank release dates are excluded, XMM additionally requires data_in_heasarc=Y, and NICER requires VALIDATED",
-      "last_attempt_at": "2026-08-31T16:59:15.571637Z",
+      "last_attempt_at": "2026-09-03T12:55:55.413933Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-04",
@@ -169,9 +169,9 @@
       "product_contracts": [],
       "protocol": "Xamin HTTPS VOTable API",
       "public_disposition_counts": {
-        "provider-failure": 201,
-        "searched-no-match": 2918,
-        "temporarily-unavailable": 19
+        "provider-failure": 225,
+        "searched-no-match": 3289,
+        "temporarily-unavailable": 20
       },
       "public_record_counts": {},
       "query_scope": "on-demand-archive-query",
@@ -229,7 +229,7 @@
       "access_mode": "archive",
       "authentication_requirement": "Anonymous for public data",
       "connector_implementation_state": "implemented-public-metadata-on-demand",
-      "contract_checksum_sha256": "7d26cefaf83fda8818b95a91542fe361d069aa2e039215c91dcb3c0db624f60b",
+      "contract_checksum_sha256": "a7bf520871cfa28006cb27fa2b45096c9047f71b7bcf3a3b29844dbdb97ce07c",
       "contract_version": "1.0.0",
       "data_types": [
         "public imaging",
@@ -239,7 +239,7 @@
       "documentation_url": "https://archive.stsci.edu/publishing/data-use",
       "implementation_state": "implemented",
       "known_limitations": "MAST also exposes EXCLUSIVE_ACCESS metadata and some copyrighted collections; only PUBLIC rows may pass",
-      "last_attempt_at": "2026-08-31T16:59:05.761928Z",
+      "last_attempt_at": "2026-09-03T10:02:11.391231Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-03",
@@ -250,8 +250,8 @@
       "product_contracts": [],
       "protocol": "MAST API / ObsCore / S3 public mirror",
       "public_disposition_counts": {
-        "provider-failure": 242,
-        "searched-no-match": 2902
+        "provider-failure": 289,
+        "searched-no-match": 3247
       },
       "public_record_counts": {},
       "query_scope": "archive",
@@ -269,7 +269,7 @@
       "access_mode": "on-demand-archive-query",
       "authentication_requirement": "Anonymous for metadata and released public files",
       "connector_implementation_state": "implemented-explicit-release-verified-image-metadata-on-demand",
-      "contract_checksum_sha256": "da2e7520afa22147c55470c129d7ca03df123f592f43403303b8f17555fb1e08",
+      "contract_checksum_sha256": "0960ec5aea536fb1d67399c3afdee232a134f4d3e2eb84385bdfc889235e4d41",
       "contract_version": "1.0.0",
       "data_types": [
         "released image metadata",
@@ -278,7 +278,7 @@
       "documentation_url": "https://github.com/NOAO/nat-nb/blob/master/api-authentication.ipynb",
       "implementation_state": "implemented",
       "known_limitations": "All archive metadata are visible anonymously, including metadata for proprietary files; this adapter stores no unreleased row and downloads no bytes",
-      "last_attempt_at": "2026-08-31T16:59:22.761237Z",
+      "last_attempt_at": "2026-09-03T11:38:13.810678Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
@@ -290,9 +290,9 @@
       "protocol": "Anonymous SIA plus exact Advanced Search release verification",
       "public_disposition_counts": {
         "ambiguous-identity": 1,
-        "provider-failure": 288,
-        "searched-no-match": 2803,
-        "temporarily-unavailable": 19
+        "provider-failure": 313,
+        "searched-no-match": 3171,
+        "temporarily-unavailable": 20
       },
       "public_record_counts": {},
       "query_scope": "on-demand-archive-query",
@@ -433,7 +433,7 @@
       "access_mode": "live",
       "authentication_requirement": "Service-dependent account/token",
       "connector_implementation_state": "documented-configuration-required",
-      "contract_checksum_sha256": "fd6ee2ee8b16390117356a1fdd24512b1322094f1aa4a6707a40dc3c69e26fb9",
+      "contract_checksum_sha256": "b38cbd52a939909f7f8ee9a6c0e76a861fddbc2df6687191e28fd52571f4c0d1",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin alert",
@@ -456,7 +456,7 @@
       "protocol": "API / stream / database",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 48
+        "candidates": 1247
       },
       "query_scope": "live",
       "rate_or_cadence_limit": "Provider-defined",
@@ -585,7 +585,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "179ee097967dc7e52f0342c053097a57a24b592591b753571c52b4df3ca71682",
+      "contract_checksum_sha256": "cdf6d2fd315591e8591af8577de48f63c916009e3d63130881ced2a8f8678c91",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -600,23 +600,24 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-08-31T16:58:56.374704Z",
-      "last_successful_at": "2026-08-31T15:55:02.691634Z",
-      "last_successful_response": "2026-08-31T15:55:02.691634Z",
+      "last_attempt_at": "2026-09-03T13:13:13.991703Z",
+      "last_successful_at": "2026-09-03T09:45:47.748690Z",
+      "last_successful_response": "2026-09-03T09:45:47.748690Z",
       "last_verified": "2026-08-08",
       "name": "Fink",
-      "operational_state": "active-returning-data",
+      "operational_state": "temporarily-unavailable",
       "organization_or_facility": "Rubin community broker",
       "primary_family": "discovery-and-alert-brokers",
       "product_contracts": [],
       "protocol": "Anonymous real-time Fink/LSST REST polling, exact-object Rubin source/forced history, plus anonymous targeted Fink/ZTF archive",
       "public_disposition_counts": {
-        "provider-failure": 142,
-        "searched-no-match": 3949,
-        "searched-with-data": 225
+        "ambiguous-identity": 5,
+        "provider-failure": 181,
+        "searched-no-match": 4499,
+        "searched-with-data": 318
       },
       "public_record_counts": {
-        "observations": 3310
+        "observations": 14204
       },
       "query_scope": "live-and-targeted-query",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
@@ -635,7 +636,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "None",
       "connector_implementation_state": "implemented-public-positional-candidates-on-demand",
-      "contract_checksum_sha256": "170a567fa53cccc281735b2b7dc72318bf61844991fc206968a8cae55cd1a571",
+      "contract_checksum_sha256": "4c7b64aa1afc243ad613603a16b40686501ec31cff0b77c000e1e7223b92c8e1",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin diaObject positional candidate",
@@ -645,7 +646,7 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/api/conesearch/",
       "implementation_state": "implemented",
       "known_limitations": "Coordinate and first-detection proximity do not establish identity; candidates remain catalog context until explicitly reviewed",
-      "last_attempt_at": "2026-08-31T16:58:56.903718Z",
+      "last_attempt_at": "2026-09-03T13:13:14.553027Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
@@ -656,8 +657,8 @@
       "product_contracts": [],
       "protocol": "Anonymous Fink/LSST REST cone search",
       "public_disposition_counts": {
-        "provider-failure": 539,
-        "searched-no-match": 2611
+        "provider-failure": 561,
+        "searched-no-match": 2987
       },
       "public_record_counts": {},
       "query_scope": "targeted-query",
@@ -675,7 +676,7 @@
       "access_mode": "poll",
       "authentication_requirement": "Authenticated POST API with TNS bot API key and mandatory tns_marker User-Agent; bulk public intake uses released CSV deltas.",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "5a223e0ca3fc63c6f341a16c36ac39441e9871f912f14f6d04fa10d7c2220c59",
+      "contract_checksum_sha256": "bd92f55022455dc1677909c2da49844eb734f13411a169fa59495de25312f8ce",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery",
@@ -690,7 +691,7 @@
       "last_successful_response": null,
       "last_verified": "2026-08-29",
       "name": "IAU Transient Name Server",
-      "operational_state": "active-returning-data",
+      "operational_state": "temporarily-unavailable",
       "organization_or_facility": "IAU / Weizmann Institute",
       "pagination_policy": "Follow response pagination and rate headers; do not hard-code a page ceiling. Prefer daily/full/hourly CSV deltas for catalog-scale intake.",
       "primary_family": "discovery-and-alert-brokers",
@@ -698,8 +699,8 @@
       "protocol": "HTTPS hourly ZIP CSV",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "classifications": 222,
-        "designations": 2517
+        "classifications": 5047,
+        "designations": 13335
       },
       "query_scope": "poll",
       "rate_or_cadence_limit": "Rolling 60-second quotas vary by operation; cone searches have a separate lower quota. CTAS must honor returned rate headers.",
@@ -717,7 +718,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "Authorization: Token header; credentials remain local and are never published.",
       "connector_implementation_state": "implemented-public-targeted-token-required",
-      "contract_checksum_sha256": "4036e039d74bc73f3eb5d5c8f970da6b88eba48771321f37eb331fa1e84fce25",
+      "contract_checksum_sha256": "2701254c50d3423e3df805696ae67843aaa2279eb54b475a2fff02e94b4c3b71",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin alert",
@@ -728,9 +729,9 @@
       "documentation_url": "https://lasair.readthedocs.io/en/main/core_functions/rest-api.html",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "The token is private; user annotations/watchlists are not ingested; negative difference flux is excluded from fitting",
-      "last_attempt_at": "2026-08-31T16:58:56.909930Z",
-      "last_successful_at": "2026-08-30T08:57:36.916927Z",
-      "last_successful_response": "2026-08-30T08:57:36.916927Z",
+      "last_attempt_at": "2026-09-03T13:13:14.558940Z",
+      "last_successful_at": "2026-09-03T09:45:50.356507Z",
+      "last_successful_response": "2026-09-03T09:45:50.356507Z",
       "last_verified": "2026-08-29",
       "name": "Lasair",
       "operational_state": "temporarily-unavailable",
@@ -741,12 +742,12 @@
       "protocol": "Authenticated REST object query; livestream remains separate",
       "public_disposition_counts": {
         "credentials-required": 2272,
-        "provider-failure": 70,
-        "searched-with-data": 21,
-        "temporarily-unavailable": 782
+        "provider-failure": 104,
+        "searched-with-data": 29,
+        "temporarily-unavailable": 1137
       },
       "public_record_counts": {
-        "observations": 837
+        "observations": 1370
       },
       "query_scope": "targeted-query",
       "rate_or_cadence_limit": "Normal accounts: 100 calls/hour and 10,000 query rows; approved power users: 10,000 calls/hour and 1,000,000 rows.",
@@ -840,7 +841,7 @@
       "access_mode": "through IRSA",
       "authentication_requirement": "Anonymous public query",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "159be7d557782e4200c5f7e9d06663d06f00233c4ef98772c9c72886b97d6524",
+      "contract_checksum_sha256": "081478dc2418b2d7a73842e5d1a9e1571038dceb886b36bb007acc71f9af984b",
       "contract_version": "1.0.0",
       "data_types": [
         "positional catalog candidates",
@@ -864,7 +865,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "catalog_counterparts": 54
+        "catalog_counterparts": 64
       },
       "query_scope": "through IRSA",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
@@ -883,7 +884,7 @@
       "access_mode": "through IRSA",
       "authentication_requirement": "Anonymous public query",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "89e0c5fec0161597a43b27b2210e3840320e239bf69a5860f09f1375ad8e93c9",
+      "contract_checksum_sha256": "6c5880ee39fb5eddc9a63a01f6f91ca6ebe6a0d9849f7ff67d2d9ad28b70fbab",
       "contract_version": "1.0.0",
       "data_types": [
         "positional catalog candidates",
@@ -907,7 +908,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "catalog_counterparts": 73
+        "catalog_counterparts": 87
       },
       "query_scope": "through IRSA",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
@@ -926,7 +927,7 @@
       "access_mode": "on-demand-catalog-query",
       "authentication_requirement": "Anonymous public Gaia release",
       "connector_implementation_state": "implemented-public-gaia-partner-catalog-on-demand",
-      "contract_checksum_sha256": "9edb3d2b135709274461c258eb173b8ccb8e92e686e06658d550f6af3272207b",
+      "contract_checksum_sha256": "727d9086e9325ba6ba6f39dc3c1fbb5b50c19ed241278c6f3a30778f4673e288",
       "contract_version": "1.0.0",
       "data_types": [
         "public astrometry",
@@ -937,23 +938,23 @@
       "documentation_url": "https://www.cosmos.esa.int/web/gaia/data-access",
       "implementation_state": "implemented",
       "known_limitations": "VizieR hosts many unrelated collections with distinct terms; this adapter cannot select them and does not retrieve Gaia DataLink products",
-      "last_attempt_at": "2026-08-31T15:47:27.268852Z",
-      "last_successful_at": "2026-08-31T15:07:04.993872Z",
-      "last_successful_response": "2026-08-31T15:07:04.993872Z",
+      "last_attempt_at": "2026-09-03T05:06:56.182008Z",
+      "last_successful_at": "2026-09-02T18:15:25.265923Z",
+      "last_successful_response": "2026-09-02T18:15:25.265923Z",
       "last_verified": "2026-08-04",
       "name": "Gaia Data Release 3",
-      "operational_state": "provider-failure",
+      "operational_state": "scheduled",
       "organization_or_facility": "ESA Gaia / CDS partner data centre",
       "primary_family": "host-counterpart-and-catalog-context",
       "product_contracts": [],
       "protocol": "Anonymous VizieR TAP / ADQL",
       "public_disposition_counts": {
-        "provider-failure": 58,
-        "searched-no-match": 182,
-        "searched-with-data": 54
+        "provider-failure": 61,
+        "searched-no-match": 228,
+        "searched-with-data": 58
       },
       "public_record_counts": {
-        "catalog_counterparts": 76
+        "catalog_counterparts": 80
       },
       "query_scope": "on-demand-catalog-query",
       "rate_or_cadence_limit": "One bounded 3-arcsec target cone per explicit request; 21-row overflow sentinel",
@@ -970,7 +971,7 @@
       "access_mode": "on-demand-query",
       "authentication_requirement": "Anonymous public API",
       "connector_implementation_state": "implemented-public-on-demand",
-      "contract_checksum_sha256": "be408264ee1b53ecaccce87246eb1b15875da374bb6ae275fa53f72790f9c4a9",
+      "contract_checksum_sha256": "332b79e6def0ffc32da1dce956e12be888ec2ce4636e87913c14d2aecd0fce20",
       "contract_version": "1.0.0",
       "data_types": [
         "host identity",
@@ -983,22 +984,22 @@
       "documentation_url": "https://ned.ipac.caltech.edu/Docs%3A%3AAPI/",
       "implementation_state": "implemented",
       "known_limitations": "Automated access is best-effort; requests must be single-threaded, at most one per second, and high-volume or longer-than-six-hour campaigns require provider coordination",
-      "last_attempt_at": "2026-08-31T15:47:27.086482Z",
-      "last_successful_at": "2026-08-31T15:40:00.539867Z",
-      "last_successful_response": "2026-08-31T15:40:00.539867Z",
+      "last_attempt_at": "2026-09-03T05:06:08.212831Z",
+      "last_successful_at": "2026-09-03T05:06:08.212831Z",
+      "last_successful_response": "2026-09-03T05:06:08.212831Z",
       "last_verified": "2026-08-03",
       "name": "NASA/IPAC Extragalactic Database",
-      "operational_state": "provider-failure",
+      "operational_state": "scheduled",
       "organization_or_facility": "NASA / Caltech IPAC",
       "primary_family": "host-counterpart-and-catalog-context",
       "product_contracts": [],
       "protocol": "NED REST VOTable 1.5 and public NEDTAP Object Directory APIs",
       "public_disposition_counts": {
         "incomplete-result": 1,
-        "provider-failure": 31,
-        "searched-no-match": 139,
-        "searched-with-data": 249,
-        "temporarily-unavailable": 278
+        "provider-failure": 35,
+        "searched-no-match": 156,
+        "searched-with-data": 281,
+        "temporarily-unavailable": 331
       },
       "public_record_counts": {
         "host_context": 15
@@ -1018,7 +1019,7 @@
       "access_mode": "on-demand-catalog-query",
       "authentication_requirement": "Anonymous public catalog access",
       "connector_implementation_state": "implemented-public-catalog-metadata-on-demand",
-      "contract_checksum_sha256": "56e7ccd15d32d2a6f92c1df7f25e3391b45fa7388122f9da7ec734fdb06bf8f4",
+      "contract_checksum_sha256": "d6c2ce2f2bfabec26bf414274bb875ad9a7cd340072be47e4b51d4b049ae4060",
       "contract_version": "1.0.0",
       "data_types": [
         "public AllWISE crossmatch",
@@ -1028,23 +1029,23 @@
       "documentation_url": "https://irsa.ipac.caltech.edu/applications/Gator/GatorAid/irsa/catsearch.html",
       "implementation_state": "implemented",
       "known_limitations": "IRSA also hosts proprietary/exclusive-access and copyrighted holdings; this adapter cannot select any non-allowlisted collection and does not download image products",
-      "last_attempt_at": "2026-08-31T15:47:27.211975Z",
-      "last_successful_at": "2026-08-31T15:07:02.583864Z",
-      "last_successful_response": "2026-08-31T15:07:02.583864Z",
+      "last_attempt_at": "2026-09-03T05:06:52.859538Z",
+      "last_successful_at": "2026-09-03T01:36:51.135355Z",
+      "last_successful_response": "2026-09-03T01:36:51.135355Z",
       "last_verified": "2026-08-04",
       "name": "NASA/IPAC Infrared Science Archive",
-      "operational_state": "provider-failure",
+      "operational_state": "scheduled",
       "organization_or_facility": "NASA / IPAC",
       "primary_family": "host-counterpart-and-catalog-context",
       "product_contracts": [],
       "protocol": "Gator HTTPS VOTable API",
       "public_disposition_counts": {
-        "provider-failure": 34,
-        "searched-no-match": 177,
-        "searched-with-data": 83
+        "provider-failure": 37,
+        "searched-no-match": 210,
+        "searched-with-data": 100
       },
       "public_record_counts": {
-        "catalog_counterparts": 127
+        "catalog_counterparts": 151
       },
       "query_scope": "on-demand-catalog-query",
       "rate_or_cadence_limit": "Two sequential target cone queries, 3 arcsec default radius, 21-row overflow sentinel per catalog",
@@ -1063,7 +1064,7 @@
       "access_mode": "through NED bounded cone search",
       "authentication_requirement": "Anonymous public query",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "5dc75bfc4df949d480fa5b81e071eee35d06d1fe705ce15850192ab2c58b6841",
+      "contract_checksum_sha256": "173acba86959d46c2ad72455f6c815b56713e5916d4c056db32879c2a65f8b72",
       "contract_version": "1.0.0",
       "data_types": [
         "positional host candidates",
@@ -1087,7 +1088,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "catalog_counterparts": 1235
+        "catalog_counterparts": 1441
       },
       "query_scope": "through NED bounded cone search",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
@@ -1106,7 +1107,7 @@
       "access_mode": "on-demand-catalog-query",
       "authentication_requirement": "Anonymous open access",
       "connector_implementation_state": "implemented-open-literature-context-on-demand",
-      "contract_checksum_sha256": "c96c7298c478b8f25191a63560b6be838f82b976badff7b57bcc09476cfdf834",
+      "contract_checksum_sha256": "2e79e09efe1b6250e7d9d16c8420d3e276d55d8d07d898cced4dedfb948aa616",
       "contract_version": "1.0.0",
       "data_types": [
         "literature object identity",
@@ -1119,23 +1120,23 @@
       "documentation_url": "https://simbad.cds.unistra.fr/simbad/",
       "implementation_state": "implemented",
       "known_limitations": "SIMBAD is a heterogeneous literature meta-compilation, not a survey catalog; proximity never establishes target identity, host association, or a new detection",
-      "last_attempt_at": "2026-08-31T15:47:27.246250Z",
-      "last_successful_at": "2026-08-31T15:40:37.470071Z",
-      "last_successful_response": "2026-08-31T15:40:37.470071Z",
+      "last_attempt_at": "2026-09-03T05:06:54.272916Z",
+      "last_successful_at": "2026-09-03T00:26:40.065056Z",
+      "last_successful_response": "2026-09-03T00:26:40.065056Z",
       "last_verified": "2026-08-04",
       "name": "SIMBAD Astronomical Database",
-      "operational_state": "provider-failure",
+      "operational_state": "scheduled",
       "organization_or_facility": "CDS, Strasbourg",
       "primary_family": "host-counterpart-and-catalog-context",
       "product_contracts": [],
       "protocol": "Anonymous SIMBAD TAP / ADQL",
       "public_disposition_counts": {
-        "provider-failure": 44,
-        "searched-no-match": 152,
-        "searched-with-data": 99
+        "provider-failure": 47,
+        "searched-no-match": 184,
+        "searched-with-data": 117
       },
       "public_record_counts": {
-        "catalog_counterparts": 177
+        "catalog_counterparts": 210
       },
       "query_scope": "on-demand-catalog-query",
       "rate_or_cadence_limit": "One bounded 30-arcsec target cone per explicit request; 51-row overflow sentinel",
@@ -1278,7 +1279,7 @@
       "access_mode": "GCN and represented event metadata",
       "authentication_requirement": "Provider-dependent",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "6850e861290ea20a7d0a2c3b6f43de03196fa2922bcb7217a24d7c8a08b9f475",
+      "contract_checksum_sha256": "206840982ca9ac40f159efa070175bb5bb9cadeb28b7de9997ebb48395da111c",
       "contract_version": "1.0.0",
       "data_types": [
         "radio transient notices",
@@ -1302,7 +1303,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 62
+        "candidates": 69
       },
       "query_scope": "GCN and represented event metadata",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
@@ -1405,7 +1406,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN public-consumer OAuth client with the eight Fermi GBM/LAT topics selected",
       "connector_implementation_state": "implemented-public-classic-parser-live",
-      "contract_checksum_sha256": "86c889e41c27e0720651e1095eab251bf5a2c2753e4db908b16217218a81d312",
+      "contract_checksum_sha256": "56487b3a506f7c5f9bfd8a9a914fff85db2a5d5b3526d295df8680291bf183fd",
       "contract_version": "1.0.0",
       "data_types": [
         "gamma-ray trigger",
@@ -1421,8 +1422,8 @@
       "implementation_state": "implemented",
       "known_limitations": "Internal, team-only initial/diagnostic, pointing, and test topics are excluded; a high-energy trigger or localization is not an optical counterpart or a confirmed GRB classification",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-31T04:16:09Z",
-      "last_successful_response": "2026-08-31T04:16:09Z",
+      "last_successful_at": "2026-09-03T10:12:03Z",
+      "last_successful_response": "2026-09-03T10:12:03Z",
       "last_verified": "2026-08-04",
       "name": "Fermi GBM and LAT Public Notices",
       "operational_state": "active-returning-data",
@@ -1432,7 +1433,7 @@
       "protocol": "GCN Kafka Classic text notice types 110, 111, 112, 115, 121, 125, 128, and 131",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 110
+        "candidates": 111
       },
       "query_scope": "live",
       "rate_or_cadence_limit": "Persistent Kafka consumer; mission-documented latency ranges from about five seconds to six hours by notice type",
@@ -1451,7 +1452,7 @@
       "access_mode": "live-and-follow-up",
       "authentication_requirement": "GCN public-consumer OAuth client",
       "connector_implementation_state": "implemented-public-schema-aware-live",
-      "contract_checksum_sha256": "63e044e88e22d3307ca80a67e974fb6b20abb7a2a7204a6680ceb9551af774a7",
+      "contract_checksum_sha256": "30deccb2dc8096cca6adce842d23e55b055f9680b54ef303dc184c30289f00a8",
       "contract_version": "1.0.0",
       "data_types": [
         "gamma-ray notice",
@@ -1465,8 +1466,8 @@
       "implementation_state": "implemented",
       "known_limitations": "Mission archives can contain proprietary follow-up; this entry covers only public GCN products",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-31T09:25:02Z",
-      "last_successful_response": "2026-08-31T09:25:02Z",
+      "last_successful_at": "2026-09-01T01:57:02Z",
+      "last_successful_response": "2026-09-01T01:57:02Z",
       "last_verified": "2026-08-03",
       "name": "GCN Unified Mission Notices",
       "operational_state": "active-no-recent-messages",
@@ -1613,7 +1614,7 @@
       "access_mode": "live-and-archive",
       "authentication_requirement": "None for the public archive; GCN public-consumer OAuth client for live delivery",
       "connector_implementation_state": "implemented-public-classic-parser-live-and-archive",
-      "contract_checksum_sha256": "cb6f0ee2554ccaf9dd9be6bd974616e2a1727d3ef08d14ffc832a8c715103e41",
+      "contract_checksum_sha256": "03ee0a07ae771d1ae7129eeeb4c2d4079f3e5cb19812706b380d71b416086dd1",
       "contract_version": "1.0.0",
       "data_types": [
         "high-energy cascade-neutrino candidate",
@@ -1630,7 +1631,7 @@
       "last_successful_response": null,
       "last_verified": "2026-08-04",
       "name": "IceCube High-Energy Cascade Alerts",
-      "operational_state": "active-returning-data",
+      "operational_state": "temporarily-unavailable",
       "organization_or_facility": "IceCube Collaboration / AMON / NASA GCN",
       "primary_family": "multimessenger-and-high-energy",
       "product_contracts": [],
@@ -1656,7 +1657,7 @@
       "access_mode": "live-bounded-retained-tail-and-public-history",
       "authentication_requirement": "None for public history; GCN public-consumer OAuth client for live JSON",
       "connector_implementation_state": "implemented-public-schema-aware-live-history-populated",
-      "contract_checksum_sha256": "4d5186340f638afe0318d7815c32c2f24123a11a242e4d7e41ca475ad0573c84",
+      "contract_checksum_sha256": "5b8dda35ea635247f934d7a2621f0a0aa5b2ad52208c2dd809efb9fb7ba351c0",
       "contract_version": "1.0.0",
       "data_types": [
         "Gold/Bronze high-energy track-neutrino candidate",
@@ -1673,7 +1674,7 @@
       "last_successful_response": "2026-08-27T17:55:14Z",
       "last_verified": "2026-08-04",
       "name": "IceCube Public Multimessenger Notices",
-      "operational_state": "active-returning-data",
+      "operational_state": "temporarily-unavailable",
       "organization_or_facility": "IceCube Collaboration / NSF / AMON",
       "primary_family": "multimessenger-and-high-energy",
       "product_contracts": [],
@@ -1781,7 +1782,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN public-consumer OAuth client",
       "connector_implementation_state": "implemented-public-topic-credentials-required",
-      "contract_checksum_sha256": "a9a1c6c46225e3f4297cd4ab1163ddd2e2ac2443ffcba6468d0554e90fac1172",
+      "contract_checksum_sha256": "a1881c5956a63eb647aaf0b4ffa1e9b6195435ce6895770a4788f962af7573bf",
       "contract_version": "1.0.0",
       "data_types": [
         "gravitational-wave notice",
@@ -1793,11 +1794,11 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-31T16:13:35Z",
-      "last_successful_response": "2026-08-31T16:13:35Z",
+      "last_successful_at": "2026-09-03T11:28:56Z",
+      "last_successful_response": "2026-09-03T11:28:56Z",
       "last_verified": "2026-07-21",
       "name": "LIGO/Virgo/KAGRA Public Alerts",
-      "operational_state": "active-no-recent-messages",
+      "operational_state": "temporarily-unavailable",
       "organization_or_facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "primary_family": "multimessenger-and-high-energy",
       "product_contracts": [],
@@ -1819,7 +1820,7 @@
       "access_mode": "GCN and represented event metadata",
       "authentication_requirement": "Provider-dependent",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "75541f55c09c428caa71ce92348712c8ff19d509c4cdb508a93d7ed1b60e8843",
+      "contract_checksum_sha256": "c7dcec24be166fcb0a2c230ed28db5181398759fddfea92482979665f3f8ed75",
       "contract_version": "1.0.0",
       "data_types": [
         "X-ray notices",
@@ -1843,7 +1844,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 4
+        "candidates": 5
       },
       "query_scope": "GCN and represented event metadata",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
@@ -1863,7 +1864,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN Kafka client ID and secret; OAuth tokens refresh automatically and inactive credentials may be disabled.",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "04f2c7bb37ad7ad7e7668fa371dc63ae3e7f4d79acd0f1079f49863760dc63c8",
+      "contract_checksum_sha256": "dc71ae8debd7c25646f8aa821c3ad28dfbca5c9e2dedbf291cc0d87c8cd8c53d",
       "contract_version": "1.0.0",
       "data_types": [
         "notice",
@@ -1875,11 +1876,11 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "No proprietary topic is configured; topic authorization does not itself change rights policy",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-31T16:13:35Z",
-      "last_successful_response": "2026-08-31T16:13:35Z",
+      "last_successful_at": "2026-09-03T11:28:56Z",
+      "last_successful_response": "2026-09-03T11:28:56Z",
       "last_verified": "2026-08-29",
       "name": "NASA General Coordinates Network",
-      "operational_state": "active-returning-data",
+      "operational_state": "temporarily-unavailable",
       "organization_or_facility": "NASA Goddard",
       "pagination_policy": "Use a long-running Kafka consumer with offsets and heartbeat; use the complete daily Circular JSON/text archive rather than scraping result pages.",
       "primary_family": "multimessenger-and-high-energy",
@@ -1888,9 +1889,9 @@
       "public_disposition_counts": {},
       "public_record_counts": {
         "classification_history": 305,
-        "classifications": 885,
-        "messenger_signals": 944,
-        "observations": 704
+        "classifications": 894,
+        "messenger_signals": 955,
+        "observations": 712
       },
       "query_scope": "live",
       "rate_or_cadence_limit": "Official documentation does not publish a numeric consumer-rate or retention guarantee; CTAS does not invent one.",
@@ -1990,7 +1991,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN public-consumer OAuth client with the SNEWS topic selected",
       "connector_implementation_state": "implemented-public-classic-parser-live",
-      "contract_checksum_sha256": "1b70d64e219708d2c0d2cf827ab0778a23f16785acda837b793d06a1d04824c7",
+      "contract_checksum_sha256": "dd5ae179620b0605c7316171c91152ffa2bf59e913594f4abc9a24840adc406e",
       "contract_version": "1.0.0",
       "data_types": [
         "core-collapse neutrino-burst alert",
@@ -2002,8 +2003,8 @@
       "implementation_state": "implemented",
       "known_limitations": "Weekly TEST notices are validated as transport health but never admitted as astrophysical events; collaboration-internal detector products remain outside scope",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-25T16:00:06Z",
-      "last_successful_response": "2026-08-25T16:00:06Z",
+      "last_successful_at": "2026-09-01T16:00:05Z",
+      "last_successful_response": "2026-09-01T16:00:05Z",
       "last_verified": "2026-08-04",
       "name": "SuperNova Early Warning System",
       "operational_state": "active-no-recent-messages",
@@ -2070,10 +2071,92 @@
       "topic_contracts": []
     },
     {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "60a620dc2d51411b727432dd935f7c7bd8cd909b9a0f41d117c410e36233276e",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "AMPEL",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "AMPEL",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 70
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-ampel",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "43bdfce6268fa7a4aa6f3bb24605f33b82c2e7496ad2756f5aea10e4ab01da23",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "ANTARES",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "ANTARES",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 5
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-antares",
+      "topic_contracts": []
+    },
+    {
       "access_mode": "manual-on-demand-query",
       "authentication_requirement": "None for legacy manual query; reCAPTCHA required",
       "connector_implementation_state": "manual-on-demand-secure-automation-withheld",
-      "contract_checksum_sha256": "ae78945f098c65ee5f015a7bc4c9307f6f362f5af5f0bca928a9f17cb51d442b",
+      "contract_checksum_sha256": "d2ef871eb0277801321529ac930fd4e2a2eb66e3d96a85fbc6567ab927fb4e10",
       "contract_version": "1.0.0",
       "data_types": [
         "light curve",
@@ -2082,7 +2165,7 @@
       "documentation_url": "https://asas-sn.osu.edu/",
       "implementation_state": "manual-only",
       "known_limitations": "The legacy form says to contact ASAS-SN for more than 100 light curves. The published V2 machine client uses unencrypted HTTP, while the linked HTTPS V2 host/repository are unavailable; automatic ingestion is withheld without implying that the public data are proprietary",
-      "last_attempt_at": "2026-08-31T16:58:55.936587Z",
+      "last_attempt_at": "2026-09-03T12:35:03.808837Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
@@ -2093,10 +2176,10 @@
       "product_contracts": [],
       "protocol": "HTTPS manual coordinate form; V2 Python/HTTP API withheld",
       "public_disposition_counts": {
-        "temporarily-unavailable": 3154
+        "temporarily-unavailable": 3551
       },
       "public_record_counts": {
-        "candidates": 1
+        "candidates": 508
       },
       "query_scope": "manual-on-demand-query",
       "rate_or_cadence_limit": "One operator-initiated target at a time; contact ASAS-SN for more than 100 light curves",
@@ -2109,6 +2192,47 @@
       ],
       "source_family": "optical-and-time-domain-surveys",
       "source_key": "asas-sn",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "5206aca24c15bebb39072137be838874af2f7909a7630ca467fb21ef63c731aa",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "ASO",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "ASO",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-aso",
       "topic_contracts": []
     },
     {
@@ -2156,7 +2280,7 @@
       "access_mode": "on-demand-query",
       "authentication_requirement": "Registered ATLAS forced-photometry token in the Authorization header; credentials remain local.",
       "connector_implementation_state": "implemented-public-credentials-required",
-      "contract_checksum_sha256": "5b7d12fb40c93985c7cff5c276c92ba06d2622dc86f0db6d813c34a4c7290b05",
+      "contract_checksum_sha256": "19fa71b0ccf179ea8bb22fd4de51c9e7b08667022c29aceb75d3c87e04527320",
       "contract_version": "1.0.0",
       "data_types": [
         "TNS discovery",
@@ -2165,12 +2289,12 @@
       "documentation_url": "https://fallingstar-data.com/forcedphot/apiguide/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Result URLs are short-lived; requests must remain bounded and attribution/citations are mandatory",
-      "last_attempt_at": "2026-08-31T16:58:54.641009Z",
-      "last_successful_at": "2026-08-31T16:58:54.641009Z",
-      "last_successful_response": "2026-08-31T16:58:54.641009Z",
+      "last_attempt_at": "2026-09-03T12:57:11.568130Z",
+      "last_successful_at": "2026-09-03T11:38:36.005910Z",
+      "last_successful_response": "2026-09-03T11:38:36.005910Z",
       "last_verified": "2026-08-29",
       "name": "ATLAS",
-      "operational_state": "scheduled",
+      "operational_state": "provider-failure",
       "organization_or_facility": "University of Hawai\u02bbi",
       "pagination_policy": "Submit a bounded queue task, poll its task URL, then fetch and checksum the temporary result. Queue listings use cursor pagination.",
       "primary_family": "optical-and-time-domain-surveys",
@@ -2178,13 +2302,13 @@
       "protocol": "TNS / forced-photometry REST API",
       "public_disposition_counts": {
         "credentials-required": 2242,
-        "provider-failure": 251,
-        "searched-with-data": 620,
+        "provider-failure": 384,
+        "searched-with-data": 886,
         "temporarily-unavailable": 1
       },
       "public_record_counts": {
-        "candidates": 250,
-        "observations": 9350
+        "candidates": 2617,
+        "observations": 11587
       },
       "query_scope": "on-demand-query",
       "rate_or_cadence_limit": "HTTP 429 supplies the required wait; official documentation does not state one stable numeric quota.",
@@ -2243,9 +2367,50 @@
     },
     {
       "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "0d4b681288701ebf4f6a5256df66ebf176209b08d940d15c1134d70c8fada3ae",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "BOSS",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "BOSS",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 20
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-boss",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
       "authentication_requirement": "None for represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "f5a515b940dff070a940f5f8ba396a0f9d8a2cedb2de3babc52c8ac5c5e71e7e",
+      "contract_checksum_sha256": "e35fc35438d4f4b4d933d3c4c1911e353c2faf37a45907c6bcdf5d273aa810ac",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery metadata",
@@ -2269,7 +2434,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 2
+        "candidates": 60
       },
       "query_scope": "represented event metadata",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
@@ -2288,7 +2453,48 @@
       "access_mode": "represented event metadata",
       "authentication_requirement": "Not applicable to represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "409bcc8761b80daa0f3e52a2afe4a2841e83a3d839a592d9cce40feb39483430",
+      "contract_checksum_sha256": "9d5eb288c7b8e1fe4561f29bed2b339fdf576ca910a64687ae1e8e6f9e743f77",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "CSNS",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "CSNS",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-csns",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "c171f6356ec47870e5184743390d728d93767e643132ec44ab463d7d6f20bde1",
       "contract_version": "1.0.0",
       "data_types": [
         "source-attributed discovery metadata"
@@ -2310,7 +2516,7 @@
       "protocol": "represented-through-public-event-provider",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 3
+        "candidates": 4
       },
       "query_scope": "No standalone source query is claimed.",
       "rate_or_cadence_limit": "Not applicable",
@@ -2329,7 +2535,48 @@
       "access_mode": "represented event metadata",
       "authentication_requirement": "Not applicable to represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "6158b7360ce037b95d01690f0e81484f6890e7e9e2ff4a753fa1bcd011d12e46",
+      "contract_checksum_sha256": "06bf157d5b867ad8688b5c7d43b81e3a0799d58006cb6671d4a925026711785e",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "DECam-GROWTH",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "DECam-GROWTH",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 2
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-decam-growth",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "22ba1773c3d44a3ba4855309609d49dcc8738920c11cbf228af4f9ba9e906fd7",
       "contract_version": "1.0.0",
       "data_types": [
         "source-attributed discovery metadata"
@@ -2351,7 +2598,7 @@
       "protocol": "represented-through-public-event-provider",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 2
+        "candidates": 19
       },
       "query_scope": "No standalone source query is claimed.",
       "rate_or_cadence_limit": "Not applicable",
@@ -2364,6 +2611,88 @@
       "secondary_families": [],
       "source_family": "optical-and-time-domain-surveys",
       "source_key": "represented-survey-desirt",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "f996efe3d1a361d8b76c3bdc36c053297ee9308743e0390485b1ca1b516a5964",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "DLT40",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "DLT40",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 32
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-dlt40",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "5eb3674ed483d76ef16522889c3ab852c9f21ffe655514353bff8bd8c5c3b5b5",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "EHSSP",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "EHSSP",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-ehssp",
       "topic_contracts": []
     },
     {
@@ -2408,6 +2737,211 @@
       "topic_contracts": []
     },
     {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "95eee449f9254e6fe927b06b8d660f46bc8ce3b4f76a880d71ebf8304951d16f",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "Fink",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "Fink",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-fink",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "3bf8f9851145f3e32cbcd7c679508c9a921fd990a64e629e2eaf28d6279fd93d",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "GIT",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "GIT",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-git",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "444852db309076f90c4a2b713ca624a69b056a07d48e3d4f49cb2ddd14545c88",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "GLO",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "GLO",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-glo",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "e95475e030a1383fdb8f8148dacf72cb001207406458d01711016c3475ff2611",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "GSNST",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "GSNST",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 27
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-gsnst",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "6a16225e3acb16947fa9e29c297567cff9a1e24462853bae7dabe732b224503a",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "GW-MMADS",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "GW-MMADS",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 6
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-gw-mmads",
+      "topic_contracts": []
+    },
+    {
       "access_mode": "archive",
       "authentication_requirement": "Public archive",
       "connector_implementation_state": "archival-not-live",
@@ -2445,9 +2979,91 @@
     },
     {
       "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "309f6b65e443accce8108a662cb55656eddc651339f754bf4f49aeba011b2d5f",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "GaiaAlerts",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "GaiaAlerts",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 886
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-gaiaalerts",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "7dbf3299c4b10f5de30d3fa77290f7139407481663f87ea6e8571abc5a151803",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "Gattini",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "Gattini",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-gattini",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
       "authentication_requirement": "None for represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "98bd7d2b63d05175e8f577846eca54068db61085e8e0683ebbf5bf460a981228",
+      "contract_checksum_sha256": "af39205c051cb01aadb08e080b6c354a27e86e1b70fb762970e1bdebc9a261ee",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery metadata",
@@ -2471,7 +3087,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 294
+        "candidates": 730
       },
       "query_scope": "represented event metadata",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
@@ -2490,7 +3106,89 @@
       "access_mode": "represented event metadata",
       "authentication_requirement": "Not applicable to represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "ddc553ecbffba4b1b610f92f127d080de8d0c13cf92d2cce9a6f641c2404c6d4",
+      "contract_checksum_sha256": "dc601f6cc0b9272f38992ca77f16745f5638ec857349090a7a916af29bfeff09",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "HETH",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "HETH",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-heth",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "0a4d34691e77bfd77d3941c5395ab56fbd7837ae3f71131833a620644b0c30e4",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "IMSNG",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "IMSNG",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-imsng",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "f7653829fb7ea68b794e4a9c0f6e4c6eab5bc8e357fb56f963a42fd4a9b7a5d8",
       "contract_version": "1.0.0",
       "data_types": [
         "source-attributed discovery metadata"
@@ -2512,7 +3210,7 @@
       "protocol": "represented-through-public-event-provider",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 1
+        "candidates": 31
       },
       "query_scope": "No standalone source query is claimed.",
       "rate_or_cadence_limit": "Not applicable",
@@ -2525,6 +3223,47 @@
       "secondary_families": [],
       "source_family": "optical-and-time-domain-surveys",
       "source_key": "represented-survey-issp",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "1e5eab7dc7a8845388d3bbba72416a3286411f74787cb9e21600091a11b2a558",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "J-VAR",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "J-VAR",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-j-var",
       "topic_contracts": []
     },
     {
@@ -2572,7 +3311,48 @@
       "access_mode": "represented event metadata",
       "authentication_requirement": "Not applicable to represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "3977a13eb7e47c71d6b349efa26e39e3e46d14ac5df5c797fbc491f73b86fbd2",
+      "contract_checksum_sha256": "68b13bcbc7fcd0bfd604ab7ffe4be67b5d29a099e00f4875f53e24e576de2dbf",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "JIST",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "JIST",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-jist",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "c9dc4976c670865f1ede981a6a00ccaa7d3ae4da9c67624d599a2289adb6039b",
       "contract_version": "1.0.0",
       "data_types": [
         "source-attributed discovery metadata"
@@ -2594,7 +3374,7 @@
       "protocol": "represented-through-public-event-provider",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 46
+        "candidates": 122
       },
       "query_scope": "No standalone source query is claimed.",
       "rate_or_cadence_limit": "Not applicable",
@@ -2611,9 +3391,91 @@
     },
     {
       "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "6da24177d35a08a86d599216e6ad9493fd74c302c4bee59f5356c858f672ac6c",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "LOSS",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "LOSS",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 20
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-loss",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "8949a52af2a73926981620a4b7873bbc632c6fd8c9f19b1320d529f363241dc5",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "LSQ",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "LSQ",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 2
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-lsq",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
       "authentication_requirement": "None for represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "fe34a4fc43ace9e6817b30430448b6de37e12cefdecdb388c82ce9e164884af6",
+      "contract_checksum_sha256": "3631548c8127c01fb87e4c0ec246b6db9ec244a014a5dbe475f208b3950e3b1f",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery metadata",
@@ -2637,7 +3499,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 7
+        "candidates": 61
       },
       "query_scope": "represented event metadata",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
@@ -2695,9 +3557,460 @@
     },
     {
       "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "436b8706485e328a871a6fe81608c46be60cf353f3e13ba79ba2d1b699402d96",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "MeerLICHT",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "MeerLICHT",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-meerlicht",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "6f735b06890f26c0be7192ce01667a09aeee013db2b273eca49cf09df86acc9f",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "Moonbase search SN South",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "Moonbase search SN South",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 2
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-moonbase-search-sn-south",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "e6adc463514a21b4ecb1d76d574ebaedf0fd1363022e7ec1e7383f067fd5069b",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "NUTS2",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "NUTS2",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 2
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-nuts2",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "6e83e0f98c3519949aa2a75af215b14c3a27a133a3689ea5b7796c95a84dda11",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "OGLE",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "OGLE",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 8
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-ogle",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "01f3dbd6bd1f8ed85436ca63e0f23b814f4a07ae974cb3b13d56ad600b538609",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "PALEO",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "PALEO",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 18
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-paleo",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "2b56f101da7054375be76e6fb296739ebb74bed58e2c6187dbb4d992502288cb",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "PESSTO",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "PESSTO",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-pessto",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "da68865216c543c7cdc6824aed9528ced1e998a4c8d384cd99a10b474a6dbb35",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "PIKA",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "PIKA",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-pika",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "35d679b3a609f2db3831b4143532c75b0c6db2d019cf1c0d98ceb0945f3e2e03",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "POSS",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "POSS",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 52
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-poss",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "943c43a7830312d1efc55d4b52addf2d7215de5c78cef41e69b3821df9ed971c",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "PSH",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "PSH",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 8
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-psh",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "f6a9988db3842c3ae7dd68b5b86c060f8af23150cae4c9616d50d88187df397b",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "PTSS",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "PTSS",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 28
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-ptss",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "2f6e9e63f6fe01deeb60c52360f60f085ff01dae9f576ca0e933a2f7d6c9d1aa",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "Padova-Asiago",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "Padova-Asiago",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 4
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-padova-asiago",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
       "authentication_requirement": "None for represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "e3afa75f9d57868a5ee4bee0985e30b0a789dabda1a1c36a31579aed3f22f9fb",
+      "contract_checksum_sha256": "3ea3c9192520a71228494ffc0e24ee6e8567d4df35134b9a789686327af99fe8",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery metadata",
@@ -2721,7 +4034,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 582
+        "candidates": 1718
       },
       "query_scope": "represented event metadata",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
@@ -2740,7 +4053,130 @@
       "access_mode": "represented event metadata",
       "authentication_requirement": "Not applicable to represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "b24cf1d174fb498f736be4629bef7223b4b6b0691d69747a7aa0eb4c41f2a8f6",
+      "contract_checksum_sha256": "da779f6ea86951b7a24cd4d82d832a1fcfec6b95d009046625528500f8d67db8",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "RANSSP",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "RANSSP",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 3
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-ranssp",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "91b47fac4ae95293f8663a476cf100bed03462480bf9202dcf3ac1e9f430a8ea",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "RTSG",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "RTSG",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 3
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-rtsg",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "1426fb2fd8694b3126b24715eb6dc512aeecc00a30c0c966a35c854d574c4474",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "SAGUARO",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "SAGUARO",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-saguaro",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "a4dd53a789896196e762c42a2e8afb0a90935f9cd7ccf9783c37b70bd4afd5c3",
       "contract_version": "1.0.0",
       "data_types": [
         "source-attributed discovery metadata"
@@ -2762,7 +4198,7 @@
       "protocol": "represented-through-public-event-provider",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 3
+        "candidates": 75
       },
       "query_scope": "No standalone source query is claimed.",
       "rate_or_cadence_limit": "Not applicable",
@@ -2781,7 +4217,89 @@
       "access_mode": "represented event metadata",
       "authentication_requirement": "Not applicable to represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "8bb98908f799a799bbe4373f19bec6ee7cfd8802dd866fb311481e1b5a5ed1bb",
+      "contract_checksum_sha256": "8172debf260dd440c65f9e23febbedf30b39781cba646aaf64a3c61603621a9f",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "SKYS",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "SKYS",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-skys",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "444a7ebad57f8d3604ad09382606cafd9754e4f268f0f4d3bdd87412500cb587",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "SNAD",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "SNAD",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-snad",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "fe4f97ddac1f39496b9880a93645b02bb05cf0d8050888c1a67d6835335a1f64",
       "contract_version": "1.0.0",
       "data_types": [
         "source-attributed discovery metadata"
@@ -2803,7 +4321,7 @@
       "protocol": "represented-through-public-event-provider",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 2
+        "candidates": 95
       },
       "query_scope": "No standalone source query is claimed.",
       "rate_or_cadence_limit": "Not applicable",
@@ -2816,6 +4334,293 @@
       "secondary_families": [],
       "source_family": "optical-and-time-domain-surveys",
       "source_key": "represented-survey-snhunt",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "dd479fbbcdce1c0667b38b63e36a891737252ba212d5a8d786e538b5f8db7289",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "STSP",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "STSP",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-stsp",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "c3326fa6fd871ace7c844d1ace5c812f5b39df8fcfcfc8c14b597822e85c1ef8",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "SUNBIRD",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "SUNBIRD",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 10
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-sunbird",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "8f9cc2e6e2b319f773ffb9be1592ca5da912ccc1de926b3a148a21c16cc1aed1",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "SZCYS",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "SZCYS",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 2
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-szcys",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "8ff15baa4e805f35d181204b2f52a83ff9af55a1272704a38d4c214d82940c49",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "Shadow",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "Shadow",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 10
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-shadow",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "037a76c033ddf18636c5cee7d3452568a4f91c96eec1bc9dde48879952303014",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "SkyMapper",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "SkyMapper",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 7
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-skymapper",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "e332d78365254523b9046c6787c4e19e62711a364b8da74400eb75ad70c706f8",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "Swope SN Survey",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "Swope SN Survey",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-swope-sn-survey",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "2a13f008499d8ee26da500192b2e585673925faa27d01f48920cccf82c9e5b73",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "TAROT",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "TAROT",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 2
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-tarot",
       "topic_contracts": []
     },
     {
@@ -2863,6 +4668,88 @@
       "access_mode": "represented event metadata",
       "authentication_requirement": "Not applicable to represented metadata",
       "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "a11fc09426e6620ff073eec97ac637b62243737c20293f540f08d4fb209909dc",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "TMTS",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "TMTS",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-tmts",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "082e729ddf20be4de26d1a47aefc2b50ff4b203b73fdf6abd7a15d8f2e1d6d3b",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "TNTS",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "TNTS",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 35
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-tnts",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
       "contract_checksum_sha256": "638a83af25d7c07b6df2a71ab60b076edd8d112e58cc3192588a1deb7c86ece6",
       "contract_version": "1.0.0",
       "data_types": [
@@ -2898,6 +4785,47 @@
       "secondary_families": [],
       "source_family": "optical-and-time-domain-surveys",
       "source_key": "represented-survey-tsst-cosmos-3d",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "8e94555d51395ac5769c2a1bbf1a4d02db6769969b5eb60874009e6677d40aef",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "Tomo-e Gozen",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "Tomo-e Gozen",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 2
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-tomo-e-gozen",
       "topic_contracts": []
     },
     {
@@ -2948,7 +4876,7 @@
       "access_mode": "represented event metadata",
       "authentication_requirement": "None for represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "4674ff9a22fb65e9aec25929a24e1a938c22110d33d46d560d95ac221c7e535d",
+      "contract_checksum_sha256": "2911a032a68b59703717416e2768d4778dbad69acc1b0c1dcc46e93beb3a3097",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery metadata",
@@ -2972,7 +4900,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 544
+        "candidates": 652
       },
       "query_scope": "represented event metadata",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
@@ -2991,7 +4919,7 @@
       "access_mode": "represented event metadata",
       "authentication_requirement": "Not applicable to represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "00b7794443acec9b4fc6c8cd56cf31a3cbb8ab3a88e1dd9f79d241c1acf84b46",
+      "contract_checksum_sha256": "78450a837e5bb1c3be312511e1b7b6f1ba7b6d59b51c1d4bb58f6d72bcfede21",
       "contract_version": "1.0.0",
       "data_types": [
         "source-attributed discovery metadata"
@@ -3013,7 +4941,7 @@
       "protocol": "represented-through-public-event-provider",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 9
+        "candidates": 80
       },
       "query_scope": "No standalone source query is claimed.",
       "rate_or_cadence_limit": "Not applicable",
@@ -3032,7 +4960,7 @@
       "access_mode": "represented event metadata",
       "authentication_requirement": "None for represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "706ef5212c1d95446a9dfd741b4741e3c210fa0a324a23d0bd4cad0d61815135",
+      "contract_checksum_sha256": "fe221df353dc032471bec51061fb2c9e6ac34c9de6fce9b9b8f616251be3ad8c",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery metadata",
@@ -3056,7 +4984,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 21
+        "candidates": 139
       },
       "query_scope": "represented event metadata",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
@@ -3075,7 +5003,7 @@
       "access_mode": "live-and-archive",
       "authentication_requirement": "Broker or archive dependent",
       "connector_implementation_state": "represented-through-brokers",
-      "contract_checksum_sha256": "68cb38469892f00b9dfb786c02782993601dcf464580279ee64d06ace249d9ba",
+      "contract_checksum_sha256": "ba20782a31e7cae4a511b7286457159f724c5d00f4fb644ad989c935b1e1228c",
       "contract_version": "1.0.0",
       "data_types": [
         "alert",
@@ -3097,7 +5025,7 @@
       "protocol": "Official archive / community brokers",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 486
+        "candidates": 3247
       },
       "query_scope": "live-and-archive",
       "rate_or_cadence_limit": "Provider-defined",
@@ -3115,10 +5043,92 @@
       "topic_contracts": []
     },
     {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "705533b4c816e0b3e6eb8d1c3f155da4441ee2f19aef6017375a9a2e030e7e31",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "ePESSTO",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "ePESSTO",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-epessto",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "c9d007356522853de1f5bd97bafcb3055a2c8a356ea6763d0b522808f6b890f0",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "iPTF",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "iPTF",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 124
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-iptf",
+      "topic_contracts": []
+    },
+    {
       "access_mode": "targeted-query",
       "authentication_requirement": "NASA ADS API token",
       "connector_implementation_state": "implemented-public-metadata-credentials-required",
-      "contract_checksum_sha256": "d008c776190f463234d00a07b25db4b483218869e6eb14038c5a48bd2ec546cb",
+      "contract_checksum_sha256": "05880be647807578c1b9155d4a5d9f36205be95f77dfa0efe2cdac1f8d349d06",
       "contract_version": "1.0.0",
       "data_types": [
         "bibliographic metadata",
@@ -3128,9 +5138,9 @@
       "documentation_url": "https://ui.adsabs.harvard.edu/help/api/",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "CTAS retains metadata and provider links only; it does not mirror article full text or infer reuse rights from discoverability",
-      "last_attempt_at": "2026-08-31T16:58:54.646048Z",
-      "last_successful_at": "2026-08-31T13:58:51.906329Z",
-      "last_successful_response": "2026-08-31T13:58:51.906329Z",
+      "last_attempt_at": "2026-09-03T12:57:11.572344Z",
+      "last_successful_at": "2026-09-03T09:02:40.661125Z",
+      "last_successful_response": "2026-09-03T09:02:40.661125Z",
       "last_verified": "2026-08-23",
       "name": "NASA Astrophysics Data System",
       "operational_state": "temporarily-unavailable",
@@ -3139,14 +5149,14 @@
       "product_contracts": [],
       "protocol": "NASA ADS Search API JSON",
       "public_disposition_counts": {
-        "provider-failure": 45,
-        "searched-no-match": 218,
-        "searched-with-data": 108,
-        "temporarily-unavailable": 500
+        "provider-failure": 53,
+        "searched-no-match": 279,
+        "searched-with-data": 150,
+        "temporarily-unavailable": 788
       },
       "public_record_counts": {
-        "publication_revisions": 57,
-        "publications": 57
+        "publication_revisions": 58,
+        "publications": 58
       },
       "query_scope": "targeted-query",
       "rate_or_cadence_limit": "One exact-name query per watched-target refresh; at most 25 metadata records",
@@ -3163,7 +5173,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "Authorization: Token header; credentials remain local and are never published.",
       "connector_implementation_state": "implemented-public-photometry-on-demand-credentials-required",
-      "contract_checksum_sha256": "d09e4918aaa500310206266a87b44f6101bfafddcbba9ea23c6eec270189dd94",
+      "contract_checksum_sha256": "8539f4dc0b230310379cbde71205e0fc53816a89e2f9b32b70a1f317d31be674",
       "contract_version": "1.0.0",
       "data_types": [
         "observer-contributed optical/NIR photometry",
@@ -3172,7 +5182,7 @@
       "documentation_url": "https://docs.aavso.org/observations",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "The API is authenticated and every observer contribution, AUID, band, observation type, uncertainty, upper-limit flag, and required credit must remain source-native",
-      "last_attempt_at": "2026-08-31T16:58:55.931170Z",
+      "last_attempt_at": "2026-09-03T13:13:13.097727Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-29",
@@ -3185,8 +5195,8 @@
       "protocol": "AAVSO v2 JSON API",
       "public_disposition_counts": {
         "credentials-required": 2283,
-        "provider-failure": 870,
-        "temporarily-unavailable": 3
+        "provider-failure": 1266,
+        "temporarily-unavailable": 4
       },
       "public_record_counts": {},
       "query_scope": "targeted-query",
@@ -3205,7 +5215,7 @@
       "access_mode": "public-release-archive",
       "authentication_requirement": "None for the latest public release",
       "connector_implementation_state": "implemented-public-release-photometry-on-demand",
-      "contract_checksum_sha256": "fd39a2d1c198e4e4e878098c94a3f06115473fc95c42c1226d2cdd13bb1d5452",
+      "contract_checksum_sha256": "86bf44d69d9ff80b53e6feb06fdfe317ca3e5bcbd8663a94385eed8cadf33164",
       "contract_version": "1.0.0",
       "data_types": [
         "released catalog photometry",
@@ -3215,19 +5225,19 @@
       "documentation_url": "https://irsa.ipac.caltech.edu/docs/program_interface/ztf_lightcurve_api.html",
       "implementation_state": "implemented",
       "known_limitations": "Release photometry may lag real time and is neither alert difference photometry nor forced photometry; coordinate association does not assert identity",
-      "last_attempt_at": "2026-08-31T16:59:01.725240Z",
+      "last_attempt_at": "2026-09-03T13:17:40.969386Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
       "name": "ZTF Public Data-Release Light Curves at IRSA",
-      "operational_state": "scheduled",
+      "operational_state": "provider-failure",
       "organization_or_facility": "NASA/IPAC IRSA / Zwicky Transient Facility",
       "primary_family": "photometric-follow-up",
       "product_contracts": [],
       "protocol": "Anonymous IRSA ZTF-LC-API CSV",
       "public_disposition_counts": {
-        "provider-failure": 234,
-        "searched-no-match": 2905
+        "provider-failure": 261,
+        "searched-no-match": 3276
       },
       "public_record_counts": {},
       "query_scope": "public-release-archive",
@@ -3245,7 +5255,7 @@
       "access_mode": "live-and-archive",
       "authentication_requirement": "GCN public-consumer OAuth client",
       "connector_implementation_state": "implemented-public-publication-stream",
-      "contract_checksum_sha256": "abe0fe352808d49bcf382a720003f093b1ad99ba8b429f38aa3e85d4ae416c0f",
+      "contract_checksum_sha256": "5df7410029b65003c87eb3cf70108046c511d49b93745b3874e42d0ad3c982af",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery bulletin",
@@ -3258,8 +5268,8 @@
       "implementation_state": "implemented",
       "known_limitations": "Circular prose is retained as an attributed author report; values are not promoted to machine measurements without a mission-specific parser",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-31T16:07:18.680000Z",
-      "last_successful_response": "2026-08-31T16:07:18.680000Z",
+      "last_successful_at": "2026-09-02T13:58:08.446000Z",
+      "last_successful_response": "2026-09-02T13:58:08.446000Z",
       "last_verified": "2026-08-04",
       "name": "NASA GCN Circulars",
       "operational_state": "active-returning-data",
@@ -3269,8 +5279,8 @@
       "protocol": "GCN Kafka JSON / public Circular archive",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "publication_revisions": 1447,
-        "publications": 702
+        "publication_revisions": 1468,
+        "publications": 722
       },
       "query_scope": "live-and-archive",
       "rate_or_cadence_limit": "Persistent Kafka consumer; revisions are checksum-addressed and linked URLs are not bulk-downloaded",
@@ -3287,7 +5297,7 @@
       "access_mode": "poll",
       "authentication_requirement": "None for released public notes",
       "connector_implementation_state": "implemented-public-anonymous-with-photometry-tables",
-      "contract_checksum_sha256": "03aae1dd2f359ff812bb958693ecb33b7334056db559cba146425ad5476ed525",
+      "contract_checksum_sha256": "0ff70467c25191c101a1ff0dec89132eaad3b197caa8a88af5b229475dccebcc",
       "contract_version": "1.0.0",
       "data_types": [
         "public notice",
@@ -3299,8 +5309,8 @@
       "implementation_state": "implemented",
       "known_limitations": "Draft, private, ambiguous, authenticated-only, non-text, or unsupported table material is refused; only source-linked bounded public photometry text is parsed",
       "last_attempt_at": null,
-      "last_successful_at": "2026-08-30T23:53:01Z",
-      "last_successful_response": "2026-08-30T23:53:01Z",
+      "last_successful_at": "2026-09-02T21:57:12Z",
+      "last_successful_response": "2026-09-02T21:57:12Z",
       "last_verified": "2026-08-10",
       "name": "TNS AstroNotes",
       "operational_state": "temporarily-unavailable",
@@ -3311,8 +5321,8 @@
       "public_disposition_counts": {},
       "public_record_counts": {
         "observations": 48,
-        "publication_revisions": 274,
-        "publications": 179
+        "publication_revisions": 298,
+        "publications": 191
       },
       "query_scope": "poll",
       "rate_or_cadence_limit": "Bounded latest-page poll every 30 minutes",
@@ -3329,7 +5339,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "None for published observations",
       "connector_implementation_state": "implemented-public-anonymous-on-demand",
-      "contract_checksum_sha256": "2deb860b7c6b2b3cb9a37ea36c385e4529fac06a050fee231eb05fb3a8a9031d",
+      "contract_checksum_sha256": "1c713a8e388b1e568063af441e6ffba4b86e5c79673d4695eb9c26e85bcf2de3",
       "contract_version": "1.0.0",
       "data_types": [
         "published spectrum metadata",
@@ -3338,7 +5348,7 @@
       "documentation_url": "https://www.aavso.org/search-and-download-data/",
       "implementation_state": "implemented",
       "known_limitations": "Observer credit, AAVSO acknowledgment/facility keyword, validation state, and current usage guidance must be retained; anonymous availability is verified per record",
-      "last_attempt_at": "2026-08-31T16:58:55.489696Z",
+      "last_attempt_at": "2026-09-03T12:35:03.455659Z",
       "last_successful_at": null,
       "last_successful_response": null,
       "last_verified": "2026-08-08",
@@ -3349,9 +5359,9 @@
       "product_contracts": [],
       "protocol": "Anonymous AVSpec HTML search + public ZIP/FITS download",
       "public_disposition_counts": {
-        "provider-failure": 168,
-        "searched-no-match": 2969,
-        "temporarily-unavailable": 19
+        "provider-failure": 190,
+        "searched-no-match": 3343,
+        "temporarily-unavailable": 20
       },
       "public_record_counts": {},
       "query_scope": "targeted-query",
@@ -3369,7 +5379,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "TNS bot marker and API key",
       "connector_implementation_state": "implemented-explicit-public-metadata-and-ascii-preview-on-demand-credentials-required",
-      "contract_checksum_sha256": "6be500db9655784a098125e40641946964de8b60b10e85dd56501e6a580edf09",
+      "contract_checksum_sha256": "21482fad91de79c24e3ef641ce0a19aab8a88ce69144cca8c8fee5f3a51dc67c",
       "contract_version": "1.0.0",
       "data_types": [
         "public object detail",
@@ -3380,9 +5390,9 @@
       "documentation_url": "https://www.wis-tns.org/sites/default/files/api/tns2_manuals/TNS2.0_APIs_manual.pdf",
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "A credential can expose group-proprietary records. Object and spectrum public flags are mandatory; current photometry rows lack per-row visibility and are refused",
-      "last_attempt_at": "2026-08-31T16:58:54.655547Z",
-      "last_successful_at": "2026-08-31T16:19:16.843264Z",
-      "last_successful_response": "2026-08-31T16:19:16.843264Z",
+      "last_attempt_at": "2026-09-03T12:35:02.310819Z",
+      "last_successful_at": "2026-09-03T09:45:41.974237Z",
+      "last_successful_response": "2026-09-03T09:45:41.974237Z",
       "last_verified": "2026-08-07",
       "name": "TNS Public Object Details and Spectra",
       "operational_state": "temporarily-unavailable",
@@ -3391,12 +5401,12 @@
       "product_contracts": [],
       "protocol": "TNS 2.0 Get Object API + provider-hosted public file",
       "public_disposition_counts": {
-        "provider-failure": 87,
-        "searched-with-data": 940,
-        "temporarily-unavailable": 2148
+        "provider-failure": 94,
+        "searched-with-data": 1044,
+        "temporarily-unavailable": 2433
       },
       "public_record_counts": {
-        "classifications": 14,
+        "classifications": 15,
         "spectra": 16
       },
       "query_scope": "targeted-query",
@@ -3416,7 +5426,7 @@
       "access_mode": "targeted-query",
       "authentication_requirement": "None for public spectra",
       "connector_implementation_state": "implemented-explicit-public-anonymous-spectra-on-demand",
-      "contract_checksum_sha256": "c75c8c6c66361935aa3e5d2d6a0f4d23bb6fe1ee246326c58a094dc0646beb76",
+      "contract_checksum_sha256": "b06079dc16ae08a9fa6830417b6d93f5615b971e6d57046bce9c3cf89995a1ff",
       "contract_version": "1.0.0",
       "data_types": [
         "public spectrum metadata",
@@ -3426,9 +5436,9 @@
       "documentation_url": "https://www.wiserep.org/content/wiserep-getting-started",
       "implementation_state": "implemented",
       "known_limitations": "Private scripted access requires a personal API key; this adapter sends no credentials, refuses any row without public=1, and never treats repository membership as a new detection",
-      "last_attempt_at": "2026-08-31T16:58:54.659064Z",
-      "last_successful_at": "2026-08-31T11:46:41.909533Z",
-      "last_successful_response": "2026-08-31T11:46:41.909533Z",
+      "last_attempt_at": "2026-09-03T13:13:12.105483Z",
+      "last_successful_at": "2026-09-03T07:24:58.968857Z",
+      "last_successful_response": "2026-09-03T07:24:58.968857Z",
       "last_verified": "2026-08-08",
       "name": "WISeREP Public Spectra",
       "operational_state": "temporarily-unavailable",
@@ -3437,10 +5447,10 @@
       "product_contracts": [],
       "protocol": "Anonymous exact-name ZIP export with JSON metadata and ASCII spectra",
       "public_disposition_counts": {
-        "provider-failure": 102,
-        "searched-no-match": 742,
-        "searched-with-data": 157,
-        "temporarily-unavailable": 2152
+        "provider-failure": 109,
+        "searched-no-match": 825,
+        "searched-with-data": 177,
+        "temporarily-unavailable": 2440
       },
       "public_record_counts": {
         "spectra": 4

@@ -2,74 +2,444 @@
   "artifacts": {
     "alias_index": {
       "path": "ctas/data/alias-index.json",
-      "sha256": "ad81e14b98e6b51d8b54d017177ed77553ceae33e7f1dfa2e1e460b8ccbd41b3"
+      "sha256": "70730280f59abe4e511dc42f41ba2f310a4a91ba036b0d288e3d14ce13d6effa"
     },
     "catalog_bootstrap": {
       "path": "ctas/data/catalog-bootstrap.json",
-      "sha256": "e3e99bdc719e45c40d43b3738142beaed71d8e6f9753c60db2b143e2acf4a15f"
+      "sha256": "ddab9466b88927f22bc2e27ac061d45cf73ae0076301c4cf440709efc3ca7163"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "e3e99bdc719e45c40d43b3738142beaed71d8e6f9753c60db2b143e2acf4a15f"
+      "sha256": "ddab9466b88927f22bc2e27ac061d45cf73ae0076301c4cf440709efc3ca7163"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "5a80031a4711312464504da172f06b796f15d4cf6a6ef3aefca7513c936a748e"
+      "report_checksum_sha256": "8eba9367bb4392e8732cf326288b5717f65b6db0955bfe3f5c2c40ba10986de3"
     },
     "complete_catalog_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "0b91fb2667023d6a6082f3a9b8a398b4ac5fc84774120d51c5a9a9334873f7ed"
+      "sha256": "2bd863187cc63aa5f945b03fd971b95b8b4bbee836414aea9ddd0176bbb74811"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "b3151fef241effae81a3bcb732508d890f52e246d02097b441ddef2e1bf0a149"
+      "sha256": "513adbf6d892df68a922bdcb8e99b512be016074358ad860ddd8feea23bd6f98"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "f3c3e299ff4e7c781d17a4bd82611a2189fe8def43cc09b465f1ce66b67c35ba"
+      "sha256": "d8a17ebe9621f6a0ac01c86413a08511d20a3ce5b17e0209a6d47b9647a240c6"
     },
     "research_tables": {
       "path": "ctas/data/research/manifest.json",
-      "sha256": "476ffa4137b937c3af9bbbb77b9d23bb061daf08148d7014e3cc4faa9f45306a"
+      "sha256": "1daadbbd37d20ba32ff669ab1c5259894393698080d69dd368241f55752df2d9"
+    },
+    "source_matrix_patterns": {
+      "path": "ctas/data/source-matrix-patterns.json",
+      "sha256": "474693221ce9418e019e980bf9454ac2c4a7d1d8f92f6aa302e190b33ec44ef2"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "7c128f565cd485021c8bfcd5630cea6624d3d640977ab2da39443018b5e11c89"
+      "sha256": "c7b5053db665e5a58f221813edc221f879a8af0888d61114de771982970eff47"
     }
   },
   "cadence": "about every 2 minutes",
-  "candidate_count": 3170,
-  "catalog_content_checksum_sha256": "83789f9b63760c2cb0af5e4f67de07658a8ef4ccc1da75e46db8deb4cccb6671",
-  "degraded_source_count": 10,
-  "export_checked_at": "2026-08-31T17:01:43Z",
-  "last_successful_update": "2026-08-31T17:01:43Z",
-  "latest_record_update": "2026-08-31T15:55:02.681456Z",
+  "candidate_count": 13962,
+  "catalog_content_checksum_sha256": "7b7e78d3521fb73add7a38284e53e32d12b15a7a64cb9d2aecd1c4b9fc80cab3",
+  "degraded_source_count": 13,
+  "export_checked_at": "2026-09-04T04:00:26Z",
+  "last_successful_update": "2026-09-04T04:00:26Z",
+  "latest_record_update": "2026-09-03T11:10:27.737902Z",
+  "local_store_exceptions": {
+    "failure_count": 34,
+    "failures": [
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 5,
+        "unreadable_event_ids": [
+          "f748054d-85a0-47be-8eef-26f7867d3c2c",
+          "f73d50f6-5a2a-403d-af18-edad686bfc0d",
+          "f69027e9-cd48-4f33-99d2-e41abf9f9d42",
+          "f8b2f6bf-96dd-4540-b6ad-6ee4e663f0db",
+          "f76c88ab-377f-4fda-bcde-feb324d284e2"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 3,
+        "unreadable_event_ids": [
+          "f8d8dc64-a401-4b35-a3e5-9d8864b44724",
+          "f7222243-61d8-4433-82d7-bbab760f109d",
+          "f87a6e72-a7fe-456f-9cdb-0992f078bc2c"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 2,
+        "unreadable_event_ids": [
+          "f724c469-c3fb-44d2-861b-ea1d08e3c5aa",
+          "f750fad5-3b49-4695-b8dc-33dd3cb55567"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 10,
+        "unreadable_event_ids": [
+          "f852a44a-6b63-4102-b30f-80d745e97090",
+          "f86ab250-dc5e-4147-b548-e2c9dfbf6210",
+          "f86eea62-49dc-4d39-864b-caa9524f0f82",
+          "f7cb6599-840f-45d2-975d-cfe895bc6124",
+          "f704a189-0193-441a-aa18-cad7d9bc4cee",
+          "f7b1589a-f6c0-4a51-bf39-28c30ad2feae",
+          "f8a3e2b4-b5eb-4e28-8345-315d80e5a4f7",
+          "f7818f99-1a7a-4025-9219-f11838d459db",
+          "f69dcca4-bdad-42ee-a0b5-a0a7c4908d69",
+          "f6d8264e-c4db-4e74-92a1-82980905fa86"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 2,
+        "unreadable_event_ids": [
+          "f6448447-ae27-46b0-9c4c-494352aed1f5",
+          "f80cb84e-97e5-44ac-99d5-5282ae80eea7"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 3,
+        "unreadable_event_ids": [
+          "f890fc73-7861-4c2b-a385-4dcf5c9178b3",
+          "f6501928-9874-4e31-915a-ed36bf87f286",
+          "f66f8e7b-84ef-4961-892f-f3f38e2f42cf"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 2,
+        "unreadable_event_ids": [
+          "f713a509-0986-4788-b1d8-957d98097fcd",
+          "f66514ea-956a-4aaf-b43f-76e2ad83992f"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 3,
+        "unreadable_event_ids": [
+          "f8aa5d1b-35c0-4d6d-a5a4-ceddb38febd0",
+          "f850ffc3-0436-45f9-87fc-4f9c3235c046",
+          "f681da13-79ac-4d18-9e6e-600cf6859910"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 3,
+        "unreadable_event_ids": [
+          "f679bf8a-d210-46a8-9106-8af0120713b9",
+          "f7d40c4c-ffa1-4ab3-ad2e-3174afcb5d56",
+          "f7241211-f088-44d6-9751-56548883489b"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 4,
+        "unreadable_event_ids": [
+          "f831aecb-f9e6-47d5-90b0-d7f2e3007b76",
+          "f861c67a-2a17-43a3-bcba-6371b9db98e9",
+          "f6e10134-dad3-415a-8a52-da4cdbcf84f4",
+          "f801686b-9fc2-4342-99ab-f703c216d58d"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 7,
+        "unreadable_event_ids": [
+          "f647c9bd-e5c7-4faf-9d45-317ac36a6f17",
+          "f8293db5-ca3a-4e71-93c5-a641965fc091",
+          "f7a5075f-33c9-464b-bbd7-0f8de8c9a967",
+          "f6753228-20dd-43a8-a948-157476c1a675",
+          "f7d9d861-93ba-40a6-9499-046bcfe255a7",
+          "f805ab83-8844-4422-9a0a-52bdf8f456a7",
+          "f64c81dc-8f61-4f2e-b7e9-35c7a475fa19"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 2,
+        "unreadable_event_ids": [
+          "f6fe47bb-8481-42eb-bf1e-e05ab4ffb6e0",
+          "f8cc5a53-2d6a-4ae4-b575-b487b42765bb"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 2,
+        "unreadable_event_ids": [
+          "f772d3cf-00cc-4785-af3c-4a9af14ee10e",
+          "f7b52b39-df1c-4c1a-b591-1bce8a9ac87a"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 5,
+        "unreadable_event_ids": [
+          "f6d792f7-20e0-46c4-a53d-1d7dcb327d1e",
+          "f69ca3e5-b9f0-4c02-be29-a75fe4cf3a02",
+          "f893d8a2-93cf-4550-bf56-6d53bf7c2dcc",
+          "f654d7e9-df9b-4bdc-9403-3c11427b046e",
+          "f7b50ad8-7625-4e0f-be30-5419dc5936d4"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 4,
+        "unreadable_event_ids": [
+          "f8623f89-ea93-432a-9669-3c361382e70f",
+          "f8789827-75f9-4c79-ace1-20f60dde73ac",
+          "f8896e35-1f95-42da-b603-81dee25a1b85",
+          "f7ade5c8-8f6d-47f8-8aa2-a8ad541f4b12"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 5,
+        "unreadable_event_ids": [
+          "f8dc348e-4af9-49e6-942a-e92005af3991",
+          "f67be2a7-843d-4a17-9563-8dcf8d57f856",
+          "f7c3f589-b52f-407f-b694-a31bc8f5bc2e",
+          "f7807cde-09c4-495c-af12-010a693ef023",
+          "f63f9027-634e-4f2c-ae92-e46b963976bf"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 3,
+        "unreadable_event_ids": [
+          "f77676a2-62e7-4087-93ba-c0d67a562d76",
+          "f7aac2c5-76aa-4b61-9b36-52247ace558b",
+          "f6904c21-c88d-4996-95de-2bd7a0305a56"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 3,
+        "unreadable_event_ids": [
+          "f8d3909a-025e-441d-a0c0-0acf9f979d08",
+          "f6bdae45-e2ec-4c57-8bf7-f7e8e9ce34dd",
+          "f8621da8-f20e-4a51-a834-81001e2a5c0d"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 3,
+        "unreadable_event_ids": [
+          "f786692a-8eab-42c1-bcd3-52e686c9d302",
+          "f7a41bed-82d5-475c-bd68-8763f2fa8be1",
+          "f8a51596-df33-4301-aa7a-8942bf3c0197"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 3,
+        "unreadable_event_ids": [
+          "f643d012-5c4b-4c6f-b87c-10030c9d481f",
+          "f85ddca8-16da-4089-879a-157b50542371",
+          "f89cacb0-2d69-4b86-95d6-f1790160ae97"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 4,
+        "unreadable_event_ids": [
+          "f7b82286-10d3-4c2b-8ab2-ea8af2867397",
+          "f6b02f76-4352-4b98-acf6-d7c1f5f47b7f",
+          "f65cd331-c7dc-4dbc-a949-3f154bbb7f4c",
+          "f7a64d90-d187-4f82-815a-b4ab338227bd"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 2,
+        "unreadable_event_ids": [
+          "f76c3ce5-74b3-48ef-af08-01170bacda6d",
+          "f6a65cfd-de8c-40f3-8353-99c8c2f503e6"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 2,
+        "unreadable_event_ids": [
+          "f6d694d3-a50b-4f0e-a2de-49e407a927c5",
+          "f773d8bf-4283-477b-ba27-a500acafaa45"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 5,
+        "unreadable_event_ids": [
+          "f80ce626-7462-4511-8fcf-d819c2773095",
+          "f7867592-f5ba-4185-bc0d-9be3116c2195",
+          "f6a05ef3-7d11-4de3-b37b-3b5a63afacaf",
+          "f7916efe-f0fd-4860-8a0d-f521e3725c2f",
+          "f6566982-404d-417c-8a25-33ba7fe9bcce"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 3,
+        "unreadable_event_ids": [
+          "f84c60cd-961c-4e95-b768-8400dded04b6",
+          "f771dcd0-1c0a-419a-a5d4-c2c52fa8ee89",
+          "f688eed3-16e6-4870-8fe8-390ffb5a2324"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 4,
+        "unreadable_event_ids": [
+          "f824bc77-5740-48a7-b3c7-6057e8e841ce",
+          "f8b4bf1b-6b16-47b7-b15f-be2c046b5cb4",
+          "f78476d2-84b7-40ab-a241-1eb8bd26b8ba",
+          "f6828b13-9636-466b-96c9-00c364250cdf"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 5,
+        "unreadable_event_ids": [
+          "f839ff9e-7c7c-4290-bd68-64ec0c28d1cb",
+          "f63ba944-a5af-4cf9-8774-0e1e4e9d222f",
+          "f8b34d6a-b9b4-4655-bbf4-966b05363b2a",
+          "f738c4df-a9c2-4534-9e45-8ea6922da0fe",
+          "f8b83394-8e86-4192-9988-fdef556e801d"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 8,
+        "unreadable_event_ids": [
+          "f871638e-149a-4333-a055-e674c7d2acb5",
+          "f6fb5a23-f387-4b4d-91dc-6c6d4ddbb040",
+          "f693ead1-8665-497b-b803-2d0a310eec45",
+          "f641faac-767f-447a-883a-25899af0f841",
+          "f7d3a203-b478-419a-ae20-38e17d1ebe96",
+          "f68494b6-6c14-42d5-b211-9f227f2fd851",
+          "f7673e55-6676-4fd1-8430-c9e50b638b3e",
+          "f8518aa8-c5e6-41c5-b943-6bcfd2e9cd36"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 1,
+        "unreadable_event_ids": [
+          "f755ccf7-e7ad-44ad-8776-3548b692f19d"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 4,
+        "unreadable_event_ids": [
+          "f7c69f87-4b28-4a98-829a-915a4bc64e2d",
+          "f6a2e497-44ce-457c-b8f3-701c669bae9b",
+          "f845bcec-2b9f-4dd1-bb23-68f629c7aa19",
+          "f65291a9-7d44-4a18-9ec7-8ad29835f2f6"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 4,
+        "unreadable_event_ids": [
+          "f899b706-d119-4be7-924c-88fbe3d0b5fe",
+          "f8abd49f-681a-4283-a7c6-6e19303677d3",
+          "f88442bb-b360-4fc1-837b-3b2807eec8bf",
+          "f68dfbf3-3ed2-4845-992c-b44828a29420"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 2,
+        "unreadable_event_ids": [
+          "f6db3fe4-3324-4bd6-ac59-a22faef3a740",
+          "f6912840-f3c7-41a9-a6ef-4b97b988b73d"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 2,
+        "unreadable_event_ids": [
+          "f7fbcfe5-fb08-4508-ab14-e089db27922c",
+          "f7003de0-12ef-4cd1-bd07-ba8c49089149"
+        ]
+      },
+      {
+        "error": "database disk image is malformed",
+        "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
+        "unreadable_event_count": 1,
+        "unreadable_event_ids": [
+          "f7dd0e13-3695-4b7a-9a1d-387d74f7f41d"
+        ]
+      }
+    ],
+    "statement": "Rows the local store could not return for this release. These records are published with the evidence CTAS could read; the unreadable rows are declared here rather than presented as an absence of evidence.",
+    "unreadable_event_count": 121
+  },
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "b44bfbbd121856f79f7be0836b6b96db884064498f1a8069156be1da230fe705",
+  "publication_state_checksum_sha256": "b485ffe1e5f757c162b2f153a9c903695027ec82a29b3da0de610bd229814121",
   "schema_version": 2,
   "source_accounting": {
-    "applicableSourceEvaluations": 171255,
-    "dataBearingSourceEvaluations": 4484,
-    "declaredSources": 82,
-    "executedQueryReceipts": 31748,
+    "applicableSourceEvaluations": 1445542,
+    "dataBearingSourceEvaluations": 15520,
+    "declaredSources": 131,
+    "executedQueryReceipts": 36580,
     "outcomeCounts": {
-      "AMBIGUOUS": 121,
-      "DATA_RETURNED": 971,
-      "LINK_ONLY_NOT_QUERIED": 77236,
-      "NOT_CONFIGURED": 41066,
-      "NOT_QUERIED": 47482,
-      "PARTIAL_RESULT": 5,
-      "QUERY_BLOCKED": 483,
-      "QUERY_FAILED": 491,
-      "SEARCHED_NO_MATCH": 3400
+      "AMBIGUOUS": 133,
+      "DATA_RETURNED": 1171,
+      "LINK_ONLY_NOT_QUERIED": 1038360,
+      "NOT_CONFIGURED": 181151,
+      "NOT_QUERIED": 219493,
+      "PARTIAL_RESULT": 8,
+      "QUERY_BLOCKED": 587,
+      "QUERY_FAILED": 567,
+      "SEARCHED_NO_MATCH": 4072
     }
   },
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "contract_set_checksum_sha256": "f77571771cae76c37c59ababaee6148fcff73b55d654b3a049413f380b25e28c",
+    "contract_set_checksum_sha256": "0839b21e5661df61ca6dbf62c0ccd5d5227f1eba27a59916faf1e5de4e1fd2d9",
     "schema": "ctas.public-source-universe@1.0.0",
-    "source_count": 82
+    "source_count": 131
   },
   "sources": [
     {
@@ -269,7 +639,7 @@
       "public_scope": "ATLAS explicitly provides full public access to forced photometry after registration",
       "rate_or_cadence_limit": "Provider throttling; no bulk requests without contacting ATLAS",
       "record_counts": {
-        "observations": 9350
+        "observations": 11587
       },
       "source": "atlas",
       "state": "disabled"
@@ -445,13 +815,13 @@
         "LAT offline detection",
         "LAT monitored-source flare"
       ],
-      "detail": "via NASA GCN: gcn.classic.text.FERMI_GBM_FIN_POS",
+      "detail": "via NASA GCN: gcn.classic.text.FERMI_GBM_FLT_POS",
       "documentation_url": "https://gcn.nasa.gov/missions/fermi",
       "enabled": true,
       "facility": "NASA Fermi / GBM / LAT / NASA GCN",
       "label": "Fermi GBM and LAT Public Notices",
-      "lag_seconds": 0.226949,
-      "last_message_at": "2026-08-31T04:16:09Z",
+      "lag_seconds": 3504.235579,
+      "last_message_at": "2026-09-03T10:12:03Z",
       "last_verified": "2026-08-04",
       "mode": "live",
       "proprietary_risk": "Internal, team-only initial/diagnostic, pointing, and test topics are excluded; a high-energy trigger or localization is not an optical counterpart or a confirmed GRB classification",
@@ -475,7 +845,7 @@
         "upper limit",
         "science/template/difference cutout"
       ],
-      "detail": "anonymous real-time Rubin/Fink REST polling active \u00b7 0 unique public alerts in bounded lookback",
+      "detail": "OperationalError: (sqlite3.OperationalError) disk I/O error\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "enabled": true,
       "facility": "Rubin community broker",
@@ -489,10 +859,10 @@
       "public_scope": "Rubin alerts are world-public, and Fink documents its LSST portal/API as real-time with no login",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
       "record_counts": {
-        "observations": 3310
+        "observations": 14204
       },
       "source": "rubin-fink",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "implemented-public-positional-candidates-on-demand",
@@ -530,13 +900,13 @@
         "upper limit",
         "external coincidence"
       ],
-      "detail": "via NASA GCN: gcn.notices.maxi.gsc.known",
+      "detail": "NASA GCN subscriptions active: gcn.notices.swift.bat.guano, gcn.notices.einstein_probe.wxt.alert, gcn.notices.maxi.gsc.known, gcn.notices.maxi.gsc.unknown, gcn.notices.boom.alert, gcn.notices.chime.frb",
       "documentation_url": "https://gcn.nasa.gov/notices",
       "enabled": true,
       "facility": "NASA GCN participating missions",
       "label": "GCN Unified Mission Notices",
-      "lag_seconds": 0.299412,
-      "last_message_at": "2026-08-31T09:25:02Z",
+      "lag_seconds": 1.938,
+      "last_message_at": "2026-09-01T01:57:02Z",
       "last_verified": "2026-08-03",
       "mode": "live-and-follow-up",
       "proprietary_risk": "Mission archives can contain proprietary follow-up; this entry covers only public GCN products",
@@ -596,7 +966,7 @@
       "public_scope": "Exact allowlist to the public Gaia DR3 source catalog I/355/gaiadr3 served by ESA's official CDS partner",
       "rate_or_cadence_limit": "One bounded 3-arcsec target cone per explicit request; 21-row overflow sentinel",
       "record_counts": {
-        "catalog_counterparts": 76
+        "catalog_counterparts": 80
       },
       "source": "gaia-dr3",
       "state": "disabled"
@@ -709,7 +1079,7 @@
         "classification",
         "public-object metadata"
       ],
-      "detail": "processed 0 public rows \u00b7 2026-08-31 15:00:00 - 16:00:00",
+      "detail": "OperationalError: (sqlite3.OperationalError) disk I/O error\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
       "documentation_url": "https://www.wis-tns.org/content/tns-getting-started",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
@@ -723,11 +1093,11 @@
       "public_scope": "Hourly delta files explicitly contain public objects",
       "rate_or_cadence_limit": "Provider quota; connector defaults to one persistent five-minute poll loop",
       "record_counts": {
-        "classifications": 222,
-        "designations": 2517
+        "classifications": 5047,
+        "designations": 13335
       },
       "source": "tns",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "generic-import-supported",
@@ -767,7 +1137,7 @@
         "energy, signalness, and false-alarm rate",
         "update or retraction"
       ],
-      "detail": "NASA GCN subscriptions active: gcn.classic.text.ICECUBE_CASCADE",
+      "detail": "NASA GCN connector degraded",
       "documentation_url": "https://gcn.nasa.gov/missions/icecube",
       "enabled": true,
       "facility": "IceCube Collaboration / AMON / NASA GCN",
@@ -782,7 +1152,7 @@
       "rate_or_cadence_limit": "Persistent Kafka consumer for new notices; mission documentation describes about 0.5 to 1 minute nominal latency and roughly eight alerts per year",
       "record_counts": {},
       "source": "icecube-cascade-gcn",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "implemented-public-schema-aware-live-history-populated",
@@ -794,7 +1164,7 @@
         "energy, p_astro, and false-alarm rate",
         "LVK coincidence follow-up"
       ],
-      "detail": "NASA GCN subscriptions active: gcn.notices.icecube.gold_bronze_track_alerts, gcn.notices.icecube.lvk_nu_track_search, gcn.classic.text.ICECUBE_CASCADE",
+      "detail": "NASA GCN connector degraded",
       "documentation_url": "https://gcn.nasa.gov/missions/icecube",
       "enabled": true,
       "facility": "IceCube Collaboration / NSF / AMON",
@@ -809,7 +1179,7 @@
       "rate_or_cadence_limit": "Long-running JSON consumer; bounded retained-tail replay; bounded public Circular identity search plus exact Classic file retrieval",
       "record_counts": {},
       "source": "icecube-gcn",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "implemented-public-classic-parser-live",
@@ -821,7 +1191,7 @@
         "provider-hosted lightcurve reference",
         "source-reported temporal coincidence flag"
       ],
-      "detail": "via NASA GCN: gcn.classic.text.KONUS_LC",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.KONUS_LC",
       "documentation_url": "https://gcn.nasa.gov/missions/konus",
       "enabled": true,
       "facility": "Ioffe Institute / NASA Wind / IPN / NASA GCN",
@@ -847,13 +1217,13 @@
         "classification",
         "retraction"
       ],
-      "detail": "via NASA GCN: igwn.gwalert",
+      "detail": "NASA GCN connector degraded",
       "documentation_url": "https://gcn.nasa.gov/missions/lvk",
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
       "label": "LIGO/Virgo/KAGRA Public Alerts",
-      "lag_seconds": 1970.334448,
-      "last_message_at": "2026-08-31T16:13:35Z",
+      "lag_seconds": 1552.188926,
+      "last_message_at": "2026-09-03T11:28:56Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
@@ -862,7 +1232,7 @@
       "rate_or_cadence_limit": "Long-running Kafka consumer; provider-defined archive limits",
       "record_counts": {},
       "source": "lvk-public-alerts",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "implemented-public-targeted-token-required",
@@ -887,7 +1257,7 @@
       "public_scope": "Public ZTF broker object/light-curve output accessed through the user's account",
       "rate_or_cadence_limit": "One exact retained ZTF alias per target refresh; provider documents 100 calls/hour for a standard user token",
       "record_counts": {
-        "observations": 837
+        "observations": 1370
       },
       "source": "rubin-lasair",
       "state": "disabled"
@@ -939,8 +1309,8 @@
       "public_scope": "Public bibliographic metadata returned by the ADS API",
       "rate_or_cadence_limit": "One exact-name query per watched-target refresh; at most 25 metadata records",
       "record_counts": {
-        "publication_revisions": 57,
-        "publications": 57
+        "publication_revisions": 58,
+        "publications": 58
       },
       "source": "ads",
       "state": "disabled"
@@ -955,13 +1325,13 @@
         "upper limit",
         "observing plan"
       ],
-      "detail": "via NASA GCN: gcn.circulars",
+      "detail": "NASA GCN subscriptions active: gcn.circulars",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA GCN worldwide author community",
       "label": "NASA GCN Circulars",
-      "lag_seconds": 2345.700949,
-      "last_message_at": "2026-08-31T16:07:18.680000Z",
+      "lag_seconds": 147.452945,
+      "last_message_at": "2026-09-02T13:58:08.446000Z",
       "last_verified": "2026-08-04",
       "mode": "live-and-archive",
       "proprietary_risk": "Circular prose is retained as an attributed author report; values are not promoted to machine measurements without a mission-specific parser",
@@ -969,8 +1339,8 @@
       "public_scope": "Released GCN Circular author text, metadata, corrections, and provider-hosted links are publicly distributed",
       "rate_or_cadence_limit": "Persistent Kafka consumer; revisions are checksum-addressed and linked URLs are not bulk-downloaded",
       "record_counts": {
-        "publication_revisions": 1447,
-        "publications": 702
+        "publication_revisions": 1468,
+        "publications": 722
       },
       "source": "gcn-circulars",
       "state": "connected"
@@ -984,13 +1354,13 @@
         "follow-up report",
         "retraction"
       ],
-      "detail": "igwn.gwalert",
+      "detail": "OperationalError: (sqlite3.OperationalError) disk I/O error\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 1970.334448,
-      "last_message_at": "2026-08-31T16:13:35Z",
+      "lag_seconds": 1552.188926,
+      "last_message_at": "2026-09-03T11:28:56Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -999,12 +1369,12 @@
       "rate_or_cadence_limit": "Long-running consumer required; no cron-style reconnect polling",
       "record_counts": {
         "classification_history": 305,
-        "classifications": 885,
-        "messenger_signals": 944,
-        "observations": 704
+        "classifications": 894,
+        "messenger_signals": 955,
+        "observations": 712
       },
       "source": "gcn",
-      "state": "connected"
+      "state": "degraded"
     },
     {
       "adapter_status": "implemented-public-on-demand",
@@ -1058,7 +1428,7 @@
       "public_scope": "Allowlisted public AllWISE Source Catalog and 2MASS Point Source Catalog rows",
       "rate_or_cadence_limit": "Two sequential target cone queries, 3 arcsec default radius, 21-row overflow sentinel per catalog",
       "record_counts": {
-        "catalog_counterparts": 127
+        "catalog_counterparts": 151
       },
       "source": "irsa",
       "state": "disabled"
@@ -1188,7 +1558,7 @@
       "public_scope": "SIMBAD documents free access without registration under ODbL with acknowledgment and original-reference citation",
       "rate_or_cadence_limit": "One bounded 30-arcsec target cone per explicit request; 51-row overflow sentinel",
       "record_counts": {
-        "catalog_counterparts": 177
+        "catalog_counterparts": 210
       },
       "source": "simbad",
       "state": "disabled"
@@ -1261,8 +1631,8 @@
       "enabled": true,
       "facility": "SNEWS detector network / NASA GCN",
       "label": "SuperNova Early Warning System",
-      "lag_seconds": 0.70144,
-      "last_message_at": "2026-08-25T16:00:06Z",
+      "lag_seconds": 0.50479,
+      "last_message_at": "2026-09-01T16:00:05Z",
       "last_verified": "2026-08-04",
       "mode": "live",
       "proprietary_risk": "Weekly TEST notices are validated as transport health but never admitted as astrophysical events; collaboration-internal detector products remain outside scope",
@@ -1309,13 +1679,13 @@
         "classification",
         "follow-up photometry table"
       ],
-      "detail": "Checked 9 released public records before the provider rate limit; retained public data remain available.",
+      "detail": "OperationalError: (sqlite3.OperationalError) disk I/O error\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
       "documentation_url": "https://www.wis-tns.org/astronotes",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
       "label": "TNS AstroNotes",
-      "lag_seconds": 60823.743552,
-      "last_message_at": "2026-08-30T23:53:01Z",
+      "lag_seconds": 47603.11492,
+      "last_message_at": "2026-09-02T21:57:12Z",
       "last_verified": "2026-08-10",
       "mode": "poll",
       "proprietary_risk": "Draft, private, ambiguous, authenticated-only, non-text, or unsupported table material is refused; only source-linked bounded public photometry text is parsed",
@@ -1324,8 +1694,8 @@
       "rate_or_cadence_limit": "Bounded latest-page poll every 30 minutes",
       "record_counts": {
         "observations": 48,
-        "publication_revisions": 274,
-        "publications": 179
+        "publication_revisions": 298,
+        "publications": 191
       },
       "source": "tns-astronotes",
       "state": "degraded"
@@ -1353,7 +1723,7 @@
       "public_scope": "Only objects explicitly marked public=1 and spectrum rows explicitly marked public=1",
       "rate_or_cadence_limit": "Provider quota; one bounded exact-object query and at most ten public ASCII preview downloads per explicit target enrichment",
       "record_counts": {
-        "classifications": 14,
+        "classifications": 15,
         "spectra": 16
       },
       "source": "tns-public-reports",
@@ -1438,100 +1808,124 @@
     }
   ],
   "static_snapshot_verification": {
-    "check_count": 36,
-    "content_release_id": "29029ad28c5e31afdec5a4229af4ac0006725d5729def4903fa9e6c4fa329f54",
+    "check_count": 41,
+    "content_release_id": "220209cb1569cc6b0c3bbcc3036f3da9c3e7e784db7bf044553a4fbf58a3a344",
     "failed_gate_ids": [],
-    "passed_check_count": 36,
-    "report_checksum_sha256": "5a80031a4711312464504da172f06b796f15d4cf6a6ef3aefca7513c936a748e",
+    "passed_check_count": 41,
+    "report_checksum_sha256": "8eba9367bb4392e8732cf326288b5717f65b6db0955bfe3f5c2c40ba10986de3",
     "schema": "ctas.static-snapshot-verification@1.1.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-08-31T17:31:43Z"
+    "valid_until": "2026-09-04T04:30:26Z"
   },
   "statistics": {
     "archive_products": 0,
-    "candidates_with_follow_up": 1224,
-    "catalog_counterparts": 1615,
+    "candidates_with_follow_up": 6049,
+    "catalog_counterparts": 1882,
     "classification_history": 305,
-    "classifications": 1121,
+    "classifications": 5956,
     "event_types": {
-      "fast-radio-burst": 63,
+      "fast-radio-burst": 70,
       "gamma-ray-burst-candidate": 32,
-      "gamma-ray-transient": 91,
+      "gamma-ray-transient": 94,
       "high-energy-count-rate-trigger": 17,
       "high-energy-neutrino": 1,
       "high-energy-neutrino-cascade": 45,
       "high-energy-neutrino-track": 175,
       "high-energy-trigger": 74,
       "neutrino-gamma-coincidence-candidate": 28,
-      "optical-transient": 2589,
+      "optical-transient": 13367,
       "solar-flare": 1,
-      "terrestrial-gamma-ray-flash": 16,
-      "x-ray-transient": 38
+      "terrestrial-gamma-ray-flash": 17,
+      "x-ray-transient": 41
     },
     "host_context": 15,
     "magnitude_values_excluded": 4,
-    "messenger_signals": 944,
+    "messenger_signals": 955,
     "messengers": {
-      "electromagnetic": 2589,
-      "gamma-ray": 231,
+      "electromagnetic": 13367,
+      "gamma-ray": 235,
       "multimessenger": 28,
       "neutrino": 221,
-      "radio": 63,
-      "x-ray": 38
+      "radio": 70,
+      "x-ray": 41
     },
-    "observations": 14249,
+    "observations": 27921,
     "priority_bands": {
-      "high_50_74": 2609,
-      "low_0_24": 23,
-      "routine_25_49": 347,
-      "urgent_75_100": 191
+      "high_50_74": 2345,
+      "low_0_24": 41,
+      "routine_25_49": 11576,
+      "urgent_75_100": 0
     },
-    "public_candidates": 3170,
-    "publications": 938,
+    "public_candidates": 13962,
+    "publications": 971,
     "quality_quarantined_records": 1,
-    "real_events": 3172,
+    "real_events": 13964,
     "source_accounting": {
-      "applicableSourceEvaluations": 171255,
-      "dataBearingSourceEvaluations": 4484,
-      "declaredSources": 82,
-      "executedQueryReceipts": 31748,
+      "applicableSourceEvaluations": 1445542,
+      "dataBearingSourceEvaluations": 15520,
+      "declaredSources": 131,
+      "executedQueryReceipts": 36580,
       "outcomeCounts": {
-        "AMBIGUOUS": 121,
-        "DATA_RETURNED": 971,
-        "LINK_ONLY_NOT_QUERIED": 77236,
-        "NOT_CONFIGURED": 41066,
-        "NOT_QUERIED": 47482,
-        "PARTIAL_RESULT": 5,
-        "QUERY_BLOCKED": 483,
-        "QUERY_FAILED": 491,
-        "SEARCHED_NO_MATCH": 3400
+        "AMBIGUOUS": 133,
+        "DATA_RETURNED": 1171,
+        "LINK_ONLY_NOT_QUERIED": 1038360,
+        "NOT_CONFIGURED": 181151,
+        "NOT_QUERIED": 219493,
+        "PARTIAL_RESULT": 8,
+        "QUERY_BLOCKED": 587,
+        "QUERY_FAILED": 567,
+        "SEARCHED_NO_MATCH": 4072
       }
     },
     "spectra": 20
   },
   "surveys": [
     {
-      "candidate_count": 582,
-      "survey": "Pan-STARRS"
-    },
-    {
-      "candidate_count": 544,
-      "survey": "WFST"
-    },
-    {
-      "candidate_count": 486,
+      "candidate_count": 3247,
       "survey": "ZTF"
     },
     {
-      "candidate_count": 294,
-      "survey": "GOTO"
-    },
-    {
-      "candidate_count": 250,
+      "candidate_count": 2617,
       "survey": "ATLAS"
     },
     {
-      "candidate_count": 110,
+      "candidate_count": 1718,
+      "survey": "Pan-STARRS"
+    },
+    {
+      "candidate_count": 1247,
+      "survey": "ALeRCE"
+    },
+    {
+      "candidate_count": 886,
+      "survey": "GaiaAlerts"
+    },
+    {
+      "candidate_count": 730,
+      "survey": "GOTO"
+    },
+    {
+      "candidate_count": 652,
+      "survey": "WFST"
+    },
+    {
+      "candidate_count": 508,
+      "survey": "ASAS-SN"
+    },
+    {
+      "candidate_count": 139,
+      "survey": "YSE"
+    },
+    {
+      "candidate_count": 124,
+      "survey": "iPTF"
+    },
+    {
+      "candidate_count": 122,
+      "survey": "LAST"
+    },
+    {
+      "candidate_count": 111,
       "survey": "Fermi"
     },
     {
@@ -1539,36 +1933,88 @@
       "survey": "IceCube Bronze Track Alert"
     },
     {
+      "candidate_count": 95,
+      "survey": "SNHunt"
+    },
+    {
+      "candidate_count": 80,
+      "survey": "XOSS"
+    },
+    {
+      "candidate_count": 75,
+      "survey": "SGLF"
+    },
+    {
+      "candidate_count": 70,
+      "survey": "AMPEL"
+    },
+    {
+      "candidate_count": 69,
+      "survey": "Chime"
+    },
+    {
       "candidate_count": 66,
       "survey": "TSST_COSMOS_3D"
     },
     {
-      "candidate_count": 62,
-      "survey": "Chime"
+      "candidate_count": 61,
+      "survey": "MASTER"
+    },
+    {
+      "candidate_count": 60,
+      "survey": "BlackGEM"
     },
     {
       "candidate_count": 57,
       "survey": "IceCube Gold Track Alert"
     },
     {
-      "candidate_count": 48,
-      "survey": "ALeRCE"
-    },
-    {
-      "candidate_count": 46,
-      "survey": "LAST"
+      "candidate_count": 52,
+      "survey": "POSS"
     },
     {
       "candidate_count": 45,
       "survey": "IceCube HESE Cascade / AMON"
     },
     {
+      "candidate_count": 35,
+      "survey": "TNTS"
+    },
+    {
+      "candidate_count": 32,
+      "survey": "DLT40"
+    },
+    {
+      "candidate_count": 31,
+      "survey": "ISSP"
+    },
+    {
       "candidate_count": 28,
       "survey": "AMON IceCube-HAWC"
     },
     {
-      "candidate_count": 21,
-      "survey": "YSE"
+      "candidate_count": 28,
+      "survey": "PTSS"
+    },
+    {
+      "candidate_count": 27,
+      "survey": "GSNST"
+    },
+    {
+      "candidate_count": 20,
+      "survey": "BOSS"
+    },
+    {
+      "candidate_count": 20,
+      "survey": "LOSS"
+    },
+    {
+      "candidate_count": 19,
+      "survey": "DESIRT"
+    },
+    {
+      "candidate_count": 18,
+      "survey": "PALEO"
     },
     {
       "candidate_count": 17,
@@ -1587,8 +2033,20 @@
       "survey": "Einstein Probe"
     },
     {
-      "candidate_count": 9,
-      "survey": "XOSS"
+      "candidate_count": 10,
+      "survey": "SUNBIRD"
+    },
+    {
+      "candidate_count": 10,
+      "survey": "Shadow"
+    },
+    {
+      "candidate_count": 8,
+      "survey": "OGLE"
+    },
+    {
+      "candidate_count": 8,
+      "survey": "PSH"
     },
     {
       "candidate_count": 7,
@@ -1596,31 +2054,43 @@
     },
     {
       "candidate_count": 7,
-      "survey": "MASTER"
+      "survey": "SkyMapper"
+    },
+    {
+      "candidate_count": 6,
+      "survey": "GW-MMADS"
     },
     {
       "candidate_count": 6,
       "survey": "JADES"
     },
     {
-      "candidate_count": 4,
+      "candidate_count": 5,
+      "survey": "ANTARES"
+    },
+    {
+      "candidate_count": 5,
       "survey": "MAXI"
     },
     {
-      "candidate_count": 3,
+      "candidate_count": 4,
       "survey": "DCAP"
     },
     {
+      "candidate_count": 4,
+      "survey": "Padova-Asiago"
+    },
+    {
       "candidate_count": 3,
-      "survey": "SGLF"
+      "survey": "RANSSP"
+    },
+    {
+      "candidate_count": 3,
+      "survey": "RTSG"
     },
     {
       "candidate_count": 2,
-      "survey": "BlackGEM"
-    },
-    {
-      "candidate_count": 2,
-      "survey": "DESIRT"
+      "survey": "DECam-GROWTH"
     },
     {
       "candidate_count": 2,
@@ -1628,11 +2098,31 @@
     },
     {
       "candidate_count": 2,
-      "survey": "SNHunt"
+      "survey": "LSQ"
+    },
+    {
+      "candidate_count": 2,
+      "survey": "Moonbase search SN South"
+    },
+    {
+      "candidate_count": 2,
+      "survey": "NUTS2"
+    },
+    {
+      "candidate_count": 2,
+      "survey": "SZCYS"
+    },
+    {
+      "candidate_count": 2,
+      "survey": "TAROT"
+    },
+    {
+      "candidate_count": 2,
+      "survey": "Tomo-e Gozen"
     },
     {
       "candidate_count": 1,
-      "survey": "ASAS-SN"
+      "survey": "ASO"
     },
     {
       "candidate_count": 1,
@@ -1640,16 +2130,92 @@
     },
     {
       "candidate_count": 1,
+      "survey": "CSNS"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "EHSSP"
+    },
+    {
+      "candidate_count": 1,
       "survey": "F. D. Romanov"
     },
     {
       "candidate_count": 1,
-      "survey": "ISSP"
+      "survey": "Fink"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "GIT"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "GLO"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "Gattini"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "HETH"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "IMSNG"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "J-VAR"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "JIST"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "MeerLICHT"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "PESSTO"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "PIKA"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "SAGUARO"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "SKYS"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "SNAD"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "STSP"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "Swope SN Survey"
     },
     {
       "candidate_count": 1,
       "survey": "TESSELLATE"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "TMTS"
+    },
+    {
+      "candidate_count": 1,
+      "survey": "ePESSTO"
     }
   ],
-  "valid_until": "2026-08-31T17:31:43Z"
+  "valid_until": "2026-09-04T04:30:26Z"
 }
