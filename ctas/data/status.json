@@ -2,52 +2,52 @@
   "artifacts": {
     "alias_index": {
       "path": "ctas/data/alias-index.json",
-      "sha256": "70730280f59abe4e511dc42f41ba2f310a4a91ba036b0d288e3d14ce13d6effa"
+      "sha256": "3793829e4d3e5af3b4be96c459a10ed89be3f36a4ff3eb7c78f5931102b4cbd2"
     },
     "catalog_bootstrap": {
       "path": "ctas/data/catalog-bootstrap.json",
-      "sha256": "d34c6220a5a64cc7c5025b3e60447500514203b32334a10750679defcf3fe2be"
+      "sha256": "d029578efc9b38b96607ef8eabdf593c0ce83d0e5072a52f1154bcc66ff4f4d0"
     },
     "catalog_index": {
       "path": "ctas/data/catalog-index.json",
-      "sha256": "d34c6220a5a64cc7c5025b3e60447500514203b32334a10750679defcf3fe2be"
+      "sha256": "d029578efc9b38b96607ef8eabdf593c0ce83d0e5072a52f1154bcc66ff4f4d0"
     },
     "certification": {
       "path": "ctas/data/certification.json",
-      "report_checksum_sha256": "71c208e0caf4847625b7dfafb2d3ddf4108f06dc4bf740e96ae7538a15f44c28"
+      "report_checksum_sha256": "617e85ef3b88d7abb8d17f757a21a6723bebd6c6d8a69fdabafb547c971bc841"
     },
     "complete_catalog_manifest": {
       "path": "ctas/data/candidate-chunks/manifest.json",
-      "sha256": "7781c71c14029c102a4f1d09d145a7360feb5466eb40147cc0afba6a4093f9df"
+      "sha256": "a8053b890397b76166985cd50ddd0122aa32e39dbbbba7d6aa56b5f3b9149d30"
     },
     "link_health": {
       "path": "ctas/data/link-health.json",
-      "sha256": "0f3d800eb288e777f2e4b4d5441b4c576ea34ddaa37d31476c495f929870ee8b"
+      "sha256": "2d1ff41d19017565dfd8ad92fd94aa77b1da61ea4ad1b330e6af0bb9ecefe9ae"
     },
     "release_history": {
       "path": "ctas/data/release-history.json",
-      "sha256": "d8a17ebe9621f6a0ac01c86413a08511d20a3ce5b17e0209a6d47b9647a240c6"
+      "sha256": "c4891fb537ff6c5435b3f0adb6e291980036d051a8d7582c1838eaf3e31816e1"
     },
     "research_tables": {
       "path": "ctas/data/research/manifest.json",
-      "sha256": "c8d1a6100c6fa437b5e21779c66b09c9873d0767da2291d518dfb986ddc5ff53"
+      "sha256": "1cc52f58021e253da3bb55a5e1a619305108d4ea1bf3d659d7671d162816f58f"
     },
     "source_matrix_patterns": {
       "path": "ctas/data/source-matrix-patterns.json",
-      "sha256": "70dcd6acd94648da43572414b1300bcc20885454da0ee41eb81ccc9db02f34ca"
+      "sha256": "c3632da2a5501471144cfdc391c3c5847dcc6e5e525ee58747b7a4615207ccd4"
     },
     "source_universe": {
       "path": "ctas/data/source-universe.json",
-      "sha256": "3ba88d105d72c51533f625a0b75788c834dc411145263f3405376ef0abd5beee"
+      "sha256": "fd9efedf64280023dc5d1d77b040e9e9bab713990ae7a2de593cd43ee9fd18f0"
     }
   },
   "cadence": "about every 2 minutes",
-  "candidate_count": 13962,
-  "catalog_content_checksum_sha256": "7b7e78d3521fb73add7a38284e53e32d12b15a7a64cb9d2aecd1c4b9fc80cab3",
-  "degraded_source_count": 13,
-  "export_checked_at": "2026-09-04T04:23:26Z",
-  "last_successful_update": "2026-09-04T04:23:26Z",
-  "latest_record_update": "2026-09-03T11:10:27.737902Z",
+  "candidate_count": 13979,
+  "catalog_content_checksum_sha256": "f4ecfca2bbfdcc5ad4a64ad3081b0e0424b09d9ed4f62ad3f4c0d0ef18754ad7",
+  "degraded_source_count": 7,
+  "export_checked_at": "2026-09-04T12:18:10Z",
+  "last_successful_update": "2026-09-04T12:18:10Z",
+  "latest_record_update": "2026-09-04T12:00:08.199598Z",
   "local_store_exceptions": {
     "failure_count": 34,
     "failures": [
@@ -161,22 +161,22 @@
       {
         "error": "database disk image is malformed",
         "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
-        "unreadable_event_count": 7,
+        "unreadable_event_count": 6,
         "unreadable_event_ids": [
           "f647c9bd-e5c7-4faf-9d45-317ac36a6f17",
           "f8293db5-ca3a-4e71-93c5-a641965fc091",
           "f7a5075f-33c9-464b-bbd7-0f8de8c9a967",
           "f6753228-20dd-43a8-a948-157476c1a675",
           "f7d9d861-93ba-40a6-9499-046bcfe255a7",
-          "f805ab83-8844-4422-9a0a-52bdf8f456a7",
-          "f64c81dc-8f61-4f2e-b7e9-35c7a475fa19"
+          "f805ab83-8844-4422-9a0a-52bdf8f456a7"
         ]
       },
       {
         "error": "database disk image is malformed",
         "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
-        "unreadable_event_count": 2,
+        "unreadable_event_count": 3,
         "unreadable_event_ids": [
+          "f64c81dc-8f61-4f2e-b7e9-35c7a475fa19",
           "f6fe47bb-8481-42eb-bf1e-e05ab4ffb6e0",
           "f8cc5a53-2d6a-4ae4-b575-b487b42765bb"
         ]
@@ -238,11 +238,10 @@
       {
         "error": "database disk image is malformed",
         "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
-        "unreadable_event_count": 3,
+        "unreadable_event_count": 2,
         "unreadable_event_ids": [
           "f8d3909a-025e-441d-a0c0-0acf9f979d08",
-          "f6bdae45-e2ec-4c57-8bf7-f7e8e9ce34dd",
-          "f8621da8-f20e-4a51-a834-81001e2a5c0d"
+          "f6bdae45-e2ec-4c57-8bf7-f7e8e9ce34dd"
         ]
       },
       {
@@ -250,16 +249,17 @@
         "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
         "unreadable_event_count": 3,
         "unreadable_event_ids": [
+          "f8621da8-f20e-4a51-a834-81001e2a5c0d",
           "f786692a-8eab-42c1-bcd3-52e686c9d302",
-          "f7a41bed-82d5-475c-bd68-8763f2fa8be1",
-          "f8a51596-df33-4301-aa7a-8942bf3c0197"
+          "f7a41bed-82d5-475c-bd68-8763f2fa8be1"
         ]
       },
       {
         "error": "database disk image is malformed",
         "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
-        "unreadable_event_count": 3,
+        "unreadable_event_count": 4,
         "unreadable_event_ids": [
+          "f8a51596-df33-4301-aa7a-8942bf3c0197",
           "f643d012-5c4b-4c6f-b87c-10030c9d481f",
           "f85ddca8-16da-4089-879a-157b50542371",
           "f89cacb0-2d69-4b86-95d6-f1790160ae97"
@@ -288,17 +288,17 @@
       {
         "error": "database disk image is malformed",
         "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
-        "unreadable_event_count": 2,
+        "unreadable_event_count": 1,
         "unreadable_event_ids": [
-          "f6d694d3-a50b-4f0e-a2de-49e407a927c5",
-          "f773d8bf-4283-477b-ba27-a500acafaa45"
+          "f6d694d3-a50b-4f0e-a2de-49e407a927c5"
         ]
       },
       {
         "error": "database disk image is malformed",
         "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
-        "unreadable_event_count": 5,
+        "unreadable_event_count": 6,
         "unreadable_event_ids": [
+          "f773d8bf-4283-477b-ba27-a500acafaa45",
           "f80ce626-7462-4511-8fcf-d819c2773095",
           "f7867592-f5ba-4185-bc0d-9be3116c2195",
           "f6a05ef3-7d11-4de3-b37b-3b5a63afacaf",
@@ -309,11 +309,10 @@
       {
         "error": "database disk image is malformed",
         "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
-        "unreadable_event_count": 3,
+        "unreadable_event_count": 2,
         "unreadable_event_ids": [
           "f84c60cd-961c-4e95-b768-8400dded04b6",
-          "f771dcd0-1c0a-419a-a5d4-c2c52fa8ee89",
-          "f688eed3-16e6-4870-8fe8-390ffb5a2324"
+          "f771dcd0-1c0a-419a-a5d4-c2c52fa8ee89"
         ]
       },
       {
@@ -321,17 +320,18 @@
         "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
         "unreadable_event_count": 4,
         "unreadable_event_ids": [
+          "f688eed3-16e6-4870-8fe8-390ffb5a2324",
           "f824bc77-5740-48a7-b3c7-6057e8e841ce",
           "f8b4bf1b-6b16-47b7-b15f-be2c046b5cb4",
-          "f78476d2-84b7-40ab-a241-1eb8bd26b8ba",
-          "f6828b13-9636-466b-96c9-00c364250cdf"
+          "f78476d2-84b7-40ab-a241-1eb8bd26b8ba"
         ]
       },
       {
         "error": "database disk image is malformed",
         "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
-        "unreadable_event_count": 5,
+        "unreadable_event_count": 6,
         "unreadable_event_ids": [
+          "f6828b13-9636-466b-96c9-00c364250cdf",
           "f839ff9e-7c7c-4290-bd68-64ec0c28d1cb",
           "f63ba944-a5af-4cf9-8774-0e1e4e9d222f",
           "f8b34d6a-b9b4-4655-bbf4-966b05363b2a",
@@ -365,19 +365,19 @@
       {
         "error": "database disk image is malformed",
         "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
-        "unreadable_event_count": 4,
+        "unreadable_event_count": 3,
         "unreadable_event_ids": [
           "f7c69f87-4b28-4a98-829a-915a4bc64e2d",
           "f6a2e497-44ce-457c-b8f3-701c669bae9b",
-          "f845bcec-2b9f-4dd1-bb23-68f629c7aa19",
-          "f65291a9-7d44-4a18-9ec7-8ad29835f2f6"
+          "f845bcec-2b9f-4dd1-bb23-68f629c7aa19"
         ]
       },
       {
         "error": "database disk image is malformed",
         "statement_fragment": "SELECT ar.* FROM analysis_runs ar WHERE ar.event_id IN ({ids}) AND ar.analysis_type = 'light-curve-inference' AND ar.dat",
-        "unreadable_event_count": 4,
+        "unreadable_event_count": 5,
         "unreadable_event_ids": [
+          "f65291a9-7d44-4a18-9ec7-8ad29835f2f6",
           "f899b706-d119-4be7-924c-88fbe3d0b5fe",
           "f8abd49f-681a-4283-a7c6-6e19303677d3",
           "f88442bb-b360-4fc1-837b-3b2807eec8bf",
@@ -416,19 +416,19 @@
   },
   "origin": "local-snapshot",
   "pipeline_status": "degraded",
-  "publication_state_checksum_sha256": "b485ffe1e5f757c162b2f153a9c903695027ec82a29b3da0de610bd229814121",
+  "publication_state_checksum_sha256": "cb149da86822afee5c2d25e30218843d7021a34549fa4c1aa8d7e56e573dd166",
   "schema_version": 2,
   "source_accounting": {
-    "applicableSourceEvaluations": 1445542,
-    "dataBearingSourceEvaluations": 15520,
+    "applicableSourceEvaluations": 1447224,
+    "dataBearingSourceEvaluations": 15540,
     "declaredSources": 131,
     "executedQueryReceipts": 36580,
     "outcomeCounts": {
       "AMBIGUOUS": 133,
       "DATA_RETURNED": 1171,
-      "LINK_ONLY_NOT_QUERIED": 1038360,
-      "NOT_CONFIGURED": 181151,
-      "NOT_QUERIED": 219493,
+      "LINK_ONLY_NOT_QUERIED": 1039530,
+      "NOT_CONFIGURED": 181380,
+      "NOT_QUERIED": 219776,
       "PARTIAL_RESULT": 8,
       "QUERY_BLOCKED": 587,
       "QUERY_FAILED": 567,
@@ -437,7 +437,7 @@
   },
   "source_universe": {
     "artifact": "ctas/data/source-universe.json",
-    "contract_set_checksum_sha256": "0839b21e5661df61ca6dbf62c0ccd5d5227f1eba27a59916faf1e5de4e1fd2d9",
+    "contract_set_checksum_sha256": "5f6f7a54487dec446ac0a4372072c42bd02e6affb58daebeac33c29f33395f4a",
     "schema": "ctas.public-source-universe@1.0.0",
     "source_count": 131
   },
@@ -815,7 +815,7 @@
         "LAT offline detection",
         "LAT monitored-source flare"
       ],
-      "detail": "via NASA GCN: gcn.classic.text.FERMI_GBM_FLT_POS",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.FERMI_GBM_ALERT, gcn.classic.text.FERMI_GBM_FLT_POS, gcn.classic.text.FERMI_GBM_GND_POS, gcn.classic.text.FERMI_GBM_FIN_POS, gcn.classic.text.FERMI_GBM_SUBTHRESH, gcn.classic.text.FERMI_LAT_POS_UPD, gcn.classic.text.FERMI_LAT_OFFLINE, gcn.classic.text.FERMI_LAT_MONITOR",
       "documentation_url": "https://gcn.nasa.gov/missions/fermi",
       "enabled": true,
       "facility": "NASA Fermi / GBM / LAT / NASA GCN",
@@ -845,7 +845,7 @@
         "upper limit",
         "science/template/difference cutout"
       ],
-      "detail": "OperationalError: (sqlite3.OperationalError) disk I/O error\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+      "detail": "anonymous real-time Rubin/Fink REST polling active \u00b7 0 unique public alerts in bounded lookback",
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "enabled": true,
       "facility": "Rubin community broker",
@@ -862,7 +862,7 @@
         "observations": 14204
       },
       "source": "rubin-fink",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-positional-candidates-on-demand",
@@ -1079,7 +1079,7 @@
         "classification",
         "public-object metadata"
       ],
-      "detail": "OperationalError: (sqlite3.OperationalError) disk I/O error\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+      "detail": null,
       "documentation_url": "https://www.wis-tns.org/content/tns-getting-started",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
@@ -1093,11 +1093,11 @@
       "public_scope": "Hourly delta files explicitly contain public objects",
       "rate_or_cadence_limit": "Provider quota; connector defaults to one persistent five-minute poll loop",
       "record_counts": {
-        "classifications": 5047,
-        "designations": 13335
+        "classifications": 5051,
+        "designations": 13353
       },
       "source": "tns",
-      "state": "degraded"
+      "state": "connecting"
     },
     {
       "adapter_status": "generic-import-supported",
@@ -1137,7 +1137,7 @@
         "energy, signalness, and false-alarm rate",
         "update or retraction"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: gcn.classic.text.ICECUBE_CASCADE",
       "documentation_url": "https://gcn.nasa.gov/missions/icecube",
       "enabled": true,
       "facility": "IceCube Collaboration / AMON / NASA GCN",
@@ -1152,7 +1152,7 @@
       "rate_or_cadence_limit": "Persistent Kafka consumer for new notices; mission documentation describes about 0.5 to 1 minute nominal latency and roughly eight alerts per year",
       "record_counts": {},
       "source": "icecube-cascade-gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-schema-aware-live-history-populated",
@@ -1164,7 +1164,7 @@
         "energy, p_astro, and false-alarm rate",
         "LVK coincidence follow-up"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: gcn.notices.icecube.gold_bronze_track_alerts, gcn.notices.icecube.lvk_nu_track_search, gcn.classic.text.ICECUBE_CASCADE",
       "documentation_url": "https://gcn.nasa.gov/missions/icecube",
       "enabled": true,
       "facility": "IceCube Collaboration / NSF / AMON",
@@ -1179,7 +1179,7 @@
       "rate_or_cadence_limit": "Long-running JSON consumer; bounded retained-tail replay; bounded public Circular identity search plus exact Classic file retrieval",
       "record_counts": {},
       "source": "icecube-gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-classic-parser-live",
@@ -1217,7 +1217,7 @@
         "classification",
         "retraction"
       ],
-      "detail": "NASA GCN connector degraded",
+      "detail": "NASA GCN subscriptions active: igwn.gwalert",
       "documentation_url": "https://gcn.nasa.gov/missions/lvk",
       "enabled": true,
       "facility": "LIGO Scientific Collaboration / Virgo / KAGRA",
@@ -1232,7 +1232,7 @@
       "rate_or_cadence_limit": "Long-running Kafka consumer; provider-defined archive limits",
       "record_counts": {},
       "source": "lvk-public-alerts",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-targeted-token-required",
@@ -1330,8 +1330,8 @@
       "enabled": true,
       "facility": "NASA GCN worldwide author community",
       "label": "NASA GCN Circulars",
-      "lag_seconds": 147.452945,
-      "last_message_at": "2026-09-02T13:58:08.446000Z",
+      "lag_seconds": 5.355274,
+      "last_message_at": "2026-09-04T06:11:05.340000Z",
       "last_verified": "2026-08-04",
       "mode": "live-and-archive",
       "proprietary_risk": "Circular prose is retained as an attributed author report; values are not promoted to machine measurements without a mission-specific parser",
@@ -1339,8 +1339,8 @@
       "public_scope": "Released GCN Circular author text, metadata, corrections, and provider-hosted links are publicly distributed",
       "rate_or_cadence_limit": "Persistent Kafka consumer; revisions are checksum-addressed and linked URLs are not bulk-downloaded",
       "record_counts": {
-        "publication_revisions": 1468,
-        "publications": 722
+        "publication_revisions": 1480,
+        "publications": 734
       },
       "source": "gcn-circulars",
       "state": "connected"
@@ -1354,13 +1354,13 @@
         "follow-up report",
         "retraction"
       ],
-      "detail": "OperationalError: (sqlite3.OperationalError) disk I/O error\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+      "detail": "gcn.circulars, igwn.gwalert, gcn.notices.icecube.gold_bronze_track_alerts, gcn.notices.icecube.lvk_nu_track_search, gcn.classic.text.SNEWS, gcn.notices.swift.bat.guano, gcn.notices.einstein_probe.wxt.alert, gcn.notices.maxi.gsc.known, gcn.notices.maxi.gsc.unknown, gcn.notices.boom.alert, gcn.notices.chime.frb, gcn.classic.text.FERMI_GBM_ALERT, gcn.classic.text.FERMI_GBM_FLT_POS, gcn.classic.text.FERMI_GBM_GND_POS, gcn.classic.text.FERMI_GBM_FIN_POS, gcn.classic.text.FERMI_GBM_SUBTHRESH, gcn.classic.text.FERMI_LAT_POS_UPD, gcn.classic.text.FERMI_LAT_OFFLINE, gcn.classic.text.FERMI_LAT_MONITOR, gcn.classic.text.SWIFT_BAT_QL_POS, gcn.classic.text.SWIFT_BAT_GRB_POS_ACK, gcn.classic.text.SWIFT_XRT_POSITION, gcn.classic.text.SWIFT_XRT_CENTROID, gcn.classic.text.SWIFT_UVOT_POS, gcn.classic.text.SWIFT_UVOT_POS_NACK, gcn.classic.text.GECAM_FLT, gcn.classic.text.GECAM_GND, gcn.classic.text.CALET_GBM_FLT_LC, gcn.classic.text.HAWC_BURST_MONITOR, gcn.classic.text.KONUS_LC, gcn.classic.text.AMON_NU_EM_COINC, gcn.classic.text.ICECUBE_CASCADE",
       "documentation_url": "https://gcn.nasa.gov/docs/circulars/subscribing",
       "enabled": true,
       "facility": "NASA Goddard",
       "label": "NASA General Coordinates Network",
-      "lag_seconds": 1552.188926,
-      "last_message_at": "2026-09-03T11:28:56Z",
+      "lag_seconds": 5.355274,
+      "last_message_at": "2026-09-04T06:11:05.340000Z",
       "last_verified": "2026-07-21",
       "mode": "live",
       "proprietary_risk": "No proprietary topic is configured; topic authorization does not itself change rights policy",
@@ -1370,11 +1370,11 @@
       "record_counts": {
         "classification_history": 305,
         "classifications": 894,
-        "messenger_signals": 955,
-        "observations": 712
+        "messenger_signals": 956,
+        "observations": 714
       },
       "source": "gcn",
-      "state": "degraded"
+      "state": "connected"
     },
     {
       "adapter_status": "implemented-public-on-demand",
@@ -1679,7 +1679,7 @@
         "classification",
         "follow-up photometry table"
       ],
-      "detail": "OperationalError: (sqlite3.OperationalError) disk I/O error\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+      "detail": null,
       "documentation_url": "https://www.wis-tns.org/astronotes",
       "enabled": true,
       "facility": "IAU / Weizmann Institute",
@@ -1694,11 +1694,11 @@
       "rate_or_cadence_limit": "Bounded latest-page poll every 30 minutes",
       "record_counts": {
         "observations": 48,
-        "publication_revisions": 298,
-        "publications": 191
+        "publication_revisions": 299,
+        "publications": 192
       },
       "source": "tns-astronotes",
-      "state": "degraded"
+      "state": "connecting"
     },
     {
       "adapter_status": "implemented-explicit-public-metadata-and-ascii-preview-on-demand-credentials-required",
@@ -1809,68 +1809,68 @@
   ],
   "static_snapshot_verification": {
     "check_count": 41,
-    "content_release_id": "a7b280dc0612ce25c4ce7685742b2d6f381efec622804d689c3de9fe33e8e1bb",
+    "content_release_id": "f618c35b26aaaa48c65db60c17ead011df21fc710c90b8980fdd90bef33fa2bd",
     "failed_gate_ids": [],
     "passed_check_count": 41,
-    "report_checksum_sha256": "71c208e0caf4847625b7dfafb2d3ddf4108f06dc4bf740e96ae7538a15f44c28",
+    "report_checksum_sha256": "617e85ef3b88d7abb8d17f757a21a6723bebd6c6d8a69fdabafb547c971bc841",
     "schema": "ctas.static-snapshot-verification@1.1.0",
     "status": "verified-static-snapshot",
-    "valid_until": "2026-09-04T04:53:26Z"
+    "valid_until": "2026-09-04T12:48:10Z"
   },
   "statistics": {
     "archive_products": 0,
-    "candidates_with_follow_up": 6049,
+    "candidates_with_follow_up": 6057,
     "catalog_counterparts": 1882,
     "classification_history": 305,
-    "classifications": 5956,
+    "classifications": 5960,
     "event_types": {
       "fast-radio-burst": 70,
       "gamma-ray-burst-candidate": 32,
-      "gamma-ray-transient": 94,
+      "gamma-ray-transient": 96,
       "high-energy-count-rate-trigger": 17,
       "high-energy-neutrino": 1,
       "high-energy-neutrino-cascade": 45,
       "high-energy-neutrino-track": 175,
       "high-energy-trigger": 74,
       "neutrino-gamma-coincidence-candidate": 28,
-      "optical-transient": 13367,
+      "optical-transient": 13381,
       "solar-flare": 1,
       "terrestrial-gamma-ray-flash": 17,
-      "x-ray-transient": 41
+      "x-ray-transient": 42
     },
     "host_context": 15,
     "magnitude_values_excluded": 4,
-    "messenger_signals": 955,
+    "messenger_signals": 956,
     "messengers": {
-      "electromagnetic": 13367,
-      "gamma-ray": 235,
+      "electromagnetic": 13381,
+      "gamma-ray": 237,
       "multimessenger": 28,
       "neutrino": 221,
       "radio": 70,
-      "x-ray": 41
+      "x-ray": 42
     },
-    "observations": 27921,
+    "observations": 27923,
     "priority_bands": {
-      "high_50_74": 2345,
+      "high_50_74": 2352,
       "low_0_24": 41,
-      "routine_25_49": 11576,
-      "urgent_75_100": 0
+      "routine_25_49": 11583,
+      "urgent_75_100": 3
     },
-    "public_candidates": 13962,
-    "publications": 971,
+    "public_candidates": 13979,
+    "publications": 984,
     "quality_quarantined_records": 1,
-    "real_events": 13964,
+    "real_events": 13981,
     "source_accounting": {
-      "applicableSourceEvaluations": 1445542,
-      "dataBearingSourceEvaluations": 15520,
+      "applicableSourceEvaluations": 1447224,
+      "dataBearingSourceEvaluations": 15540,
       "declaredSources": 131,
       "executedQueryReceipts": 36580,
       "outcomeCounts": {
         "AMBIGUOUS": 133,
         "DATA_RETURNED": 1171,
-        "LINK_ONLY_NOT_QUERIED": 1038360,
-        "NOT_CONFIGURED": 181151,
-        "NOT_QUERIED": 219493,
+        "LINK_ONLY_NOT_QUERIED": 1039530,
+        "NOT_CONFIGURED": 181380,
+        "NOT_QUERIED": 219776,
         "PARTIAL_RESULT": 8,
         "QUERY_BLOCKED": 587,
         "QUERY_FAILED": 567,
@@ -1881,11 +1881,11 @@
   },
   "surveys": [
     {
-      "candidate_count": 3247,
+      "candidate_count": 3256,
       "survey": "ZTF"
     },
     {
-      "candidate_count": 2617,
+      "candidate_count": 2620,
       "survey": "ATLAS"
     },
     {
@@ -1901,7 +1901,7 @@
       "survey": "GaiaAlerts"
     },
     {
-      "candidate_count": 730,
+      "candidate_count": 732,
       "survey": "GOTO"
     },
     {
@@ -2029,7 +2029,7 @@
       "survey": "CALET"
     },
     {
-      "candidate_count": 11,
+      "candidate_count": 12,
       "survey": "Einstein Probe"
     },
     {
@@ -2217,5 +2217,5 @@
       "survey": "ePESSTO"
     }
   ],
-  "valid_until": "2026-09-04T04:53:26Z"
+  "valid_until": "2026-09-04T12:48:10Z"
 }
