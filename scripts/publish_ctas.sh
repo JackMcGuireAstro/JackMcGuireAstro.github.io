@@ -202,6 +202,9 @@ for suite in scripts/test_ctas_static.py scripts/test_ctas_links.py scripts/test
              scripts/test_ctas_astro_evidence.py scripts/test_ctas_browser.py; do
   python3 "$suite" >>"$LOG" 2>&1 || die "$suite failed against the generated release; nothing committed"
 done
+# Compare every exported ingest score/factor record with this cycle's frozen DB.
+python3 scripts/test_ctas_ingest_provenance.py --database "$PUBLISH_DB" --data-dir ctas/data >>"$LOG" 2>&1 \
+  || die "ingest-score provenance differs from the frozen database; nothing committed"
 # The catalog model is the browser's copy of the reader-facing rules, so it is
 # checked in a JavaScript runtime. A publisher without one is reported rather
 # than blocked: the Python suites above already cover the published artifacts,

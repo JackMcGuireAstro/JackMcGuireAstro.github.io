@@ -875,7 +875,7 @@ def score_explanation_for(candidate: dict[str, Any]) -> str:
     return sentence
 
 
-SCORE_METHOD_VERSION = "ctas.follow-up-score@2.0.0"
+SCORE_METHOD_VERSION = "ctas.follow-up-score@2.0.1"
 SCORE_BASELINE = 35.0
 SCORE_VALIDITY_MINUTES = 30
 # Spectroscopy is a meaningful gap only where a spectrum of *this* source is the
@@ -956,14 +956,28 @@ def _classifications_are_incompatible(labels: list[str]) -> bool:
 
 
 def _retained_messenger_channels(candidate: dict[str, Any]) -> list[str]:
+    """Detected physical messenger categories, not wavelengths or instruments.
+
+    Unknown detection status and positional coincidences do not establish a
+    detected messenger. Raw source assertions remain unchanged in follow_up.
+    This counts retained assertions, not proof of a common astrophysical origin.
+    """
     follow_up = candidate.get("follow_up") or {}
-    counts = candidate.get("follow_up_counts") or {}
+    physical = {band: "electromagnetic" for band in (
+        "gamma-ray", "x-ray", "ultraviolet", "optical", "infrared", "radio", "electromagnetic",
+    )}
+    physical.update({"neutrino": "neutrino", "gravitational-wave": "gravitational-wave"})
     channels: set[str] = set()
     for row in follow_up.get("messenger_signals", []):
+        if row.get("superseded") or row.get("retracted") or row.get("detection") not in (True, 1):
+            continue
+        if row.get("role") in {"upper-limit", "retraction"}:
+            continue
         messenger = str(row.get("messenger") or "").strip().casefold()
-        if messenger:
-            channels.add(messenger)
-    if int(counts.get("observations") or 0) or int(counts.get("spectra") or 0):
+        if messenger in physical:
+            channels.add(physical[messenger])
+    if any(row.get("detection") in (True, 1) and not row.get("superseded") and not row.get("retracted")
+           for row in follow_up.get("observations", [])):
         channels.add("electromagnetic")
     return sorted(channels)
 
@@ -1141,13 +1155,13 @@ def score_model_for(candidate: dict[str, Any], as_of: datetime) -> dict[str, Any
     channels = _retained_messenger_channels(candidate)
     if len(channels) >= 2:
         messenger_bonus = min(20.0, 4.0 * len(channels))
-        messenger_note = "retained channels: " + ", ".join(channels)
+        messenger_note = "Active detected physical messenger categories: " + ", ".join(channels) + "; not proof of a common origin."
     else:
         messenger_bonus = 0.0
         messenger_note = (
-            "One retained channel"
+            "At most one detected physical messenger category"
             + (f" ({channels[0]})" if channels else "")
-            + "; a diversity bonus requires at least two independently retained channels."
+            + "; a diversity bonus requires at least two active detected physical messenger categories. Unknown detection status and upper limits do not count."
         )
 
     baseline = SCORE_BASELINE
@@ -1219,6 +1233,7 @@ def score_model_for(candidate: dict[str, Any], as_of: datetime) -> dict[str, Any
         "core_preclip": round(core_preclip, 2),
         "core_postclip": round(core_postclip, 2),
         "multimessenger_bonus": round(messenger_bonus, 2),
+        "detected_physical_messengers": channels,
         "multimessenger_basis": messenger_note,
         "final_preclip": round(final_preclip, 2),
         "final_score": final_score,
@@ -1966,10 +1981,8 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
                 "state": "excluded-from-derived-use",
                 "reason": "source-reported value is outside the declared -30 to 40 magnitude publication range",
             })
-            brightness = float(rec.get("score_factors", {}).pop("brightness_points", 0) or 0)
-            rec["ctas_score"] = round(
-                max(0.0, min(100.0, float(rec.get("ctas_score") or 0) - brightness)), 2
-            )
+            # Preserve the recorded score and its factors as ingest provenance.
+            # The release model independently excludes this sanitized magnitude.
 
         links = []
         for a in alias_map.get(r["id"], []):
@@ -2462,7 +2475,8 @@ CATALOG_CANDIDATE_COLUMNS = (
     "ra_deg", "dec_deg", "coordinate_error_arcsec", "discovery_time",
     "discovery_survey", "discovery_instrument", "discovery_magnitude",
     "status", "classification", "reported_label_kind", "classification_probability",
-    "ctas_score", "follow_up_total", "redshift", "updated_at",
+    "ctas_score", "score_as_of", "score_valid_until", "score_method_version",
+    "score_applicable_terms", "score_detected_messengers", "follow_up_total", "redshift", "updated_at",
     "latest_classification_at", "latest_spectrum_at", "latest_messenger_at",
     "latest_retraction_at", "detail_chunk",
     "n_classifications", "n_classification_history", "n_observations", "n_spectra",
@@ -2486,6 +2500,11 @@ def compact_candidate_row(candidate: dict[str, Any]) -> list[Any]:
     primary = next((row for row in links if row.get("source_key") == "tns"), links[0] if links else {})
     values: dict[str, Any] = {
         **{key: candidate.get(key) for key in CATALOG_CANDIDATE_COLUMNS},
+        "score_as_of": (candidate.get("score_model") or {}).get("score_as_of"),
+        "score_valid_until": (candidate.get("score_model") or {}).get("valid_until"),
+        "score_method_version": (candidate.get("score_model") or {}).get("method_version"),
+        "score_applicable_terms": (candidate.get("score_model") or {}).get("applicable_terms"),
+        "score_detected_messengers": (candidate.get("score_model") or {}).get("detected_physical_messengers"),
         "detail_chunk": f"candidate-chunks/{candidate_bucket(str(candidate['event_id']))}.json",
         "n_classifications": int(counts.get("classifications") or 0),
         "n_classification_history": int(counts.get("classification_history") or 0),
@@ -3652,9 +3671,8 @@ def main() -> int:
             "selectionProvenance": compatibility_metadata["selectionProvenance"],
         }
         candidate["evidence_timeline"] = timeline_for(candidate)
-        candidate["score_model"] = score_model_for(candidate, generated_dt)
-        candidate["ctas_score"] = candidate["score_model"]["final_score"]
-        candidate["score_explanation"] = score_explanation_for(candidate)
+        # Scored once, before aggregation. Re-scoring here would overwrite
+        # recorded_score_at_ingest with our freshly derived release score.
         candidate["science_brief"] = science_brief_for(candidate)
         accounting_totals["applicableSourceEvaluations"] += int(accounting["applicableSources"])
         accounting_totals["executedQueryReceipts"] += int(accounting["executedQueryReceipts"])
@@ -3934,7 +3952,7 @@ def main() -> int:
         "release": {
             "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
             "source_universe_contract_set": source_universe["contract_set_checksum_sha256"],
-            "score_method_version": "ctas.follow-up-score@1.0.0",
+            "score_method_version": SCORE_METHOD_VERSION,
             "record_role_method_version": "ctas.record-role@1.0.0",
             "source_matrix_schema": SOURCE_MATRIX_SCHEMA,
         },
@@ -4230,7 +4248,8 @@ def main() -> int:
         "scripts/check_ctas_links.py", "scripts/rebuild_ctas_release_history.py",
         "scripts/test_ctas_static.py", "scripts/test_ctas_catalog_model.js",
         "scripts/test_ctas_links.py", "scripts/test_ctas_astro_evidence.py",
-        "scripts/test_ctas_identity.py", "scripts/test_ctas_browser.py",
+        "scripts/test_ctas_identity.py", "scripts/test_ctas_browser.py", "scripts/test_ctas_release_browser.js",
+        "scripts/test_ctas_ingest_provenance.py",
         "scripts/ctas_node.py",
         "scripts/mirror_loop.sh", "scripts/publish_ctas.sh", "scripts/ctas_launchd_runner.sh",
         "scripts/install_ctas_mirror.sh", "scripts/diagnose_ctas_mirror.sh",

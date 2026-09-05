@@ -7,7 +7,7 @@
   var state = {
     candidates: [], snapshot: null, sourceUniverse: null,
     compareIds: [], watchIds: [], detailById: {}, replayTimers: {}, observatories: null,
-    comparisonOpen: false
+    comparisonOpen: false, releaseEpoch: 0
   };
 
   function text(value) { return value === null || value === undefined ? "" : String(value); }
@@ -22,7 +22,7 @@
     var parsed = new Date(value); if (isNaN(parsed.getTime())) return "Time unavailable";
     return parsed.toISOString().replace("T", " ").replace(/\.\d+Z$/, " UTC").replace("Z", " UTC");
   }
-  function candidateById(id) { return state.candidates.find(function (candidate) { return candidate.event_id === id; }); }
+  function candidateById(id) { return state.candidates.find(function (candidate) { return candidate.event_id === id; }) || state.detailById[id]; }
   function currentReleaseId() {
     var assurance = (window.CTASApp && window.CTASApp.getStatus && window.CTASApp.getStatus().static_snapshot_verification) || {};
     return assurance.content_release_id || (state.snapshot || {}).catalog_content_checksum_sha256 || "unavailable";
@@ -50,7 +50,7 @@
     var raw = new URL(window.location.href).searchParams.get("compare") || "";
     var seen = {};
     state.compareIds = raw.split(",").filter(function (id) {
-      if (!candidateById(id) || seen[id] || Object.keys(seen).length >= MAX_COMPARE) return false;
+      if (!/^[0-9a-f-]{36}$/.test(id) || seen[id] || Object.keys(seen).length >= MAX_COMPARE) return false;
       seen[id] = true; return true;
     });
     renderComparisonTray(); updateActionStates();
@@ -62,8 +62,8 @@
   }
 
   function toggleCompare(id) {
-    if (!candidateById(id)) return;
     var position = state.compareIds.indexOf(id);
+    if (!candidateById(id) && position === -1) return;
     if (position !== -1) state.compareIds.splice(position, 1);
     else if (state.compareIds.length >= MAX_COMPARE) {
       comparisonStatus("Comparison is limited to five candidates. Remove one before adding another.");
@@ -141,15 +141,15 @@
   }
 
   function toggleWatch(id) {
-    if (!candidateById(id)) return;
     var index = state.watchIds.indexOf(id);
+    if (!candidateById(id) && index === -1) return;
     if (index === -1) state.watchIds.push(id); else state.watchIds.splice(index, 1);
     saveLocal(WATCH_KEY, state.watchIds); renderWatchlist(); updateActionStates();
   }
 
   function renderWatchlist() {
     var host = document.getElementById("ctas-watchlist"); if (!host) return;
-    var rows = state.watchIds.map(candidateById).filter(Boolean);
+    var rows = state.watchIds.map(function (id) { return candidateById(id) || {event_id: id, name: "Saved record — click to resolve " + id}; });
     host.innerHTML = rows.length ? '<ul>' + rows.map(function (candidate) {
       return '<li><button type="button" data-open-event="' + esc(candidate.event_id) + '">' + esc(candidate.name) + '</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-label="Remove ' + esc(candidate.name) + ' from local watchlist">×</button></li>';
     }).join("") + '</ul>' : '<p>No candidates saved in this browser.</p>';
@@ -426,10 +426,20 @@
       var fallback = event.target.parentNode.querySelector("[data-sky-image-error]"); if (fallback) fallback.hidden = false;
     }, true);
     window.addEventListener("ctas:snapshot", function (event) {
+      var epoch = ++state.releaseEpoch;
+      state.detailById = {};
       state.snapshot = event.detail.snapshot; state.candidates = event.detail.candidates || []; state.sourceUniverse = event.detail.sourceUniverse || null;
-      state.watchIds = loadLocal(WATCH_KEY, []).filter(function (id) { return candidateById(id); });
+      state.watchIds = loadLocal(WATCH_KEY, []).filter(function (id) { return /^[0-9a-f-]{36}$/.test(id); });
       restoreCompareIds(); renderWatchlist(); renderSourceExplorer(); updateActionStates();
+      var requested = Array.from(new Set(state.compareIds.concat(state.watchIds.slice(0, 25))));
+      requested.filter(function (id) { return !candidateById(id); }).forEach(function (id) {
+        window.CTASApp.loadCandidateDetail(id).then(function (detail) {
+          if (epoch !== state.releaseEpoch) return;
+          state.detailById[id] = detail; renderComparisonTray(); renderWatchlist(); updateActionStates();
+        }).catch(function () { /* Preserve saved UUIDs; click to retry, never silently delete them. */ });
+      });
     });
+    window.addEventListener("ctas:catalog-loaded", function (event) { state.candidates = event.detail.candidates; updateActionStates(); });
     window.addEventListener("ctas:candidate-opened", function (event) { afterCandidateRender(event.detail.candidate); });
     window.addEventListener("ctas:filters-changed", function () {
       updateActionStates();

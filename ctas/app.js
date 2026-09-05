@@ -28,7 +28,8 @@
   };
 
   var state = {
-    candidates: [], snapshot: null, status: null, sourceUniverse: null, releaseHistory: null,
+    candidates: [], skyCandidates: [], resolvedCandidates: {}, releaseEpoch: 0, routeRequest: 0,
+    snapshot: null, status: null, sourceUniverse: null, releaseHistory: null,
     catalogManifest: null, aliasIndex: null, aliasPromise: null,
     chunks: {}, activeSummary: null, activeDetail: null, cachedSnapshot: false,
     sortKey: "ctas_score", sortDir: -1, preset: "all", q: "", cls: "", msg: "",
@@ -38,7 +39,7 @@
     shown: PAGE, skyDays: 7, skyPoints: [], skySelected: null,
     hoveredEventId: null, focusedEventId: null, linkedHighlightId: null,
     skyKeyboardIndex: -1, photBand: {}, activeOpener: null,
-    autoRefreshPaused: false, exportBusy: false
+    autoRefreshPaused: false, exportBusy: false, refreshError: null, polling: false
   };
 
   function normalizeWorkspaceOrder() {
@@ -957,13 +958,21 @@
   }
   function renderStatus() {
     if (!el.status) return;
+    var previousDetails = el.status.querySelector("details");
+    var detailsOpen = Boolean(previousDetails && previousDetails.open);
+    var focusedStatusControl = el.status.contains(document.activeElement) && document.activeElement.matches("summary, [data-toggle-refresh]")
+      ? (document.activeElement.matches("summary") ? "summary" : "[data-toggle-refresh]") : null;
     var status = state.status || {}, snapshot = state.snapshot || {};
     var generated = status.last_successful_update || snapshot.catalog_as_of || snapshot.generated_at;
     var degraded = status.pipeline_status === "degraded";
-    var cached = status.pipeline_status === "cached";
+    var cached = state.cachedSnapshot;
     var localPreview = window.location.protocol === "file:";
     var validUntilMs = status.valid_until ? new Date(status.valid_until).getTime() : NaN;
     var stale = Number.isFinite(validUntilMs) && Date.now() > validUntilMs;
+    var skyHeading = document.querySelector(".ctas-console-identity h1 span");
+    var liveDot = document.querySelector(".ctas-live-dot");
+    if (skyHeading) skyHeading.textContent = localPreview || stale || cached || !state.snapshot ? "Sky catalog" : "Live sky";
+    if (liveDot) liveDot.style.opacity = localPreview || stale || cached || !state.snapshot ? "0.35" : "1";
     var assurance = status.static_snapshot_verification || status.static_catalog_assurance || {};
     var snapshotVerified = assurance.status === "verified-static-snapshot" || assurance.status === "certified-static-catalog";
     var failedGateIds = Array.isArray(assurance.failed_gate_ids) ? assurance.failed_gate_ids : [];
@@ -982,10 +991,10 @@
         ? "Checksums and public-file consistency · Snapshot " + esc(shortHash(assurance.content_release_id)) + "…"
         : "Checksum report available below";
     el.status.classList.toggle("is-degraded", !localPreview && (degraded || cached || stale));
-    var pipelineValue = localPreview ? "Local preview" : cached ? "Cached snapshot" : stale ? "Publisher paused" : "Operational";
+    var pipelineValue = localPreview ? "Local preview" : cached ? "Cached snapshot" : stale ? "Snapshot out of date" : degraded ? "Source limits" : "Operational";
     var pipelineDetail = localPreview ? "This file is a bundled development snapshot, not the live publishing endpoint. Its age does not describe the public CTAS publisher."
       : cached ? "A live refresh failed; the last successfully loaded public snapshot remains usable."
-      : stale ? "The last public snapshot remains usable, but the background publisher has not completed a current refresh."
+      : stale ? "This snapshot has passed its freshness window. That alone does not establish whether the publisher is stopped, still exporting, or unable to publish."
       : degraded ? "Catalog updates are active; individual source availability is reported in Catalog details."
       : "Catalog updates are active.";
     el.status.innerHTML = '<div class="ctas-status__line">' +
@@ -993,12 +1002,19 @@
       statusCell(localPreview ? "Bundled snapshot" : "Updated", esc(relative(generated) || "unavailable")) +
       statusCell("Public candidates", Number(status.candidate_count || snapshot.candidate_count || state.candidates.length).toLocaleString()) +
       statusCell("Snapshot integrity", esc(integrityValue)) +
-      statusCell("Update check", localPreview ? "Public site only" : state.autoRefreshPaused ? "Paused" : "Every 2 minutes") +
-      '</div><details class="ctas-status__details"><summary>Status details</summary><div><p>' + esc(pipelineDetail) +
+      statusCell("Browser check", localPreview ? "Public site only" : state.autoRefreshPaused ? "Paused" : "Every 2 minutes") +
+      '</div>' + (state.refreshError ? '<p role="status" class="ctas-cache-warning">Refresh not applied: ' + esc(state.refreshError) + ' The last coherent snapshot remains visible; the next browser check will retry.</p>' : '') +
+      '<details class="ctas-status__details"><summary>Status details</summary><div><p>' + esc(pipelineDetail) +
+      '</p><p>The browser checks every two minutes. Export, verification, and GitHub publication take longer; this is not a two-minute publication guarantee.' +
       '</p><p><strong>Last successful snapshot:</strong> ' + esc(absolute(generated)) + '</p><p><strong>Integrity:</strong> ' + integrityDetail +
       (localPreview ? '</p><p><a href="https://jackmcguireastro.github.io/ctas.html">Open the current public CTAS catalog</a>' : "") +
       '</p><button type="button" class="ctas-refresh-toggle" data-toggle-refresh aria-pressed="' + (state.autoRefreshPaused ? "true" : "false") + '">' +
       (state.autoRefreshPaused ? "Resume 2-minute checks" : "Pause 2-minute checks") + "</button></div></details>";
+    el.status.querySelector("details").open = detailsOpen;
+    if (focusedStatusControl) el.status.querySelector(focusedStatusControl).focus({preventScroll: true});
+    Array.prototype.forEach.call(document.querySelectorAll("[data-score-valid-until]"), function (label) {
+      label.textContent = Date.now() > Date.parse(label.getAttribute("data-score-valid-until")) ? "snapshot score · expired" : "ordering aid";
+    });
   }
 
   function barRows(values, labels) {
@@ -1200,8 +1216,8 @@
     var discovered = Date.parse(candidate.discovery_time || "");
     if (Number.isFinite(discovered) && discovered >= Date.now() - 86400000) reasons.push("New <24h");
     if (!candidate.classification || candidate.classification === "Unclassified") reasons.push("Unclassified");
-    if (!Number(counts.spectra || 0)) reasons.push("No spectrum");
-    if (String(candidate.primary_messenger || "").toLowerCase() === "multimessenger" || (candidate.messenger_channels || []).length >= 2) reasons.push("Multimessenger");
+    if (!Number(counts.spectra || 0) && (candidate.score_applicable_terms || []).indexOf("spectroscopy_gap_points") !== -1) reasons.push("No spectrum retained");
+    if ((candidate.score_detected_messengers || []).length >= 2) reasons.push("Multiple detected messengers");
     if (Number(candidate.conflict_count || 0) > 0) reasons.push("Conflicting evidence");
     return reasons.slice(0, 3);
   }
@@ -1221,10 +1237,15 @@
     var defaultLeaderboard = state.preset === "all" && !state.q && !state.cls && !state.msg && !state.stat && !state.survey &&
       !state.from && !state.to && state.scoreMin === null && state.scoreMax === null && state.magMax === null &&
       !state.spectrum && !state.conflict && !state.richness && state.coneRa === null && state.coneDec === null && state.coneRadius === null;
+    if (defaultLeaderboard && state.shown <= PAGE && state.sortKey === "ctas_score" && state.sortDir === -1 && (state.snapshot || {}).leaderboard) {
+      var byId = {}; state.candidates.forEach(function (candidate) { byId[candidate.event_id] = candidate; });
+      shown = state.snapshot.leaderboard.event_ids.map(function (id) { return byId[id]; }).filter(Boolean);
+    }
+    var retainedTotal = Number((state.snapshot || {}).candidate_count || state.candidates.length).toLocaleString();
     el.count.textContent = defaultLeaderboard && state.shown <= PAGE
-      ? "Top " + shown.length.toLocaleString() + " of " + rows.length.toLocaleString() + " retained candidates"
+      ? "Top " + shown.length.toLocaleString() + " follow-up candidates · " + retainedTotal + " retained records"
       : "Showing " + shown.length.toLocaleString() + " of " + rows.length.toLocaleString() +
-        (rows.length === state.candidates.length ? " retained candidates" : " matching candidates (" + state.candidates.length.toLocaleString() + " retained total)");
+        " matches in " + (state.completeCatalogLoaded ? "the complete catalog" : "the loaded summary") + " · " + retainedTotal + " retained total";
     if (!state.candidates.length) {
       el.results.innerHTML = '<div class="ctas-empty"><h3>No current candidates</h3><p>The next automatic two-minute check will preserve or update this state.</p></div>'; return;
     }
@@ -1244,24 +1265,32 @@
       return '<tr data-candidate-id="' + esc(candidate.event_id) + '"><td><button type="button" class="ctas-candidate" data-open-event="' + esc(candidate.event_id) + '"><span>' +
         esc(candidate.name) + '</span><small>' + esc(candidate.discovery_survey || "Survey unavailable") + " · " + esc(sexagesimal(candidate.ra_deg, candidate.dec_deg) || "position unavailable") +
         '</small></button><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></td><td class="num ctas-score-cell">' + esc(num(candidate.ctas_score, 1)) +
-        '<small>ordering aid</small></td><td><div class="ctas-reasons">' + renderTriageReasons(candidate) + '</div></td><td><span class="pill">' + esc(label) +
+        '<small data-score-valid-until="' + esc(candidate.score_valid_until || "") + '" title="' + esc(candidate.score_as_of ? "Score computed " + absolute(candidate.score_as_of) : "Score clock not included in this release") + '">' +
+        (candidate.score_valid_until && Date.now() > Date.parse(candidate.score_valid_until) ? "snapshot score · expired" : "ordering aid") + '</small></td><td><div class="ctas-reasons">' + renderTriageReasons(candidate) + '</div></td><td><span class="pill">' + esc(label) +
         '</span><small class="ctas-label-kind">' + esc(humanKey(candidate.reported_label_kind || "provider-reported")) +
         '</small></td><td><strong>' + esc(candidate.discovery_time ? relative(candidate.discovery_time) : "Time unavailable") +
         '</strong><small class="ctas-table-sub">' + esc(num(candidate.discovery_magnitude, 2) ? num(candidate.discovery_magnitude, 2) + " mag · source reported" : "Magnitude unavailable") +
         '</small></td><td><strong>' + esc((candidate.record_completeness || {}).label || "Not assessed") + '</strong><small class="ctas-table-sub">' + esc(evidence) +
         '</small></td><td>' + renderReferences(candidate.links || []) + "</td></tr>";
     }).join("");
-    el.results.innerHTML = '<div class="ctas-table-wrap"><table class="ctas-table"><caption>Public CTAS candidates. Positions are ICRS; source-reported discovery magnitudes may use heterogeneous bands and systems.</caption><thead><tr>' +
+    el.results.innerHTML = '<div class="ctas-table-wrap" role="region" aria-label="Candidate table" tabindex="0"><table class="ctas-table"><caption>Public CTAS candidates. Positions are ICRS; source-reported discovery magnitudes may use heterogeneous bands and systems.</caption><thead><tr>' +
       head + "</tr></thead><tbody>" + body + "</tbody></table></div>" + (rows.length > state.shown
         ? '<p class="ctas-more"><button type="button" id="ctas-more">' + (defaultLeaderboard && state.shown <= PAGE
-          ? "Browse the complete retained catalog (" + rows.length.toLocaleString() + "; 100 at a time)"
+          ? "Show more loaded candidates (" + rows.length.toLocaleString() + ")"
           : "Show the next " + Math.min(PAGE, rows.length - state.shown).toLocaleString()) + "</button></p>" : "");
     if (window.CTASWorkbench && window.CTASWorkbench.refreshActions) window.CTASWorkbench.refreshActions();
     repaintCandidateLinks(false);
   }
 
+  function skyNeedsCompleteCatalog() {
+    return state.skyDays > 90 || Boolean(state.q || state.msg || state.stat || state.survey || state.spectrum || state.conflict || state.richness ||
+      ["all", "priority", "today", "newest", "bright", "unclassified"].indexOf(state.preset) === -1);
+  }
   function skyRows() {
-    return window.CTASCatalogModel ? window.CTASCatalogModel.skyCandidates(filteredRows(), state.skyDays, Date.now()) : [];
+    if (!window.CTASCatalogModel) return [];
+    var rows = state.completeCatalogLoaded || !state.snapshot.sky || skyNeedsCompleteCatalog()
+      ? filteredRows() : window.CTASCatalogModel.filteredCandidates(state.skyCandidates, currentFilters(), Date.now());
+    return window.CTASCatalogModel.skyCandidates(rows, state.skyDays, Date.now());
   }
   function mollweide(ra, dec, width, height) {
     var longitude = (180 - Number(ra)) * Math.PI / 180, latitude = Number(dec) * Math.PI / 180, theta = latitude;
@@ -1306,7 +1335,7 @@
   }
   function drawSky() {
     if (!el.sky || !el.skyStage || el.skyStage.offsetParent === null) return;
-    var width = Math.max(320, Math.floor(el.skyStage.getBoundingClientRect().width));
+    var width = Math.max(1, Math.floor(el.skyStage.getBoundingClientRect().width));
     var height = Math.max(260, Math.min(520, Math.round(width * 0.5)));
     var ratio = Math.min(window.devicePixelRatio || 1, 2);
     el.sky.width = width * ratio; el.sky.height = height * ratio; el.sky.style.height = height + "px";
@@ -1341,12 +1370,15 @@
       context.strokeStyle = selected ? "#fff" : "rgba(255,255,255,.56)"; context.lineWidth = selected ? 2.2 : 0.7; context.stroke();
     });
     var windowLabel = state.skyDays === 1 ? "24 hours" : state.skyDays === 7 ? "week" : state.skyDays === 30 ? "month" : state.skyDays === 90 ? "90 days" : "retained catalog window";
-    el.skyCount.textContent = rows.length.toLocaleString() + " linked-filter candidates with coordinates reported in the " + windowLabel + ".";
+    var skyMessage = rows.length.toLocaleString() + " candidates with coordinates reported in the " + windowLabel + ".";
+    if (!state.completeCatalogLoaded && skyNeedsCompleteCatalog()) skyMessage += " Summary-only until the complete catalog is loaded for these filters.";
+    if (el.skyCount.textContent !== skyMessage) el.skyCount.textContent = skyMessage;
     el.sky.setAttribute("aria-label", "Interactive all-sky map of " + rows.length + " CTAS candidates; use the synchronized accessible list or arrow keys and Enter.");
     if (el.skyAccessible) {
-      el.skyAccessible.innerHTML = '<option value="">Choose a plotted candidate…</option>' + rows.map(function (candidate) {
-        return '<option value="' + esc(candidate.event_id) + '">' + esc(candidate.name + " — " + (candidate.classification || "Unclassified") + " — score " + num(candidate.ctas_score, 1)) + "</option>";
+      var options = '<option value="">Choose a plotted candidate…</option>' + rows.map(function (candidate) {
+        return '<option value="' + esc(candidate.event_id) + '">' + esc(candidate.name + " — " + (candidate.classification || "Unclassified") + " — " + sexagesimal(candidate.ra_deg, candidate.dec_deg) + " — magnitude " + (num(candidate.discovery_magnitude, 2) || "unknown")) + "</option>";
       }).join("");
+      if (el.skyAccessible.dataset.options !== options) { el.skyAccessible.innerHTML = options; el.skyAccessible.dataset.options = options; }
       if (state.skySelected && rows.some(function (candidate) { return candidate.event_id === state.skySelected.event_id; })) el.skyAccessible.value = state.skySelected.event_id;
     }
   }
@@ -1363,7 +1395,7 @@
     state.skySelected = candidate;
     state.skyKeyboardIndex = state.skyPoints.map(function (point) { return point.candidate.event_id; }).indexOf(candidate.event_id);
     repaintCandidateLinks();
-    if (open) openCandidate(candidate, true, opener, false);
+    if (open) openResolvedCandidate(candidate.event_id, true, opener, false);
   }
   function bindSky() {
     Array.prototype.forEach.call(document.querySelectorAll("[data-sky-days]"), function (button) {
@@ -1373,6 +1405,7 @@
           var active = item === button; item.classList.toggle("is-active", active); item.setAttribute("aria-pressed", active ? "true" : "false");
         });
         drawSky(); syncFilterRoute();
+        if (state.skyDays > 90 && !state.completeCatalogLoaded) loadCompleteCatalog().catch(function () {});
       });
     });
     if (!el.sky) return;
@@ -1405,7 +1438,7 @@
       el.skyCount.textContent = "Selected " + state.skySelected.name + ". Press Enter to open the complete public record.";
     });
     if (el.skyAccessible) el.skyAccessible.addEventListener("change", function () {
-      var candidate = state.candidates.find(function (row) { return row.event_id === el.skyAccessible.value; });
+      var candidate = state.skyPoints.map(function (point) { return point.candidate; }).find(function (row) { return row.event_id === el.skyAccessible.value; });
       if (candidate) selectSky(candidate, true, el.skyAccessible);
     });
     var timer;
@@ -1429,10 +1462,15 @@
       return Array.prototype.map.call(new Uint8Array(digest), function (value) { return value.toString(16).padStart(2, "0"); }).join("");
     });
   }
+  function assertCurrentRelease(epoch) {
+    if (epoch !== state.releaseEpoch) throw new Error("The catalog release changed while this request was loading. Please retry.");
+  }
   function ensureCatalogManifest() {
     if (state.catalogManifest) return Promise.resolve(state.catalogManifest);
     if (!state.catalogManifestPromise) {
+      var epoch = state.releaseEpoch;
       state.catalogManifestPromise = getJSON("candidate-chunks/manifest.json").then(function (manifest) {
+        assertCurrentRelease(epoch);
         if (!manifest || manifest.catalog_content_checksum_sha256 !== (state.snapshot || {}).catalog_content_checksum_sha256) {
           throw new Error("The detail manifest belongs to a different catalog release. Refresh after publication finishes.");
         }
@@ -1440,7 +1478,7 @@
         renderCatalogDownloads();
         return manifest;
       }).catch(function (error) {
-        state.catalogManifestPromise = null;
+        if (epoch === state.releaseEpoch) state.catalogManifestPromise = null;
         throw error;
       });
     }
@@ -1472,7 +1510,9 @@
     // reader who never asks never downloads the complete catalog.
     if (state.completeCatalogPromise) return state.completeCatalogPromise;
     var release = (state.snapshot || {}).catalog_content_checksum_sha256;
+    var epoch = state.releaseEpoch;
     state.completeCatalogPromise = getJSON("catalog-pages/manifest.json").then(function (manifest) {
+      assertCurrentRelease(epoch);
       if (!manifest || manifest.catalog_content_checksum_sha256 !== release) {
         throw new Error("The catalog pages belong to a different release. Refresh after publication finishes.");
       }
@@ -1480,6 +1520,7 @@
       if (!pages.length) throw new Error("The catalog page manifest lists no pages.");
       var columns = manifest.candidate_columns, loaded = 0;
       function report() {
+        assertCurrentRelease(epoch);
         if (el.completeStatus) {
           el.completeStatus.textContent = "Loading complete catalog… page " + loaded + " of " + pages.length + ".";
         }
@@ -1504,6 +1545,10 @@
           });
         });
       }, Promise.resolve([])).then(function (all) {
+        assertCurrentRelease(epoch);
+        if (all.length !== Number(manifest.candidate_count) || new Set(all.map(function (candidate) { return candidate.event_id; })).size !== all.length) {
+          throw new Error("The complete catalog count or event identities do not match its manifest.");
+        }
         var byId = {};
         state.candidates.forEach(function (candidate) { byId[candidate.event_id] = candidate; });
         all.forEach(function (candidate) { byId[candidate.event_id] = candidate; });
@@ -1514,25 +1559,31 @@
         }
         if (el.loadComplete) { el.loadComplete.disabled = true; el.loadComplete.textContent = "Complete catalog loaded"; }
         populateFilters(); restoreFiltersFromRoute(); renderOverview(); renderTable(); drawSky();
+        window.dispatchEvent(new CustomEvent("ctas:catalog-loaded", {detail: {candidates: state.candidates}}));
         return state.candidates;
       });
     }).catch(function (error) {
-      state.completeCatalogPromise = null;
-      if (el.completeStatus) el.completeStatus.textContent = "The complete catalog could not be loaded: " + (error.message || "unknown error") + " The records already shown remain usable.";
+      if (epoch === state.releaseEpoch) {
+        state.completeCatalogPromise = null;
+        if (el.loadComplete) el.loadComplete.disabled = false;
+        if (el.completeStatus) el.completeStatus.textContent = "The complete catalog could not be loaded: " + (error.message || "unknown error") + " The records already shown remain usable.";
+      }
       throw error;
     });
     return state.completeCatalogPromise;
   }
   function loadSourceMatrixPatterns() {
     if (!state.sourceMatrixPatternsPromise) {
+      var epoch = state.releaseEpoch;
       state.sourceMatrixPatternsPromise = getJSON("source-matrix-patterns.json").then(function (document_) {
+        assertCurrentRelease(epoch);
         if (document_ && document_.catalog_content_checksum_sha256 !== (state.snapshot || {}).catalog_content_checksum_sha256) {
           throw new Error("Source-matrix patterns belong to a different catalog release.");
         }
         state.sourceMatrixPatterns = (document_ || {}).patterns || {};
         return state.sourceMatrixPatterns;
       }).catch(function (error) {
-        state.sourceMatrixPatternsPromise = null;
+        if (epoch === state.releaseEpoch) state.sourceMatrixPatternsPromise = null;
         throw error;
       });
     }
@@ -1540,20 +1591,24 @@
   }
   function loadChunk(path) {
     if (!state.chunks[path]) {
+      var epoch = state.releaseEpoch;
       state.chunks[path] = (function () {
         return ensureCatalogManifest().then(function () {
+        assertCurrentRelease(epoch);
         var metadata = chunkMetadata(path);
         if (!metadata || !/^[0-9a-f]{64}$/.test(text(metadata.sha256))) return Promise.reject(new Error("The release manifest does not bind this detail shard."));
         return fetch(DATA_DIR + path, {cache: "no-cache"}).then(function (response) {
           if (!response.ok) throw new Error(path + " returned HTTP " + response.status);
           return response.arrayBuffer();
         }).then(function (bytes) {
+          assertCurrentRelease(epoch);
           if (bytes.byteLength !== Number(metadata.bytes)) throw new Error("Detail-shard byte length does not match the release manifest.");
           return sha256Hex(bytes).then(function (checksum) {
             if (checksum !== metadata.sha256) throw new Error("Detail-shard SHA-256 does not match the release manifest; refresh after publication finishes.");
             var document_ = JSON.parse(new TextDecoder("utf-8", {fatal: true}).decode(bytes));
             if (Number(document_.candidate_count) !== Number(metadata.candidate_count)) throw new Error("Detail-shard candidate count does not match the release manifest.");
             return loadSourceMatrixPatterns().then(function (patterns) {
+              assertCurrentRelease(epoch);
               (document_.candidates || []).forEach(function (candidate) {
                 candidate.source_matrix = window.CTASCatalogModel.expandSourceMatrix(candidate.source_matrix, patterns);
               });
@@ -1562,7 +1617,7 @@
           });
         });
         });
-      }()).catch(function (error) { delete state.chunks[path]; throw error; });
+      }()).catch(function (error) { if (epoch === state.releaseEpoch) delete state.chunks[path]; throw error; });
     }
     return state.chunks[path];
   }
@@ -1586,9 +1641,11 @@
   }
   function ensureAliasIndex() {
     if (state.aliasIndex) return Promise.resolve(state.aliasIndex);
+    var epoch = state.releaseEpoch;
     if (!state.aliasPromise) state.aliasPromise = getJSON("alias-index.json", 2).then(function (document_) {
+      assertCurrentRelease(epoch);
       applyAliasIndex(document_); return document_;
-    }).catch(function (error) { state.aliasPromise = null; throw error; });
+    }).catch(function (error) { if (epoch === state.releaseEpoch) state.aliasPromise = null; throw error; });
     return state.aliasPromise;
   }
   function legacyCandidateFromHash() {
@@ -1598,6 +1655,7 @@
   }
   function candidateRoute(summary, view, band) {
     var url = new URL(window.location.href);
+    if (url.searchParams.get("event") !== summary.event_id) url.searchParams.delete("at");
     ["alias", "source", "candidate"].forEach(function (key) { url.searchParams.delete(key); });
     url.searchParams.set("event", summary.event_id);
     if (view) url.searchParams.set("view", view); else url.searchParams.delete("view");
@@ -1687,43 +1745,46 @@
   }
   function openCandidate(summary, scroll, opener, replaceRoute, quietRefresh) {
     if (!summary || !summary.detail_chunk) return;
+    var request = ++state.routeRequest;
     var focusReplacement = !quietRefresh || el.workspace.contains(document.activeElement);
     if (opener) rememberCandidateOpener(opener, summary);
     else if (!state.activeOpener) rememberCandidateOpener(null, summary);
     state.activeSummary = summary; state.activeDetail = null; repaintCandidateLinks(); setCandidateRoute(summary, Boolean(replaceRoute));
     var requestedBand = new URL(window.location.href).searchParams.get("band");
     if (requestedBand) state.photBand[summary.event_id] = requestedBand;
-    var requestedEventId = summary.event_id;
+    var requestedEventId = summary.event_id, epoch = state.releaseEpoch;
     el.workspace.hidden = false;
-    el.workspace.innerHTML = '<div class="ctas-loading" role="status" aria-live="polite" tabindex="-1" data-dossier-focus><strong>Loading ' + esc(summary.name) + "…</strong><span>Fetching its checksum-bound public evidence shard.</span></div>";
+    el.workspace.innerHTML = '<div class="ctas-loading" role="status" aria-live="polite" tabindex="-1" data-dossier-focus><strong>Loading ' + esc(summary.name) + '…</strong><span>Fetching its checksum-bound public evidence shard.</span><button type="button" data-close-candidate>Close</button></div>';
     if (scroll && !(window.matchMedia && window.matchMedia("(min-width: 961px)").matches)) el.workspace.scrollIntoView({behavior: reducedMotion() ? "auto" : "smooth", block: "start"});
     if (focusReplacement) focusDossierTarget();
     loadChunk(summary.detail_chunk).then(function (document_) {
-      if (!state.activeSummary || state.activeSummary.event_id !== requestedEventId || el.workspace.hidden) return;
+      if (request !== state.routeRequest || epoch !== state.releaseEpoch || !state.activeSummary || state.activeSummary.event_id !== requestedEventId || el.workspace.hidden) return;
       var detail = (document_.candidates || []).find(function (candidate) { return candidate.event_id === summary.event_id; });
       if (!detail) throw new Error("Candidate was not found in its published detail shard.");
       state.activeDetail = detail; el.workspace.innerHTML = renderDetails(detail); restoreDossierView(detail);
       window.dispatchEvent(new CustomEvent("ctas:candidate-opened", {detail: {candidate: detail, summary: summary}}));
       if (focusReplacement) focusDossierTarget();
     }).catch(function (error) {
-      if (!state.activeSummary || state.activeSummary.event_id !== requestedEventId || el.workspace.hidden) return;
+      if (request !== state.routeRequest || epoch !== state.releaseEpoch || !state.activeSummary || state.activeSummary.event_id !== requestedEventId || el.workspace.hidden) return;
       el.workspace.innerHTML = '<div class="ctas-empty ctas-empty--error"><h3 tabindex="-1" data-dossier-focus>Candidate details could not be loaded</h3><p>' +
-        esc(error.message) + '</p><button type="button" data-retry-candidate>Retry this record</button></div>';
+        esc(error.message) + '</p><button type="button" data-retry-candidate>Retry this record</button><button type="button" data-close-candidate>Close</button></div>';
       if (focusReplacement) focusDossierTarget();
     });
   }
   function closeCandidate() {
+    state.routeRequest += 1;
     var opener = state.activeOpener, summary = state.activeSummary;
     state.activeSummary = null; state.activeDetail = null; el.workspace.hidden = true; el.workspace.innerHTML = ""; repaintCandidateLinks();
     window.dispatchEvent(new CustomEvent("ctas:candidate-closed"));
     var url = new URL(window.location.href);
-    ["event", "view", "band", "alias", "source", "candidate"].forEach(function (key) { url.searchParams.delete(key); });
+    ["event", "view", "band", "alias", "source", "candidate", "at"].forEach(function (key) { url.searchParams.delete(key); });
     url.hash = "ranked-candidates";
     history.pushState(null, "", url.pathname + (url.searchParams.toString() ? "?" + url.searchParams.toString() : "") + url.hash);
     state.activeOpener = null;
     restoreCandidateOpener(opener, summary);
   }
   function clearCandidateForHistoryNavigation() {
+    state.routeRequest += 1;
     state.activeSummary = null;
     state.activeDetail = null;
     state.activeOpener = null;
@@ -1732,11 +1793,11 @@
     el.workspace.innerHTML = "";
     repaintCandidateLinks();
   }
-  function openRouteCandidate(scroll) {
+  function openRouteCandidate(scroll, quietRefresh) {
     var route = routeMatches();
     if (!route.kind) return false;
-    if (route.matches.length === 1) { openCandidate(route.matches[0], scroll, null, true); return true; }
-    renderAliasAmbiguity(route); return true;
+    if (route.kind === "event UUID") { openResolvedCandidate(route.value, scroll, null, true, quietRefresh); return true; }
+    openByName(route.value, route.source, scroll, true, quietRefresh); return true;
   }
   function reconcileHistoryRoute() {
     restoreFiltersFromRoute();
@@ -1833,6 +1894,7 @@
   }
   function rerenderForFilters() {
     state.shown = PAGE; renderTable(); notifyFilterChange();
+    if (skyNeedsCompleteCatalog() && !state.completeCatalogLoaded) loadCompleteCatalog().catch(function () {});
     if (window.CTASWorkbench && window.CTASWorkbench.refreshActions) window.CTASWorkbench.refreshActions();
   }
   function inputNumber(field) { return field && field.value !== "" && isFinite(Number(field.value)) ? Number(field.value) : null; }
@@ -1880,7 +1942,7 @@
     if (el.loadComplete) {
       el.loadComplete.addEventListener("click", function () {
         el.loadComplete.disabled = true;
-        loadCompleteCatalog().catch(function () { el.loadComplete.disabled = false; });
+        loadCompleteCatalog().catch(function () {});
       });
     }
     document.addEventListener("pointerover", function (event) {
@@ -1925,8 +1987,7 @@
       if (fragmentLink) revealFragment(fragmentLink.getAttribute("href"));
       var open = event.target.closest("[data-open-event]");
       if (open) {
-        var summary = state.candidates.find(function (candidate) { return candidate.event_id === open.getAttribute("data-open-event"); });
-        if (summary) openCandidate(summary, true, open, false); return;
+        openResolvedCandidate(open.getAttribute("data-open-event"), true, open, false); return;
       }
       if (event.target.closest("[data-close-candidate]")) { closeCandidate(); return; }
       if (event.target.closest("[data-retry-candidate]")) {
@@ -2005,9 +2066,20 @@
     });
   }
 
-  function applySnapshot(index, status, universe, releaseHistory, catalogManifest, cached) {
+  function applySnapshot(index, status, universe, releaseHistory, catalogManifest, cached, quietRefresh) {
+    // Decode the successor completely before replacing any visible release state.
+    var candidates = window.CTASCatalogModel.inflateBootstrap(index);
+    var sky = window.CTASCatalogModel.inflateSky(index);
+    state.releaseEpoch += 1; state.routeRequest += 1;
+    state.chunks = {}; state.aliasIndex = null; state.aliasPromise = null;
+    state.resolvedCandidates = {}; state.sourceMatrixPatterns = null; state.sourceMatrixPatternsPromise = null;
+    state.catalogManifestPromise = null; state.completeCatalogLoaded = false; state.completeCatalogPromise = null;
+    state.activeSummary = null; state.activeDetail = null; state.skySelected = null;
+    state.refreshError = null;
+    if (el.loadComplete) { el.loadComplete.disabled = false; el.loadComplete.textContent = "Browse complete catalog"; }
+    if (el.completeStatus) el.completeStatus.textContent = "Showing the compact summary. Browse the complete catalog to load all " + Number(index.candidate_count).toLocaleString() + " retained records in this release.";
     state.snapshot = index;
-    state.candidates = window.CTASCatalogModel ? window.CTASCatalogModel.inflateBootstrap(index) : (Array.isArray(index.candidates) ? index.candidates : []);
+    state.candidates = candidates; state.skyCandidates = sky;
     state.status = status || {pipeline_status: "unknown", last_successful_update: index.catalog_as_of || index.generated_at, candidate_count: state.candidates.length};
     state.sourceUniverse = universe; state.releaseHistory = releaseHistory;
     state.catalogManifest = catalogManifest; state.cachedSnapshot = Boolean(cached);
@@ -2018,8 +2090,7 @@
     window.dispatchEvent(new CustomEvent("ctas:snapshot", {detail: {snapshot: state.snapshot, status: state.status,
       candidates: state.candidates, sourceUniverse: state.sourceUniverse, releaseHistory: state.releaseHistory,
       catalogManifest: state.catalogManifest, cached: state.cachedSnapshot}}));
-    var url = new URL(window.location.href), needsAliases = Boolean(url.searchParams.get("alias") || url.searchParams.get("source") || legacyCandidateFromHash());
-    (needsAliases ? ensureAliasIndex() : Promise.resolve()).then(function () { openRouteCandidate(false); }).catch(function () { openRouteCandidate(false); });
+    openRouteCandidate(false, quietRefresh);
     revealFragment();
   }
   function showLoadError(error) {
@@ -2072,67 +2143,109 @@
     }).catch(showLoadError);
   }
   function pollStatus() {
-    if (state.autoRefreshPaused || document.hidden) return;
-    getJSON("status.json", 2).then(function (status) {
+    renderStatus();
+    if (state.autoRefreshPaused || document.hidden || state.polling) return Promise.resolve();
+    state.polling = true;
+    return getJSON("status.json", 2).then(function (status) {
       var previousStatus = state.status || {};
-      var oldCatalogChecksum = previousStatus.catalog_content_checksum_sha256;
+      var oldCatalogChecksum = (state.snapshot || {}).catalog_content_checksum_sha256;
       var oldPublicationChecksum = previousStatus.publication_state_checksum_sha256;
       var catalogChanged = Boolean(status.catalog_content_checksum_sha256) && oldCatalogChecksum !== status.catalog_content_checksum_sha256;
       var publicationStateChanged = Boolean(status.publication_state_checksum_sha256) && oldPublicationChecksum !== status.publication_state_checksum_sha256;
-      state.status = status; renderStatus();
       if (catalogChanged || publicationStateChanged) {
-        var activeId = state.activeSummary && state.activeSummary.event_id;
-        fetchReleaseBundle(Date.now()).then(function (result) {
+        return fetchReleaseBundle(Date.now()).then(function (result) {
           var index = result[0];
-          state.snapshot = index; state.candidates = window.CTASCatalogModel.inflateBootstrap(index); state.chunks = {}; state.aliasIndex = null; state.aliasPromise = null;
-          state.sourceMatrixPatterns = null; state.sourceMatrixPatternsPromise = null; state.completeCatalogLoaded = false;
-          state.catalogManifestPromise = null;
-          state.sourceUniverse = result[2]; state.releaseHistory = result[3]; state.catalogManifest = result[4]; state.status = result[1] || status;
-          populateFilters(); restoreFiltersFromRoute(); renderStatus(); renderOverview(); renderCatalogDownloads(); renderSourceUniverse(); renderReleaseHistory(); renderTable(); drawSky();
-          window.dispatchEvent(new CustomEvent("ctas:snapshot", {detail: {snapshot: state.snapshot, status: state.status,
-            candidates: state.candidates, sourceUniverse: state.sourceUniverse, releaseHistory: state.releaseHistory,
-            catalogManifest: state.catalogManifest, cached: false}}));
+          applySnapshot(index, result[1], result[2], result[3], result[4], false, true);
           try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({index: index, status: state.status, universe: result[2], history: result[3], manifest: result[4]})); }
           catch (_) { /* cache is best effort */ }
-          if (activeId) {
-            var refreshed = state.candidates.find(function (candidate) { return candidate.event_id === activeId; });
-            if (refreshed) openCandidate(refreshed, false, null, true, true); else openRouteCandidate(false);
-          }
         });
       }
-    }).catch(function () { /* the loaded catalog remains usable */ });
+      assertReleaseConsistency(state.snapshot, status, state.sourceUniverse, null);
+      state.status = status; state.refreshError = null; state.cachedSnapshot = false; renderStatus();
+    }).catch(function (error) {
+      state.refreshError = error.message || "The current release could not be loaded.";
+      renderStatus();
+    }).finally(function () { state.polling = false; });
   }
 
   function candidateSummaryById(eventId) {
-    return state.candidates.find(function (candidate) { return candidate.event_id === eventId; }) || null;
+    eventId = text(eventId).toLowerCase();
+    return state.candidates.find(function (candidate) { return candidate.event_id === eventId; }) || state.resolvedCandidates[eventId] || null;
   }
   function loadCandidateDetail(eventId) {
-    var summary = candidateSummaryById(eventId);
-    if (!summary || !summary.detail_chunk) return Promise.reject(new Error("Candidate is not present in this public release."));
-    return loadChunk(summary.detail_chunk).then(function (document_) {
+    eventId = text(eventId).toLowerCase();
+    var summary = candidateSummaryById(eventId), epoch = state.releaseEpoch;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(text(eventId))) {
+      return Promise.reject(new Error("A valid stable CTAS event UUID is required."));
+    }
+    var pathPromise = summary && summary.detail_chunk ? Promise.resolve(summary.detail_chunk) : ensureCatalogManifest().then(function (manifest) {
+      // Match candidate_bucket(): SHA-256(UUID), first 32 bits modulo shard count.
+      // The derived path is still required to exist in the checksum-bound manifest.
+      var count = Number(manifest.chunk_count);
+      if (count !== 4096 && count !== 256) throw new Error("This release uses an unsupported detail-shard layout.");
+      return sha256Hex(new TextEncoder().encode(eventId.toLowerCase())).then(function (hash) {
+        return "candidate-chunks/" + (parseInt(hash.slice(0, 8), 16) % count).toString(16).padStart(count === 4096 ? 3 : 2, "0") + ".json";
+      });
+    });
+    return pathPromise.then(function (path) {
+      assertCurrentRelease(epoch);
+      return loadChunk(path).then(function (document_) {
+      assertCurrentRelease(epoch);
       var detail = (document_.candidates || []).find(function (candidate) { return candidate.event_id === eventId; });
       if (!detail) throw new Error("Candidate is absent from its checksum-bound detail shard.");
+      state.resolvedCandidates[eventId] = Object.assign({}, detail, {detail_chunk: path});
       return detail;
+      });
     });
   }
-  function openByName(name) {
+  function showResolutionError(error) {
+    el.workspace.hidden = false;
+    el.workspace.innerHTML = '<div class="ctas-empty ctas-empty--error"><h3 tabindex="-1" data-dossier-focus>Candidate could not be resolved</h3><p>' + esc(error.message) + '</p><button type="button" data-close-candidate>Close</button></div>';
+    focusDossierTarget();
+  }
+  function openResolvedCandidate(eventId, scroll, opener, replaceRoute, quietRefresh) {
+    eventId = text(eventId).toLowerCase();
+    var request = ++state.routeRequest, epoch = state.releaseEpoch;
+    var summary = candidateSummaryById(eventId);
+    if (summary) { openCandidate(summary, scroll, opener, replaceRoute, quietRefresh); return Promise.resolve(summary); }
+    el.workspace.hidden = false;
+    el.workspace.innerHTML = '<div role="status" class="ctas-loading">Resolving the archived record…<button type="button" data-close-candidate>Close</button></div>';
+    return loadCandidateDetail(eventId).then(function () {
+      if (request !== state.routeRequest || epoch !== state.releaseEpoch) return null;
+      var resolved = candidateSummaryById(eventId);
+      openCandidate(resolved, scroll, opener, replaceRoute, quietRefresh); return resolved;
+    }).catch(function (error) {
+      if (request === state.routeRequest && epoch === state.releaseEpoch) showResolutionError(error);
+      return null;
+    });
+  }
+  function openByName(name, source, scroll, replaceRoute, quietRefresh) {
     var normalized = text(name).trim().toLowerCase();
     if (!normalized) return Promise.reject(new Error("A candidate name or alias is required."));
-    var direct = state.candidates.filter(function (candidate) { return text(candidate.name).toLowerCase() === normalized; });
+    var request = ++state.routeRequest, epoch = state.releaseEpoch;
     function finish(matches) {
-      if (matches.length === 1) { openCandidate(matches[0], true, null, false); return matches[0]; }
+      if (request !== state.routeRequest || epoch !== state.releaseEpoch) return null;
+      if (matches.length === 1) { openCandidate(matches[0], scroll !== false, null, Boolean(replaceRoute), quietRefresh); return matches[0]; }
       renderAliasAmbiguity({kind: "unscoped alias", value: name, matches: matches});
       return null;
     }
-    if (direct.length === 1) return Promise.resolve(finish(direct));
-    return ensureAliasIndex().then(function () {
-      var matches = state.candidates.filter(function (candidate) {
-        return text(candidate.name).toLowerCase() === normalized || (candidate.designations || []).some(function (row) {
-          return text(row.designation).toLowerCase() === normalized;
-        });
+    return ensureAliasIndex().then(function (document_) {
+      var columns = document_.columns, ids = new Set();
+      if (!source) state.candidates.concat(state.skyCandidates).forEach(function (candidate) {
+        if (text(candidate.name).toLowerCase() === normalized) ids.add(candidate.event_id);
       });
-      return finish(matches);
-    }).catch(function () { return finish(direct); });
+      document_.rows.forEach(function (row) {
+        if (text(row[columns.indexOf("designation")]).toLowerCase() === normalized &&
+          (!source || text(row[columns.indexOf("source_key")]).toLowerCase() === source.toLowerCase())) ids.add(row[columns.indexOf("event_id")]);
+      });
+      return Promise.all(Array.from(ids).map(function (id) {
+        var summary = candidateSummaryById(id);
+        return summary ? Promise.resolve(summary) : loadCandidateDetail(id).then(function () { return candidateSummaryById(id); });
+      })).then(finish);
+    }).catch(function (error) {
+      if (request === state.routeRequest && epoch === state.releaseEpoch) showResolutionError(error);
+      return null;
+    });
   }
 
   window.CTASApp = {
@@ -2143,12 +2256,11 @@
     getFilters: currentFilters,
     loadCandidateDetail: loadCandidateDetail,
     openById: function (eventId) {
-      var summary = candidateSummaryById(eventId);
-      if (!summary) return false;
-      openCandidate(summary, true, null, false); return true;
+      return openResolvedCandidate(eventId, true, null, false);
     },
     openByName: openByName
   };
 
   bindInterface(); bindSky(); boot(); window.setInterval(pollStatus, 120000);
+  window.setInterval(renderStatus, 60000);
 }());

@@ -14,6 +14,8 @@ function candidate(overrides) {
     classification: "Unclassified",
     primary_messenger: "electromagnetic",
     messenger_channels: ["electromagnetic"],
+    score_detected_messengers: ["electromagnetic"],
+    score_applicable_terms: ["spectroscopy_gap_points"],
     discovery_magnitude: 17,
     follow_up_total: 0,
     follow_up_counts: {spectra: 0},
@@ -32,8 +34,10 @@ assert.strictEqual(model.matchesPreset(candidate(), "event-only", now), true);
 assert.strictEqual(model.matchesPreset(candidate({discovery_time: "2026-08-23T11:00:00Z"}), "today", now), true);
 assert.strictEqual(model.matchesPreset(candidate({discovery_time: "2026-08-22T11:59:59Z"}), "today", now), false);
 assert.strictEqual(model.matchesPreset(candidate({follow_up_total: 1}), "event-only", now), false);
-assert.strictEqual(model.matchesPreset(candidate({primary_messenger: "multimessenger"}), "multimessenger", now), true);
-assert.strictEqual(model.matchesPreset(candidate({messenger_channels: ["neutrino", "gamma-ray"]}), "multimessenger", now), true);
+assert.strictEqual(model.matchesPreset(candidate({primary_messenger: "multimessenger"}), "multimessenger", now), false);
+assert.strictEqual(model.matchesPreset(candidate({messenger_channels: ["radio", "gamma-ray"]}), "multimessenger", now), false);
+assert.strictEqual(model.matchesPreset(candidate({score_detected_messengers: ["neutrino", "electromagnetic"]}), "multimessenger", now), true);
+assert.strictEqual(model.matchesPreset(candidate({score_applicable_terms: []}), "no-spectra", now), false);
 assert.strictEqual(model.matchesPreset(candidate({follow_up_counts: {spectra: 1}}), "no-spectra", now), false);
 assert.strictEqual(model.matchesPreset(candidate({latest_retraction_at: "2026-08-22T00:00:00Z"}), "retracted", now), true);
 assert.strictEqual(model.matchesPreset(candidate({latest_retraction_at: "2026-06-22T00:00:00Z"}), "retracted", now), true);
@@ -50,6 +54,10 @@ const sky = [
 ];
 assert.deepStrictEqual(model.skyCandidates(sky, 7, now).map(c => c.name), ["week"]);
 assert.deepStrictEqual(model.skyCandidates(sky, 30, now).map(c => c.name), ["week", "month"]);
+const thinSky = model.inflateSky({sky: {columns: ["event_id", "ra_deg", "dec_deg"], rows: [["sky-only", 10, -20]]}});
+assert.deepStrictEqual(thinSky, [{event_id: "sky-only", ra_deg: 10, dec_deg: -20}]);
+assert(!Object.hasOwn(thinSky[0], "follow_up_counts"), "thin sky rows must not invent absent evidence counts");
+assert.throws(() => model.inflateSky({sky: {columns: ["event_id"], rows: [["a", "extra"]]}}));
 
 assert.strictEqual(model.sexagesimal(359.999999, 89.999999), "00:00:00.0 +90:00:00",
   "rounding must carry without emitting a :60 component");

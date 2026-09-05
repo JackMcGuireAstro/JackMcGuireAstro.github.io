@@ -274,8 +274,8 @@ class ScoreModelTests(unittest.TestCase):
 
     def test_two_independently_retained_channels_do_earn_the_bonus(self):
         candidate = self.scored(
-            follow_up={"messenger_signals": [{"messenger": "neutrino"}], "observations": [
-                {"observed_at": "2026-09-02T00:00:00Z"}]},
+            follow_up={"messenger_signals": [{"messenger": "neutrino", "detection": True}], "observations": [
+                {"observed_at": "2026-09-02T00:00:00Z", "detection": True}]},
             follow_up_counts={"messenger_signals": 1, "observations": 1, "spectra": 0},
         )
         self.assertEqual(candidate["score_model"]["multimessenger_bonus"], 8.0)
@@ -286,6 +286,49 @@ class ScoreModelTests(unittest.TestCase):
             {"classification": "n/a", "probability": 0.0},
         ]})
         self.assertEqual(self.term(candidate["score_model"], "classification_conflict_points")["points"], 0.0)
+
+    def test_wavelengths_are_not_distinct_physical_messengers(self):
+        for messenger in ("x-ray", "radio", "gamma-ray"):
+            candidate = self.scored(follow_up={
+                "messenger_signals": [{"messenger": messenger, "detection": True}],
+                "observations": [{"detection": True}],
+            })
+            self.assertEqual(EXPORTER._retained_messenger_channels(candidate), ["electromagnetic"])
+            self.assertEqual(candidate["score_model"]["multimessenger_bonus"], 0)
+
+    def test_unconfirmed_or_inactive_signals_do_not_earn_a_bonus(self):
+        for update in ({"detection": None}, {"detection": False}, {"retracted": True},
+                       {"superseded": True}, {"role": "upper-limit"}, {"messenger": "multimessenger"}):
+            signal = {"messenger": "neutrino", "detection": True, **update}
+            candidate = self.scored(follow_up={"messenger_signals": [signal], "observations": [{"detection": True}]})
+            self.assertEqual(candidate["score_model"]["multimessenger_bonus"], 0)
+        candidate = self.scored(follow_up={"messenger_signals": [{"messenger": "neutrino", "detection": True}],
+                                         "observations": [{"detection": False}]})
+        self.assertEqual(candidate["score_model"]["multimessenger_bonus"], 0)
+
+    def test_compact_score_metadata_matches_the_dossier(self):
+        candidate = self.scored(ctas_score=12.34)
+        row = dict(zip(EXPORTER.CATALOG_CANDIDATE_COLUMNS, EXPORTER.compact_candidate_row(candidate)))
+        model = candidate["score_model"]
+        self.assertEqual(model["recorded_score_at_ingest"], 12.34)
+        self.assertEqual(row["score_as_of"], model["score_as_of"])
+        self.assertEqual(row["score_valid_until"], model["valid_until"])
+        self.assertEqual(row["score_method_version"], model["method_version"])
+        self.assertEqual(row["score_applicable_terms"], model["applicable_terms"])
+        code = (ROOT / "scripts/export_ctas_snapshot.py").read_text()
+        self.assertEqual(code.count('candidate["score_model"] = score_model_for(candidate, generated_dt)'), 1)
+        self.assertIn('"score_method_version": SCORE_METHOD_VERSION', code)
+
+    def test_notice_revision_pipeline_removes_retracted_messenger_from_score(self):
+        rows = EXPORTER.derive_messenger_revisions([
+            {"provider": "gcn", "provider_signal_id": "event:r0:initial", "messenger": "neutrino", "role": "trigger", "detection": True},
+            {"provider": "gcn", "provider_signal_id": "event:r1:retraction", "messenger": "neutrino", "role": "retraction", "detection": False},
+        ])
+        self.assertTrue(rows[0]["superseded"])
+        self.assertTrue(rows[1]["retracted"])
+        candidate = self.scored(follow_up={"messenger_signals": rows, "observations": [{"detection": True}]})
+        self.assertEqual(candidate["score_model"]["detected_physical_messengers"], ["electromagnetic"])
+        self.assertEqual(candidate["score_model"]["multimessenger_bonus"], 0)
 
     def test_a_subtype_refinement_is_not_a_classification_conflict(self):
         candidate = self.scored(follow_up={"classifications": [
@@ -779,7 +822,9 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn("Only local commit and origin publication bindings are pending", app)
         self.assertIn('"failed_gate_ids"', (ROOT / "scripts/export_ctas_snapshot.py").read_text())
         self.assertIn('localPreview ? "Local preview"', app)
-        self.assertIn('stale ? "Publisher paused"', app)
+        self.assertIn('stale ? "Snapshot out of date"', app)
+        self.assertIn('statusCell("Browser check"', app)
+        self.assertIn("not a two-minute publication guarantee", app)
         self.assertIn('window.location.protocol === "file:"', app)
         self.assertIn("Open the current public CTAS catalog", app)
         self.assertNotIn("Certified Static Catalog", html + app)
@@ -824,7 +869,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn("Latest arrivals", html)
         self.assertIn("View every report from the last 24 hours", html)
         self.assertIn('data-preset="today"', html)
-        self.assertIn("Browse the complete retained catalog", app)
+        self.assertIn("Browse complete catalog", app)
         self.assertIn("var PAGE = 100;", app)
         self.assertIn("discovery >= cutoff", app)
         self.assertIn("maintained contracts—not every astronomical source", app)

@@ -33,16 +33,17 @@
     if (preset === "classified") return Boolean(classified && classified.getTime() >= sevenDays);
     if (preset === "retracted") return String(candidate.status || "").toLowerCase() === "retracted" || Boolean(retracted);
     if (preset === "spectra") return Boolean(spectrum && spectrum.getTime() >= thirtyDays);
-    if (preset === "no-spectra") return !Number(counts.spectra || 0);
+    if (preset === "no-spectra") return (candidate.score_applicable_terms || []).indexOf("spectroscopy_gap_points") !== -1 && !Number(counts.spectra || 0);
     if (preset === "messenger") return Boolean(messenger && messenger.getTime() >= sevenDays);
     if (preset === "unclassified") return !candidate.classification || candidate.classification === "Unclassified";
     if (preset === "bright") return candidate.discovery_magnitude !== null && candidate.discovery_magnitude !== undefined && Number(candidate.discovery_magnitude) <= 18;
-    if (preset === "multimessenger") return String(candidate.primary_messenger || "").toLowerCase() === "multimessenger" || (candidate.messenger_channels || []).length >= 2;
+    if (preset === "multimessenger") return (candidate.score_detected_messengers || []).length >= 2;
     if (preset === "rich") return completeness.label === "Rich public record";
     if (preset === "event-only") return Number(candidate.follow_up_total || 0) === 0;
     if (preset === "needs-follow-up") {
+      if (candidate.default_leaderboard_eligible === false) return false;
       return Number(candidate.follow_up_total || 0) === 0 ||
-        !Number(counts.spectra || 0) ||
+        ((candidate.score_applicable_terms || []).indexOf("spectroscopy_gap_points") !== -1 && !Number(counts.spectra || 0)) ||
         !candidate.classification || candidate.classification === "Unclassified";
     }
     return true;
@@ -204,6 +205,20 @@
     return params;
   }
 
+  function inflateSky(index) {
+    var sky = index && index.sky;
+    if (!sky) return [];
+    if (!Array.isArray(sky.columns) || !Array.isArray(sky.rows) || new Set(sky.columns).size !== sky.columns.length) {
+      throw new Error("The compact sky table is invalid.");
+    }
+    return sky.rows.map(function (row) {
+      if (!Array.isArray(row) || row.length !== sky.columns.length) throw new Error("A compact sky row has the wrong width.");
+      var candidate = {};
+      sky.columns.forEach(function (key, i) { candidate[key] = row[i]; });
+      return candidate;
+    });
+  }
+
   function inflateBootstrap(index) {
     if (Array.isArray(index && index.candidates)) return index.candidates.slice();
     var columns = index && index.candidate_columns, rows = index && index.candidate_rows;
@@ -312,6 +327,7 @@
     filteredCandidates: filteredCandidates,
     greatCircleDistanceDeg: greatCircleDistanceDeg,
     inflateBootstrap: inflateBootstrap,
+    inflateSky: inflateSky,
     latestMeaningful: latestMeaningful,
     matchesFilters: matchesFilters,
     matchesPreset: matchesPreset,
