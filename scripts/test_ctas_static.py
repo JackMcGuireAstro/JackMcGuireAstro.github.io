@@ -7,6 +7,8 @@ import csv
 import hashlib
 import importlib.util
 import json
+import subprocess
+import tempfile
 import unittest
 import uuid
 import xml.etree.ElementTree as ET
@@ -554,6 +556,121 @@ class TimelineTests(unittest.TestCase):
         kinds = [row["evidence_type"] for row in EXPORTER.timeline_for(candidate)]
         self.assertEqual(kinds.count("classification"), 2)
         self.assertIn("classification retraction", kinds)
+
+
+class PublisherPageAllowlistTests(unittest.TestCase):
+    """Exercise the real shell allowlist with temporary Git commit trees."""
+
+    def setUp(self):
+        self.publisher = (ROOT / "scripts/publish_ctas.sh").read_text()
+        start = self.publisher.index("# --------------------------------------------------------- collect catalog pages")
+        end = self.publisher.index("# ------------------------------------------------------------------ tests", start)
+        self.block = self.publisher[start:end]
+        self.assertGreater(start, self.publisher.rindex("export_ctas_snapshot.py --database"))
+        self.assertGreater(start, self.publisher.index('cd "$SITE"'))
+        self.temporary = tempfile.TemporaryDirectory(prefix="ctas-publisher-pages-")
+        self.addCleanup(self.temporary.cleanup)
+        self.site = Path(self.temporary.name).resolve()
+        self.pages_dir = self.site / "ctas/data/catalog-pages"
+        self.pages_dir.mkdir(parents=True)
+        chunks = self.site / "ctas/data/candidate-chunks"
+        chunks.mkdir()
+        (chunks / "manifest.json").write_text('{"chunks": []}')
+        self.git("init", "-q")
+        self.git("config", "user.name", "CTAS fixture")
+        self.git("config", "user.email", "ctas-fixture@example.invalid")
+        self.write_pages(0)
+        self.git("add", "ctas")
+        self.git("commit", "-qm", "empty catalog fixture")
+
+    def git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.site, text=True,
+                              capture_output=True, check=True).stdout
+
+    def write_pages(self, count):
+        pages = []
+        for index in range(1, count + 1):
+            relative = f"ctas/data/catalog-pages/{index:04d}.json"
+            raw = json.dumps({"candidate_rows": [[f"fixture-{index}"]]}).encode()
+            (self.site / relative).write_bytes(raw)
+            pages.append({"page": index, "path": relative, "bytes": len(raw),
+                          "sha256": hashlib.sha256(raw).hexdigest(), "candidate_count": 1})
+        self.manifest = {"pages": pages, "page_count": count, "candidate_count": count}
+        self.write_manifest()
+
+    def write_manifest(self):
+        (self.pages_dir / "manifest.json").write_text(json.dumps(self.manifest))
+
+    def collect(self, commit=True):
+        script = ('set -euo pipefail\ncd "$1"\n'
+                  'PUBLIC_FILES=(ctas/data/catalog-pages/manifest.json)\n'
+                  'die() { echo "$*" >&2; exit 1; }\nsay() { :; }\n' + self.block)
+        if commit:
+            script += '\ngit add -- "${PUBLIC_FILES[@]}"\ngit commit -qm "page fixture release"\n'
+        return subprocess.run(["/bin/bash", "-c", script, "publisher-page-test", str(self.site)],
+                              cwd=self.site.parent, text=True, capture_output=True)
+
+    def test_new_growth_and_retired_pages_reach_the_commit_tree(self):
+        (self.site / "unrelated-private.txt").write_text("must remain untracked")
+        for count in (2, 3, 1):
+            with self.subTest(count=count):
+                self.write_pages(count)
+                result = self.collect()
+                self.assertEqual(result.returncode, 0, result.stderr)
+                actual = set(self.git("ls-tree", "-r", "--name-only", "HEAD",
+                                      "ctas/data/catalog-pages").splitlines())
+                expected = {"ctas/data/catalog-pages/manifest.json"} | {
+                    f"ctas/data/catalog-pages/{i:04d}.json" for i in range(1, count + 1)}
+                self.assertEqual(actual, expected)
+                self.assertEqual(self.git("ls-files", "unrelated-private.txt"), "")
+                self.assertTrue((self.site / "unrelated-private.txt").exists())
+
+    def test_invalid_pages_fail_before_retirement_or_commit(self):
+        self.write_pages(3)
+        self.assertEqual(self.collect().returncode, 0)
+        head = self.git("rev-parse", "HEAD")
+        for defect in ("missing", "bytes", "hash", "duplicate", "gap", "traversal",
+                       "symlink", "row-count", "page-count", "total-count"):
+            with self.subTest(defect=defect):
+                first = self.pages_dir / "0001.json"
+                if first.is_symlink():
+                    first.unlink()
+                self.write_pages(1)
+                row = self.manifest["pages"][0]
+                if defect == "missing": first.unlink()
+                elif defect == "bytes": row["bytes"] += 1
+                elif defect == "hash": row["sha256"] = "0" * 64
+                elif defect == "duplicate":
+                    self.manifest["pages"].append(dict(row)); self.manifest["page_count"] = 2
+                elif defect == "gap": row["page"] = 2
+                elif defect == "traversal": row["path"] = "ctas/data/catalog-pages/../../private.txt"
+                elif defect == "symlink":
+                    copied = self.site / "redirected.json"
+                    copied.write_bytes(first.read_bytes()); first.unlink(); first.symlink_to(copied)
+                elif defect == "row-count": row["candidate_count"] = 2
+                elif defect == "page-count": self.manifest["page_count"] = 2
+                elif defect == "total-count": self.manifest["candidate_count"] = 2
+                self.write_manifest()
+                self.assertNotEqual(self.collect().returncode, 0)
+                self.assertEqual(self.git("rev-parse", "HEAD"), head)
+                self.assertTrue((self.pages_dir / "0003.json").is_file())
+
+    def test_repair_only_untracked_pages_are_not_mistaken_for_no_change(self):
+        self.write_pages(1)
+        self.git("add", "ctas/data/catalog-pages/manifest.json")
+        self.git("commit", "-qm", "manifest-only historical defect")
+        self.assertEqual(self.git("diff", "HEAD", "--", "ctas/data"), "")
+        start = self.publisher.index("UNTRACKED_PUBLIC=$(git ls-files")
+        end = self.publisher.index("\nCOUNT=", start)
+        script = ('set -euo pipefail\ncd "$1"\nPUBLIC_FILES=(ctas/data/catalog-pages/0001.json)\n'
+                  'die() { exit 1; }\nsay() { echo "$*"; }\n' + self.publisher[start:end]
+                  + '\necho REPAIR_NEEDED\n')
+        result = subprocess.run(["/bin/bash", "-c", script, "untracked-test", str(self.site)],
+                                text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("REPAIR_NEEDED", result.stdout)
+        self.assertEqual(self.collect().returncode, 0)
+        self.assertIn("ctas/data/catalog-pages/0001.json", self.git("ls-tree", "-r", "--name-only", "HEAD"))
 
 
 class CertificateAndArtifactTests(unittest.TestCase):

@@ -44,12 +44,6 @@ for bucket_index in {0..4095}; do
   printf -v bucket '%03x' "$bucket_index"
   PUBLIC_FILES+=("ctas/data/candidate-chunks/$bucket.json")
 done
-# Complete-catalog pages are bounded and few; publish every page the exporter
-# produced rather than a fixed count, so a growing catalog cannot silently drop
-# its tail from the release.
-while IFS= read -r page; do
-  [ -n "$page" ] && PUBLIC_FILES+=("$page")
-done < <(find ctas/data/catalog-pages -maxdepth 1 -name '[0-9][0-9][0-9][0-9].json' 2>/dev/null | sort)
 
 # Floor between published commits, not a schedule. 0 = publish as soon as the
 # data actually changes. Nothing happens at all unless the data changed.
@@ -157,6 +151,48 @@ python3 scripts/check_ctas_links.py --catalog-index ctas/data/catalog-index.json
 python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
   --release-base-ref origin/main >>"$LOG" 2>&1 \
   || die "verification-report rebuild failed; nothing committed"
+
+# --------------------------------------------------------- collect catalog pages
+# Discover only the completed export's checksum-bound pages, never yesterday's
+# directory contents. Fresh checkouts and a growing catalog may have no pages
+# until export finishes. Command substitution propagates validation failures.
+CATALOG_PAGE_FILES=$(python3 - <<'PYCTASPAGES'
+import hashlib
+import json
+import re
+from pathlib import Path
+
+root = Path.cwd().resolve()
+manifest = json.loads(Path("ctas/data/catalog-pages/manifest.json").read_text())
+pages = manifest["pages"]
+if not isinstance(pages, list) or len(pages) != manifest["page_count"]:
+    raise ValueError("Complete-catalog page count differs from manifest")
+paths, candidates = [], 0
+for index, row in enumerate(pages, 1):
+    relative = row["path"]
+    if not isinstance(relative, str) or not re.fullmatch(r"ctas/data/catalog-pages/[0-9]{4}\.json", relative):
+        raise ValueError("Unexpected complete-catalog page path")
+    if relative != f"ctas/data/catalog-pages/{index:04d}.json" or row["page"] != index:
+        raise ValueError("Complete-catalog pages must be unique and consecutive")
+    target = root / relative
+    if target.is_symlink() or target.resolve() != target or not target.is_file():
+        raise ValueError("Complete-catalog page is missing or is a redirected path")
+    raw = target.read_bytes()
+    if len(raw) != row["bytes"] or hashlib.sha256(raw).hexdigest() != row["sha256"]:
+        raise ValueError("Complete-catalog page integrity mismatch: " + relative)
+    candidate_rows = json.loads(raw)["candidate_rows"]
+    if not isinstance(candidate_rows, list) or len(candidate_rows) != row["candidate_count"]:
+        raise ValueError("Complete-catalog row count mismatch: " + relative)
+    candidates += len(candidate_rows)
+    paths.append(relative)
+if candidates != manifest["candidate_count"]:
+    raise ValueError("Complete-catalog candidate count differs from manifest")
+print("\n".join(paths))
+PYCTASPAGES
+) || die "complete-catalog page validation failed; nothing committed"
+while IFS= read -r page; do
+  [ -n "$page" ] && PUBLIC_FILES+=("$page")
+done <<<"$CATALOG_PAGE_FILES"
 
 # ------------------------------------------------- retire superseded artifacts
 # The partition width and the first-screen artifact can change between code
@@ -309,7 +345,9 @@ elif [ "$CODE_BINDING_CHANGED" -eq 1 ]; then
   say "bound public code changed; publishing a matching snapshot-verification refresh"
 fi
 
-if git diff --quiet HEAD -- "${PUBLIC_FILES[@]}" 2>/dev/null; then
+UNTRACKED_PUBLIC=$(git ls-files --others -- "${PUBLIC_FILES[@]}") \
+  || die "could not inspect untracked public artifacts"
+if git diff --quiet HEAD -- "${PUBLIC_FILES[@]}" 2>/dev/null && [ -z "$UNTRACKED_PUBLIC" ]; then
   say "public artifacts already match HEAD; nothing to publish"
   exit 0
 fi
