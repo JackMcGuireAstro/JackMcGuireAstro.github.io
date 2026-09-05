@@ -117,6 +117,7 @@
   }
 
   function renderComparison() {
+    var epoch = state.releaseEpoch;
     var workspace = document.getElementById("ctas-comparison-workspace"); if (!workspace) return;
     if (state.compareIds.length < 2) {
       workspace.hidden = false; workspace.innerHTML = '<div class="ctas-empty"><h3 id="ctas-comparison-title">Choose at least two candidates</h3><p>The tray accepts two to five unique stable UUIDs.</p></div>'; return;
@@ -128,14 +129,18 @@
     if (!window.CTASApp || !window.CTASApp.loadCandidateDetail) return;
     Promise.all(candidates.map(function (candidate) {
       if (state.detailById[candidate.event_id]) return Promise.resolve(state.detailById[candidate.event_id]);
-      return window.CTASApp.loadCandidateDetail(candidate.event_id).then(function (detail) { state.detailById[candidate.event_id] = detail; return detail; });
+      return window.CTASApp.loadCandidateDetail(candidate.event_id).then(function (detail) {
+        if (epoch === state.releaseEpoch) state.detailById[candidate.event_id] = detail;
+        return detail;
+      });
     })).then(function () {
-      if (!state.comparisonOpen) return;
+      if (epoch !== state.releaseEpoch || !state.comparisonOpen) return;
       var grid = workspace.querySelector(".ctas-compare-grid");
       if (grid) grid.innerHTML = candidates.map(function (candidate) { return compareCard(candidate, state.detailById[candidate.event_id]); }).join("");
       var status = document.getElementById("ctas-comparison-status"); if (status) status.textContent = "Complete selected records loaded from checksum-bound detail shards.";
       updateActionStates();
     }).catch(function (error) {
+      if (epoch !== state.releaseEpoch) return;
       var status = document.getElementById("ctas-comparison-status"); if (status) status.textContent = "Comparison detail could not be loaded: " + error.message;
     });
   }
@@ -428,6 +433,9 @@
     window.addEventListener("ctas:snapshot", function (event) {
       var epoch = ++state.releaseEpoch;
       state.detailById = {};
+      state.comparisonOpen = false;
+      var comparison = document.getElementById("ctas-comparison-workspace");
+      if (comparison) { comparison.hidden = true; comparison.innerHTML = ""; }
       state.snapshot = event.detail.snapshot; state.candidates = event.detail.candidates || []; state.sourceUniverse = event.detail.sourceUniverse || null;
       state.watchIds = loadLocal(WATCH_KEY, []).filter(function (id) { return /^[0-9a-f-]{36}$/.test(id); });
       restoreCompareIds(); renderWatchlist(); renderSourceExplorer(); updateActionStates();

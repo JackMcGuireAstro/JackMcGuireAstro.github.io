@@ -218,6 +218,12 @@ async function main() {
     assert(new URL(page.url()).searchParams.get("compare").includes(ids[2]));
     await page.locator('#candidate-workspace [data-watch-event="' + ids[2] + '"]').click();
     assert((await page.evaluate(() => JSON.parse(localStorage.getItem("ctas-browser-watchlist-v1")))).includes(ids[2]));
+    await page.locator("#candidate-workspace [data-close-candidate]").click();
+    await page.locator('#ctas-results [data-compare-event="' + ids[0] + '"]').click();
+    await page.locator("[data-open-comparison]").click();
+    assert(await page.locator("#ctas-comparison-workspace").isVisible());
+    control.version = control.statusVersion = "b"; await poll(page);
+    assert(await page.locator("#ctas-comparison-workspace").isHidden(), "an old comparison must not remain under a new release header");
     assert.deepEqual(control.errors, []); await page.close();
   });
   if (process.env.CTAS_REAL_BROWSER_SMOKE === "1") await test("real local release: first screen, archive teaching examples and five viewports", async () => {
