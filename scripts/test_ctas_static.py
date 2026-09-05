@@ -1117,9 +1117,12 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertEqual(len(tom_rows), tables["ctas/data/research/tom-targets.csv"]["row_count"])
         id_column = tom_header.index("ctas_event_id")
         type_column = tom_header.index("type")
-        self.assertTrue(all(row[type_column] == "SIDEREAL" and row[id_column] in {
-            candidate["event_id"] for candidate in self.snapshot["candidates"]
-        } for row in tom_rows))
+        # Build the immutable lookup once, not once per exported target row.
+        candidate_ids = {candidate["event_id"] for candidate in self.snapshot["candidates"]}
+        self.assertTrue(all(
+            row[type_column] == "SIDEREAL" and row[id_column] in candidate_ids
+            for row in tom_rows
+        ))
 
         notebook_path = ROOT / "ctas/research/ctas-quickstart.ipynb"
         notebook = json.loads(notebook_path.read_text())
