@@ -1145,7 +1145,8 @@ class CertificateAndArtifactTests(unittest.TestCase):
         publisher = (ROOT / "scripts/publish_ctas.sh").read_text()
         self.assertNotIn("git add -- ctas/data\n", publisher)
         self.assertIn(".backup '$PUBLISH_DB'", publisher)
-        self.assertEqual(publisher.count('--database "$PUBLISH_DB"'), 2)
+        self.assertEqual(publisher.count('export_ctas_snapshot.py --database "$PUBLISH_DB"'), 2)
+        self.assertIn('test_ctas_ingest_provenance.py --database "$PUBLISH_DB"', publisher)
         for name in (
             "live-summary.json", "catalog-index.json", "alias-index.json",
             "catalog-pages/manifest.json", "source-matrix-patterns.json",

@@ -1655,7 +1655,7 @@
   }
   function candidateRoute(summary, view, band) {
     var url = new URL(window.location.href);
-    if (url.searchParams.get("event") !== summary.event_id) url.searchParams.delete("at");
+    if (text(url.searchParams.get("event")).toLowerCase() !== summary.event_id) url.searchParams.delete("at");
     ["alias", "source", "candidate"].forEach(function (key) { url.searchParams.delete(key); });
     url.searchParams.set("event", summary.event_id);
     if (view) url.searchParams.set("view", view); else url.searchParams.delete("view");

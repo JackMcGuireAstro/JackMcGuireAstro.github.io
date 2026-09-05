@@ -128,10 +128,11 @@ async function main() {
     assert.deepEqual(control.errors, []); await page.close();
   });
   await test("fresh archive UUID, scoped alias, teaching alias, and ambiguity", async () => {
-    for (const query of ["?event=" + ids[2] + "#dossier", "?event=" + ids[2].toUpperCase() + "#dossier", "?alias=AT2025archive&source=tns#dossier"]) {
+    for (const query of ["?event=" + ids[2] + "#dossier", "?event=" + ids[2].toUpperCase() + "&at=2025-09-05T00%3A00%3A00Z#dossier", "?alias=AT2025archive&source=tns#dossier"]) {
       const {page, control} = await session(query);
       await page.waitForSelector("#ctas-dossier-title");
       assert.match(await page.locator("#ctas-dossier-title").innerText(), /AT2025archive/);
+      if (query.includes("&at=")) assert(new URL(page.url()).searchParams.has("at"), "uppercase UUID normalization must preserve same-event replay");
       assert(!control.requests.some(n => n.startsWith("catalog-pages/")));
       await page.close();
     }
