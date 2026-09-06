@@ -1,9 +1,9 @@
 {
-  "artifact_checksum_sha256": "5302a28c17559e6495a380bbf8e9fb917cf22b9cfedbc2da96abcd5fdf6595bf",
+  "artifact_checksum_sha256": "d1f3194f94cf73df43cc2ed4e2d5f62b51c6235990d4914e791fe5c66114bd98",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
-  "contract_set_checksum_sha256": "fa45aa06a682c4abe4b098881b9a37da2ea9640297ecd1b4a35c1f3e39da7e7d",
+  "contract_set_checksum_sha256": "1b0b6fc7bc447cb003a9b404d32800645f25e70c6cb20ecca0a88bc205a29da5",
   "family_count": 10,
-  "generated_at": "2026-09-06T07:55:03Z",
+  "generated_at": "2026-09-06T08:25:10Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -585,7 +585,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "d0319833ff3aac93f11647a56a11ec15e0c5ab5c918c585cbca88b0690771543",
+      "contract_checksum_sha256": "865a92c4dd3cf1a610c0fb64d1e0c2a0d313a5bf2e3abdd19d4e6d0634120383",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -600,24 +600,24 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-09-06T07:37:54.174117Z",
-      "last_successful_at": "2026-09-06T07:17:49.794907Z",
-      "last_successful_response": "2026-09-06T07:17:49.794907Z",
+      "last_attempt_at": "2026-09-06T08:08:29.397149Z",
+      "last_successful_at": "2026-09-06T07:47:56.246894Z",
+      "last_successful_response": "2026-09-06T07:47:56.246894Z",
       "last_verified": "2026-08-08",
       "name": "Fink",
-      "operational_state": "active-returning-data",
+      "operational_state": "provider-failure",
       "organization_or_facility": "Rubin community broker",
       "primary_family": "discovery-and-alert-brokers",
       "product_contracts": [],
       "protocol": "Anonymous real-time Fink/LSST REST polling, exact-object Rubin source/forced history, plus anonymous targeted Fink/ZTF archive",
       "public_disposition_counts": {
         "ambiguous-identity": 7,
-        "provider-failure": 193,
-        "searched-no-match": 4741,
-        "searched-with-data": 376
+        "provider-failure": 194,
+        "searched-no-match": 4742,
+        "searched-with-data": 377
       },
       "public_record_counts": {
-        "observations": 15166
+        "observations": 15167
       },
       "query_scope": "live-and-targeted-query",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
@@ -1452,7 +1452,7 @@
       "access_mode": "live-and-follow-up",
       "authentication_requirement": "GCN public-consumer OAuth client",
       "connector_implementation_state": "implemented-public-schema-aware-live",
-      "contract_checksum_sha256": "30deccb2dc8096cca6adce842d23e55b055f9680b54ef303dc184c30289f00a8",
+      "contract_checksum_sha256": "681c82f2b2cdfb544c67df2947926a9b89bda461bc05a447698de82ca8292abd",
       "contract_version": "1.0.0",
       "data_types": [
         "gamma-ray notice",
@@ -1466,8 +1466,8 @@
       "implementation_state": "implemented",
       "known_limitations": "Mission archives can contain proprietary follow-up; this entry covers only public GCN products",
       "last_attempt_at": null,
-      "last_successful_at": "2026-09-01T01:57:02Z",
-      "last_successful_response": "2026-09-01T01:57:02Z",
+      "last_successful_at": "2026-09-06T07:57:02Z",
+      "last_successful_response": "2026-09-06T07:57:02Z",
       "last_verified": "2026-08-03",
       "name": "GCN Unified Mission Notices",
       "operational_state": "active-no-recent-messages",
@@ -1820,7 +1820,7 @@
       "access_mode": "GCN and represented event metadata",
       "authentication_requirement": "Provider-dependent",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "c7dcec24be166fcb0a2c230ed28db5181398759fddfea92482979665f3f8ed75",
+      "contract_checksum_sha256": "9becd2f8dd2f8b131f5de19fbdd210a64e759b6093e6aa15c4bbe76599a706ff",
       "contract_version": "1.0.0",
       "data_types": [
         "X-ray notices",
@@ -1844,7 +1844,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 5
+        "candidates": 6
       },
       "query_scope": "GCN and represented event metadata",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
@@ -1864,7 +1864,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN Kafka client ID and secret; OAuth tokens refresh automatically and inactive credentials may be disabled.",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "b6102e6b261e758ec08ad55ce7e519cc203512fdfd33570186d44d59329b10cc",
+      "contract_checksum_sha256": "7641dc571e0f0b1f7676deb84bb7a0d7f602fd74500620d1947f2f130737d1a2",
       "contract_version": "1.0.0",
       "data_types": [
         "notice",
@@ -1876,8 +1876,8 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "No proprietary topic is configured; topic authorization does not itself change rights policy",
       "last_attempt_at": null,
-      "last_successful_at": "2026-09-06T07:38:51Z",
-      "last_successful_response": "2026-09-06T07:38:51Z",
+      "last_successful_at": "2026-09-06T07:57:02Z",
+      "last_successful_response": "2026-09-06T07:57:02Z",
       "last_verified": "2026-08-29",
       "name": "NASA General Coordinates Network",
       "operational_state": "active-returning-data",
@@ -1890,7 +1890,7 @@
       "public_record_counts": {
         "classification_history": 305,
         "classifications": 907,
-        "messenger_signals": 968,
+        "messenger_signals": 969,
         "observations": 714
       },
       "query_scope": "live",
