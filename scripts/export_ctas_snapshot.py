@@ -4239,7 +4239,7 @@ def main() -> int:
     )
 
     code_paths = (
-        "ctas.html", "ctas/app.js", "ctas/catalog-model.js", "ctas/astro-evidence.js",
+        "ctas.html", "ctas/app.js", "ctas/presentation.js", "ctas/catalog-model.js", "ctas/astro-evidence.js",
         "ctas/workbench.js", "ctas/observability.js", "ctas/ctas.css",
         "ctas/data/observatories.json",
         "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
@@ -4427,7 +4427,7 @@ def main() -> int:
     public_ui_text = b"\n".join(
         working_code[path]
         for path in (
-            "ctas.html", "ctas/app.js", "ctas/catalog-model.js",
+            "ctas.html", "ctas/app.js", "ctas/presentation.js", "ctas/catalog-model.js",
             "ctas/astro-evidence.js", "ctas/workbench.js", "ctas/observability.js",
             "ctas/ctas.css",
         )
@@ -4669,7 +4669,7 @@ def main() -> int:
 
     gates = [
         gate("required-public-artifacts", all(path in bound_files for path in (
-            "ctas.html", "ctas/app.js", "ctas/workbench.js", "ctas/observability.js",
+            "ctas.html", "ctas/app.js", "ctas/presentation.js", "ctas/workbench.js", "ctas/observability.js",
             "ctas/ctas.css", "ctas/data/observatories.json",
             "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
             "ctas/schema/astro-evidence-core-0.1.0.schema.json",

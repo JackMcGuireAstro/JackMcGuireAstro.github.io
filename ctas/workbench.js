@@ -81,7 +81,7 @@
     if (!state.compareIds.length) { tray.innerHTML = ""; return; }
     var names = state.compareIds.map(function (id) {
       var candidate = candidateById(id);
-      return '<span><strong>' + esc(candidate ? candidate.name : id) + '</strong><button type="button" data-remove-compare="' + esc(id) + '" aria-label="Remove ' + esc(candidate ? candidate.name : id) + ' from comparison">×</button></span>';
+      return '<span><strong>' + window.CTASPresentation.thumbnail(candidate) + esc(candidate ? candidate.name : id) + '</strong><button type="button" data-remove-compare="' + esc(id) + '" aria-label="Remove ' + esc(candidate ? candidate.name : id) + ' from comparison">×</button></span>';
     }).join("");
     var message = tray.getAttribute("data-status-message") || state.compareIds.length + " of " + MAX_COMPARE + " candidates selected";
     tray.innerHTML = '<div><small>' + esc(message) + '</small><div class="ctas-comparison-tray__items">' + names + '</div></div><div class="ctas-evidence-tools"><button type="button" data-open-comparison>Compare selected</button><button type="button" data-clear-comparison>Clear</button></div>';
@@ -104,7 +104,7 @@
     var counts = candidate.follow_up_counts || {}, accounting = candidate.source_accounting || {};
     var conflicts = detail ? ((detail.astro_evidence || {}).conflictSets || []).length : Number(candidate.conflict_count || 0);
     var recent = detail && detail.science_brief && detail.science_brief.most_recent_change;
-    return '<article class="ctas-compare-card" data-compare-card="' + esc(candidate.event_id) + '"><header><span class="pill">' + esc(candidate.classification || "Unclassified") + '</span><h4>' + esc(candidate.name) + '</h4><small>' + esc(candidate.event_id) + '</small></header><dl>' +
+    return '<article class="ctas-compare-card" data-compare-card="' + esc(candidate.event_id) + '"><header><span class="pill">' + esc(candidate.classification || "Unclassified") + '</span><h4>' + window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) + '</h4><small>' + esc(candidate.event_id) + '</small></header><dl>' +
       comparisonFact("CTAS score", Number(candidate.ctas_score || 0).toFixed(1) + " · ordering aid, not probability") +
       comparisonFact("Reported discovery", [candidate.discovery_time ? absolute(candidate.discovery_time) : "time unavailable", candidate.discovery_survey || "survey unavailable", finite(candidate.discovery_magnitude) ? Number(candidate.discovery_magnitude).toFixed(2) + " mag" : "magnitude unavailable"].join(" · ")) +
       comparisonFact("ICRS position", window.CTASCatalogModel ? window.CTASCatalogModel.sexagesimal(candidate.ra_deg, candidate.dec_deg) : "Not retained") +
@@ -156,7 +156,7 @@
     var host = document.getElementById("ctas-watchlist"); if (!host) return;
     var rows = state.watchIds.map(function (id) { return candidateById(id) || {event_id: id, name: "Saved record — click to resolve " + id}; });
     host.innerHTML = rows.length ? '<ul>' + rows.map(function (candidate) {
-      return '<li><button type="button" data-open-event="' + esc(candidate.event_id) + '">' + esc(candidate.name) + '</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-label="Remove ' + esc(candidate.name) + ' from local watchlist">×</button></li>';
+      return '<li><button type="button" data-open-event="' + esc(candidate.event_id) + '">' + window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) + '</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-label="Remove ' + esc(candidate.name) + ' from local watchlist">×</button></li>';
     }).join("") + '</ul>' : '<p>No candidates saved in this browser.</p>';
   }
 

@@ -47,7 +47,9 @@ jobs:
           node --check worldsindex/assets/science.js
           node --check scripts/build_worldsindex_static.mjs
       - name: CTAS static release
-        run: python3 scripts/test_ctas_static.py
+        run: |
+          python3 scripts/test_ctas_static.py
+          node scripts/test_ctas_presentation.js
       - name: Whitespace and credential-shaped content
         run: |
           git diff --check

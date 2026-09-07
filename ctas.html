@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://jackmcguireastro.github.io/assets/images/ctas/ctas-card.png">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="assets/css/site.css?v=20260903-notebook">
-<link rel="stylesheet" href="ctas/ctas.css?v=20260907-clarity">
+<link rel="stylesheet" href="ctas/ctas.css?v=20260907-followup">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>
@@ -39,9 +39,9 @@
     <nav class="nav" id="primary-nav" aria-label="Primary">
       <ul class="nav__list">
         <li><a class="nav__link" href="index.html">Home</a></li>
+        <li><a class="nav__link" href="index.html#science">Science</a></li>
         <li><a class="nav__link" href="ctas.html" aria-current="page">CTAS</a></li>
         <li><a class="nav__link" href="worldsindex/">WorldsIndex</a></li>
-        <li><a class="nav__link" href="learn/">Science</a></li>
         <li><a class="nav__link" href="qualquest/">QualQuest</a></li>
         <li><a class="nav__link" href="research.html">Research</a></li>
         <li><a class="nav__link" href="publications.html">Publications &amp; Presentations</a></li>
@@ -147,13 +147,13 @@
       <nav class="ctas-console-links" aria-label="CTAS page contents">
         <a href="#celestial-sphere">Sky</a>
         <a href="#recent-stream">Latest</a>
-        <a href="#ranked-candidates">Top 100</a>
+        <a href="#ranked-candidates">Top 100</a><a href="#followup-examples">Follow-up examples</a>
       </nav>
       <div class="ctas-console-search field"><label class="sr-only" for="ctas-q">Search candidates</label><input type="search" id="ctas-q" placeholder="Search any candidate…" autocomplete="off"></div>
       <details class="ctas-navigation__menu">
         <summary>Science &amp; data</summary>
         <nav aria-label="CTAS resources">
-          <a href="learn/#transients">Transient science</a>
+          <a href="index.html#transients">Transient science</a>
           <a href="#ctas-learn">Catalog examples &amp; glossary</a>
           <a href="#ctas-reference">Catalog details</a>
           <a href="#methods-and-use">Methods</a>
@@ -175,10 +175,10 @@
           <small>Catalog examples and an explicitly hypothetical identity case</small>
         </summary>
         <div class="ctas-panel__body">
-          <p class="ctas-learn-studio__course"><a href="learn/#transients">Explore transient science</a></p>
+          <p class="ctas-learn-studio__course"><a href="index.html#transients">Explore transient science</a></p>
           <div class="ctas-guides">
-            <article><span class="pill">Rich record</span><h3>Follow evidence from alert to spectra</h3><p>Use a real event with retained spectra to compare summary claims with source-native rows.</p><button type="button" data-open-name="SN2026xby">Open SN2026xby</button></article>
-            <article><span class="pill">Upper limit</span><h3>Detection is not the same as a limit</h3><p>See how CTAS preserves nondetections and limiting magnitudes without plotting them as detections.</p><button type="button" data-open-name="AT2026zwn">Open AT2026zwn</button></article>
+            <article><span class="pill">Rich record</span><h3>Follow evidence from alert to spectra</h3><p>Use a real event with retained spectra to compare summary claims with source-native rows.</p><button type="button" data-open-name="SN2026xby" data-preview-ra="9.71410824385" data-preview-dec="-16.1089638817">Open SN2026xby</button></article>
+            <article><span class="pill">Upper limit</span><h3>Detection is not the same as a limit</h3><p>See how CTAS preserves nondetections and limiting magnitudes without plotting them as detections.</p><button type="button" data-open-name="AT2026zwn" data-preview-ra="62.8350966667" data-preview-dec="-62.4462433333">Open AT2026zwn</button></article>
             <article><span class="pill">Conflict</span><h3>Keep source assertions separate</h3><p>Inspect a real retained conflict instead of forcing one apparently authoritative value.</p><button type="button" data-open-name="IceCube-250416A">Open IceCube-250416A</button></article>
             <article><span class="pill">Retraction</span><h3>Revisions do not erase history</h3><p>Replay what CTAS had received and see the terminal status override in the score arithmetic.</p><button type="button" data-open-name="NuEm-220601A-118386">Open NuEm-220601A-118386</button></article>
             <article class="is-synthetic"><span class="pill">Hypothetical identity case</span><h3>Provider-scoped identity</h3><p>Hypothetical example: two providers reuse one alias for different UUIDs. CTAS returns both records and leaves the identity unresolved.</p></article>
@@ -302,6 +302,7 @@
         </div>
       </section>
 
+      <section class="ctas-panel" id="followup-examples" aria-labelledby="followup-examples-title"><p class="eyebrow">Follow-up in the archive</p><h2 id="followup-examples-title">Most compiled follow-up examples</h2><p>Explore records with retained photometry or spectra, then open the dossier to inspect observations, classifications, and original reports. Documented follow-up does not imply that CTAS triggered it or that every scientific interpretation was successful.</p><p>Thumbnails show 3 arcmin DSS2 archival sky fields at the catalog position, not images of the transient itself. Images are supplied on demand by CDS.</p><label>Order examples by <select id="ctas-followup-sort"><option value="total">Total retained follow-up</option><option value="spectra">Spectra</option><option value="observations">Photometry</option><option value="publications">Reports</option></select></label><button type="button" id="ctas-followup-load">Find examples across the complete catalog</button><label><input type="checkbox" id="ctas-followup-classified"> Has spectra and a reported classification</label><div id="ctas-followup-examples"></div></section>
       <section class="ctas-ranked" id="ranked-candidates" aria-labelledby="ranked-title">
         <div class="ctas-section-heading">
           <div><p class="eyebrow">Follow-up leaderboard</p><h2 id="ranked-title">Top 100 CTAS-ranked candidates</h2></div>
@@ -428,9 +429,9 @@
         <h2>Site</h2>
         <ul class="footer-nav">
           <li><a href="index.html">Home</a></li>
-          <li><a href="ctas.html">CTAS</a></li>
+          <li><a href="index.html#science">Science</a></li>
+        <li><a href="ctas.html">CTAS</a></li>
           <li><a href="worldsindex/">WorldsIndex</a></li>
-          <li><a href="learn/">Science</a></li>
           <li><a href="qualquest/">QualQuest</a></li>
           <li><a href="research.html">Research</a></li>
           <li><a href="publications.html">Publications &amp; Presentations</a></li>
@@ -446,11 +447,12 @@
 
 <script src="assets/js/site.js"></script>
 
-<script src="ctas/catalog-model.js?v=20260830-console1"></script>
+<script src="ctas/presentation.js?v=20260907-followup"></script>
+<script src="ctas/catalog-model.js?v=20260907-followup"></script>
 <script src="ctas/astro-evidence.js?v=20260829-evidence1"></script>
 <script src="ctas/observability.js?v=20260830-workbench1"></script>
-<script src="ctas/workbench.js?v=20260830-declutter1"></script>
-<script src="ctas/app.js?v=20260830-console1"></script>
+<script src="ctas/workbench.js?v=20260907-followup"></script>
+<script src="ctas/app.js?v=20260907-followup"></script>
 
 </body>
 </html>

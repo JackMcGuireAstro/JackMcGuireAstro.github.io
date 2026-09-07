@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jack McGuire | Astrophysics and Astronomical Software</title>
-<meta name="description" content="Jack McGuire is a Ph.D. student in physics, astronomy concentration, at the University of Wyoming. He studies binary mass transfer, chemically peculiar stars and low-mass stellar properties, and develops the Cowboy Transient Alert System.">
+<meta name="description" content="Jack McGuire is a Ph.D. student in physics, astronomy concentration, at the University of Wyoming. He studies binary mass transfer, chemically peculiar stars and stellar companions, and develops the Cowboy Transient Alert System.">
 <link rel="canonical" href="https://jackmcguireastro.github.io/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Jack McGuire | Astrophysics and Astronomical Software">
@@ -38,9 +38,9 @@
     <nav class="nav" id="primary-nav" aria-label="Primary">
       <ul class="nav__list">
         <li><a class="nav__link" href="index.html" aria-current="page">Home</a></li>
+        <li><a class="nav__link" href="index.html#science">Science</a></li>
         <li><a class="nav__link" href="ctas.html">CTAS</a></li>
         <li><a class="nav__link" href="worldsindex/">WorldsIndex</a></li>
-        <li><a class="nav__link" href="learn/">Science</a></li>
         <li><a class="nav__link" href="qualquest/">QualQuest</a></li>
         <li><a class="nav__link" href="research.html">Research</a></li>
         <li><a class="nav__link" href="publications.html">Publications &amp; Presentations</a></li>
@@ -59,11 +59,11 @@
         <p class="eyebrow">Astrophysics &amp; astronomical software</p>
         <h1>Jack McGuire</h1>
         <p class="hero__role">Ph.D. student in physics, astronomy concentration<br>University of Wyoming</p>
-        <p class="portfolio-hero__lead">I study what interacting stars leave behind&mdash;in their chemistry, orbits, and sizes.</p>
+        <p class="portfolio-hero__lead">I study what interacting stars leave behind&mdash;in their chemistry and orbits.</p>
         <p class="portfolio-hero__purpose">Explore stellar research, investigate transient reports, and compare exoplanet measurements.</p>
         <ul class="actions portfolio-hero__actions">
           <li><a class="btn btn--primary" href="research.html">Explore my research <span aria-hidden="true">&rarr;</span></a></li>
-          <li><a class="btn" href="learn/">Explore the science <span aria-hidden="true">&rarr;</span></a></li>
+          <li><a class="btn" href="index.html#science">Explore the science <span aria-hidden="true">&rarr;</span></a></li>
         </ul>
         <p class="portfolio-hero__links"><a href="#tools">Try the tools</a><span aria-hidden="true">&middot;</span><a href="cv.pdf" target="_blank" rel="noopener">View CV<span class="sr-only"> (PDF, opens in a new tab)</span></a><span aria-hidden="true">&middot;</span><a href="mailto:jackmcg7@live.com">Get in touch</a></p>
       </div>
@@ -80,23 +80,26 @@
         <div><p class="eyebrow">Research directions</p><h2 id="directions-title">Reading the history of stars</h2></div>
         <p>For collaborators, students, prospective applicants, and curious readers&mdash;start with a question or follow the evidence.</p>
       </div>
-      <div class="grid grid--2">
+      <div class="grid">
         <a class="card portfolio-direction" href="research.html#barium-dwarfs">
           <p class="card__meta">Binary evolution &middot; manuscript in preparation</p>
           <h3>Chemistry as a record of mass transfer</h3>
           <p>Barium dwarfs preserve heavy elements from a companion that became a white dwarf. I investigate what that record reveals about the missing cool population.</p>
           <p class="card__more">Barium dwarfs &amp; 40 Eridani <span aria-hidden="true">&rarr;</span></p>
         </a>
-        <a class="card portfolio-direction" href="research.html#chara">
-          <p class="card__meta">Stellar interferometry &middot; ongoing analysis</p>
-          <h3>Measuring low-mass stars directly</h3>
-          <p>CHARA observations connect angular diameters and orbital context to the question of why some M dwarfs appear larger than models predict.</p>
-          <p class="card__more">CHARA &amp; the radius-inflation problem <span aria-hidden="true">&rarr;</span></p>
-        </a>
+
       </div>
       <p class="portfolio-section-link"><a href="research.html#research-map">Browse all six research projects <span aria-hidden="true">&rarr;</span></a><span aria-hidden="true"> &middot; </span><a href="research.html#gj166c">The 40 Eridani investigation</a></p>
     </div>
   </section>
+
+  <section class="section section--edge" id="science" aria-labelledby="science-title"><div class="wrap">
+    <div class="portfolio-section-head"><div><p class="eyebrow">Science</p><h2 id="science-title">A changing sky. Other worlds.</h2></div><p>Start with the observations: changing brightness, published measurements, and the evidence behind an interpretation.</p></div>
+    <div class="grid grid--2">
+      <article class="card" id="transients"><h3>What changed in the sky?</h3><p>Detections, upper limits, and spectra tell different parts of a transient’s history. Follow the measurements as evidence accumulates.</p><img src="learn/science/at2026zwn-photometry.svg" alt="AT2026zwn archival ATLAS difference-flux measurements, including negative values and nondetections" loading="lazy" style="width:100%;height:auto"><p>AT2026zwn: source-reported ATLAS difference photometry. These measurements alone do not establish an explosion time or classification.</p><a href="learn/science/at2026zwn-photometry.json">Measurements and provenance</a></article>
+      <article class="card" id="worlds"><h3>How well do we know another world?</h3><p>Compare publication-specific measurements and uncertainties, then examine how brightness changes as a planet crosses its star.</p><img src="learn/science/trappist-1-e-radii.svg" alt="Two published radius estimates and uncertainty intervals for TRAPPIST-1 e" loading="lazy" style="width:100%;height:auto"><p>TRAPPIST-1 e: two published radius estimates, not an averaged value. Radius alone does not establish an atmosphere or surface conditions.</p><a href="learn/science/trappist-1-e-radii.json">Measurements and provenance</a></article>
+    </div>
+  </div></section>
 
   <section class="section section--edge portfolio-tools" id="tools" aria-labelledby="tools-title">
     <div class="wrap">
@@ -130,10 +133,7 @@
           <a class="btn btn--small" href="qualquest/">Open your study desk <span aria-hidden="true">&rarr;</span></a>
         </article>
       </div>
-      <div class="portfolio-learn-strip">
-        <div><p class="eyebrow">Astronomy in the data</p><h3>The changing sky and worlds beyond our own</h3><p>Explore the observations behind transient astronomy and exoplanet research, with direct routes into CTAS and WorldsIndex.</p></div>
-        <a class="btn btn--primary" href="learn/">Explore the science <span aria-hidden="true">&rarr;</span></a>
-      </div>
+
     </div>
   </section>
 
@@ -205,9 +205,9 @@
         <h2>Site</h2>
         <ul class="footer-nav">
           <li><a href="index.html">Home</a></li>
-          <li><a href="ctas.html">CTAS</a></li>
+          <li><a href="index.html#science">Science</a></li>
+        <li><a href="ctas.html">CTAS</a></li>
           <li><a href="worldsindex/">WorldsIndex</a></li>
-          <li><a href="learn/">Science</a></li>
           <li><a href="qualquest/">QualQuest</a></li>
           <li><a href="research.html">Research</a></li>
           <li><a href="publications.html">Publications &amp; Presentations</a></li>

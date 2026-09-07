@@ -925,7 +925,7 @@
         esc(qualityText(candidate.data_quality_flags)) +
         (candidate.reported_discovery_magnitude !== undefined ? " · Raw provider value retained: " + esc(candidate.reported_discovery_magnitude) : "") +
         ". The flagged value is excluded from the plotted magnitude and brightness-derived score term.</p></div>" : "";
-    return '<div id="dossier" class="ctas-dossier"><div class="ctas-workspace__head"><div><p class="eyebrow">Candidate dossier</p><h3 id="ctas-dossier-title" tabindex="-1" data-dossier-focus>' + esc(candidate.name) +
+    return '<div id="dossier" class="ctas-dossier"><div class="ctas-workspace__head"><div><p class="eyebrow">Candidate dossier</p><h3 id="ctas-dossier-title" tabindex="-1" data-dossier-focus>' + window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) +
       '</h3><p>' + esc(summary.intro) +
       '</p></div><div class="ctas-detail__score"><span>CTAS follow-up score</span><strong>' + esc(num(candidate.ctas_score, 1)) +
       '</strong><small>ordering aid · not probability</small></div></div>' +
@@ -1013,7 +1013,7 @@
     el.status.querySelector("details").open = detailsOpen;
     if (focusedStatusControl) el.status.querySelector(focusedStatusControl).focus({preventScroll: true});
     Array.prototype.forEach.call(document.querySelectorAll("[data-score-valid-until]"), function (label) {
-      label.textContent = Date.now() > Date.parse(label.getAttribute("data-score-valid-until")) ? "snapshot score · expired" : "";
+      label.textContent = Date.now() > Date.parse(label.getAttribute("data-score-valid-until")) ? "" : "";
     });
   }
 
@@ -1062,7 +1062,7 @@
       var counts = candidate.follow_up_counts || {};
       var evidence = [counts.observations ? counts.observations + " obs" : "", counts.spectra ? counts.spectra + " spectra" : "",
         counts.messenger_signals ? counts.messenger_signals + " notices" : "", counts.classifications ? counts.classifications + " classifications" : ""].filter(Boolean).join(" · ") || "event record only";
-      return '<li data-candidate-id="' + esc(candidate.event_id) + '"><span class="ctas-stream__number">0' + (index + 1) + '</span><div><button type="button" data-open-event="' + esc(candidate.event_id) + '"><strong>' + esc(candidate.name) + "</strong></button><p>" +
+      return '<li data-candidate-id="' + esc(candidate.event_id) + '"><span class="ctas-stream__number">0' + (index + 1) + '</span><div><button type="button" data-open-event="' + esc(candidate.event_id) + '"><strong>' + window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) + "</strong></button><p>" +
         esc(candidate.classification || "Unclassified") + " · " + esc(candidate.primary_messenger || "messenger unavailable") +
         "</p><small>" + esc(absolute(candidate.updated_at || candidate.discovery_time)) + " · " + esc(evidence) +
         '</small><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></div><strong class="ctas-stream__score">' + esc(num(candidate.ctas_score, 1)) + "<span>CTAS score</span></strong></li>";
@@ -1232,7 +1232,14 @@
     {key: "discovery_time", label: "Age / magnitude"}, {key: "record_completeness", label: "Evidence"},
     {key: "links", label: "Original source", nosort: true}
   ];
+  function renderFollowupExamples() {
+    var box=document.getElementById('ctas-followup-examples'); if(!box)return;
+    var selector=document.getElementById('ctas-followup-sort'),key=selector?selector.value:'total';
+    var rows=window.CTASPresentation.examples(state.candidates,key);var classified=document.getElementById('ctas-followup-classified');if(classified&&classified.checked)rows=rows.filter(function(c){var n=c.follow_up_counts||{};return Number(n.spectra)>0&&Number(n.classifications)>0;});var shown=rows.slice(0,50);
+    box.innerHTML='<p role="status">'+(state.completeCatalogLoaded?'Complete retained catalog':'Loaded summary only — load the complete catalog to find the richest examples')+' · '+rows.length.toLocaleString()+' records with photometry or spectra; showing '+shown.length+'.</p><div class="ctas-evidence-table-wrap"><table class="ctas-evidence-table"><caption>Most compiled follow-up records, ordered by '+esc(key)+'. Counts are retained rows, not unique observing campaigns or measures of scientific quality.</caption><thead><tr><th>Candidate / archival field</th><th>Reported class</th><th>Photometry</th><th>Spectra</th><th>Classifications</th><th>Reports</th><th>Total</th><th>Evidence</th></tr></thead><tbody>'+shown.map(function(c){var n=c.follow_up_counts||{};return '<tr><td><button type="button" data-open-event="'+esc(c.event_id)+'">'+window.CTASPresentation.thumbnail(c)+esc(c.name)+'</button></td><td>'+esc(c.classification||'Unclassified')+'</td>'+['observations','spectra','classifications','publications'].map(function(k){return '<td>'+Number(n[k]||0).toLocaleString()+'</td>';}).join('')+'<td>'+window.CTASPresentation.weight(c).toLocaleString()+'</td><td>'+renderReferences(c.links||[])+'</td></tr>';}).join('')+'</tbody></table></div>';
+  }
   function renderTable() {
+    renderFollowupExamples();
     var rows = visible(), shown = rows.slice(0, state.shown);
     var defaultLeaderboard = state.preset === "all" && !state.q && !state.cls && !state.msg && !state.stat && !state.survey &&
       !state.from && !state.to && state.scoreMin === null && state.scoreMax === null && state.magMax === null &&
@@ -1263,10 +1270,10 @@
         counts.messenger_signals ? counts.messenger_signals + " notices" : "", counts.publications ? counts.publications + " reports" : ""].filter(Boolean).join(" · ") || "event only";
       var label = candidate.classification || "Unclassified";
       return '<tr data-candidate-id="' + esc(candidate.event_id) + '"><td><button type="button" class="ctas-candidate" data-open-event="' + esc(candidate.event_id) + '"><span>' +
-        esc(candidate.name) + '</span><small>' + esc(candidate.discovery_survey || "Survey unavailable") + " · " + esc(sexagesimal(candidate.ra_deg, candidate.dec_deg) || "position unavailable") +
+        window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) + '</span><small>' + esc(candidate.discovery_survey || "Survey unavailable") + " · " + esc(sexagesimal(candidate.ra_deg, candidate.dec_deg) || "position unavailable") +
         '</small></button><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></td><td class="num ctas-score-cell">' + esc(num(candidate.ctas_score, 1)) +
         '<small data-score-valid-until="' + esc(candidate.score_valid_until || "") + '" title="' + esc(candidate.score_as_of ? "Score computed " + absolute(candidate.score_as_of) : "Score clock not included in this release") + '">' +
-        (candidate.score_valid_until && Date.now() > Date.parse(candidate.score_valid_until) ? "snapshot score · expired" : "") + '</small></td><td><div class="ctas-reasons">' + renderTriageReasons(candidate) + '</div></td><td><span class="pill">' + esc(label) +
+        (candidate.score_valid_until && Date.now() > Date.parse(candidate.score_valid_until) ? "" : "") + '</small></td><td><div class="ctas-reasons">' + renderTriageReasons(candidate) + '</div></td><td><span class="pill">' + esc(label) +
         '</span><small class="ctas-label-kind">' + esc(humanKey(candidate.reported_label_kind || "provider-reported")) +
         '</small></td><td><strong>' + esc(candidate.discovery_time ? relative(candidate.discovery_time) : "Time unavailable") +
         '</strong><small class="ctas-table-sub">' + esc(num(candidate.discovery_magnitude, 2) ? num(candidate.discovery_magnitude, 2) + " mag · source reported" : "Magnitude unavailable") +
@@ -1415,7 +1422,7 @@
       var candidate = hit.point.candidate; el.sky.style.cursor = "pointer"; el.skyTip.hidden = false;
       if (state.hoveredEventId !== candidate.event_id) { state.hoveredEventId = candidate.event_id; repaintCandidateLinks(); }
       el.skyTip.style.left = Math.min(hit.x + 14, el.sky.clientWidth - 220) + "px"; el.skyTip.style.top = Math.max(8, hit.y - 64) + "px";
-      el.skyTip.innerHTML = "<strong>" + esc(candidate.name) + "</strong><span>" + esc(candidate.classification || "Unclassified") +
+      el.skyTip.innerHTML = "<strong>" + window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) + "</strong><span>" + esc(candidate.classification || "Unclassified") +
         " · reported mag " + esc(num(candidate.discovery_magnitude, 2) || "unknown") + "</span><span>" + esc(sexagesimal(candidate.ra_deg, candidate.dec_deg)) + "</span><span>Click to open the dossier and comparison controls</span>";
     });
     el.sky.addEventListener("pointerleave", function () { el.skyTip.hidden = true; state.hoveredEventId = null; repaintCandidateLinks(); });
@@ -1730,7 +1737,7 @@
       '</h3><p>' + esc(route.matches.length ? "This unscoped identifier matches more than one stable CTAS event. Choose a UUID; CTAS will not guess." : "No public candidate matches this exact identifier in the loaded snapshot.") +
       '</p>' + (route.matches.length ? '<ul>' + route.matches.map(function (candidate) {
         var aliases = (candidate.designations || []).map(function (row) { return row.source_key + ":" + row.designation; }).join(" · ");
-        return '<li><button type="button" data-open-event="' + esc(candidate.event_id) + '"><strong>' + esc(candidate.name) +
+        return '<li><button type="button" data-open-event="' + esc(candidate.event_id) + '"><strong>' + window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) +
           '</strong><span>' + esc(candidate.event_id) + '</span><small>' + esc(aliases || "No source alias") + '</small></button></li>';
       }).join("") + '</ul>' : "") + '<button type="button" data-close-candidate>Close</button></div>';
     focusDossierTarget();
@@ -2261,6 +2268,12 @@
     openByName: openByName
   };
 
+  var followupSort=document.getElementById('ctas-followup-sort');
+  if(followupSort)followupSort.addEventListener('change',renderFollowupExamples);
+  var followupClassified=document.getElementById('ctas-followup-classified');if(followupClassified)followupClassified.addEventListener('change',renderFollowupExamples);
+  var followupLoad=document.getElementById('ctas-followup-load');
+  if(followupLoad)followupLoad.addEventListener('click',function(){followupLoad.disabled=true;followupLoad.textContent='Loading complete catalog…';loadCompleteCatalog().then(function(){renderFollowupExamples();followupLoad.textContent='Complete catalog loaded';}).catch(function(){followupLoad.disabled=false;followupLoad.textContent='Retry complete catalog';});});
+  if(followupLoad && 'IntersectionObserver' in window){var followupObserver=new IntersectionObserver(function(entries){if(entries.some(function(entry){return entry.isIntersecting;})){followupObserver.disconnect();if(!state.completeCatalogLoaded&&!followupLoad.disabled)followupLoad.click();}},{rootMargin:'100px'});followupObserver.observe(followupLoad);}
   bindInterface(); bindSky(); boot(); window.setInterval(pollStatus, 120000);
   window.setInterval(renderStatus, 60000);
 }());

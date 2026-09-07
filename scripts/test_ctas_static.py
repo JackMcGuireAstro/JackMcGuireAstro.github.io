@@ -882,6 +882,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
             "ctas/schema/astro-evidence-core-0.1.0.schema.json",
             "ctas/astro-evidence.js",
             "ctas/catalog-model.js",
+            "ctas/presentation.js",
             "ctas/observability.js",
             "ctas/workbench.js",
             "ctas/data/observatories.json",
