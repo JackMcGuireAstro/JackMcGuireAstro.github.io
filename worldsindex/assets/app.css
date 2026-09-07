@@ -386,3 +386,52 @@ footer p { margin: 0; } footer p:first-child { display: flex; align-items: basel
 .app-tabs .app-tabs__learn { color: var(--gold); }
 .app-tabs .app-tabs__learn:hover { color: var(--text); }
 h1, h2, h3 { letter-spacing: -.022em; }
+
+
+/* Keep discovery focused on search and make detailed controls easier to use. */
+.hero { padding-top: clamp(2.5rem, 5vw, 4.5rem); }
+.hero h1 { font-size: clamp(2.8rem, 5vw, 4.8rem); line-height: 1.02; }
+.lede { max-width: 62ch; margin-block: 1rem 1.3rem; }
+.search-help, .search-status { margin: .6rem .4rem 0; color: var(--muted); font-size: .8rem; }
+.search-status { color: var(--cyan); }
+.search-status:empty { display: none; }
+.search-row:focus-within { border-color: var(--cyan); }
+.search-row input::placeholder { color: #9dabc4; }
+.search-results { max-height: min(390px, 48dvh); }
+.search-results button:focus-visible, .compare-results button:focus-visible,
+.tabs button:focus-visible, .method-tabs button:focus-visible,
+.source-row > summary:focus-visible, .source-group > summary:focus-visible { outline-offset: -3px; }
+.app-tabs a, .nav-search, .system-controls button, .system-scale button,
+.view-switch button, .compare-selected button, .back-link { min-height: 44px; }
+.app-tabs a, .back-link { display: inline-flex; align-items: center; }
+.filter-grid :is(input, select), .plot-controls select, .data-toolbar select { min-height: 44px; font-size: .9rem; letter-spacing: normal; }
+summary { touch-action: manipulation; }
+.accessible-list summary, .plot-table-fallback summary { min-height: 44px; padding-block: .65rem; }
+.empty-state { padding: clamp(2rem, 5vw, 4rem) 1rem; }
+.empty-state h2 { margin: 0; color: var(--text); font-size: 1.35rem; }
+.empty-state .button { margin-top: .7rem; }
+.selection-card h3, .object-heading h1, .source-row-detail { overflow-wrap: anywhere; }
+.static-access { min-height: auto; padding-block: 2rem; }
+footer nav { display: flex; flex-wrap: wrap; gap: .25rem .9rem; }
+footer nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--cyan); }
+
+@media (max-width: 760px) {
+  .hero { padding-top: 2rem; }
+  .hero h1 { font-size: clamp(2.6rem, 10.8vw, 3.8rem); }
+  .selection-card { min-height: 0; padding: 1.1rem; }
+  .tabs, .method-tabs { padding-block: .25rem; mask-image: none; }
+  .release-strip span, .release-strip p { font-size: .68rem; line-height: 1.5; }
+}
+@media (any-pointer: coarse) {
+  .workspace :is(button, select), .text-link { min-height: 44px; }
+  .search-row input, .compare-picker input { font-size: 16px; }
+}
+@media (forced-colors: active) {
+  .app-tabs a[aria-current="page"], .tabs button.active,
+  .method-tabs button.active, .view-switch button.active { outline: 2px solid Highlight; outline-offset: -3px; }
+}
+
+/* Observation workspace */
+.curve-toolbar,.curve-parameters{display:flex;flex-wrap:wrap;gap:1rem;align-items:end;margin:1.2rem 0}.curve-toolbar label,.curve-parameters label{display:grid;gap:.4rem;flex:1;min-width:145px;font-size:.85rem;color:#bdcddb}.curve-toolbar select,.curve-parameters input{width:100%;min-height:44px;background:#101f30;color:#edf5fc;border:1px solid #385066;border-radius:8px;padding:.6rem}.curve-toolbar select{max-width:420px}.curve-chart{border:1px solid #2b4156;border-radius:14px;overflow:hidden}.curve-chart canvas{display:block;width:100%;height:340px}.curve-toolbar button{min-height:44px}.curve-toolbar input[type=range]{width:100%}#lc-status{min-height:3rem;color:#b6cbdc}#lc-provenance code{overflow-wrap:anywhere}.object-tabs{overflow-x:auto;scrollbar-width:thin}.object-tabs button{white-space:nowrap}.curve-parameters input:focus-visible{outline:2px solid #e7bc65;outline-offset:3px}
+
+.object-page{padding-top:1.5rem!important}.object-heading{margin-block:.6rem 1rem!important}.object-heading h1{font-size:clamp(2rem,4vw,3rem)!important}.object-page .tab-panel h2{font-size:clamp(1.3rem,2vw,1.8rem)!important}.object-page .object-toolbar{margin-block:.7rem!important}.object-page .curve-toolbar{margin-block:.6rem}.object-page .curve-parameters{margin-block:.7rem}

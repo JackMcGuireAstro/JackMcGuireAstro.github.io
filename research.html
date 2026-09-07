@@ -13,6 +13,7 @@
 <meta property="og:image" content="https://jackmcguireastro.github.io/assets/images/research/gram-poster.webp">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="assets/css/site.css?v=20260903-notebook">
+<link rel="stylesheet" href="assets/css/portfolio-redesign.css?v=20260907">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>
@@ -21,8 +22,9 @@
   gtag('js', new Date());
   gtag('config', 'G-XN307TT07G');
 </script>
+<link rel="stylesheet" href="assets/css/continuity.css?v=20260907-science">
 </head>
-<body>
+<body class="portfolio-redesign portfolio-research">
 
 <a class="skip-link" href="#main">Skip to main content</a>
 
@@ -38,7 +40,7 @@
         <li><a class="nav__link" href="index.html">Home</a></li>
         <li><a class="nav__link" href="ctas.html">CTAS</a></li>
         <li><a class="nav__link" href="worldsindex/">WorldsIndex</a></li>
-        <li><a class="nav__link" href="learn/">Learn</a></li>
+        <li><a class="nav__link" href="learn/">Science</a></li>
         <li><a class="nav__link" href="qualquest/">QualQuest</a></li>
         <li><a class="nav__link" href="research.html" aria-current="page">Research</a></li>
         <li><a class="nav__link" href="publications.html">Publications &amp; Presentations</a></li>
@@ -51,30 +53,51 @@
 
 <main id="main">
 
-  <section class="hero">
+  <section class="hero portfolio-hero portfolio-hero--research">
     <div class="hero__sky" aria-hidden="true"></div>
-    <div class="wrap hero__inner" style="grid-template-columns: 1fr;">
+    <div class="wrap hero__inner">
       <div>
         <p class="eyebrow">Research</p>
         <h1>Stars that did not evolve alone</h1>
-        <p class="hero__statement">Most of what I work on comes back to one question: when two stars interact,
-          what evidence survives, and how long can we still read it? The answers show up in surface chemistry,
-          in orbital architecture, and in radii we can measure directly.</p>
+        <p class="hero__statement">When two stars interact, what evidence survives? I look for the answers in surface chemistry, orbital architecture, and stellar sizes.</p>
+        <p class="portfolio-hero__purpose">Browse six projects, then open the question, my contribution, and the supporting work.</p>
+        <ul class="actions"><li><a class="btn btn--primary" href="#research-map">Find a project <span aria-hidden="true">&darr;</span></a></li><li><a class="btn" href="publications.html">Papers &amp; presentations</a></li></ul>
       </div>
     </div>
   </section>
 
-  <div class="section">
+
+  <section class="section portfolio-research-map" id="research-map" aria-labelledby="research-map-title">
+    <div class="wrap">
+      <div class="portfolio-section-head"><div><p class="eyebrow">Research map</p><h2 id="research-map-title">Find the question that interests you</h2></div><p>Start with an overview. Each project includes its role, methods, recorded status, and available outputs.</p></div>
+      <div class="portfolio-map-grid">
+        <div class="portfolio-map-group"><h3>Primary research</h3><p>Binary evolution and the properties of low-mass stars.</p><ul><li><a href="#barium-dwarfs"><strong>Barium dwarfs</strong><span>The chemical legacy of a companion</span><small>Manuscript in preparation</small></a></li><li><a href="#chara"><strong>CHARA interferometry</strong><span>Direct measurements of stellar sizes</span><small>Ongoing analysis &middot; preliminary result</small></a></li></ul></div>
+        <div class="portfolio-map-group"><h3>Focused investigations</h3><p>One nearby system, and a network watching space weather.</p><ul><li><a href="#gj166c"><strong>40 Eridani / GJ 166 C</strong><span>A search for transferred heavy elements</span><small>Null result &middot; not published separately</small></a></li><li><a href="#cosmic-rays"><strong>Cosmic rays</strong><span>Muon detectors and environmental signals</span><small>Analysis and outreach</small></a></li></ul></div>
+        <div class="portfolio-map-group"><h3>Coursework &amp; legacy analyses</h3><p>Completed projects, with their publication state made explicit.</p><ul><li><a href="#magellanic"><strong>Magellanic Clouds</strong><span>Distances from public survey catalogs</span><small>Fall 2025 &middot; completed coursework</small></a></li><li><a href="#montana"><strong>797 Montana</strong><span>A four-night asteroid light curve</span><small>2025 &middot; refereed publication</small></a></li></ul></div>
+      </div>
+      <p class="portfolio-date-note">Activity dates identify observations or public outputs. Where a last research-update date was not recorded, the status summary is undated.</p>
+    </div>
+  </section>
+
+  <div class="section portfolio-projects">
     <div class="wrap">
 
       <!-- ================================================ barium dwarfs -->
-      <article class="project" id="barium-dwarfs">
-        <div class="project__grid">
-          <div>
-            <p class="eyebrow">Primary research program</p>
-            <h2>Barium Dwarfs and Post-AGB Mass Transfer</h2>
-
-            <dl class="qa">
+      <article class="project portfolio-project" id="barium-dwarfs" aria-labelledby="barium-dwarfs-title">
+        <div class="portfolio-project__heading"><div><p class="eyebrow">Primary research program</p><h2 id="barium-dwarfs-title">Barium Dwarfs and Post-AGB Mass Transfer</h2></div><a class="portfolio-back" href="#research-map">Research map <span aria-hidden="true">&uarr;</span></a></div>
+        <p class="portfolio-project__question">What does the scarcity of cool barium dwarfs tell us about binary evolution?</p>
+        <dl class="portfolio-metadata">
+          <div><dt>Recorded status</dt><dd>Manuscript in preparation</dd></div>
+          <div><dt>Publication state</dt><dd>Not yet submitted in the source summary</dd></div>
+          <div><dt>Activity dates</dt><dd>2025&ndash;2026 reports and posters; full project dates not recorded</dd></div>
+          <div><dt>Last research update</dt><dd>Date not recorded</dd></div>
+        </dl>
+        <p class="portfolio-project__outcome">The current objective is to separate selection effects from physical limits on AGB mass transfer.</p>
+        <p class="portfolio-evidence">The linked report and posters document earlier stages of the work; they do not establish completion or acceptance of the manuscript.</p>
+        <p class="portfolio-resources"><strong>Available work</strong> <a href="assets/presentations/2026-gsurc-finding-barium-dwarfs.pdf" target="_blank" rel="noopener">April 2026 poster (PDF)</a> &middot; <a href="Barium_Summer_Research_2025___Final_Draft-2.pdf" target="_blank" rel="noopener">2025 research report (PDF)</a></p>
+        <details class="portfolio-project__details">
+          <summary>Question, contribution &amp; methods<span aria-hidden="true"> +</span></summary>
+          <div class="project__grid"><div><dl class="qa">
               <dt>The question</dt>
               <dd>Barium dwarfs are main-sequence stars whose surfaces carry heavy elements they could never have
                 made themselves. The elements came from a companion that has since become a white dwarf. Known
@@ -93,48 +116,50 @@
                 manuscript in preparation.</dd>
 
               <dt>Data and methods</dt>
-              <dd>I investigated the 71 spectroscopically confirmed barium dwarfs using Gaia DR3 astrometry,
+              <dd>The analysis described here investigated a sample of 71 spectroscopically confirmed barium dwarfs using Gaia DR3 astrometry,
                 radial-velocity statistics, archival spectroscopy, spectral-energy-distribution fitting with VOSA,
                 and MIST evolutionary models. Python workflows built on NumPy, Pandas, Astropy, Astroquery and
                 Matplotlib cross-match the catalogs, separate genuine dwarfs from evolved interlopers, and compare
                 the sample against known white-dwarf&ndash;main-sequence binaries.</dd>
 
-              <dt>Where it stands</dt>
+              <dt>Recorded status and interpretation</dt>
               <dd>The work has moved well past its November 2025 poster. Establishing the F/G concentration
                 motivated a targeted search for the missing cool population, and that search, together with
                 comparisons to established white-dwarf systems and upper and lower bounds on companion masses
-                forms the manuscript <em>Where Are the K &amp; M Barium Dwarfs?</em>, in preparation with
-                planned submission to an American Astronomical Society journal in Fall 2026.</dd>
+                forms part of a manuscript in preparation. The existing portfolio records a planned submission to an American Astronomical Society journal in Fall 2026; this is a plan, not a submission or acceptance.</dd>
             </dl>
-
-            <ul class="tags">
+<ul class="tags">
               <li>Gaia DR3</li><li>s-process enrichment</li><li>SED fitting</li><li>MIST models</li>
               <li>Radial velocities</li><li>WD&ndash;MS binaries</li>
             </ul>
-
-            <ul class="actions">
+<ul class="actions">
               <li><a class="btn btn--small" href="publications.html#featured">Posters and presentations</a></li>
               <li><a class="btn btn--small" href="Barium_Summer_Research_2025___Final_Draft-2.pdf" target="_blank" rel="noopener">2025 summer research report (PDF)</a></li>
-            </ul>
-          </div>
-
-          <figure class="project__figure">
+            </ul></div><figure class="project__figure">
             <img src="assets/images/research/gram-poster.webp" width="1200" height="900" loading="lazy"
                  alt="Jack McGuire standing beside his research poster, AGB Post-Mass-Transfer Spectroscopic Ratios as White Dwarf Tracers, at the Georgia Regional Astronomy Meeting.">
             <figcaption>Presenting the post-mass-transfer poster at the Georgia Regional Astronomy Meeting,
               Emory University, November 2025.</figcaption>
-          </figure>
-        </div>
+          </figure></div>
+        </details>
       </article>
 
       <!-- ======================================================= GJ 166 C -->
-      <article class="project" id="gj166c">
-        <div class="project__grid">
-          <div>
-            <p class="eyebrow">Focused investigation</p>
-            <h2>GJ 166 C and the 40 Eridani System</h2>
-
-            <dl class="qa">
+      <article class="project portfolio-project" id="gj166c" aria-labelledby="gj166c-title">
+        <div class="portfolio-project__heading"><div><p class="eyebrow">Focused investigation</p><h2 id="gj166c-title">GJ 166 C and the 40 Eridani System</h2></div><a class="portfolio-back" href="#research-map">Research map <span aria-hidden="true">&uarr;</span></a></div>
+        <p class="portfolio-project__question">Does the low-mass star beside the 40 Eridani white dwarf retain a chemical signature of mass transfer?</p>
+        <dl class="portfolio-metadata">
+          <div><dt>Recorded status</dt><dd>Null result reported</dd></div>
+          <div><dt>Publication state</dt><dd>Not published separately</dd></div>
+          <div><dt>Activity dates</dt><dd>Discussed at the August 7, 2025 symposium; full analysis dates not recorded</dd></div>
+          <div><dt>Last research update</dt><dd>Date not recorded</dd></div>
+        </dl>
+        <p class="portfolio-project__outcome">The reported search found no detectable s-process enrichment, providing a system-specific constraint for the wider barium-dwarf investigation.</p>
+        <p class="portfolio-evidence">This is an unpublished investigation. No detectable enrichment is a limit of the reported search, not proof that mass transfer never occurred.</p>
+        <p class="portfolio-resources"><strong>Available work</strong> <a href="Barium_Summer_Research_2025___Final_Draft-2.pdf" target="_blank" rel="noopener">2025 barium-dwarf report (PDF)</a> &middot; <a href="publications.html#engagement">Symposium record</a></p>
+        <details class="portfolio-project__details">
+          <summary>Question, contribution &amp; methods<span aria-hidden="true"> +</span></summary>
+          <div class="project__grid"><div><dl class="qa">
               <dt>The question</dt>
               <dd>40 Eridani is a nearby triple containing a white dwarf and a low-mass companion, and on
                 paper, an ideal place to catch a cool barium dwarf in the act. Does GJ 166 C actually show the
@@ -153,36 +178,40 @@
               <dd>High-resolution spectroscopy targeting s-process abundance signatures, interpreted alongside the
                 system's known orbital parameters and the CHARA interferometric work described below.</dd>
 
-              <dt>Where it stands</dt>
+              <dt>Recorded status and interpretation</dt>
               <dd>The search returned a null result: no detectable s-process enrichment. Read together with the
                 system's roughly 200-year orbit, that null result constrains the separation at which AGB mass
-                transfer can still work efficiently, which is a genuinely useful constraint, and it feeds
-                directly into the wider barium-dwarf study. It has not been published separately.</dd>
+                transfer can still work efficiently, and feeds directly into the wider barium-dwarf study. It has not been published separately.</dd>
             </dl>
-
-            <ul class="tags">
+<ul class="tags">
               <li>High-resolution spectroscopy</li><li>Null result</li><li>~200-year orbit</li>
               <li>AGB mass transfer</li><li>40 Eridani</li>
             </ul>
-          </div>
-
-          <figure class="project__figure">
+</div><figure class="project__figure">
             <img src="assets/images/research/chara-reduction.webp" width="1200" height="900" loading="lazy"
                  alt="Interferometric reduction software on screen, showing calibrated visibility curves and fringe data for a set of observed targets.">
             <figcaption>Reduction and model-fitting output from the interferometric side of the 40 Eridani
               work.</figcaption>
-          </figure>
-        </div>
+          </figure></div>
+        </details>
       </article>
 
       <!-- ========================================================== CHARA -->
-      <article class="project" id="chara">
-        <div class="project__grid">
-          <div>
-            <p class="eyebrow">Observational program</p>
-            <h2>CHARA Interferometry and Low-Mass Stars</h2>
-
-            <dl class="qa">
+      <article class="project portfolio-project" id="chara" aria-labelledby="chara-title">
+        <div class="portfolio-project__heading"><div><p class="eyebrow">Observational program</p><h2 id="chara-title">CHARA Interferometry and Low-Mass Stars</h2></div><a class="portfolio-back" href="#research-map">Research map <span aria-hidden="true">&uarr;</span></a></div>
+        <p class="portfolio-project__question">Can directly measured stellar diameters explain why some M dwarfs are larger than models predict?</p>
+        <dl class="portfolio-metadata">
+          <div><dt>Recorded status</dt><dd>Ongoing analysis</dd></div>
+          <div><dt>Publication state</dt><dd>Contributing to a manuscript; preliminary result</dd></div>
+          <div><dt>Activity dates</dt><dd>November 2025 observing sessions; full analysis dates not recorded</dd></div>
+          <div><dt>Last research update</dt><dd>Date not recorded</dd></div>
+        </dl>
+        <p class="portfolio-project__outcome">Preliminary modelling of archival GJ 166 C observations indicates approximately 30% radius excess; the analysis remains ongoing.</p>
+        <p class="portfolio-evidence">The presentation explains the observing method. The radius-excess estimate is a preliminary portfolio result, not a separately linked refereed measurement.</p>
+        <p class="portfolio-resources"><strong>Available work</strong> <a href="assets/presentations/chara-stellar-interferometry.pdf" target="_blank" rel="noopener">CHARA methods presentation (PDF)</a> &middot; <a href="publications.html#engagement">Outreach record</a></p>
+        <details class="portfolio-project__details">
+          <summary>Question, contribution &amp; methods<span aria-hidden="true"> +</span></summary>
+          <div class="project__grid"><div><dl class="qa">
               <dt>The question</dt>
               <dd>Low-mass stars are persistently observed to be larger than stellar-evolution models predict.
                 Optical interferometry is one of the very few ways to measure a stellar diameter directly rather
@@ -203,39 +232,42 @@
                 uniform-disk and limb-darkened model fits, uncertainty propagation, and cross-checks between
                 independent reduction pipelines. Four nights of MIRC-X and MYSTIC data were reduced in total.</dd>
 
-              <dt>Where it stands</dt>
-              <dd>Modelling of archival GJ 166 C observations indicates an approximately 30 percent radius excess
+              <dt>Recorded status and interpretation</dt>
+              <dd>Preliminary modelling of archival GJ 166 C observations indicates an approximately 30 percent radius excess
                 relative to stellar-evolution model predictions. Analysis is ongoing, and results are contributing
                 to a manuscript on M-dwarf radius inflation.</dd>
             </dl>
-
-            <ul class="tags">
+<ul class="tags">
               <li>Six-telescope CHARA Array</li><li>MIRC-X</li><li>MYSTIC</li><li>Angular diameters</li>
               <li>Limb-darkened fits</li><li>Radius inflation</li>
             </ul>
-
-            <ul class="actions">
+<ul class="actions">
               <li><a class="btn btn--small" href="publications.html#featured">CHARA presentation</a></li>
-            </ul>
-          </div>
-
-          <figure class="project__figure">
+            </ul></div><figure class="project__figure">
             <img src="assets/images/research/chara-observing.webp" width="1200" height="900" loading="lazy"
                  alt="Multiple monitors during a CHARA Array observing session, showing real-time fringe tracking and data-quality displays.">
             <figcaption>Remote observing with the CHARA Array: fringe tracking and data-quality displays
               during a half-night session.</figcaption>
-          </figure>
-        </div>
+          </figure></div>
+        </details>
       </article>
 
       <!-- ==================================================== cosmic rays -->
-      <article class="project" id="cosmic-rays">
-        <div class="project__grid">
-          <div>
-            <p class="eyebrow">Instrumentation and space weather</p>
-            <h2>Cosmic Rays and Space Weather</h2>
-
-            <dl class="qa">
+      <article class="project portfolio-project" id="cosmic-rays" aria-labelledby="cosmic-rays-title">
+        <div class="portfolio-project__heading"><div><p class="eyebrow">Instrumentation and space weather</p><h2 id="cosmic-rays-title">Cosmic Rays and Space Weather</h2></div><a class="portfolio-back" href="#research-map">Research map <span aria-hidden="true">&uarr;</span></a></div>
+        <p class="portfolio-project__question">Can inexpensive muon detectors distinguish atmospheric variability from space-weather signals?</p>
+        <dl class="portfolio-metadata">
+          <div><dt>Recorded status</dt><dd>Analysis in progress in the source summary</dd></div>
+          <div><dt>Publication state</dt><dd>Presentation available; publication state not recorded</dd></div>
+          <div><dt>Activity dates</dt><dd>February 2026 outreach; full research dates not recorded</dd></div>
+          <div><dt>Last research update</dt><dd>Date not recorded</dd></div>
+        </dl>
+        <p class="portfolio-project__outcome">Detector assembly, multi-year time-series analysis, and public outreach connect ground-level measurements to their environmental context.</p>
+        <p class="portfolio-evidence">The linked presentation covers the analysis and outreach; no new quantitative space-weather result is claimed here.</p>
+        <p class="portfolio-resources"><strong>Available work</strong> <a href="assets/presentations/glowcost-muon-detection-space-weather.pdf" target="_blank" rel="noopener">gLOWCOST presentation (PDF)</a> &middot; <a href="publications.html#engagement">Capitol outreach record</a></p>
+        <details class="portfolio-project__details">
+          <summary>Question, contribution &amp; methods<span aria-hidden="true"> +</span></summary>
+          <div class="project__grid"><div><dl class="qa">
               <dt>The question</dt>
               <dd>Secondary cosmic rays reaching the ground carry an imprint of both the atmosphere they passed
                 through and the solar activity that modulated them upstream. Can a network of inexpensive
@@ -256,31 +288,36 @@
                 environmental and tidal modulation. Separately, I studied Forbush decreases by comparing gLOWCOST
                 measurements with ACE MAG and SWEPAM solar-wind and magnetic-field data from the L1 point.</dd>
 
-              <dt>Where it stands</dt>
+              <dt>Recorded status and interpretation</dt>
               <dd>Ongoing analysis; the detector-based outreach work was also part of what I presented at the
                 Georgia State Capitol in February 2026.</dd>
             </dl>
-
-            <ul class="tags">
+<ul class="tags">
               <li>gLOWCOST</li><li>Raspberry Pi detectors</li><li>Muon flux</li><li>Forbush decreases</li>
               <li>ACE MAG / SWEPAM</li><li>L1</li><li>Fourier &amp; coherence analysis</li>
             </ul>
-
-            <ul class="actions">
+<ul class="actions">
               <li><a class="btn btn--small" href="publications.html#featured">gLOWCOST presentation</a></li>
-            </ul>
-          </div>
-        </div>
+            </ul></div></div>
+        </details>
       </article>
 
       <!-- ============================================== magellanic clouds -->
-      <article class="project" id="magellanic">
-        <div class="project__grid">
-          <div>
-            <p class="eyebrow">Astronomical data analysis &middot; coursework project</p>
-            <h2>Mapping the Magellanic Clouds</h2>
-
-            <dl class="qa">
+      <article class="project portfolio-project" id="magellanic" aria-labelledby="magellanic-title">
+        <div class="portfolio-project__heading"><div><p class="eyebrow">Astronomical data analysis &middot; coursework project</p><h2 id="magellanic-title">Mapping the Magellanic Clouds</h2></div><a class="portfolio-back" href="#research-map">Research map <span aria-hidden="true">&uarr;</span></a></div>
+        <p class="portfolio-project__question">How much of the Magellanic Clouds’ distance and structure can be recovered from public catalogs?</p>
+        <dl class="portfolio-metadata">
+          <div><dt>Recorded status</dt><dd>Complete</dd></div>
+          <div><dt>Publication state</dt><dd>Course talk and poster; not refereed research</dd></div>
+          <div><dt>Activity dates</dt><dd>Fall 2025 &middot; ASTR 4200</dd></div>
+          <div><dt>Last research update</dt><dd>Date not recorded</dd></div>
+        </dl>
+        <p class="portfolio-project__outcome">A completed catalog-analysis project combines standard candles and proper-motion filtering to explore line-of-sight structure.</p>
+        <p class="portfolio-evidence">These outputs are coursework and a demonstration of catalog-level analysis.</p>
+        <p class="portfolio-resources"><strong>Available work</strong> <a href="assets/presentations/2025-ogle-2mass-gaia-magellanic-clouds-poster.pdf" target="_blank" rel="noopener">Poster (PDF)</a> &middot; <a href="assets/presentations/2025-ogle-2mass-gaia-magellanic-clouds-talk.pdf" target="_blank" rel="noopener">Talk (PDF)</a></p>
+        <details class="portfolio-project__details">
+          <summary>Question, contribution &amp; methods<span aria-hidden="true"> +</span></summary>
+          <div class="project__grid"><div><dl class="qa">
               <dt>The question</dt>
               <dd>How accurately can the distances and line-of-sight structure of the Large and Small Magellanic
                 Clouds be recovered from public survey catalogs alone?</dd>
@@ -298,34 +335,42 @@
                 relations then give distances, and the distribution of those distances traces the structure along
                 the line of sight.</dd>
 
-              <dt>Where it stands</dt>
+              <dt>Recorded status and interpretation</dt>
               <dd>Complete as a data-analysis project, presented as both a talk and a poster. This is coursework
                 and a demonstration of catalog-level analysis, not a refereed research result.</dd>
             </dl>
-
-            <ul class="tags">
+<ul class="tags">
               <li>OGLE</li><li>2MASS</li><li>Gaia</li><li>Cepheids</li><li>RR Lyrae</li>
               <li>Period&ndash;luminosity relations</li><li>Proper-motion filtering</li>
             </ul>
-
-            <ul class="actions">
+<ul class="actions">
               <li><a class="btn btn--small" href="publications.html#data-analysis">Talk and poster</a></li>
-            </ul>
-          </div>
-        </div>
+            </ul></div></div>
+        </details>
       </article>
 
       <!-- ==================================================== 797 Montana -->
-      <article class="project" id="montana">
-        <div class="project__grid">
-          <div>
-            <p class="eyebrow">Refereed publication</p>
-            <h2>797 Montana</h2>
-
-            <dl class="qa">
+      <article class="project portfolio-project" id="montana" aria-labelledby="montana-title">
+        <div class="portfolio-project__heading"><div><p class="eyebrow">Refereed publication</p><h2 id="montana-title">797 Montana</h2></div><a class="portfolio-back" href="#research-map">Research map <span aria-hidden="true">&uarr;</span></a></div>
+        <p class="portfolio-project__question">What does a four-night light curve reveal about the rotation of a main-belt asteroid?</p>
+        <dl class="portfolio-metadata">
+          <div><dt>Recorded status</dt><dd>Published</dd></div>
+          <div><dt>Publication state</dt><dd>Minor Planet Bulletin 52(3), 207&ndash;208 (2025)</dd></div>
+          <div><dt>Activity dates</dt><dd>February 2025 observations &middot; Spring 2025 course &middot; 2025 publication</dd></div>
+          <div><dt>Last research update</dt><dd>Date not recorded</dd></div>
+        </dl>
+        <p class="portfolio-project__outcome">The published period is 4.545 &plusmn; 0.001 hr, with an amplitude of &Delta;V = 0.50 &plusmn; 0.03 mag, consistent with earlier period measurements.</p>
+        <p class="portfolio-evidence">Bentz, M. C., et al. (2025), “Broad-band Monitoring of 797 Montana.” My contribution was observing and photometric reduction.</p>
+        <p class="portfolio-resources"><strong>Available work</strong> <a href="publications.html#publications">Full publication citation</a></p>
+        <details class="portfolio-project__details">
+          <summary>Question, contribution &amp; methods<span aria-hidden="true"> +</span></summary>
+          <div class="project__grid"><div><dl class="qa">
               <dt>The question</dt>
               <dd>What is the rotation period and light-curve amplitude of the main-belt asteroid 797 Montana, and
                 do they agree with earlier measurements?</dd>
+
+              <dt>Why it matters</dt>
+              <dd>Comparing a new rotational light curve with earlier measurements checks the consistency of the asteroid’s measured period.</dd>
 
               <dt>My role</dt>
               <dd>Co-author. I took part in the observing campaign and the photometric reduction as part of the
@@ -340,21 +385,18 @@
                 with a variability amplitude of &Delta;V = 0.50 &plusmn; 0.03 mag. Published in the
                 <em>Minor Planet Bulletin</em>.</dd>
             </dl>
-
-            <ul class="tags">
+<ul class="tags">
               <li>CCD photometry</li><li>IRAF</li><li>DS9</li><li>Lightcurve inversion</li>
               <li>Hard Labor Creek Observatory</li>
             </ul>
-
-            <ul class="actions">
+<ul class="actions">
               <li><a class="btn btn--small" href="publications.html#publications">Full citation</a></li>
-            </ul>
-          </div>
-        </div>
+            </ul></div></div>
+        </details>
       </article>
 
       <!-- =========================================================== CTAS -->
-      <article class="project" id="software">
+      <article class="project portfolio-software" id="software">
         <div class="project__grid">
           <div>
             <p class="eyebrow">Scientific software</p>
@@ -369,11 +411,12 @@
         </div>
       </article>
 
-      <article class="project" id="worldsindex">
+      <article class="project portfolio-software" id="worldsindex">
         <div class="project__grid">
           <div>
             <p class="eyebrow">Scientific software</p>
             <h2>Exoplanet Evidence: WorldsIndex</h2>
+            <p class="portfolio-muted">Powered by ExoNexus</p>
             <p>WorldsIndex is a provenance-aware exoplanet atlas and evidence workbench. It keeps published
               solutions, source composites, candidate dispositions, archive holdings, confidence dimensions,
               conflicts, exclusions, and immutable exports distinct while connecting them through an interactive sky.</p>
@@ -401,6 +444,7 @@
           <li><a href="index.html">Home</a></li>
           <li><a href="ctas.html">CTAS</a></li>
           <li><a href="worldsindex/">WorldsIndex</a></li>
+          <li><a href="learn/">Science</a></li>
           <li><a href="qualquest/">QualQuest</a></li>
           <li><a href="research.html">Research</a></li>
           <li><a href="publications.html">Publications &amp; Presentations</a></li>

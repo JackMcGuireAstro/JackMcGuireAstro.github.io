@@ -91,7 +91,7 @@ function nasaPublished(row, sourceRecordId) {
     published: row.pl_pubdate,
     isSourceDefault: row.default_flag === 1,
     values: selected(row, [
-      'pl_orbper','pl_orbpererr1','pl_orbpererr2','pl_orbperlim',
+      'pl_tranmid','pl_tranmiderr1','pl_tranmiderr2','pl_ratror','pl_ratrorerr1','pl_ratrorerr2','pl_ratdor','pl_ratdorerr1','pl_ratdorerr2','pl_imppar','pl_impparerr1','pl_impparerr2','st_rad','st_raderr1','st_raderr2','pl_orbper','pl_orbpererr1','pl_orbpererr2','pl_orbperlim',
       'pl_rade','pl_radeerr1','pl_radeerr2','pl_radelim',
       'pl_bmasse','pl_bmasseerr1','pl_bmasseerr2','pl_bmasselim','pl_bmassprov',
       'pl_orbsmax','pl_orbsmaxerr1','pl_orbsmaxerr2','pl_orbsmaxlim',
@@ -109,7 +109,7 @@ function nasaComposite(row, sourceRecordId) {
     sourceId: 'nasa-pscomppars', sourceRecordId, recordType: 'source composite', name: row.pl_name, hostName: row.hostname,
     references,
     values: selected(row, [
-      'pl_orbper','pl_orbpererr1','pl_orbpererr2','pl_orbperlim',
+      'pl_tranmid','pl_tranmiderr1','pl_tranmiderr2','pl_ratror','pl_ratrorerr1','pl_ratrorerr2','pl_ratdor','pl_ratdorerr1','pl_ratdorerr2','pl_imppar','pl_impparerr1','pl_impparerr2','st_rad','st_raderr1','st_raderr2','pl_orbper','pl_orbpererr1','pl_orbpererr2','pl_orbperlim',
       'pl_rade','pl_radeerr1','pl_radeerr2','pl_radelim',
       'pl_bmasse','pl_bmasseerr1','pl_bmasseerr2','pl_bmasselim','pl_bmassprov',
       'pl_orbsmax','pl_orbsmaxerr1','pl_orbsmaxerr2','pl_orbsmaxlim',
@@ -132,9 +132,9 @@ function candidateAttachmentNames(table, row) {
 
 function candidateRecord(table, row, sourceRecordId) {
   const fieldSets = {
-    toi: ['toi','tid','ctoi_alias','tfopwg_disp','pl_orbper','pl_orbpererr1','pl_orbpererr2','pl_tranmid','pl_tranmiderr1','pl_tranmiderr2','pl_trandurh','pl_trandurherr1','pl_trandurherr2','pl_trandep','pl_trandeperr1','pl_trandeperr2','pl_rade','pl_radeerr1','pl_radeerr2','pl_insol','pl_eqt','st_tmag','st_dist','st_teff','st_logg','st_rad','sectors','rowupdate','release_date'],
+    toi: ['toi','tid','ctoi_alias','tfopwg_disp','pl_tranmid','pl_tranmiderr1','pl_tranmiderr2','pl_ratror','pl_ratrorerr1','pl_ratrorerr2','pl_ratdor','pl_ratdorerr1','pl_ratdorerr2','pl_imppar','pl_impparerr1','pl_impparerr2','st_rad','st_raderr1','st_raderr2','pl_orbper','pl_orbpererr1','pl_orbpererr2','pl_tranmid','pl_tranmiderr1','pl_tranmiderr2','pl_trandurh','pl_trandurherr1','pl_trandurherr2','pl_trandep','pl_trandeperr1','pl_trandeperr2','pl_rade','pl_radeerr1','pl_radeerr2','pl_insol','pl_eqt','st_tmag','st_dist','st_teff','st_logg','st_rad','sectors','rowupdate','release_date'],
     cumulative: ['kepid','kepoi_name','kepler_name','koi_disposition','koi_pdisposition','koi_score','koi_delivname','koi_quarters','koi_num_transits','koi_model_snr','koi_time0bk','koi_time0bk_err1','koi_time0bk_err2','koi_prad','koi_prad_err1','koi_prad_err2','koi_sma','koi_sma_err1','koi_sma_err2','koi_impact','koi_impact_err1','koi_impact_err2','koi_duration','koi_duration_err1','koi_duration_err2','koi_depth','koi_depth_err1','koi_depth_err2','koi_period','koi_period_err1','koi_period_err2','koi_teq','koi_insol','koi_tce_plnt_num','koi_tce_delivname'],
-    k2pandc: ['pl_name','hostname','epic_candname','epic_hostname','k2_name','tic_id','disposition','default_flag','disc_year','discoverymethod','disc_facility','k2_campaigns','pl_orbper','pl_orbpererr1','pl_orbpererr2','pl_tranmid','pl_tranmiderr1','pl_tranmiderr2','pl_trandur','pl_trandurerr1','pl_trandurerr2','pl_trandep','pl_trandeperr1','pl_trandeperr2','pl_rade','pl_radeerr1','pl_radeerr2','rowupdate','pl_pubdate','releasedate'],
+    k2pandc: ['pl_name','hostname','epic_candname','epic_hostname','k2_name','tic_id','disposition','default_flag','disc_year','discoverymethod','disc_facility','k2_campaigns','pl_tranmid','pl_tranmiderr1','pl_tranmiderr2','pl_ratror','pl_ratrorerr1','pl_ratrorerr2','pl_ratdor','pl_ratdorerr1','pl_ratdorerr2','pl_imppar','pl_impparerr1','pl_impparerr2','st_rad','st_raderr1','st_raderr2','pl_orbper','pl_orbpererr1','pl_orbpererr2','pl_tranmid','pl_tranmiderr1','pl_tranmiderr2','pl_trandur','pl_trandurerr1','pl_trandurerr2','pl_trandep','pl_trandeperr1','pl_trandeperr2','pl_rade','pl_radeerr1','pl_radeerr2','rowupdate','pl_pubdate','releasedate'],
   };
   return { sourceId: table === 'toi' ? 'nasa-toi' : table === 'cumulative' ? 'nasa-koi' : 'nasa-k2', sourceRecordId, recordType: 'mission candidate row', name: candidateName(table, row), values: selected(row, fieldSets[table]) };
 }
@@ -275,10 +275,28 @@ async function describeArtifact(relativePath) {
 // directory. The publisher refuses to commit any release whose declared artifacts are not
 // all in its allowlist, and the static test verifies each hash, so a future artifact cannot
 // be shipped as a manifest reference without the bytes that back it.
+// Validated observation products are copied from the local scientific archive.
+const lightcurvePaths = [];
+const indexPath = join(sourceRoot, 'public/data/lightcurves/index.json');
+const indexText = await readFile(indexPath, 'utf8').catch(error => { if (error.code === 'ENOENT') return null; throw error; });
+if (indexText !== null) {
+  const index = JSON.parse(indexText);
+  await mkdir(join(outputRoot, 'lightcurves'), { recursive: true });
+  for (const entry of Object.values(index.entries)) {
+    if (!/^HAT-P-\d+b\.json\.gz$/.test(entry.path)) throw new Error('Invalid observation artifact path');
+    const bytes = await readFile(join(sourceRoot, 'public/data/lightcurves', entry.path));
+    if (createHash('sha256').update(bytes).digest('hex') !== entry.sha256) throw new Error('Light curve checksum mismatch');
+    await writeFile(join(outputRoot, 'lightcurves', entry.path), bytes);
+    lightcurvePaths.push(`lightcurves/${entry.path}`);
+  }
+  await copyFile(indexPath, join(outputRoot, 'lightcurves/index.json'));
+  lightcurvePaths.push('lightcurves/index.json');
+}
 const artifactPaths = [
   'sky-detections.json.gz',
   'catalog-index.json.gz',
   'registry.json.gz',
+  ...lightcurvePaths,
   'source-monitor.json',
   ...[...buckets.keys()].sort().map((bucket) => `details/${bucket}.json.gz`),
 ].sort();

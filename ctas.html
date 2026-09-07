@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://jackmcguireastro.github.io/assets/images/ctas/ctas-card.png">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="assets/css/site.css?v=20260903-notebook">
-<link rel="stylesheet" href="ctas/ctas.css?v=20260903-sticky">
+<link rel="stylesheet" href="ctas/ctas.css?v=20260907-clarity">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>
@@ -23,6 +23,7 @@
   gtag('js', new Date());
   gtag('config', 'G-XN307TT07G');
 </script>
+<link rel="stylesheet" href="assets/css/continuity.css?v=20260907-science">
 </head>
 <body>
 
@@ -40,7 +41,8 @@
         <li><a class="nav__link" href="index.html">Home</a></li>
         <li><a class="nav__link" href="ctas.html" aria-current="page">CTAS</a></li>
         <li><a class="nav__link" href="worldsindex/">WorldsIndex</a></li>
-        <li><a class="nav__link" href="learn/">Learn</a></li>
+        <li><a class="nav__link" href="learn/">Science</a></li>
+        <li><a class="nav__link" href="qualquest/">QualQuest</a></li>
         <li><a class="nav__link" href="research.html">Research</a></li>
         <li><a class="nav__link" href="publications.html">Publications &amp; Presentations</a></li>
         <li><a class="nav__link" href="personal.html">About</a></li>
@@ -50,7 +52,7 @@
   </div>
 </header>
 
-<main id="main">
+<main id="main" tabindex="-1">
   <noscript>
     <section class="ctas-noscript" aria-labelledby="ctas-noscript-title">
       <h2 id="ctas-noscript-title">CTAS without JavaScript</h2>
@@ -90,7 +92,7 @@
         <div class="ctas-console-identity">
           <p class="eyebrow"><span class="ctas-live-dot" aria-hidden="true"></span>Cowboy Transient Alert System</p>
           <h1>CTAS <span>Live sky</span></h1>
-          <p class="hero__statement">What changed, where it happened, and why it may deserve attention.</p>
+          <p class="hero__statement">Explore changing sky reports. Select a candidate to trace its evidence and sources.</p>
         </div>
         <p class="ctas-hero__meta">Active development · version <span data-ctas="version">1.5.0</span></p>
         <div class="ctas-status ctas-status--hero" id="ctas-status"></div>
@@ -149,9 +151,10 @@
       </nav>
       <div class="ctas-console-search field"><label class="sr-only" for="ctas-q">Search candidates</label><input type="search" id="ctas-q" placeholder="Search any candidate…" autocomplete="off"></div>
       <details class="ctas-navigation__menu">
-        <summary>Learn &amp; data</summary>
+        <summary>Science &amp; data</summary>
         <nav aria-label="CTAS resources">
-          <a href="#ctas-learn">How to read CTAS</a>
+          <a href="learn/#transients">Transient science</a>
+          <a href="#ctas-learn">Catalog examples &amp; glossary</a>
           <a href="#ctas-reference">Catalog details</a>
           <a href="#methods-and-use">Methods</a>
           <a href="#catalog-downloads">Downloads</a>
@@ -168,19 +171,19 @@
     <div class="wrap wrap--wide">
       <details class="ctas-panel ctas-learn-studio" id="ctas-learn">
         <summary>
-          <span><span class="eyebrow">Guided learning studio</span><h2>Read a transient record without over-reading it</h2></span>
-          <small>Four real catalog examples plus one explicitly synthetic identity lesson</small>
+          <span><span class="eyebrow">Transient evidence</span><h2>Spectra, limits, conflicts, and revisions</h2></span>
+          <small>Catalog examples and an explicitly hypothetical identity case</small>
         </summary>
         <div class="ctas-panel__body">
-          <p class="ctas-learn-studio__course"><a href="learn/#transients">Take the full five-lesson course</a></p>
+          <p class="ctas-learn-studio__course"><a href="learn/#transients">Explore transient science</a></p>
           <div class="ctas-guides">
             <article><span class="pill">Rich record</span><h3>Follow evidence from alert to spectra</h3><p>Use a real event with retained spectra to compare summary claims with source-native rows.</p><button type="button" data-open-name="SN2026xby">Open SN2026xby</button></article>
             <article><span class="pill">Upper limit</span><h3>Detection is not the same as a limit</h3><p>See how CTAS preserves nondetections and limiting magnitudes without plotting them as detections.</p><button type="button" data-open-name="AT2026zwn">Open AT2026zwn</button></article>
             <article><span class="pill">Conflict</span><h3>Keep source assertions separate</h3><p>Inspect a real retained conflict instead of forcing one apparently authoritative value.</p><button type="button" data-open-name="IceCube-250416A">Open IceCube-250416A</button></article>
             <article><span class="pill">Retraction</span><h3>Revisions do not erase history</h3><p>Replay what CTAS had received and see the terminal status override in the score arithmetic.</p><button type="button" data-open-name="NuEm-220601A-118386">Open NuEm-220601A-118386</button></article>
-            <article class="is-synthetic"><span class="pill">Synthetic lesson</span><h3>Why provider-scoped identity matters</h3><p>The current snapshot has no real alias collision. This teaching case is intentionally synthetic: if two providers reuse one alias for different UUIDs, CTAS returns both and refuses to guess.</p></article>
+            <article class="is-synthetic"><span class="pill">Hypothetical identity case</span><h3>Provider-scoped identity</h3><p>Hypothetical example: two providers reuse one alias for different UUIDs. CTAS returns both records and leaves the identity unresolved.</p></article>
           </div>
-          <details class="ctas-glossary"><summary>Open the plain-language astronomy and provenance glossary</summary><dl>
+          <details class="ctas-glossary"><summary>Astronomy and provenance terms</summary><dl>
             <div><dt>Transient</dt><dd>A public report of an astronomical source or signal that changes with time; inclusion is not confirmation.</dd></div>
             <div><dt>Detection</dt><dd>A source-reported measurement above that provider’s criterion. CTAS preserves the provider and method.</dd></div>
             <div><dt>Upper limit</dt><dd>A nondetection constraint: the source was not measured above the stated limit under the retained method.</dd></div>
@@ -270,7 +273,7 @@
       <section class="ctas-panel ctas-sky ctas-live-stage" id="celestial-sphere" aria-labelledby="ctas-sky-title">
         <header class="ctas-live-stage__heading">
           <span><span class="eyebrow">Interactive celestial sphere</span><h2 id="ctas-sky-title">Sky</h2></span>
-          <small>Hover, keyboard, or select any point</small>
+          <small>Select a point or use the candidate list below</small>
         </header>
         <div class="ctas-panel__body">
           <div class="ctas-sky__head">
@@ -284,8 +287,8 @@
           </div>
           <div class="ctas-sky__stage" id="ctas-sky-stage">
             <p id="ctas-sky-help" class="sr-only">Use the weekly and monthly buttons to change the time window.
-              Focus the map and use the arrow keys to review plotted candidates; press Enter to open the selected record.</p>
-            <canvas id="ctas-sky-canvas" tabindex="0" aria-describedby="ctas-sky-help"></canvas>
+              Focus the map and use the arrow keys to review plotted candidates; press Enter to open the selected record. The candidate list below provides the same plotted records.</p>
+            <canvas id="ctas-sky-canvas" tabindex="0" aria-label="Sky map of public transient reports" aria-describedby="ctas-sky-help"></canvas>
             <div class="ctas-sky__tooltip" id="ctas-sky-tooltip" role="tooltip" hidden></div>
           </div>
           <div class="ctas-sky__foot">
@@ -305,7 +308,7 @@
           <p>A focused starting point for citizen scientists and researchers. CTAS score orders review; it is not a discovery claim, probability, or scientific importance rating. The complete retained catalog appears only after you request it.</p>
         </div>
         <details class="ctas-use-guide">
-          <summary>New to transient astronomy? Start here</summary>
+          <summary>Explore a candidate</summary>
           <div><p><strong>1.</strong> Review the last-24-hour stream for newly reported events.</p><p><strong>2.</strong> Use the leaderboard to find records CTAS suggests reviewing first.</p><p><strong>3.</strong> Open a record for plain-language context, original-source links, the sky image, score factors, and optional research evidence.</p></div>
         </details>
 
@@ -394,7 +397,7 @@
             Third-party data remain subject to their source terms and attribution requirements; this page does not
             apply a blanket new license to provider data.</p></section>
           <section><h3>Source accounting</h3><p>Each event uses executable applicability rules and an append-only
-            receipt history. Current query health is shown separately from the age and availability of retained
+            receipt history. Multiple brokers can report the same detection; their presence is not independent confirmation. Current query health is shown separately from the age and availability of retained
             evidence, so a failed refresh cannot erase an earlier public measurement.</p></section>
           <section><h3>Reproducible dossier exports</h3><p>Every open dossier can be projected on demand into
             AstroEvidence 0.1.0 JSON, ECSV, and IVOA VOTable, with stable UUIDs and a checksum manifest. Missing
@@ -427,6 +430,8 @@
           <li><a href="index.html">Home</a></li>
           <li><a href="ctas.html">CTAS</a></li>
           <li><a href="worldsindex/">WorldsIndex</a></li>
+          <li><a href="learn/">Science</a></li>
+          <li><a href="qualquest/">QualQuest</a></li>
           <li><a href="research.html">Research</a></li>
           <li><a href="publications.html">Publications &amp; Presentations</a></li>
           <li><a href="personal.html">About</a></li>

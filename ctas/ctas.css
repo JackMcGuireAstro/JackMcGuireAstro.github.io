@@ -1659,3 +1659,27 @@ table.ctas-table { min-width: 900px; }
   margin: 0 0 1rem;
   font-size: 0.95rem;
 }
+
+
+/* Small interaction refinements preserve the live console layout. */
+.ctas-interface :is(button, summary, select),
+.ctas-navigation :is(a, input, summary) { touch-action: manipulation; }
+.ctas-window__button, .ctas-window__more > summary,
+.ctas-console-links a, .ctas-navigation__menu > summary,
+.ctas-console-search input { min-height: 44px; }
+.ctas-navigation__menu nav a { display: flex; align-items: center; min-height: 44px; }
+.ctas-window:focus-within, .ctas-console-search:focus-within { border-color: var(--gold); }
+.ctas-sky__accessible-label { display: block; margin-top: .75rem; }
+.ctas-sky__accessible { min-height: 44px; max-width: 100%; }
+.ctas-empty :is(button, a) { min-height: 44px; }
+
+/* Hybrid touch devices must not depend on hover to expose row actions. */
+@media (any-pointer: coarse) {
+  .ctas-interface button, .ctas-interface select { min-height: 44px; }
+  .ctas-stream__list li .ctas-card-actions,
+  .ctas-stream__list li:hover .ctas-card-actions,
+  .ctas-stream__list li:focus-within .ctas-card-actions,
+  .ctas-table .ctas-card-actions,
+  .ctas-table tr:hover .ctas-card-actions,
+  .ctas-table tr:focus-within .ctas-card-actions { max-height: none; overflow: visible; opacity: 1; visibility: visible; }
+}

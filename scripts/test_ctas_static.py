@@ -980,7 +980,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertNotIn("MODE_KEY", workbench)
         self.assertIn('url.searchParams.delete("mode")', workbench)
         self.assertIn('brief.open = true', workbench)
-        self.assertIn("Guided learning studio", html)
+        self.assertIn("Explore transient science", html)
         self.assertIn("Scientist workbench", html)
         self.assertIn("Top 100 CTAS-ranked candidates", html)
         self.assertIn("Latest arrivals", html)

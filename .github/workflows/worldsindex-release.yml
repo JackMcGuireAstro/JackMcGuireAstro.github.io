@@ -41,6 +41,8 @@ jobs:
         run: |
           python3 scripts/test_worldsindex_static.py
           node scripts/test_worldsindex_science.mjs
+          node scripts/test_worldsindex_photometry.mjs
+          node --check worldsindex/assets/lightcurves.js
           node --check worldsindex/assets/app.js
           node --check worldsindex/assets/science.js
           node --check scripts/build_worldsindex_static.mjs

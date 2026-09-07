@@ -87,11 +87,11 @@ export GIT_SSH_COMMAND
 INPUT_STAMP="$LOG_DIR/.published-inputs.sha256"
 input_fingerprint() {
   {
-    for file in "$SOURCE/public/data/sky-detections.json.gz" "$SOURCE/public/data/sync/latest.json" \
+    for file in "$SOURCE/public/data/lightcurves/index.json" "$SOURCE/public/data/sky-detections.json.gz" "$SOURCE/public/data/sync/latest.json" \
                 "$SOURCE/data/snapshots/exoplanet-eu/ACTIVE.json" "$SOURCE/data/atlas/release-contract.json" \
                 "$SOURCE/outputs/promotion/exoplanet-eu/latest.json" \
                 "$SITE/scripts/build_worldsindex_static.mjs" "$SITE/worldsindex/index.html" "$SITE/worldsindex/assets/app.js" \
-                "$SITE/worldsindex/assets/science.js" "$SITE/worldsindex/assets/app.css"; do
+                "$SITE/worldsindex/assets/lightcurves.js" "$SITE/worldsindex/assets/photometry.js" "$SITE/worldsindex/assets/science.js" "$SITE/worldsindex/assets/app.css"; do
       [ -f "$file" ] && shasum -a 256 "$file" 2>/dev/null || sha256sum "$file" 2>/dev/null || printf 'missing  %s\n' "$file"
     done
     ( cd "$SOURCE" && find data/snapshots -maxdepth 2 -name manifest.json -print0 2>/dev/null | sort -z | xargs -0 shasum -a 256 2>/dev/null || true )
@@ -200,6 +200,8 @@ else
 fi
 # ----------------------------------------------------------------------------------------
 
+say "refreshing public light curves locally (last good products retained on failure)"
+(cd "$SOURCE" && npm run lightcurves:refresh) >>"$LOG" 2>&1 || say "light-curve refresh failed; retaining prior observation products"
 say "running ExoNexus scientific and production gates"
 (cd "$SOURCE" && npm run typecheck && npm test && npm run lint && npm run build) >>"$LOG" 2>&1 \
   || die "ExoNexus validation failed; nothing published"
@@ -213,6 +215,16 @@ fi  # MODE=full
 say "building the GitHub-native static release"
 (cd "$SITE" && WORLDSINDEX_SOURCE_DIR="$SOURCE" node scripts/build_worldsindex_static.mjs) >>"$LOG" 2>&1 \
   || die "static release build failed"
+# Derive observation files from the completed manifest; never guess shard names.
+while IFS= read -r artifact; do
+  PUBLIC_FILES+=("$artifact")
+done < <(python3 - "$SITE/worldsindex/data/manifest.json" <<'PY_OBSERVATIONS'
+import json,re,sys
+for path in json.load(open(sys.argv[1])).get("artifacts", {}):
+    if re.fullmatch(r"lightcurves/(?:index\.json|HAT-P-\d+b\.json\.gz)", path):
+        print("worldsindex/data/" + path)
+PY_OBSERVATIONS
+)
 (cd "$SITE" && python3 scripts/test_worldsindex_static.py && node --check worldsindex/assets/app.js && git diff --check) >>"$LOG" 2>&1 \
   || die "static release validation failed"
 
