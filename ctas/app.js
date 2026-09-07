@@ -1013,7 +1013,7 @@
     el.status.querySelector("details").open = detailsOpen;
     if (focusedStatusControl) el.status.querySelector(focusedStatusControl).focus({preventScroll: true});
     Array.prototype.forEach.call(document.querySelectorAll("[data-score-valid-until]"), function (label) {
-      label.textContent = Date.now() > Date.parse(label.getAttribute("data-score-valid-until")) ? "snapshot score · expired" : "ordering aid";
+      label.textContent = Date.now() > Date.parse(label.getAttribute("data-score-valid-until")) ? "snapshot score · expired" : "";
     });
   }
 
@@ -1266,7 +1266,7 @@
         esc(candidate.name) + '</span><small>' + esc(candidate.discovery_survey || "Survey unavailable") + " · " + esc(sexagesimal(candidate.ra_deg, candidate.dec_deg) || "position unavailable") +
         '</small></button><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></td><td class="num ctas-score-cell">' + esc(num(candidate.ctas_score, 1)) +
         '<small data-score-valid-until="' + esc(candidate.score_valid_until || "") + '" title="' + esc(candidate.score_as_of ? "Score computed " + absolute(candidate.score_as_of) : "Score clock not included in this release") + '">' +
-        (candidate.score_valid_until && Date.now() > Date.parse(candidate.score_valid_until) ? "snapshot score · expired" : "ordering aid") + '</small></td><td><div class="ctas-reasons">' + renderTriageReasons(candidate) + '</div></td><td><span class="pill">' + esc(label) +
+        (candidate.score_valid_until && Date.now() > Date.parse(candidate.score_valid_until) ? "snapshot score · expired" : "") + '</small></td><td><div class="ctas-reasons">' + renderTriageReasons(candidate) + '</div></td><td><span class="pill">' + esc(label) +
         '</span><small class="ctas-label-kind">' + esc(humanKey(candidate.reported_label_kind || "provider-reported")) +
         '</small></td><td><strong>' + esc(candidate.discovery_time ? relative(candidate.discovery_time) : "Time unavailable") +
         '</strong><small class="ctas-table-sub">' + esc(num(candidate.discovery_magnitude, 2) ? num(candidate.discovery_magnitude, 2) + " mag · source reported" : "Magnitude unavailable") +
