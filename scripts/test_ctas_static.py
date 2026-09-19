@@ -1274,7 +1274,9 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertFalse(EXPORTER.validate(self.snapshot))
         publisher = (ROOT / "scripts/publish_ctas.sh").read_text()
         self.assertNotIn("git add -- ctas/data\n", publisher)
-        self.assertIn(".backup '$PUBLISH_DB'", publisher)
+        self.assertIn('source.execute("BEGIN")', publisher)
+        self.assertIn('source.backup(destination, pages=4096', publisher)
+        self.assertIn('source_path.as_uri() + "?mode=ro"', publisher)
         self.assertEqual(publisher.count('export_ctas_snapshot.py --database "$PUBLISH_DB"'), 2)
         self.assertIn('test_ctas_ingest_provenance.py --database "$PUBLISH_DB"', publisher)
         for name in (
