@@ -971,7 +971,7 @@
     var stale = Number.isFinite(validUntilMs) && Date.now() > validUntilMs;
     var skyHeading = document.querySelector(".ctas-console-identity h1 span");
     var liveDot = document.querySelector(".ctas-live-dot");
-    if (skyHeading) skyHeading.textContent = localPreview || stale || cached || !state.snapshot ? "Sky catalog" : "Live sky";
+    if (skyHeading) skyHeading.textContent = "Sky catalog";
     if (liveDot) liveDot.style.opacity = localPreview || stale || cached || !state.snapshot ? "0.35" : "1";
     var assurance = status.static_snapshot_verification || status.static_catalog_assurance || {};
     var snapshotVerified = assurance.status === "verified-static-snapshot" || assurance.status === "certified-static-catalog";
@@ -995,18 +995,19 @@
     var pipelineDetail = localPreview ? "This file is a bundled development snapshot, not the live publishing endpoint. Its age does not describe the public CTAS publisher."
       : cached ? "A live refresh failed; the last successfully loaded public snapshot remains usable."
       : stale ? "This snapshot has passed its freshness window. That alone does not establish whether the publisher is stopped, still exporting, or unable to publish."
-      : degraded ? "Catalog updates are active; individual source availability is reported in Catalog details."
-      : "Catalog updates are active.";
+      : degraded ? "Individual source availability is reported in Catalog details. Snapshot build time is separate from the latest retained record update."
+      : "This snapshot is within its publication window. Build time does not by itself establish that new observations were ingested.";
     el.status.innerHTML = '<div class="ctas-status__line">' +
       statusCell("Pipeline", esc(pipelineValue)) +
-      statusCell(localPreview ? "Bundled snapshot" : "Updated", esc(relative(generated) || "unavailable")) +
+      statusCell(localPreview ? "Bundled snapshot" : "Snapshot built", esc(relative(generated) || "unavailable")) +
+      statusCell("Latest record", esc(relative(status.latest_record_update) || "unavailable")) +
       statusCell("Public candidates", Number(status.candidate_count || snapshot.candidate_count || state.candidates.length).toLocaleString()) +
       statusCell("Snapshot integrity", esc(integrityValue)) +
       statusCell("Browser check", localPreview ? "Public site only" : state.autoRefreshPaused ? "Paused" : "Every 2 minutes") +
       '</div>' + (state.refreshError ? '<p role="status" class="ctas-cache-warning">Refresh not applied: ' + esc(state.refreshError) + ' The last coherent snapshot remains visible; the next browser check will retry.</p>' : '') +
       '<details class="ctas-status__details"><summary>Status details</summary><div><p>' + esc(pipelineDetail) +
       '</p><p>The browser checks every two minutes. Export, verification, and GitHub publication take longer; this is not a two-minute publication guarantee.' +
-      '</p><p><strong>Last successful snapshot:</strong> ' + esc(absolute(generated)) + '</p><p><strong>Integrity:</strong> ' + integrityDetail +
+      '</p><p><strong>Snapshot built:</strong> ' + esc(absolute(generated)) + '</p><p><strong>Integrity:</strong> ' + integrityDetail +
       (localPreview ? '</p><p><a href="https://jackmcguireastro.github.io/ctas.html">Open the current public CTAS catalog</a>' : "") +
       '</p><button type="button" class="ctas-refresh-toggle" data-toggle-refresh aria-pressed="' + (state.autoRefreshPaused ? "true" : "false") + '">' +
       (state.autoRefreshPaused ? "Resume 2-minute checks" : "Pause 2-minute checks") + "</button></div></details>";

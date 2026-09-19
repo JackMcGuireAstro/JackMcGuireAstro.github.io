@@ -879,6 +879,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
 
     def test_schema_projector_and_contract_tests_are_checksum_bound(self):
         for relative in (
+            "ctas.html",
             "ctas/schema/astro-evidence-core-0.1.0.schema.json",
             "ctas/astro-evidence.js",
             "ctas/catalog-model.js",
@@ -981,7 +982,10 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertNotIn("MODE_KEY", workbench)
         self.assertIn('url.searchParams.delete("mode")', workbench)
         self.assertIn('brief.open = true', workbench)
-        self.assertIn("Explore transient science", html)
+        self.assertNotIn('href="index.html#transients"', html)
+        self.assertNotIn('href="index.html#science"', html)
+        self.assertIn('statusCell("Latest record", esc(relative(status.latest_record_update)', app)
+        self.assertIn('"Snapshot built"', app)
         self.assertIn("Scientist workbench", html)
         self.assertIn("Top 100 CTAS-ranked candidates", html)
         self.assertIn("Latest arrivals", html)
