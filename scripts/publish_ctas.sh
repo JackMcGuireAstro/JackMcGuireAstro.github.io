@@ -40,10 +40,6 @@ PUBLIC_FILES=(
   ctas/data/link-health.json
   ctas/data/certification.json
 )
-for bucket_index in {0..4095}; do
-  printf -v bucket '%03x' "$bucket_index"
-  PUBLIC_FILES+=("ctas/data/candidate-chunks/$bucket.json")
-done
 
 # Floor between published commits, not a schedule. 0 = publish as soon as the
 # data actually changes. Nothing happens at all unless the data changed.
@@ -105,8 +101,8 @@ cleanup() {
   if [ "$status" -ne 0 ] && [ "$SITE_READY" -eq 1 ]; then
     git -C "$SITE" restore --source=HEAD --staged --worktree -- "${PUBLIC_FILES[@]}" 2>/dev/null || true
   fi
-  if [ -n "$PUBLISH_DB" ] && [ -f "$PUBLISH_DB" ]; then
-    rm -f -- "$PUBLISH_DB"
+  if [ -n "$PUBLISH_DB" ]; then
+    rm -f -- "$PUBLISH_DB" "$PUBLISH_DB-journal" "$PUBLISH_DB-wal" "$PUBLISH_DB-shm"
   fi
   rmdir "$LOCKDIR" 2>/dev/null
   return "$status"
@@ -124,8 +120,52 @@ SITE_READY=1
 # database states.
 PUBLISH_DB=$(mktemp "${TMPDIR:-/tmp}/ctas-publish.XXXXXX") \
   || die "could not allocate a temporary database snapshot"
-sqlite3 "$DB" ".backup '$PUBLISH_DB'" \
-  || die "could not create a consistent database snapshot"
+# Establish an explicit read transaction before copying. Without this pin,
+# SQLite may restart a long backup on every live ingestion write. WAL writers
+# can continue while all backup pages come from this one established state.
+if ! python3 - "$DB" "$PUBLISH_DB" >>"$LOG" 2>&1 <<'PYCTASBACKUP'
+from contextlib import closing
+from pathlib import Path
+import shutil
+import sqlite3
+import sys
+import time
+
+source_path = Path(sys.argv[1]).resolve()
+destination_path = Path(sys.argv[2])
+complete = False
+started = time.monotonic()
+try:
+    if source_path == destination_path.resolve() or destination_path.is_symlink():
+        raise ValueError("Snapshot destination must be distinct from the source and not redirected")
+    with closing(sqlite3.connect(source_path.as_uri() + "?mode=ro", uri=True, timeout=15)) as source:
+        source.execute("BEGIN")
+        candidate_count = source.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+        expected_bytes = source.execute("PRAGMA page_count").fetchone()[0] * source.execute("PRAGMA page_size").fetchone()[0]
+        if shutil.disk_usage(destination_path.parent).free < expected_bytes + 64 * 1024 * 1024:
+            raise OSError("Insufficient free disk space for the complete frozen database snapshot")
+        with closing(sqlite3.connect(str(destination_path), timeout=15)) as destination:
+            def progress(status, remaining, total):
+                if time.monotonic() - started > 600:
+                    raise TimeoutError("Frozen database backup exceeded its 600-second deadline")
+            source.backup(destination, pages=4096, progress=progress, sleep=0.05)
+            copied_count = destination.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+            if copied_count != candidate_count:
+                raise ValueError("Frozen database event count differs from the pinned source")
+        source.rollback()
+    complete = True
+    print(f"Frozen read-only database snapshot: {candidate_count} events in {time.monotonic() - started:.1f}s")
+except (sqlite3.Error, OSError, ValueError, TimeoutError) as error:
+    print(f"Database snapshot failed: {error}", file=sys.stderr)
+    raise SystemExit(1)
+finally:
+    if not complete and source_path != destination_path.resolve():
+        for suffix in ("", "-journal", "-wal", "-shm"):
+            Path(str(destination_path) + suffix).unlink(missing_ok=True)
+PYCTASBACKUP
+then
+  die "could not create a complete pinned database snapshot; nothing exported or committed"
+fi
 [ -s "$PUBLISH_DB" ] || die "database snapshot is empty"
 
 # ------------------------------------------------------------- rate guard
@@ -151,6 +191,94 @@ python3 scripts/check_ctas_links.py --catalog-index ctas/data/catalog-index.json
 python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
   --release-base-ref origin/main >>"$LOG" 2>&1 \
   || die "verification-report rebuild failed; nothing committed"
+
+# ----------------------------------------------------------- collect detail files
+# The completed manifest is the only source of root/part paths. Overflow parts
+# grow with public evidence, while the 4096 stable dossier URLs remain fixed.
+DETAIL_FILES=$(python3 - <<'PYCTASDETAIL'
+import hashlib
+import json
+import re
+from pathlib import Path
+
+root = Path.cwd().resolve()
+manifest = json.loads(Path("ctas/data/candidate-chunks/manifest.json").read_text())
+chunks, parts = manifest.get("chunks"), manifest.get("parts", [])
+if not isinstance(chunks, list) or len(chunks) != manifest.get("chunk_count"):
+    raise ValueError("Detail root count differs from manifest")
+if not isinstance(parts, list):
+    raise ValueError("Detail parts must be a list")
+expected = [f"ctas/data/candidate-chunks/{index:03x}.json" for index in range(4096)]
+if [row.get("path") for row in chunks] != expected:
+    raise ValueError("Detail roots must be the exact ordered 000..fff set")
+part_paths = [row.get("path") for row in parts]
+if any(not isinstance(path, str) for path in part_paths):
+    raise ValueError("Detail part path must be a string")
+if part_paths != sorted(set(part_paths)):
+    raise ValueError("Detail part paths must be unique and ordered")
+part_metadata = {row["path"]: row for row in parts}
+used_parts = set()
+paths = []
+
+def read_bound(row, pattern):
+    relative = row["path"]
+    if not isinstance(relative, str) or not re.fullmatch(pattern, relative):
+        raise ValueError("Unexpected detail artifact path")
+    target = root / relative
+    if target.is_symlink() or target.resolve() != target or not target.is_file():
+        raise ValueError("Detail artifact is missing or redirected: " + relative)
+    raw = target.read_bytes()
+    if len(raw) > 4 * 1024 * 1024:
+        raise ValueError("Detail artifact exceeds the request budget: " + relative)
+    if len(raw) != row["bytes"] or hashlib.sha256(raw).hexdigest() != row["sha256"]:
+        raise ValueError("Detail artifact integrity mismatch: " + relative)
+    paths.append(relative)
+    return json.loads(raw)
+
+for metadata in chunks:
+    document = read_bound(metadata, r"ctas/data/candidate-chunks/[0-9a-f]{3}\.json")
+    bucket = Path(metadata["path"]).stem
+    if document.get("bucket") != bucket or document.get("candidate_count") != metadata.get("candidate_count"):
+        raise ValueError("Detail root metadata mismatch: " + bucket)
+    if document.get("schema") == "ctas.candidate-chunk-parts@1.0.0":
+        references = document.get("parts")
+        if not isinstance(references, list) or not references:
+            raise ValueError("Detail descriptor has no parts: " + bucket)
+        fragments = []
+        for index, reference in enumerate(references, 1):
+            relative = reference.get("path")
+            if relative != f"ctas/data/candidate-chunks/{bucket}.part-{index:06d}.json":
+                raise ValueError("Detail descriptor parts must be consecutive in their own bucket")
+            declared = part_metadata.get(relative)
+            if declared is None or any(reference.get(key) != declared.get(key) for key in ("path", "bytes", "sha256")):
+                raise ValueError("Descriptor and manifest disagree about a detail part")
+            if relative in used_parts:
+                raise ValueError("Detail part is referenced more than once")
+            part = read_bound(declared, r"ctas/data/candidate-chunks/[0-9a-f]{3}\.part-[0-9]{6}\.json")
+            if part.get("schema") != "ctas.candidate-json-part@1.0.0" or part.get("bucket") != bucket or part.get("part") != index:
+                raise ValueError("Detail part identity mismatch")
+            fragment = part.get("json_fragment")
+            if not isinstance(fragment, str):
+                raise ValueError("Detail part fragment must be text")
+            fragments.append(fragment)
+            used_parts.add(relative)
+        assembled = "".join(fragments).encode("utf-8")
+        if len(assembled) != document.get("assembled_bytes") or hashlib.sha256(assembled).hexdigest() != document.get("assembled_sha256"):
+            raise ValueError("Reconstructed detail root integrity mismatch")
+        document = json.loads(assembled)
+    if document.get("schema") != "ctas.public-candidate-chunk@1.0.0" or document.get("bucket") != bucket:
+        raise ValueError("Unsupported detail root schema or bucket")
+    rows = document.get("candidates")
+    if not isinstance(rows, list) or len(rows) != metadata.get("candidate_count") or document.get("candidate_count") != len(rows):
+        raise ValueError("Detail root candidate count mismatch")
+if used_parts != set(part_metadata):
+    raise ValueError("Manifest contains an unreachable detail part")
+print("\n".join(paths))
+PYCTASDETAIL
+) || die "detail manifest validation failed; nothing committed"
+while IFS= read -r detail; do
+  [ -n "$detail" ] && PUBLIC_FILES+=("$detail")
+done <<<"$DETAIL_FILES"
 
 # --------------------------------------------------------- collect catalog pages
 # Discover only the completed export's checksum-bound pages, never yesterday's
@@ -202,12 +330,14 @@ done <<<"$CATALOG_PAGE_FILES"
 # deletion is committed under the same explicit rule as everything else.
 RETIRED=$(python3 - <<'PYRETIRE'
 import json
+import re
 import subprocess
 from pathlib import Path
 
 manifest = json.loads(Path("ctas/data/candidate-chunks/manifest.json").read_text())
 pages = json.loads(Path("ctas/data/catalog-pages/manifest.json").read_text())
 current = {row["path"] for row in manifest.get("chunks", [])}
+current |= {row["path"] for row in manifest.get("parts", [])}
 current |= {row["path"] for row in pages.get("pages", [])}
 current |= {
     "ctas/data/candidate-chunks/manifest.json",
@@ -218,7 +348,14 @@ tracked = subprocess.run(
      "ctas/data/catalog-bootstrap.json"],
     capture_output=True, text=True, check=True,
 ).stdout.split()
-for path in sorted(set(tracked) - current):
+retired = sorted(set(tracked) - current)
+for path in retired:
+    if not re.fullmatch(r"ctas/data/(?:candidate-chunks/[0-9a-f]{2,3}(?:\.part-[0-9]{6})?\.json|catalog-pages/[0-9]{4}\.json|catalog-bootstrap\.json)", path):
+        raise ValueError("Refusing to retire an unexpected tracked path: " + path)
+    target = Path(path)
+    if target.is_symlink() or target.absolute().resolve() != target.absolute():
+        raise ValueError("Refusing to retire a redirected artifact: " + path)
+for path in retired:
     Path(path).unlink(missing_ok=True)
     print(path)
 PYRETIRE
@@ -235,7 +372,8 @@ fi
 # suites below read the artifacts that were just written, so they run after the
 # export and before anything is staged.
 for suite in scripts/test_ctas_static.py scripts/test_ctas_links.py scripts/test_ctas_identity.py \
-             scripts/test_ctas_astro_evidence.py scripts/test_ctas_browser.py; do
+             scripts/test_ctas_astro_evidence.py scripts/test_ctas_browser.py \
+             scripts/test_ctas_chunks.py scripts/test_ctas_publisher_recovery.py; do
   python3 "$suite" >>"$LOG" 2>&1 || die "$suite failed against the generated release; nothing committed"
 done
 # Compare every exported ingest score/factor record with this cycle's frozen DB.
@@ -249,23 +387,12 @@ NODE=$(python3 scripts/ctas_node.py 2>/dev/null || true)
 if [ -n "$NODE" ]; then
   "$NODE" scripts/test_ctas_catalog_model.js >>"$LOG" 2>&1 \
     || die "catalog-model assertions failed against the generated release; nothing committed"
+  "$NODE" scripts/test_ctas_chunk_loader.js >>"$LOG" 2>&1 \
+    || die "detail-part loader assertions failed; nothing committed"
 else
   say "no JavaScript runtime on this publisher; catalog-model assertions were not run"
 fi
 
-EXPECTED_SHARDS=$(python3 - <<'PY'
-import json
-from pathlib import Path
-
-manifest = json.loads(Path("ctas/data/candidate-chunks/manifest.json").read_text())
-actual = sorted(row.get("path") for row in manifest.get("chunks", []))
-expected = [f"ctas/data/candidate-chunks/{index:03x}.json" for index in range(4096)]
-if actual != expected:
-    raise SystemExit("detail-shard manifest is not the exact 000..fff release set")
-print(len(actual))
-PY
-) || die "detail-shard manifest does not match the explicit publisher allowlist"
-[ "$EXPECTED_SHARDS" = "4096" ] || die "detail-shard manifest does not declare 4096 shards"
 
 CERT_STATUS=$(python3 -c "import json;print(json.load(open('ctas/data/certification.json'))['status'])" 2>/dev/null || echo "unreadable")
 if [ "$CERT_STATUS" != "verified-static-snapshot" ]; then

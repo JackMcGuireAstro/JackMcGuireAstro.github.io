@@ -17,7 +17,7 @@ local CTAS SQLite database
         v
 Python public exporter and validators
         |
-        | sub-2 MiB columnar bootstrap + 256 checksum-bound detail shards + research tables
+        | sub-2 MiB live summary + 4096 stable detail roots with bounded parts + research tables
         v
 dedicated runtime checkout (public repository only)
         |
@@ -29,8 +29,7 @@ GitHub Pages /ctas.html
 The runtime checkout is kept at
 `~/Library/Application Support/CTASPublisher/site`. It is intentionally outside
 `Documents`, because macOS can deny background jobs access to protected folders.
-The authoring checkout in `Documents/GitHub` remains available for normal site
-work and is not the background runtime.
+The authoring checkout remains under `~/Documents/Codex/JackMcGuireAstro Website/Development`; it is separate from the background runtime.
 
 ## Schedule and freshness
 
@@ -48,17 +47,16 @@ work and is not the background runtime.
 
 - The exporter reads a frozen SQLite backup, so a release cannot mix database
   states while ingestion continues.
-- Only the 271 explicit public data artifacts in `publish_ctas.sh` are staged.
-- Dirty non-data files in the runtime checkout stop the job.
-- A rejected push remains local and is amended on the next run; divergence is
-  rebased only when Git can do so cleanly, otherwise publication stops without
-  forcing history.
+- Only named public metadata/research files and validated manifest-listed catalog pages, detail roots, and overflow parts are staged. Every requested detail file stays within 4 MiB; overflow parts preserve all original JSON and are verified by size and SHA-256 before reconstruction.
+- Dirty files outside the generated-artifact allowlist stop the job.
+- A rejected push remains local. If it later diverges from the remote, the runner verifies every unpublished commit: each must be an ordinary automatic `CTAS data:` commit changing only known generated public artifacts. It preserves the old tip under `refs/ctas-recovery/`, synchronizes this dedicated runtime checkout, and regenerates against current code and a fresh database snapshot. Code changes, other files, merge commits, and unrecognized commits stop recovery with the checkout preserved. Published history is never force-pushed.
+- Superseded tracked overflow parts and catalog pages are removed in the same publication commit; only narrowly matched generated filenames may be retired.
 - Recursive safety checks reject credentials, private paths, malformed public
   records, and unverified link hosts.
 - Insecure source URLs are retained as non-clickable provenance rather than
   being rendered publicly.
 - Every published release binds the interface, exporter, source universe,
-  compact index, all shards, tests, and automation contract to checksums.
+  compact index, all detail roots and parts, tests, and automation contract to checksums.
 
 Static-catalog assurance verifies release integrity and claim boundaries. It is
 not peer review, scientific truth, classification validation, discovery
@@ -110,11 +108,12 @@ checkout and logs for recovery and audit.
 
 ## Public artifacts
 
-- `ctas/data/catalog-bootstrap.json`: the sub-2 MiB columnar browser bootstrap used by the public interface.
-- `ctas/data/catalog-index.json`: a compatibility copy of that bootstrap and the canonical event-UUID order.
+- `ctas/data/live-summary.json`: the sub-2 MiB first-screen data used by the public interface. The obsolete `catalog-bootstrap.json` is retired.
+- `ctas/data/catalog-index.json`: the complete compact candidate table and canonical event-UUID order. Complete-catalog browsing also uses manifest-listed bounded pages under `catalog-pages/`.
 - `ctas/data/alias-index.json`: provider-scoped aliases, kept out of the initial page load and fetched for alias search or routes.
-- `ctas/data/candidate-chunks/manifest.json`: the authoritative complete-catalog download contract. It checksum-binds the bootstrap and all 256 parts, proves counts, and specifies exact reconstruction in bootstrap UUID order.
-- `ctas/data/candidate-chunks/*.json`: complete candidate workspaces. Together the 256 UUID-derived files contain every complete public record exactly once while keeping individual dossier requests bounded.
+- `ctas/data/candidate-chunks/manifest.json`: the authoritative complete-catalog download contract. It checksum-binds the complete index, all 4096 stable root files, and every overflow part, proves counts, and specifies exact reconstruction in index UUID order.
+- `ctas/data/candidate-chunks/000.json` through `fff.json`: stable UUID-derived dossier roots. Small roots contain complete candidate JSON directly; an oversized root contains a descriptor listing bounded `xxx.part-000001.json` files. Each part contains an ordered JSON text fragment. Concatenating the fragments exactly reproduces the original root, including an individually large candidate, without omitting measurements or provenance.
+- Every overflow descriptor verifies its reconstructed byte length and SHA-256. The top manifest lists every part exactly once, and every listed part must be reachable through its root.
 - `ctas/data/research/manifest.json` and its listed CSV/VOTable/TOM files: normalized, checksum-bound reuse tables for scripts, TOPCAT, and target-management tools.
 - `ctas/data/status.json`: freshness, source health, counts, and publication state.
 - `ctas/data/source-universe.json`: maintained source and survey contracts.
@@ -126,6 +125,24 @@ The former single-file `ctas/data/candidates.json` download exceeded GitHub's
 enforced object-size limit and is no longer published. Download the compact
 index plus the complete-catalog manifest and its listed parts instead. Verify
 the declared byte lengths and SHA-256 values, map part records by `event_id`,
-then emit them in the `event_id` column order declared by `catalog-index.json`'s
+reconstruct descriptor roots from their ordered fragments when needed, then emit them in the `event_id` column order declared by `catalog-index.json`'s
 `candidate_columns` and `candidate_rows` table. The
 manifest includes the checksum of that canonical reconstructed array.
+
+## Recover an interrupted generated-data publication
+
+Stop the LaunchAgent before inspecting an in-progress rebase. Preserve the old
+commit using a recovery ref or Git bundle before synchronizing the dedicated
+runtime. Do not reset an authoring checkout. The runner now performs this
+recovery automatically only after its generated-data-only checks pass.
+
+Recovery references remain available locally with:
+
+```bash
+git for-each-ref refs/ctas-recovery/
+```
+
+A code update must be pushed and deployed before restarting a repaired runtime;
+its next run fetches current `main`, exports the current local database, validates
+the full release, and publishes it. Check the successful publisher log and live
+catalog count rather than assuming a loaded LaunchAgent has published data.

@@ -13,6 +13,7 @@ import sqlite3
 from pathlib import Path
 
 from export_ctas_snapshot import PUBLIC_SCORE_FACTORS, SCORE_METHOD_VERSION, clean
+from ctas_chunks import decode_chunk
 
 
 def main() -> int:
@@ -30,6 +31,22 @@ def main() -> int:
     failures, seen, changed = [], set(), 0
     if summary["release"]["score_method_version"] != SCORE_METHOD_VERSION:
         failures.append("Summary score method does not match exporter")
+    declared_parts = {row["path"]: row for row in manifest.get("parts", [])}
+    used_parts = set()
+    if len(declared_parts) != len(manifest.get("parts", [])):
+        raise ValueError("Duplicate supplemental part declaration")
+
+    def read_part(path):
+        metadata = declared_parts.get(path)
+        target = (data / path.removeprefix("ctas/data/")).resolve()
+        if metadata is None or path in used_parts or not target.is_relative_to(data):
+            raise ValueError("Invalid supplemental part declaration or path")
+        raw = target.read_bytes()
+        if len(raw) != metadata["bytes"] or hashlib.sha256(raw).hexdigest() != metadata["sha256"]:
+            raise ValueError("Supplemental part integrity failed")
+        used_parts.add(path)
+        return raw
+
     for chunk in manifest["chunks"]:
         relative = str(chunk["path"]).removeprefix("ctas/data/")
         target = (data / relative).resolve()
@@ -39,7 +56,7 @@ def main() -> int:
         if len(raw) != chunk["bytes"] or hashlib.sha256(raw).hexdigest() != chunk["sha256"]:
             failures.append("Detail shard integrity failed: " + relative)
             continue
-        for candidate in json.loads(raw)["candidates"]:
+        for candidate in decode_chunk(raw, read_part)["candidates"]:
             event_id = candidate["event_id"]
             if event_id in seen or event_id not in stored:
                 failures.append("Missing or repeated input event: " + event_id)
@@ -57,6 +74,8 @@ def main() -> int:
             if model["method_version"] != SCORE_METHOD_VERSION:
                 failures.append("Dossier score method differs: " + event_id)
             changed += model["final_score"] != expected_score
+    if used_parts != set(declared_parts):
+        failures.append("Unreachable supplemental parts")
     if len(seen) != manifest["candidate_count"]:
         failures.append("Released candidate count differs from verified records")
     print(json.dumps({"status": "failed" if failures else "passed", "checked_candidates": len(seen),

@@ -22,6 +22,11 @@ from pathlib import Path
 from typing import Any, Iterator
 from urllib.parse import unquote, urlparse
 
+try:
+    from ctas_chunks import decode_chunk
+except ModuleNotFoundError:  # imported as scripts.check_ctas_links in tests
+    from scripts.ctas_chunks import decode_chunk
+
 UTC = timezone.utc
 SCHEMA = "ctas.link-health@1.0.0"
 AUDIT_VERSION = "2.0.0"
@@ -452,6 +457,41 @@ def load_partitioned_catalog(index_path: Path, manifest_path: Path) -> dict[str,
     if len(paths) != len(chunks) or paths != sorted(paths) or len(paths) != len(set(paths)):
         raise ValueError("complete-catalog chunk paths are not unique and ordered")
 
+    # The global manifest binds every supplemental artifact independently of
+    # its descriptor. Ordinary historical releases omit this additive field.
+    part_rows = manifest.get("parts", [])
+    if not isinstance(part_rows, list):
+        raise ValueError("complete-catalog part metadata must be a list")
+    parts_by_path: dict[str, dict[str, Any]] = {}
+    for metadata in part_rows:
+        if not isinstance(metadata, dict):
+            raise ValueError("complete-catalog part metadata must contain objects")
+        path = metadata.get("path")
+        if (not isinstance(path, str)
+                or re.fullmatch(r"ctas/data/candidate-chunks/[0-9a-f]{3}\.part-[0-9]{6}\.json", path) is None
+                or path in parts_by_path
+                or type(metadata.get("bytes")) is not int or metadata["bytes"] <= 0
+                or not isinstance(metadata.get("sha256"), str)
+                or re.fullmatch(r"[0-9a-f]{64}", metadata["sha256"]) is None):
+            raise ValueError("invalid, unsafe, or duplicate complete-catalog part metadata")
+        public_artifact_path(manifest_path, path)
+        parts_by_path[path] = metadata
+    if list(parts_by_path) != sorted(parts_by_path):
+        raise ValueError("complete-catalog part paths are not ordered")
+    consumed_parts: set[str] = set()
+
+    def read_part(path: str) -> bytes:
+        if path not in parts_by_path:
+            raise ValueError(f"candidate chunk part is not declared globally: {path}")
+        if path in consumed_parts:
+            raise ValueError(f"candidate chunk part is referenced more than once: {path}")
+        metadata = parts_by_path[path]
+        raw = public_artifact_path(manifest_path, path).read_bytes()
+        if metadata["bytes"] != len(raw) or metadata["sha256"] != hashlib.sha256(raw).hexdigest():
+            raise ValueError(f"globally declared candidate chunk part integrity mismatch: {path}")
+        consumed_parts.add(path)
+        return raw
+
     complete_by_id: dict[str, dict[str, Any]] = {}
     for metadata in chunks:
         path = str(metadata["path"])
@@ -461,7 +501,7 @@ def load_partitioned_catalog(index_path: Path, manifest_path: Path) -> dict[str,
             raise ValueError(f"chunk byte length mismatch: {path}")
         if metadata.get("sha256") != hashlib.sha256(raw).hexdigest():
             raise ValueError(f"chunk checksum mismatch: {path}")
-        document = json.loads(raw)
+        document = decode_chunk(raw, read_part)
         candidates = document.get("candidates")
         if not isinstance(candidates, list) or document.get("candidate_count") != len(candidates):
             raise ValueError(f"chunk candidate count mismatch: {path}")
@@ -474,6 +514,9 @@ def load_partitioned_catalog(index_path: Path, manifest_path: Path) -> dict[str,
             if not event_id or event_id in complete_by_id:
                 raise ValueError(f"chunk contains a missing or duplicate event_id: {path}")
             complete_by_id[event_id] = candidate
+
+    if consumed_parts != set(parts_by_path):
+        raise ValueError("complete-catalog manifest declares unreachable candidate chunk parts")
 
     index_ids = [str(row.get("event_id") or "") for row in index_rows if isinstance(row, dict)]
     if (

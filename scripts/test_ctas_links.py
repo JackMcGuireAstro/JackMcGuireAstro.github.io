@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import copy
 import hashlib
 import json
 import tempfile
@@ -188,6 +189,158 @@ class RecursiveAuditTests(unittest.TestCase):
             (root / chunk_rows[0]["path"]).write_bytes(b"tampered\n")
             with self.assertRaisesRegex(ValueError, "byte length mismatch"):
                 LINKS.load_partitioned_catalog(index_path, manifest_path)
+
+
+class MultipartCatalogTests(unittest.TestCase):
+    def setUp(self):
+        try:
+            from ctas_chunks import encode_chunk
+        except ModuleNotFoundError:
+            from scripts.ctas_chunks import encode_chunk
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.data = self.root / "ctas/data"
+        (self.data / "candidate-chunks").mkdir(parents=True)
+        ordinary = {"event_id": "ordinary", "name": "AT2026ordinary", "links": []}
+        oversized = {"event_id": "oversized", "name": "AT2026abc",
+                     "receipts": [{"url": "https://www.wis-tns.org/object/2026abc"}],
+                     "retained_content": "Ω" * 900}
+        self.ordered = [oversized, ordinary]
+        chunks, parts = [], []
+        for bucket, candidate in (("000", ordinary), ("001", oversized)):
+            document = {"schema": "ctas.public-candidate-chunk@1.0.0", "bucket": bucket,
+                        "candidate_count": 1, "candidates": [candidate]}
+            raw, supplemental = encode_chunk(document, max_bytes=2048)
+            path = f"ctas/data/candidate-chunks/{bucket}.json"
+            (self.root / path).write_bytes(raw)
+            chunks.append({**self.metadata(path, raw), "candidate_count": 1})
+            for part_path, part_raw in supplemental.items():
+                (self.root / part_path).write_bytes(part_raw)
+                parts.append(self.metadata(part_path, part_raw))
+        self.assertTrue(parts)
+        index = {"candidate_count": 2, "candidates": [{"event_id": row["event_id"]} for row in self.ordered]}
+        index_raw = self.raw(index)
+        self.index_path = self.data / "catalog-index.json"
+        self.index_path.write_bytes(index_raw)
+        self.manifest = {
+            "schema": "ctas.public-complete-catalog-manifest@1.0.0", "candidate_count": 2,
+            "chunk_count": 2, "chunks": chunks, "parts": parts,
+            "catalog_index": self.metadata("ctas/data/catalog-index.json", index_raw),
+            "assembled_candidates_checksum_sha256": hashlib.sha256(self.raw(self.ordered)).hexdigest(),
+        }
+        self.manifest_path = self.data / "candidate-chunks/manifest.json"
+
+    @staticmethod
+    def raw(value):
+        return (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode()
+
+    @staticmethod
+    def metadata(path, raw):
+        return {"path": path, "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+
+    def load(self):
+        self.manifest_path.write_bytes(self.raw(self.manifest))
+        return LINKS.load_partitioned_catalog(self.index_path, self.manifest_path)
+
+    def rebind_root(self, descriptor):
+        path = "ctas/data/candidate-chunks/001.json"
+        raw = self.raw(descriptor)
+        (self.root / path).write_bytes(raw)
+        self.manifest["chunks"][1].update(self.metadata(path, raw))
+
+    def test_mixed_multipart_and_ordinary_catalog_keeps_all_nested_links(self):
+        result = self.load()
+        self.assertEqual(result["candidates"], self.ordered)
+        audit, tns, problems = LINKS.audit_links(result, {"sources": []})
+        self.assertEqual(audit["url_occurrence_count"], 1)
+        self.assertEqual({row["object_id"] for row in tns}, {"2026abc"})
+        self.assertFalse(problems)
+
+    def test_missing_global_part_declaration_is_rejected(self):
+        del self.manifest["parts"]
+        with self.assertRaises(ValueError):
+            self.load()
+
+    def test_duplicate_global_part_declaration_is_rejected(self):
+        self.manifest["parts"].append(self.manifest["parts"][0])
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            self.load()
+
+    def test_unsafe_cross_root_and_invalid_global_part_metadata_is_rejected(self):
+        original = copy.deepcopy(self.manifest["parts"])
+        variants = [("path", "ctas/data/../private.json"),
+                    ("path", "ctas/data/candidate-chunks/../001.part-000001.json"),
+                    ("path", "/ctas/data/candidate-chunks/001.part-000001.json"),
+                    ("path", "https://example.com/001.part-000001.json"),
+                    ("bytes", True), ("bytes", "2048"), ("sha256", "bad")]
+        for field, value in variants:
+            self.manifest["parts"] = copy.deepcopy(original)
+            self.manifest["parts"][0][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                self.load()
+        for value in (None, {}, [None]):
+            self.manifest["parts"] = value
+            with self.subTest(parts=value), self.assertRaises(ValueError):
+                self.load()
+
+    def test_global_and_descriptor_integrity_values_must_both_match(self):
+        self.manifest["parts"][0]["sha256"] = "0" * 64
+        with self.assertRaises(ValueError):
+            self.load()
+        part = self.manifest["parts"][0]
+        part["sha256"] = hashlib.sha256((self.root / part["path"]).read_bytes()).hexdigest()
+        descriptor = json.loads((self.data / "candidate-chunks/001.json").read_bytes())
+        descriptor["parts"][0]["sha256"] = "0" * 64
+        self.rebind_root(descriptor)
+        with self.assertRaises(ValueError):
+            self.load()
+
+    def test_missing_corrupt_and_truncated_part_files_are_rejected(self):
+        path = self.root / self.manifest["parts"][0]["path"]
+        original = path.read_bytes()
+        path.unlink()
+        with self.assertRaises(ValueError):
+            self.load()
+        for raw in (b"x" + original[1:], original[:-1]):
+            path.write_bytes(raw)
+            with self.subTest(size=len(raw)), self.assertRaises(ValueError):
+                self.load()
+
+    def test_unreachable_globally_declared_parts_are_rejected(self):
+        original = self.root / self.manifest["parts"][0]["path"]
+        path = "ctas/data/candidate-chunks/002.part-000001.json"
+        raw = original.read_bytes()
+        (self.root / path).write_bytes(raw)
+        self.manifest["parts"].append(self.metadata(path, raw))
+        with self.assertRaisesRegex(ValueError, "unreachable"):
+            self.load()
+
+    def test_reusing_a_part_across_two_root_descriptors_is_rejected(self):
+        # A malicious alias root must not consume the same verified transport
+        # artifact twice, even before the duplicate candidate UUID check runs.
+        raw = (self.data / "candidate-chunks/001.json").read_bytes()
+        path = "ctas/data/candidate-chunks/002.json"
+        (self.root / path).write_bytes(raw)
+        self.manifest["chunks"].append({**self.metadata(path, raw), "candidate_count": 1})
+        self.manifest["chunk_count"] += 1
+        with self.assertRaises(ValueError) as caught:
+            self.load()
+        self.assertIn("more than once", str(caught.exception.__cause__))
+
+    def test_descriptor_part_order_and_duplicates_remain_rejected(self):
+        original = json.loads((self.data / "candidate-chunks/001.json").read_bytes())
+        for change in ("reorder", "duplicate", "cross-bucket"):
+            descriptor = copy.deepcopy(original)
+            if change == "reorder":
+                descriptor["parts"][0], descriptor["parts"][1] = descriptor["parts"][1], descriptor["parts"][0]
+            elif change == "duplicate":
+                descriptor["parts"][1] = descriptor["parts"][0]
+            else:
+                descriptor["parts"][0]["path"] = "ctas/data/candidate-chunks/002.part-000001.json"
+            self.rebind_root(descriptor)
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                self.load()
 
 
 if __name__ == "__main__":

@@ -56,6 +56,11 @@ except ModuleNotFoundError:  # imported as scripts.export_ctas_snapshot in tests
         sanitized_receipt_detail,
     )
 
+try:
+    from ctas_chunks import encode_chunk, decode_chunk
+except ModuleNotFoundError:
+    from scripts.ctas_chunks import encode_chunk, decode_chunk
+
 SCHEMA_VERSION = 2
 
 SOURCE_UNIVERSE_SCHEMA = "ctas.public-source-universe@1.0.0"
@@ -119,11 +124,9 @@ SOURCE_MATRIX_NO_EVIDENCE_OUTCOMES = frozenset({
     "LINK_ONLY_NOT_QUERIED", "NOT_QUERIED", "NOT_CONFIGURED",
 })
 CATALOG_BOOTSTRAP_MAX_BYTES = 2 * 1024 * 1024
-# A single evidence-rich dossier can exceed 2 MiB before compression; the
-# stable UUID partition therefore uses a truthful 4 MiB raw ceiling. A 256-way
-# split left single shards near 6 MiB once the complete catalog was published,
-# so the partition is 4096-way: one module stays small enough to open quickly
-# and a damaged module can only affect the few dossiers inside it.
+# Stable UUID buckets retain their URLs. When a bucket or even one complete
+# dossier exceeds the download budget, lossless checksum-bound JSON parts
+# keep each download bounded without dropping measurements or source receipts.
 CANDIDATE_SHARD_TARGET_MAX_BYTES = 4 * 1024 * 1024
 GITHUB_MAX_BLOB_BYTES = 100 * 1024 * 1024
 SOURCE_STATE_VOCABULARY = (
@@ -2444,7 +2447,7 @@ def stable_candidate_projection_time(
 
 def candidate_chunk_artifacts(
     candidates: list[dict[str, Any]],
-) -> tuple[dict[str, list[dict[str, Any]]], dict[str, bytes]]:
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, bytes], dict[str, bytes]]:
     """Serialize deterministic UUID buckets for complete public dossiers."""
 
     bucket_rows: dict[str, list[dict[str, Any]]] = {
@@ -2454,6 +2457,7 @@ def candidate_chunk_artifacts(
         bucket_rows[candidate_bucket(str(candidate["event_id"]))].append(candidate)
 
     chunk_raw: dict[str, bytes] = {}
+    part_raw: dict[str, bytes] = {}
     for bucket, bucket_candidates in sorted(bucket_rows.items()):
         ordered = sorted(bucket_candidates, key=lambda row: str(row["event_id"]))
         bucket_rows[bucket] = ordered
@@ -2464,10 +2468,9 @@ def candidate_chunk_artifacts(
             "candidates": ordered,
         }
         relative = f"ctas/data/candidate-chunks/{bucket}.json"
-        chunk_raw[relative] = (
-            json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
-        ).encode()
-    return bucket_rows, chunk_raw
+        chunk_raw[relative], parts = encode_chunk(document, CANDIDATE_SHARD_TARGET_MAX_BYTES)
+        part_raw.update(parts)
+    return bucket_rows, chunk_raw, part_raw
 
 
 CATALOG_CANDIDATE_COLUMNS = (
@@ -2889,8 +2892,11 @@ def complete_catalog_manifest_artifact(
     bucket_rows: dict[str, list[dict[str, Any]]],
     chunk_raw: dict[str, bytes],
     catalog_content_checksum_sha256: str,
+    part_raw: dict[str, bytes] | None = None,
 ) -> tuple[dict[str, Any], bytes]:
     """Build the deterministic, exact complete-catalog reconstruction contract."""
+
+    part_raw = part_raw or {}
 
     complete_by_id = {str(candidate["event_id"]): candidate for candidate in candidates}
     index_ids = [str(row["event_id"]) for row in index_candidates]
@@ -2916,12 +2922,15 @@ def complete_catalog_manifest_artifact(
         "reconstruction": {
             "contract_version": "1.0.0",
             "description": (
-                "Together the listed chunks contain every complete public candidate record "
-                "exactly once. No single-file browser assembly is required."
+                "Together the listed chunks and their declared JSON parts reconstruct every "
+                "complete public candidate record exactly once. All download files are bounded; "
+                "multipart chunks preserve the complete original JSON without truncation."
             ),
             "steps": [
                 "Fetch catalog_index.path and verify its byte length and SHA-256.",
-                "Fetch every chunks[].path in listed order and verify its byte length, SHA-256, and candidate_count.",
+                "Fetch every chunks[].path in listed order and verify its byte length and SHA-256.",
+                "For a ctas.candidate-chunk-parts@1.0.0 root, fetch its ordered parts, requiring each path, byte length and SHA-256 to match the global parts list. Verify each part schema, bucket and ordinal; concatenate json_fragment strings and verify assembled_bytes and assembled_sha256 before parsing the complete chunk.",
+                "Verify complete chunk bucket and candidate_count, and require every declared supplemental part to be used exactly once.",
                 "Reject missing or duplicate event_id values and require the chunk UUID set to equal the catalog-index UUID set.",
                 "Inflate catalog_index.candidate_rows with candidate_columns, map complete chunk records by event_id, then order them by the inflated event_id column.",
                 "Verify SHA-256 over UTF-8 JSON of that ordered candidate array serialized with sorted keys, compact separators, and one trailing newline.",
@@ -2936,6 +2945,10 @@ def complete_catalog_manifest_artifact(
                 "sha256": hashlib.sha256(raw).hexdigest(),
             }
             for path, raw in sorted(chunk_raw.items())
+        ],
+        "parts": [
+            {"path": path, "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+            for path, raw in sorted(part_raw.items())
         ],
     }
     raw = (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode()
@@ -2967,10 +2980,37 @@ def git_catalog_document(repo: Path, ref: str) -> dict[str, Any] | None:
         manifest = json.loads(manifest_raw)
     except (TypeError, json.JSONDecodeError):
         return None
-    if not isinstance(manifest, dict) or not isinstance(manifest.get("chunks"), list):
+    if (not isinstance(manifest, dict) or manifest.get("schema") != CANDIDATE_MANIFEST_SCHEMA
+            or not isinstance(manifest.get("chunks"), list)
+            or type(manifest.get("chunk_count")) is not int
+            or manifest["chunk_count"] != len(manifest["chunks"])
+            or type(manifest.get("candidate_count")) is not int
+            or manifest["candidate_count"] < 0):
         return None
 
-    index_meta = manifest.get("catalog_index") or {}
+    def valid_metadata(row: Any, path_pattern: str, *, candidate_count: bool = False) -> bool:
+        return bool(
+            isinstance(row, dict)
+            and isinstance(row.get("path"), str)
+            and re.fullmatch(path_pattern, row["path"])
+            and type(row.get("bytes")) is int and row["bytes"] > 0
+            and isinstance(row.get("sha256"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", row["sha256"])
+            and (not candidate_count or (
+                type(row.get("candidate_count")) is int and row["candidate_count"] >= 0
+            ))
+        )
+
+    chunks = manifest["chunks"]
+    if not all(valid_metadata(row, r"ctas/data/candidate-chunks/[0-9a-f]{2,4}\.json",
+                              candidate_count=True) for row in chunks):
+        return None
+    chunk_paths = [row["path"] for row in chunks]
+    if chunk_paths != sorted(set(chunk_paths)):
+        return None
+    index_meta = manifest.get("catalog_index")
+    if not valid_metadata(index_meta, r"ctas/data/catalog-index\.json"):
+        return None
     index_path = str(index_meta.get("path") or "ctas/data/catalog-index.json")
     index_raw = git_blob(repo, ref, index_path)
     if not index_raw:
@@ -2990,6 +3030,30 @@ def git_catalog_document(repo: Path, ref: str) -> dict[str, Any] | None:
     if not isinstance(index_rows, list):
         return None
 
+    part_rows = manifest.get("parts", [])
+    if not isinstance(part_rows, list):
+        return None
+    if not all(valid_metadata(row, r"ctas/data/candidate-chunks/[0-9a-f]{3}\.part-[0-9]{6}\.json")
+               for row in part_rows):
+        return None
+    part_paths = [row["path"] for row in part_rows]
+    if part_paths != sorted(set(part_paths)):
+        return None
+    declared_parts = {row["path"]: row for row in part_rows}
+    used_parts = set()
+
+    def read_part(path):
+        metadata = declared_parts.get(path)
+        if metadata is None or path in used_parts:
+            raise ValueError("undeclared or duplicate historical candidate part")
+        raw = git_blob(repo, ref, path)
+        if (not raw
+                or metadata.get("bytes") != len(raw)
+                or metadata.get("sha256") != hashlib.sha256(raw).hexdigest()):
+            raise ValueError("invalid historical candidate part")
+        used_parts.add(path)
+        return raw
+
     complete_by_id: dict[str, dict[str, Any]] = {}
     for chunk_meta in manifest["chunks"]:
         if not isinstance(chunk_meta, dict):
@@ -3001,8 +3065,10 @@ def git_catalog_document(repo: Path, ref: str) -> dict[str, Any] | None:
         if chunk_meta.get("sha256") != hashlib.sha256(raw).hexdigest():
             return None
         try:
-            document = json.loads(raw)
-        except (TypeError, json.JSONDecodeError):
+            document = decode_chunk(raw, read_part)
+        except (TypeError, ValueError):
+            return None
+        if document.get("bucket") != Path(path).stem:
             return None
         rows = document.get("candidates") if isinstance(document, dict) else None
         if not isinstance(rows, list) or document.get("candidate_count") != len(rows):
@@ -3017,6 +3083,8 @@ def git_catalog_document(repo: Path, ref: str) -> dict[str, Any] | None:
                 return None
             complete_by_id[event_id] = candidate
 
+    if used_parts != set(declared_parts):
+        return None
     index_ids = [str(row.get("event_id") or "") for row in index_rows if isinstance(row, dict)]
     if (
         len(index_ids) != len(index_rows)
@@ -3698,7 +3766,7 @@ def main() -> int:
 
     candidate_rows = [compact_candidate_row(candidate) for candidate in candidates]
 
-    bucket_rows, chunk_raw = candidate_chunk_artifacts(candidates)
+    bucket_rows, chunk_raw, part_raw = candidate_chunk_artifacts(candidates)
 
     catalog_index = {
         "schema": CATALOG_INDEX_SCHEMA,
@@ -4042,6 +4110,7 @@ def main() -> int:
         bucket_rows,
         chunk_raw,
         payload["catalog_content_checksum_sha256"],
+        part_raw,
     )
 
     problems = validate(payload) + projection_problems
@@ -4239,12 +4308,14 @@ def main() -> int:
     )
 
     code_paths = (
-        "ctas.html", "ctas/app.js", "ctas/presentation.js", "ctas/catalog-model.js", "ctas/astro-evidence.js",
+        "ctas.html", "ctas/app.js", "ctas/chunk-loader.js", "ctas/presentation.js", "ctas/catalog-model.js", "ctas/astro-evidence.js",
         "ctas/workbench.js", "ctas/observability.js", "ctas/ctas.css",
         "ctas/data/observatories.json",
         "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
         "ctas/schema/astro-evidence-core-0.1.0.schema.json",
         "scripts/export_ctas_snapshot.py", "scripts/ctas_astro_evidence.py",
+        "scripts/ctas_chunks.py", "scripts/test_ctas_chunks.py", "scripts/test_ctas_chunk_loader.js",
+        "scripts/test_ctas_publisher_recovery.py",
         "scripts/check_ctas_links.py", "scripts/rebuild_ctas_release_history.py",
         "scripts/test_ctas_static.py", "scripts/test_ctas_catalog_model.js",
         "scripts/test_ctas_links.py", "scripts/test_ctas_astro_evidence.py",
@@ -4280,6 +4351,7 @@ def main() -> int:
         "ctas/data/alias-index.json": alias_index_raw,
         "ctas/data/candidate-chunks/manifest.json": candidate_manifest_raw,
         **chunk_raw,
+        **part_raw,
         **research_files,
         "ctas/data/source-universe.json": source_universe_raw,
         SOURCE_MATRIX_PATTERNS_PATH: source_matrix_patterns_raw,
@@ -4488,7 +4560,7 @@ def main() -> int:
     reconstructed_count = 0
     reconstruction_faithful = True
     for path in sorted(chunk_raw):
-        for candidate in json.loads(chunk_raw[path]).get("candidates", []):
+        for candidate in decode_chunk(chunk_raw[path], part_raw.__getitem__).get("candidates", []):
             event_id = str(candidate.get("event_id") or "")
             reconstructed_count += 1
             reconstructed_ids.add(event_id)
@@ -4508,6 +4580,10 @@ def main() -> int:
         and candidate_manifest.get("schema") == CANDIDATE_MANIFEST_SCHEMA
         and candidate_manifest.get("chunk_count") == CANDIDATE_BUCKET_COUNT
         and candidate_manifest.get("chunks") == manifest_chunk_rows
+        and candidate_manifest.get("parts") == [
+            {"path": path, "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+            for path, raw in sorted(part_raw.items())
+        ]
         and sum(row["candidate_count"] for row in manifest_chunk_rows) == len(candidates)
         and reconstruction_faithful
         and reconstructed_count == len(reconstructed_ids) == len(candidates)
@@ -4565,7 +4641,8 @@ def main() -> int:
             for candidate in leaderboard
         )
     )
-    shard_target_integrity = bool(chunk_raw) and max(map(len, chunk_raw.values())) <= CANDIDATE_SHARD_TARGET_MAX_BYTES
+    download_raw = {**chunk_raw, **part_raw}
+    shard_target_integrity = bool(download_raw) and max(map(len, download_raw.values())) <= CANDIDATE_SHARD_TARGET_MAX_BYTES
     def _score_reproduces(candidate: dict[str, Any]) -> bool:
         model = candidate.get("score_model") or {}
         applied = [term for term in model.get("terms", []) if term.get("applicable")]
@@ -4686,7 +4763,7 @@ def main() -> int:
         gate("bootstrap-performance-budget", bootstrap_size_integrity, f"first-screen live summary is {len(live_summary_raw)} bytes; budget={LIVE_SUMMARY_MAX_BYTES}; the complete {len(catalog_index_raw)}-byte index is not loaded to draw a first screen"),
         gate("catalog-page-budget", catalog_page_budget, f"largest of {len(page_raw)} complete-catalog pages is {max(map(len, page_raw.values()), default=0)} bytes; budget={CATALOG_PAGE_MAX_BYTES}"),
         gate("live-summary-integrity", live_summary_integrity, f"{len(summary_ids)} summary records resolve, pages and manifest checksums agree, and no terrestrial, solar or retracted record enters the default leaderboard"),
-        gate("detail-shard-performance-budget", shard_target_integrity, f"largest of {len(chunk_raw)} UUID shards is {max(map(len, chunk_raw.values()), default=0)} bytes; budget={CANDIDATE_SHARD_TARGET_MAX_BYTES}"),
+        gate("detail-shard-performance-budget", shard_target_integrity, f"largest of {len(download_raw)} detail download files ({len(part_raw)} supplemental parts) is {max(map(len, download_raw.values()), default=0)} bytes; budget={CANDIDATE_SHARD_TARGET_MAX_BYTES}"),
         gate("github-blob-size-limit", artifact_size_integrity, f"every bound public artifact is below GitHub's {GITHUB_MAX_BLOB_BYTES}-byte limit"),
         gate("local-store-exceptions-declared", (
             isinstance(status.get("local_store_exceptions"), dict)
@@ -4805,7 +4882,7 @@ def main() -> int:
     chunk_dir = out / "candidate-chunks"
     chunk_dir.mkdir(parents=True, exist_ok=True)
     atomic_write(chunk_dir / "manifest.json", candidate_manifest_raw)
-    for relative, raw in chunk_raw.items():
+    for relative, raw in {**chunk_raw, **part_raw}.items():
         write_output_artifact(out, relative, raw)
     for relative, raw in research_files.items():
         write_output_artifact(out, relative, raw)
@@ -4816,7 +4893,7 @@ def main() -> int:
     atomic_write(out / "certification.json", certificate_raw)
     print(f"first screen    : {len(live_summary_raw)} bytes live-summary.json ({len(summary_ids)} records)")
     print(f"complete catalog: {len(catalog_index_raw)} bytes across {len(catalog_pages)} pages")
-    print(f"\nwrote compact bootstrap/index, alias index, research tables, complete-catalog manifest, {len(chunk_raw)} checksum-bound detail chunks, status, source universe, history, and verification report")
+    print(f"\nwrote compact bootstrap/index, alias index, research tables, complete-catalog manifest, {len(chunk_raw)} checksum-bound detail chunks with {len(part_raw)} supplemental parts, status, source universe, history, and verification report")
     print(f"snapshot verification: {certificate['status']} ({sum(g['passed'] for g in gates)}/{len(gates)} checks)")
     return 0
 

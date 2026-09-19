@@ -48,7 +48,11 @@ jobs:
           node --check scripts/build_worldsindex_static.mjs
       - name: CTAS static release
         run: |
+          python3 scripts/test_ctas_chunks.py
+          python3 scripts/test_ctas_links.py
+          python3 scripts/test_ctas_publisher_recovery.py
           python3 scripts/test_ctas_static.py
+          node scripts/test_ctas_chunk_loader.js
           node scripts/test_ctas_presentation.js
       - name: Whitespace and credential-shaped content
         run: |

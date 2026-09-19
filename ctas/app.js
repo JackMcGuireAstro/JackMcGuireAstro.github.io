@@ -986,7 +986,7 @@
       ? passedCheckCount + " of " + checkCount + " checks passed"
       : humanKey(assurance.status || "pending");
     var integrityDetail = publicationBindingPending
-      ? "Only local commit and origin publication bindings are pending; this successor has not been published"
+      ? "At compilation, the final local commit and origin publication bindings had not yet been recorded"
       : assurance.content_release_id
         ? "Checksums and public-file consistency · Snapshot " + esc(shortHash(assurance.content_release_id)) + "…"
         : "Checksum report available below";
@@ -1072,7 +1072,7 @@
 
   function safeCatalogDownloadPath(value) {
     var path = text(value);
-    return /^ctas\/data\/(?:live-summary\.json|catalog-index\.json|source-matrix-patterns\.json|catalog-pages\/(?:manifest|\d{4})\.json|candidate-chunks\/(?:manifest|[0-9a-f]{2,4})\.json)$/.test(path) ? path : null;
+    return /^ctas\/data\/(?:live-summary\.json|catalog-index\.json|source-matrix-patterns\.json|catalog-pages\/(?:manifest|\d{4})\.json|candidate-chunks\/(?:manifest|[0-9a-f]{2,4}|[0-9a-f]{3}\.part-\d{6})\.json)$/.test(path) ? path : null;
   }
   function renderCatalogDownloads() {
     if (!el.downloadStatus || !el.downloadParts) return;
@@ -1087,15 +1087,22 @@
     var validChunks = manifest.chunks.filter(function (row) {
       return row && safeCatalogDownloadPath(row.path) && finiteNumber(row.bytes) && finiteNumber(row.candidate_count) && /^[0-9a-f]{64}$/.test(text(row.sha256));
     });
-    var totalBytes = validChunks.reduce(function (sum, row) { return sum + Number(row.bytes); }, 0);
+    var supplementalParts = (manifest.parts || []).filter(function (row) {
+      return row && /^ctas\/data\/candidate-chunks\/[0-9a-f]{3}\.part-\d{6}\.json$/.test(text(row.path)) &&
+        finiteNumber(row.bytes) && /^[0-9a-f]{64}$/.test(text(row.sha256));
+    });
+    var downloads = validChunks.concat(supplementalParts);
+    var totalBytes = downloads.reduce(function (sum, row) { return sum + Number(row.bytes); }, 0);
     el.downloadStatus.textContent = Number(manifest.candidate_count || 0).toLocaleString() +
-      " complete records in " + validChunks.length + " verified parts · " + (totalBytes / 1048576).toFixed(1) + " MiB total";
-    el.downloadParts.innerHTML = '<ol aria-label="Complete catalog download parts">' + validChunks.map(function (row, index) {
-      var path = safeCatalogDownloadPath(row.path);
-      return '<li><div><strong>Part ' + String(index + 1).padStart(2, "0") + '</strong><span>' +
-        Number(row.candidate_count).toLocaleString() + " candidates · " + (Number(row.bytes) / 1048576).toFixed(1) +
+      " complete records in " + validChunks.length + " catalog buckets and " + supplementalParts.length +
+      " supplemental files · " + (totalBytes / 1048576).toFixed(1) + " MiB total. Download every listed file to reconstruct the complete catalog.";
+    el.downloadParts.innerHTML = '<ol aria-label="Complete catalog download parts">' + downloads.map(function (row, index) {
+      var path = safeCatalogDownloadPath(row.path), supplemental = index >= validChunks.length;
+      return '<li><div><strong>' + esc(path.split("/").pop()) + '</strong><span>' +
+        (supplemental ? "Supplemental record data" : Number(row.candidate_count).toLocaleString() + " candidates") +
+        " · " + (Number(row.bytes) / 1048576).toFixed(1) +
         ' MiB</span><code aria-label="SHA-256 checksum">' + esc(row.sha256) + '</code></div><a href="' + esc(path) +
-        '" download>Download part <span class="sr-only">' + (index + 1) + " of " + validChunks.length + "</span></a></li>";
+        '" download>Download part <span class="sr-only">' + (index + 1) + " of " + downloads.length + "</span></a></li>";
     }).join("") + "</ol>";
   }
 
@@ -1482,6 +1489,7 @@
         if (!manifest || manifest.catalog_content_checksum_sha256 !== (state.snapshot || {}).catalog_content_checksum_sha256) {
           throw new Error("The detail manifest belongs to a different catalog release. Refresh after publication finishes.");
         }
+        if (manifest.parts !== undefined && !Array.isArray(manifest.parts)) throw new Error("The detail manifest has invalid supplemental parts.");
         state.catalogManifest = manifest;
         renderCatalogDownloads();
         return manifest;
@@ -1600,32 +1608,36 @@
   function loadChunk(path) {
     if (!state.chunks[path]) {
       var epoch = state.releaseEpoch;
-      state.chunks[path] = (function () {
-        return ensureCatalogManifest().then(function () {
-        assertCurrentRelease(epoch);
-        var metadata = chunkMetadata(path);
-        if (!metadata || !/^[0-9a-f]{64}$/.test(text(metadata.sha256))) return Promise.reject(new Error("The release manifest does not bind this detail shard."));
-        return fetch(DATA_DIR + path, {cache: "no-cache"}).then(function (response) {
-          if (!response.ok) throw new Error(path + " returned HTTP " + response.status);
+      function checkRelease() { assertCurrentRelease(epoch); }
+      function readBytes(publicPath) {
+        checkRelease();
+        if (!safeCatalogDownloadPath(publicPath)) return Promise.reject(new Error("Invalid candidate data path."));
+        return fetch(DATA_DIR + publicPath.replace(/^ctas\/data\//, ""), {cache: "no-cache"}).then(function (response) {
+          checkRelease();
+          if (!response.ok) throw new Error(publicPath + " returned HTTP " + response.status);
           return response.arrayBuffer();
-        }).then(function (bytes) {
-          assertCurrentRelease(epoch);
-          if (bytes.byteLength !== Number(metadata.bytes)) throw new Error("Detail-shard byte length does not match the release manifest.");
-          return sha256Hex(bytes).then(function (checksum) {
-            if (checksum !== metadata.sha256) throw new Error("Detail-shard SHA-256 does not match the release manifest; refresh after publication finishes.");
-            var document_ = JSON.parse(new TextDecoder("utf-8", {fatal: true}).decode(bytes));
-            if (Number(document_.candidate_count) !== Number(metadata.candidate_count)) throw new Error("Detail-shard candidate count does not match the release manifest.");
-            return loadSourceMatrixPatterns().then(function (patterns) {
-              assertCurrentRelease(epoch);
-              (document_.candidates || []).forEach(function (candidate) {
-                candidate.source_matrix = window.CTASCatalogModel.expandSourceMatrix(candidate.source_matrix, patterns);
-              });
-              return document_;
+        }).then(function (bytes) { checkRelease(); return bytes; });
+      }
+      state.chunks[path] = ensureCatalogManifest().then(function (manifest) {
+        checkRelease();
+        var metadata = chunkMetadata(path);
+        if (!metadata) throw new Error("The release manifest does not bind this detail shard.");
+        if (!window.CTASChunkLoader) throw new Error("The candidate data loader is unavailable. Refresh to load the current application.");
+        return readBytes(metadata.path).then(function (bytes) {
+          checkRelease();
+          return window.CTASChunkLoader.decode(bytes, metadata, manifest.parts === undefined ? [] : manifest.parts,
+            readBytes, sha256Hex, checkRelease);
+        }).then(function (document_) {
+          checkRelease();
+          return loadSourceMatrixPatterns().then(function (patterns) {
+            checkRelease();
+            document_.candidates.forEach(function (candidate) {
+              candidate.source_matrix = window.CTASCatalogModel.expandSourceMatrix(candidate.source_matrix, patterns);
             });
+            return document_;
           });
         });
-        });
-      }()).catch(function (error) { if (epoch === state.releaseEpoch) delete state.chunks[path]; throw error; });
+      }).catch(function (error) { if (epoch === state.releaseEpoch) delete state.chunks[path]; throw error; });
     }
     return state.chunks[path];
   }

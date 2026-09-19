@@ -664,9 +664,10 @@ class AstroEvidenceTests(unittest.TestCase):
             for row in second["source_matrix"]
         ]
 
-        first_buckets, first_chunks = EXPORTER.candidate_chunk_artifacts([first])
-        second_buckets, second_chunks = EXPORTER.candidate_chunk_artifacts([second])
+        first_buckets, first_chunks, first_parts = EXPORTER.candidate_chunk_artifacts([first])
+        second_buckets, second_chunks, second_parts = EXPORTER.candidate_chunk_artifacts([second])
         self.assertEqual(first_chunks, second_chunks)
+        self.assertEqual(first_parts, second_parts)
         serialized = b"".join(first_chunks.values())
         self.assertNotIn(b"retainedEvidenceAgeSeconds", serialized)
         self.assertIn(b'"generatedAt":"2026-08-29T10:00:00Z"', serialized)
@@ -681,10 +682,10 @@ class AstroEvidenceTests(unittest.TestCase):
         ).encode()
         checksum = EXPORTER.catalog_semantic_checksum([first])
         _, first_manifest = EXPORTER.complete_catalog_manifest_artifact(
-            [first], index_rows, index_raw, first_buckets, first_chunks, checksum,
+            [first], index_rows, index_raw, first_buckets, first_chunks, checksum, first_parts,
         )
         _, second_manifest = EXPORTER.complete_catalog_manifest_artifact(
-            [second], index_rows, index_raw, second_buckets, second_chunks, checksum,
+            [second], index_rows, index_raw, second_buckets, second_chunks, checksum, second_parts,
         )
         self.assertEqual(first_manifest, second_manifest)
 

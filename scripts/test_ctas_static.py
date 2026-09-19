@@ -694,7 +694,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
             raw = (ROOT / metadata["path"]).read_bytes()
             if len(raw) != metadata["bytes"] or hashlib.sha256(raw).hexdigest() != metadata["sha256"]:
                 raise AssertionError(f"invalid candidate chunk: {metadata['path']}")
-            for candidate in json.loads(raw)["candidates"]:
+            for candidate in EXPORTER.decode_chunk(raw, lambda path: (ROOT / path).read_bytes())["candidates"]:
                 if candidate["event_id"] in complete_by_id:
                     raise AssertionError(f"duplicate candidate UUID: {candidate['event_id']}")
                 complete_by_id[candidate["event_id"]] = candidate
@@ -883,6 +883,11 @@ class CertificateAndArtifactTests(unittest.TestCase):
             "ctas/schema/astro-evidence-core-0.1.0.schema.json",
             "ctas/astro-evidence.js",
             "ctas/catalog-model.js",
+            "ctas/chunk-loader.js",
+            "scripts/ctas_chunks.py",
+            "scripts/test_ctas_chunks.py",
+            "scripts/test_ctas_chunk_loader.js",
+            "scripts/test_ctas_publisher_recovery.py",
             "ctas/presentation.js",
             "ctas/observability.js",
             "ctas/workbench.js",
@@ -938,7 +943,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn("not scientific certification or human peer review", html)
         self.assertIn('statusCell("Snapshot integrity"', app)
         self.assertIn('passedCheckCount + " of " + checkCount + " checks passed"', app)
-        self.assertIn("Only local commit and origin publication bindings are pending", app)
+        self.assertIn("At compilation, the final local commit and origin publication bindings had not yet been recorded", app)
         self.assertIn('"failed_gate_ids"', (ROOT / "scripts/export_ctas_snapshot.py").read_text())
         self.assertIn('localPreview ? "Local preview"', app)
         self.assertIn('stale ? "Snapshot out of date"', app)
@@ -1285,8 +1290,10 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertNotIn("candidates.json", publisher)
         self.assertIn("--catalog-index ctas/data/catalog-index.json", publisher)
         self.assertIn("--candidate-manifest ctas/data/candidate-chunks/manifest.json", publisher)
-        self.assertIn('for bucket_index in {0..4095}', publisher)
-        self.assertIn('PUBLIC_FILES+=("ctas/data/candidate-chunks/$bucket.json")', publisher)
+        self.assertIn('DETAIL_FILES=$(python3', publisher)
+        self.assertIn('PUBLIC_FILES+=("$detail")', publisher)
+        self.assertIn('for index in range(4096)', publisher)
+        self.assertIn('used_parts != set(part_metadata)', publisher)
         self.assertIn('HEARTBEAT_INTERVAL="${CTAS_HEARTBEAT_INTERVAL:-900}"', publisher)
         self.assertEqual(publisher.count('--release-base-ref origin/main'), 2)
         self.assertIn('restore --source=HEAD --staged --worktree', publisher)
@@ -1356,7 +1363,8 @@ class CertificateAndArtifactTests(unittest.TestCase):
             raw = path.read_bytes()
             self.assertEqual(len(raw), row["bytes"])
             self.assertEqual(hashlib.sha256(raw).hexdigest(), row["sha256"])
-            document = json.loads(raw)
+            self.assertLessEqual(len(raw), EXPORTER.CANDIDATE_SHARD_TARGET_MAX_BYTES)
+            document = EXPORTER.decode_chunk(raw, lambda part: (ROOT / part).read_bytes())
             self.assertEqual(document["schema"], EXPORTER.CANDIDATE_CHUNK_SCHEMA)
             self.assertEqual(document["candidate_count"], row["candidate_count"])
             self.assertEqual(document["bucket"], Path(row["path"]).stem)
@@ -1396,6 +1404,12 @@ class CertificateAndArtifactTests(unittest.TestCase):
             f"ctas/data/candidate-chunks/{index:03x}.json"
             for index in range(EXPORTER.CANDIDATE_BUCKET_COUNT)
         ]
+        explicit += [row["path"] for row in self.manifest.get("parts", [])]
+        for row in self.manifest.get("parts", []):
+            raw = (ROOT / row["path"]).read_bytes()
+            self.assertLessEqual(len(raw), EXPORTER.CANDIDATE_SHARD_TARGET_MAX_BYTES)
+            self.assertEqual(len(raw), row["bytes"])
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), row["sha256"])
         for relative in explicit:
             self.assertLess((ROOT / relative).stat().st_size, EXPORTER.GITHUB_MAX_BLOB_BYTES)
 
@@ -1414,7 +1428,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
             "candidate_rows": [EXPORTER.compact_candidate_row(row) for row in ordered],
         }
         index_raw = (json.dumps(index, sort_keys=True, separators=(",", ":")) + "\n").encode()
-        bucket_rows, chunks = EXPORTER.candidate_chunk_artifacts(candidates)
+        bucket_rows, chunks, parts = EXPORTER.candidate_chunk_artifacts(candidates)
         manifest, _ = EXPORTER.complete_catalog_manifest_artifact(
             candidates,
             EXPORTER.inflate_catalog_candidates(index),
@@ -1422,10 +1436,11 @@ class CertificateAndArtifactTests(unittest.TestCase):
             bucket_rows,
             chunks,
             "a" * 64,
+            parts,
         )
         blobs[("sharded", "ctas/data/catalog-index.json")] = index_raw
         blobs[("sharded", "ctas/data/candidate-chunks/manifest.json")] = json.dumps(manifest).encode()
-        blobs.update({("sharded", path): raw for path, raw in chunks.items()})
+        blobs.update({("sharded", path): raw for path, raw in {**chunks, **parts}.items()})
         with patch.object(EXPORTER, "git_blob", side_effect=lambda _repo, ref, path: blobs.get((ref, path))):
             self.assertEqual(EXPORTER.git_catalog_document(ROOT, "legacy"), legacy)
             self.assertEqual(EXPORTER.git_catalog_document(ROOT, "sharded")["candidates"], ordered)

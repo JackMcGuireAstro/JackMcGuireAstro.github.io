@@ -44,11 +44,27 @@ function fixture(version) {
   put("source-universe.json", {contract_set_checksum_sha256: "u", sources: []});
   put("release-history.json", {releases: []});
   put("source-matrix-patterns.json", {catalog_content_checksum_sha256: checksum, patterns: {}});
+  const parts = [];
   const chunks = candidates.map(c => {
-    const body = put(c.detail_chunk, {candidate_count: 1, candidates: [c]});
+    const bucket = c.detail_chunk.split("/").pop().replace(".json", "");
+    const complete = raw({schema: "ctas.public-candidate-chunk@1.0.0", bucket, candidate_count: 1, candidates: [c]});
+    let body = complete;
+    if (c.event_id === ids[2]) {
+      const chunkParts = [];
+      for (let offset = 0, ordinal = 1; offset < complete.length; offset += 256, ordinal += 1) {
+        const name = "candidate-chunks/" + bucket + ".part-" + String(ordinal).padStart(6, "0") + ".json";
+        const fragment = put(name, {schema: "ctas.candidate-json-part@1.0.0", bucket, part: ordinal,
+          json_fragment: complete.slice(offset, offset + 256)});
+        const metadata = {path: "ctas/data/" + name, bytes: Buffer.byteLength(fragment), sha256: digest(fragment)};
+        chunkParts.push(metadata); parts.push(metadata);
+      }
+      body = raw({schema: "ctas.candidate-chunk-parts@1.0.0", bucket, candidate_count: 1,
+        assembled_bytes: Buffer.byteLength(complete), assembled_sha256: digest(complete), parts: chunkParts});
+    }
+    documents[c.detail_chunk] = body;
     return {path: "ctas/data/" + c.detail_chunk, bytes: Buffer.byteLength(body), sha256: digest(body), candidate_count: 1};
   });
-  put("candidate-chunks/manifest.json", {catalog_content_checksum_sha256: checksum, candidate_count: candidates.length, chunk_count: 4096, chunks});
+  put("candidate-chunks/manifest.json", {catalog_content_checksum_sha256: checksum, candidate_count: candidates.length, chunk_count: 4096, chunks, parts});
   const pages = [candidates.slice(0, 2), candidates.slice(2)].map((cs, i) => {
     const body = put("catalog-pages/" + String(i).padStart(4, "0") + ".json", {candidate_rows: rows(cs)});
     return {page: i, bytes: Buffer.byteLength(body), sha256: digest(body)};
@@ -125,6 +141,31 @@ async function main() {
     assert.match(await page.locator("#ctas-dossier-title").innerText(), /AT2026sky/);
     assert(!control.requests.some(n => n.startsWith("catalog-pages/")));
     assert.equal(await page.evaluate(() => CTASApp.getCandidates().length), 1);
+    assert.deepEqual(control.errors, []); await page.close();
+  });
+  await test("multipart dossier fetches every fragment and exposes all complete-catalog files", async () => {
+    const {page, control} = await session("?event=" + ids[2] + "#dossier");
+    await page.waitForSelector("#ctas-dossier-title");
+    assert.match(await page.locator("#ctas-dossier-title").innerText(), /AT2025archive/);
+    const manifest = JSON.parse(releases.a["candidate-chunks/manifest.json"]);
+    for (const part of manifest.parts) {
+      assert(control.requests.includes(part.path.replace("ctas/data/", "")));
+      assert.equal(await page.locator('#catalog-downloads a[href="' + part.path + '"]').count(), 1);
+    }
+    assert.equal(await page.locator("#ctas-download-parts a[download]").count(), manifest.chunks.length + manifest.parts.length);
+    assert.deepEqual(control.errors, []); await page.close();
+  });
+  await test("a late multipart response cannot restore an earlier catalog release", async () => {
+    const {page, control} = await session();
+    const manifest = JSON.parse(releases.a["candidate-chunks/manifest.json"]);
+    control.hold = manifest.parts[0].path.replace("ctas/data/", "");
+    await page.evaluate(id => { history.replaceState(null, "", "?event=" + id + "#dossier"); void CTASApp.openById(id); }, ids[2]);
+    for (let n = 0; n < 100 && !control.held; n++) await new Promise(resolve => setTimeout(resolve, 20));
+    assert(control.held, "the old fragment was not held");
+    control.version = control.statusVersion = "b"; await poll(page);
+    control.held();
+    await page.waitForFunction(() => document.querySelector("#ctas-dossier-title")?.textContent.includes("archiveB"));
+    assert.equal(await page.evaluate(() => CTASApp.getSnapshot().catalog_content_checksum_sha256), "b".repeat(64));
     assert.deepEqual(control.errors, []); await page.close();
   });
   await test("fresh archive UUID, scoped alias, teaching alias, and ambiguity", async () => {
@@ -250,7 +291,7 @@ async function main() {
     }
     assert.deepEqual(errors, []); await page.close();
   });
-  console.log("9 release browser regressions passed in installed Chrome; real-release smoke " + (process.env.CTAS_REAL_BROWSER_SMOKE === "1" ? "passed" : "not requested") + ".");
+  console.log("11 release browser regressions passed in installed Chrome; real-release smoke " + (process.env.CTAS_REAL_BROWSER_SMOKE === "1" ? "passed" : "not requested") + ".");
 }
 main().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   if (browser) await browser.close(); server.close();

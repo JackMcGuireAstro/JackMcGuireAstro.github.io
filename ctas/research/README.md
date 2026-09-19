@@ -55,3 +55,22 @@ It does not independently establish the scientific validity of provider claims
 or authenticate GitHub Pages against a separate trust authority. Always retain
 the displayed catalog-content checksum, access time, stable event UUIDs, and
 original-provider citations with a scientific result.
+
+## Complete dossiers and large records
+
+The complete-catalog manifest at `ctas/data/candidate-chunks/manifest.json`
+lists 4096 stable UUID buckets and any supplemental files under `parts`.
+Ordinary buckets contain complete candidate JSON directly. An oversized bucket
+contains a `ctas.candidate-chunk-parts@1.0.0` descriptor: verify its ordered
+part paths against the global manifest, check each part's byte count and SHA-256,
+and concatenate the `json_fragment` strings from the verified JSON envelopes.
+Check the assembled byte count and SHA-256 before parsing the original bucket.
+Every observation, source receipt, and other published field is preserved.
+
+The website performs this reconstruction when a dossier is opened. Python
+consumers can use `scripts/ctas_chunks.py` for the same lossless decoding;
+`scripts/check_ctas_links.py` also verifies manifest integrity, exact part
+coverage, and the complete catalog's event identities and reconstruction hash.
+Each detail download remains at or below 4 MiB even when a single dossier grows
+beyond that size. Download all files declared by the manifest when retaining
+the entire catalog; a multipart descriptor alone is not the scientific record.
