@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' blob: data:; img-src 'self' blob: data:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Question reader · QualQuest</title>
+<link rel="stylesheet" href="./question-reader.css">
+<script type="module" src="./question-reader.mjs"></script>
+</head>
+<body>
+<header>
+<a href="./">QualQuest</a>
+<div><p class="eyebrow">Your book · on this device</p><h1 id="title">Question reader</h1></div>
+<p class="privacy">No upload. Keep your study tab open.</p>
+</header>
+<main>
+<p id="status" role="status" aria-live="polite">Connecting to your selected book…</p>
+<nav id="controls" aria-label="Reader controls" hidden>
+<button id="previous" type="button">Previous page</button>
+<label>PDF page <input id="page" type="number" min="1" value="1"></label>
+<span id="total"></span>
+<button id="next" type="button">Next page</button>
+<button id="question" type="button">Question page</button>
+<label>Zoom <select id="zoom"><option value="fit">Fit width</option><option value="1">100%</option><option value="1.5">150%</option><option value="2">200%</option></select></label>
+</nav>
+<div id="surface" aria-busy="true"><canvas id="canvas" role="img" aria-label="Selected textbook page" hidden></canvas></div>
+<details id="accessible" hidden><summary>Page text</summary><p>Text is extracted locally. Equations and diagrams may need the page image.</p><div id="text"></div></details>
+<p class="footnote">The full question and diagrams come from the PDF you selected. Use a copy you are entitled to access. QualQuest does not provide or share textbook files.</p>
+<noscript>This reader needs JavaScript to display your local book.</noscript>
+</main>
+</body>
+</html>

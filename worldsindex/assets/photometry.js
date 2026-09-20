@@ -25,9 +25,18 @@ export function eccentricAnomaly(mean,e) {
   return E;
 }
 export function finite(value) { if(value===null||value===undefined||String(value).trim()==='')return null;const n=Number(value);return Number.isFinite(n)?n:null; }
-export function relativeFlux(points) {
+export function relativeFlux(points, unit="mag") {
   const sorted=points.map(p=>p[1]).sort((a,b)=>a-b),n=sorted.length;
   if(!n)return [];
   const median=n%2?sorted[(n-1)/2]:(sorted[n/2-1]+sorted[n/2])/2;
+  if(unit==='e-/s'){if(!(median>0))return [];return points.map(p=>[p[0],p[1]/median,p[2]/median,p[3],p[4]]);}
+  if(unit!=='mag')return [];
   return points.map(p=>{const flux=10**(-.4*(p[1]-median));return [p[0],flux,Math.log(10)*.4*flux*p[2],p[3],p[4]];});
+}
+
+// Every value comes from one selected source row; missing values stay missing.
+export function publishedTransitParameters(row) {
+ const v=row?.values||{};
+ const measured=(key)=>finite(v[key+'lim'])===null||finite(v[key+'lim'])===0?finite(v[key]):null;
+ return {period:measured('pl_orbper'),epoch:measured('pl_tranmid'),ratio:measured('pl_ratror')??(measured('pl_rade')>0&&measured('st_rad')>0?measured('pl_rade')*.00916794/measured('st_rad'):null),axis:measured('pl_ratdor')??(measured('pl_orbsmax')>0&&measured('st_rad')>0?measured('pl_orbsmax')*215.032/measured('st_rad'):null),impact:measured('pl_imppar')};
 }

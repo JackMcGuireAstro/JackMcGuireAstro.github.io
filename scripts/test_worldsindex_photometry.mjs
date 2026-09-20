@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { phase, overlap, transitFlux, eccentricAnomaly, relativeFlux, finite } from '../worldsindex/assets/photometry.js';
+import { phase, overlap, transitFlux, eccentricAnomaly, relativeFlux, finite, publishedTransitParameters } from '../worldsindex/assets/photometry.js';
 assert.equal(phase(100,2,100),0); assert.equal(phase(101,2,100),-.5); assert.equal(phase(99.5,2,100),-.25);
 assert.equal(phase(1,0,0),null); assert.equal(finite(null),null); assert.equal(finite(''),null);
 assert.ok(Math.abs(overlap(0,.1)-.01)<1e-12); assert.equal(overlap(2,.1),0);
@@ -9,3 +9,10 @@ assert.equal(transitFlux(100,{...p,scaledAxis:1}),null);
 for(const e of [0,.2,.7,.95])for(const m of [0,.1,1,3,6]){const E=eccentricAnomaly(m,e);assert.ok(Math.abs(E-e*Math.sin(E)-m)<1e-10);}
 const f=relativeFlux([[1,10,.01,'r','1'],[2,10,.01,'r','1']]);assert.equal(f[0][1],1);assert.ok(Math.abs(f[0][2]-.00921034037)<1e-10);
 console.log('Photometry geometry, phase, uncertainty conversion, and Kepler motion passed.');
+
+const missing=publishedTransitParameters({values:{pl_orbper:6.099615}});
+assert.deepEqual(missing,{period:6.099615,epoch:null,ratio:null,axis:null,impact:null});
+assert.equal(publishedTransitParameters({values:{pl_orbper:3,pl_orbperlim:1}}).period,null);
+assert.equal(publishedTransitParameters({values:{pl_imppar:0}}).impact,0);
+
+assert.deepEqual(relativeFlux([[1,100,2,'K','1'],[2,200,4,'K','1']],'e-/s'),[[1,2/3,2/150,'K','1'],[2,4/3,4/150,'K','1']]);

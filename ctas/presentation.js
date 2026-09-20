@@ -10,7 +10,29 @@
   function weight(c){var n=c.follow_up_counts||{};return ['observations','spectra','publications','classifications'].reduce(function(sum,k){return sum+Math.max(0,Number(n[k])||0);},0);}
   function examples(rows,key){return rows.filter(function(c){var n=c.follow_up_counts||{};return Number(n.observations)>0||Number(n.spectra)>0;}).slice().sort(function(a,b){return (key==='total'?weight(b)-weight(a):(Number((b.follow_up_counts||{})[key])||0)-(Number((a.follow_up_counts||{})[key])||0))||weight(b)-weight(a)||String(a.event_id).localeCompare(String(b.event_id));});}
   if(typeof document!=="undefined")document.querySelectorAll('[data-open-name][data-preview-ra]').forEach(function(button){button.insertAdjacentHTML('afterbegin',thumbnail({name:button.getAttribute('data-open-name'),ra_deg:button.getAttribute('data-preview-ra'),dec_deg:button.getAttribute('data-preview-dec')}));});
-  root.CTASPresentation={thumbnail:thumbnail,examples:examples,weight:weight};
+  function classInfo(c){
+    var raw=String(c.classification||'').trim(),api=root.CTASAstroEvidence;
+    if(!api&&typeof require==='function')api=require('./astro-evidence.js');
+    var physical=api&&api.classificationProperty(raw)==='transient.classification';
+    return {physical:physical?raw:'',alert:raw&&!physical&&raw!=='Unclassified'?raw:'',display:physical?raw:'Unclassified'};
+  }
+  function outcomes(c){
+    if(c.photometry_outcomes)return c.photometry_outcomes;
+    var follow=c.follow_up;if(!follow||!Array.isArray(follow.observations))return null;
+    var active=follow.observations.filter(function(r){return !r.superseded&&!r.retracted;});
+    var present=function(v){return v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));};
+    return {active:active.length,detections:active.filter(function(r){return r.detection===true||r.detection===1;}).length,limits:active.filter(function(r){return !r.detection&&(present(r.limiting_flux)||present(r.limiting_magnitude));}).length,forced:active.filter(function(r){return /forced/i.test([r.photometry_method,r.pipeline].join(' '));}).length};
+  }
+  function outcomeText(c){
+    var o=outcomes(c),n=c.follow_up_counts||{},parts=[],info=classInfo(c);
+    if(o)parts.push(o.detections+' source-reported detections',o.limits+' limits',o.forced+' forced measurements');
+    else if(Number(n.observations)>0)parts.push('Detection / limit outcomes: open dossier');
+    if(Number(n.spectra)>0)parts.push(Number(n.spectra)+' spectra');
+    if(info.physical)parts.push('Reported '+info.physical);
+    if(Number(n.publications)>0)parts.push(Number(n.publications)+' public reports');
+    return parts.join(' · ')||'Event record only';
+  }
+  root.CTASPresentation={thumbnail:thumbnail,examples:examples,weight:weight,classInfo:classInfo,outcomes:outcomes,outcomeText:outcomeText};
   if(typeof document!=="undefined")document.addEventListener('error',function(e){if(e.target.matches&&e.target.matches('[data-ctas-thumbnail]')){var p=e.target.parentElement;p.classList.add('ctas-thumb--missing');p.textContent='No image';p.title='Archival provider image unavailable';}},true);
   if(typeof module!=="undefined")module.exports=root.CTASPresentation;
 }(typeof window!=="undefined"?window:globalThis));

@@ -29,6 +29,7 @@ import csv
 import hashlib
 import io
 import json
+import math
 import os
 import re
 import sqlite3
@@ -2050,6 +2051,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             key: len(value) for key, value in follow_up.items()
         }
         rec["follow_up_total"] = sum(rec["follow_up_counts"].values())
+        rec["photometry_outcomes"] = photometry_outcomes(follow_up["observations"])
         if any(follow_up.values()):
             rec["follow_up"] = follow_up
 
@@ -2484,13 +2486,30 @@ CATALOG_CANDIDATE_COLUMNS = (
     "latest_retraction_at", "detail_chunk",
     "n_classifications", "n_classification_history", "n_observations", "n_spectra",
     "n_messenger_signals", "n_publications", "n_publication_revisions", "n_host_context",
-    "n_catalog_counterparts", "n_archive_products",
+    "n_catalog_counterparts", "n_archive_products", "photometry_outcomes",
     "record_role", "ranking_channel", "default_leaderboard_eligible",
     "record_label", "record_present", "record_applicable", "record_not_assessed",
     "record_fraction", "primary_source_key", "primary_source_url",
     "primary_source_designation", "identity_state", "conflict_count",
     "source_declared", "source_applicable", "source_executed", "source_data_bearing",
 )
+
+
+
+def photometry_outcomes(rows: list[dict[str, Any]]) -> dict[str, int]:
+    """Source-reported outcomes; forced measurements can be detections or limits."""
+    active = [row for row in rows if not row.get("superseded") and not row.get("retracted")]
+    def present(value: Any) -> bool:
+        if value is None or value == "":
+            return False
+        try:
+            return math.isfinite(float(value))
+        except (TypeError, ValueError):
+            return False
+    return {"active": len(active),
+        "detections": sum(row.get("detection") in (True, 1) for row in active),
+        "limits": sum(not row.get("detection") and any(present(row.get(key)) for key in ("limiting_flux", "limiting_magnitude")) for row in active),
+        "forced": sum("forced" in str(row.get("photometry_method") or row.get("pipeline") or "").lower() for row in active)}
 
 
 def compact_candidate_row(candidate: dict[str, Any]) -> list[Any]:

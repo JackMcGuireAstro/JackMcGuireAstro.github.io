@@ -283,7 +283,7 @@ if (indexText !== null) {
   const index = JSON.parse(indexText);
   await mkdir(join(outputRoot, 'lightcurves'), { recursive: true });
   for (const entry of Object.values(index.entries)) {
-    if (!/^HAT-P-\d+b\.json\.gz$/.test(entry.path)) throw new Error('Invalid observation artifact path');
+    if (!/^(?:HAT-P-\d+b|K2-EPIC246199087-C12)\.json\.gz$/.test(entry.path)) throw new Error('Invalid observation artifact path');
     const bytes = await readFile(join(sourceRoot, 'public/data/lightcurves', entry.path));
     if (createHash('sha256').update(bytes).digest('hex') !== entry.sha256) throw new Error('Light curve checksum mismatch');
     await writeFile(join(outputRoot, 'lightcurves', entry.path), bytes);

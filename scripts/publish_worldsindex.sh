@@ -139,6 +139,10 @@ fi
 # from empty, activates, and verifies — or leaves everything exactly as it was. Its exit code is
 # informational here: a withheld, rejected, or failed promotion is a valid outcome that keeps
 # the previous release active, and the outcome is recorded for the public status file.
+# A failed activation must retry even when the provider-monitor fingerprint is
+# unchanged: observed bytes and successfully activated bytes are different states.
+PREVIOUS_PROMOTION=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("outcome",""))' "$SOURCE/outputs/promotion/exoplanet-eu/latest.json" 2>/dev/null || true)
+case "$PREVIOUS_PROMOTION" in ACTIVATION_REVERSED|RETRIEVAL_FAILED) CHANGED_SOURCES="$CHANGED_SOURCES,exoplanet-eu" ;; esac
 case ",$CHANGED_SOURCES," in
   *,exoplanet-eu,*)
     say "running the Exoplanet.eu promotion gate"
@@ -202,6 +206,12 @@ fi
 
 say "refreshing public light curves locally (last good products retained on failure)"
 (cd "$SOURCE" && npm run lightcurves:refresh) >>"$LOG" 2>&1 || say "light-curve refresh failed; retaining prior observation products"
+SCIENCE_PYTHON="${WORLDSINDEX_SCIENCE_PYTHON:-$HOME/Documents/Codex/JackMcGuireAstro Website/Development/Science Data Tools/.venv/bin/python}"
+if [ -x "$SCIENCE_PYTHON" ]; then
+  "$SCIENCE_PYTHON" "$SITE/scripts/refresh_worldsindex_k2.py" --source "$SOURCE" >>"$LOG" 2>&1 || say "K2 refresh failed; retaining prior observed photometry"
+else
+  say "K2 refresh runtime unavailable; retaining prior observed photometry"
+fi
 say "running ExoNexus scientific and production gates"
 (cd "$SOURCE" && npm run typecheck && npm test && npm run lint && npm run build) >>"$LOG" 2>&1 \
   || die "ExoNexus validation failed; nothing published"
@@ -221,7 +231,7 @@ while IFS= read -r artifact; do
 done < <(python3 - "$SITE/worldsindex/data/manifest.json" <<'PY_OBSERVATIONS'
 import json,re,sys
 for path in json.load(open(sys.argv[1])).get("artifacts", {}):
-    if re.fullmatch(r"lightcurves/(?:index\.json|HAT-P-\d+b\.json\.gz)", path):
+    if re.fullmatch(r"lightcurves/(?:index\.json|HAT-P-\d+b\.json\.gz|K2-EPIC246199087-C12\.json\.gz)", path):
         print("worldsindex/data/" + path)
 PY_OBSERVATIONS
 )

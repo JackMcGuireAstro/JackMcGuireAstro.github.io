@@ -1,0 +1,26 @@
+:root { font-family: system-ui, -apple-system, sans-serif; color: #183d50; background: #f2f3f1; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+header { display: flex; align-items: center; gap: 28px; padding: 22px 5vw; background: #101f32; color: #edf2f4; }
+header a { color: #e6ba70; font-weight: 750; text-decoration: none; }
+h1 { font-size: clamp(18px,2vw,25px); margin: 3px 0; }
+.eyebrow { text-transform: uppercase; letter-spacing: .1em; font-size: 11px; color: #e6ba70; margin: 0; }
+.privacy { margin-left: auto; font-size: 12px; max-width: 170px; line-height: 1.6; }
+main { max-width: 1500px; margin: auto; padding: 16px 4vw 30px; }
+#status { min-height: 26px; font-size: 14px; }
+nav { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+button,input,select { font: inherit; padding: 10px 12px; min-height: 44px; border: 1px solid #b7c7d4; border-radius: 7px; background: white; color: #183d50; }
+button { cursor: pointer; font-weight: 600; }
+button:disabled { opacity: .45; cursor: default; }
+#question { background: #183d50; color: white; }
+input { width: 82px; }
+label { font-size: 13px; }
+:focus-visible { outline: 3px solid #178779; outline-offset: 3px; }
+#surface { overflow: auto; background: #dce3e5; border: 1px solid #cad4d8; min-height: 150px; border-radius: 8px; }
+canvas { display: block; margin: 0 auto; background: white; box-shadow: 0 3px 15px #0b172822; }
+#accessible { margin-top: 20px; padding: 18px; background: white; border-radius: 8px; }
+summary { cursor: pointer; font-weight: 650; }
+#text { white-space: pre-wrap; line-height: 1.7; color: #20333c; }
+.footnote { color: #566873; font-size: 12px; line-height: 1.6; max-width: 800px; }
+@media(max-width:600px) { header { flex-wrap: wrap; gap: 12px; padding: 18px; } header a { width: 100%; } .privacy { margin: 0; max-width: none; } main { padding: 12px; } nav { gap: 8px; } button { font-size: 12px; } }

@@ -443,8 +443,8 @@
     function listRows(rows, renderer, empty) {
       return rows && rows.length ? "<ul>" + rows.slice(0, 4).map(renderer).join("") + "</ul>" : "<p>" + esc(empty) + "</p>";
     }
-    var known = listRows(brief.confidently_known, function (row) { return "<li><strong>" + esc(row.label) + ":</strong> " + esc(row.value) + "</li>"; }, "No summary fact is promoted beyond the retained source record.");
-    var uncertain = listRows(brief.uncertain_or_conflicting, function (row) { return "<li><strong>" + esc(humanKey(row.label)) + ":</strong> " + esc(humanKey(row.state)) + "</li>"; }, "No explicit conflict state is retained.");
+    var known = listRows(brief.confidently_known, function (row) { return "<li><strong>" + esc(/classification/i.test(row.label)&&!window.CTASPresentation.classInfo(candidate).physical?"Alert / provider label":row.label) + ":</strong> " + esc(row.value) + "</li>"; }, "No summary fact is promoted beyond the retained source record.");
+    var uncertain = listRows(brief.uncertain_or_conflicting, function (row) { return "<li><strong>" + esc(/classification/i.test(row.label)&&!window.CTASPresentation.classInfo(candidate).physical?"Reported label probability":humanKey(row.label)) + ":</strong> " + esc(humanKey(row.state)) + "</li>"; }, "No explicit conflict state is retained.");
     var missing = listRows(brief.missing_information, function (row) { return "<li>" + esc(row.label) + " <small>(" + esc(humanKey(row.state)) + ")</small></li>"; }, "No applicable component is marked missing or not assessed.");
     var changed = brief.most_recent_change ? "<p><strong>" + esc(humanKey(brief.most_recent_change.evidence_type)) + ":</strong> " + esc(brief.most_recent_change.title || "Retained evidence update") + "</p><p>" + esc([brief.most_recent_change.provider, brief.most_recent_change.public_available_at ? absolute(brief.most_recent_change.public_available_at) : "availability clock unavailable"].filter(Boolean).join(" · ")) + "</p>" : "<p>No provider change is retained.</p>";
     var visibility = "<p><strong>INSUFFICIENT_DATA:</strong> valid coordinates are not retained.</p>";
@@ -748,7 +748,7 @@
     return '<details class="ctas-evidence-panel" data-dossier-view="classifications"><summary>Reported classifications and public reports <small>' +
       classifications.length + " classification rows · " + reports.length + " reports · " + revisions.length + ' revision rows</small></summary><div class="ctas-evidence-panel__body"><div class="ctas-detail__grid">' +
       (classifications.length ? '<section class="ctas-detail__section"><h4>Classification assertions</h4><ul>' + classifications.map(function (row) {
-        return "<li><strong>" + esc(row.classification || "Unclassified") + "</strong><span>" +
+        return "<li><strong>" + esc((window.CTASAstroEvidence.classificationProperty(row.classification)==="transient.classification"?"Physical class: ":"Provider label: ")+(row.classification || "Unclassified")) + "</strong><span>" +
           esc([row.asserted_at ? absolute(row.asserted_at) : "time unavailable", row.provider, row.method,
             finiteNumber(row.probability) ? num(100 * row.probability, 1) + "% reported probability" : "",
             row.retracted ? "retracted" : row.superseded ? "superseded" : ""].filter(Boolean).join(" · ")) +
@@ -931,14 +931,16 @@
       '</strong><small>ordering aid · not probability</small></div></div>' +
       '<div class="ctas-workspace__actions"><button type="button" data-close-candidate>Close dossier</button><details class="ctas-more-actions"><summary>More actions</summary><div><button type="button" data-copy-link>Copy link</button><button type="button" data-download-candidate>Download JSON</button><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></details></div>' + renderScienceBrief(candidate) +
       '<dl class="ctas-detail__facts ctas-detail__facts--essential">' + fact("Event / messenger", humanKey(candidate.event_type || "Not recorded") + " · " + humanKey(candidate.primary_messenger || "Not recorded")) +
-      fact("Reported class / alert label", candidate.classification || "Unclassified") +
+      fact("Physical classification", window.CTASPresentation.classInfo(candidate).physical || "Not reported") +
+      fact("Alert / provider label", window.CTASPresentation.classInfo(candidate).alert || "None retained") +
+      fact("Follow-up outcomes", window.CTASPresentation.outcomeText(candidate)) +
       fact("Current record status", humanKey(candidate.status || "unknown")) +
       fact("ICRS coordinates", sexagesimal(candidate.ra_deg, candidate.dec_deg) || "Unavailable") +
       fact("Discovery", [candidate.discovery_time ? absolute(candidate.discovery_time) : "time unavailable", candidate.discovery_survey || "survey unavailable"].join(" · ")) +
       fact("Source-reported magnitude", magnitude) + fact("Available evidence", evidence.join(" · ") || "Event record only") + "</dl>" +
       '<details class="ctas-secondary-facts"><summary>Identifiers and additional facts</summary><dl class="ctas-detail__facts">' +
       fact("Stable event UUID", candidate.event_id) + fact("Label kind", labelKind) +
-      fact("Reported classification probability", candidate.classification_probability === undefined ? "Not reported" : num(100 * candidate.classification_probability, 1) + "% (calibration not assumed)") +
+      fact("Reported label probability", candidate.classification_probability === undefined ? "Not reported" : num(100 * candidate.classification_probability, 1) + "% (calibration not assumed)") +
       fact("Redshift", num(candidate.redshift, 5)) + fact("Host", candidate.host_name) + "</dl></details>" + quality +
       '<section class="ctas-original-sources"><h4>Original sources</h4>' + renderReferences(candidate.links || []) +
       ((candidate.links || []).some(function (row) { return row.source_key === "tns"; })
@@ -1064,7 +1066,7 @@
       var evidence = [counts.observations ? counts.observations + " obs" : "", counts.spectra ? counts.spectra + " spectra" : "",
         counts.messenger_signals ? counts.messenger_signals + " notices" : "", counts.classifications ? counts.classifications + " classifications" : ""].filter(Boolean).join(" · ") || "event record only";
       return '<li data-candidate-id="' + esc(candidate.event_id) + '"><span class="ctas-stream__number">0' + (index + 1) + '</span><div><button type="button" data-open-event="' + esc(candidate.event_id) + '"><strong>' + window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) + "</strong></button><p>" +
-        esc(candidate.classification || "Unclassified") + " · " + esc(candidate.primary_messenger || "messenger unavailable") +
+        esc(window.CTASPresentation.classInfo(candidate).physical || (window.CTASPresentation.classInfo(candidate).alert ? "Alert: "+window.CTASPresentation.classInfo(candidate).alert : "Unclassified")) + " · " + esc(candidate.primary_messenger || "messenger unavailable") +
         "</p><small>" + esc(absolute(candidate.updated_at || candidate.discovery_time)) + " · " + esc(evidence) +
         '</small><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></div><strong class="ctas-stream__score">' + esc(num(candidate.ctas_score, 1)) + "<span>CTAS score</span></strong></li>";
     }).join("") || '<li><div><strong>No matching candidates have a reported discovery time in the last 24 hours.</strong><p>Clear linked filters or use the leaderboard and complete catalog below.</p></div></li>';
@@ -1236,15 +1238,15 @@
 
   var COLUMNS = [
     {key: "name", label: "Candidate"}, {key: "ctas_score", label: "Score"},
-    {key: "triage", label: "Why now", nosort: true}, {key: "classification", label: "Reported class"},
+    {key: "triage", label: "Why now", nosort: true}, {key: "classification", label: "Physical class / alert"},
     {key: "discovery_time", label: "Age / magnitude"}, {key: "record_completeness", label: "Evidence"},
     {key: "links", label: "Original source", nosort: true}
   ];
   function renderFollowupExamples() {
     var box=document.getElementById('ctas-followup-examples'); if(!box)return;
     var selector=document.getElementById('ctas-followup-sort'),key=selector?selector.value:'total';
-    var rows=window.CTASPresentation.examples(state.candidates,key);var classified=document.getElementById('ctas-followup-classified');if(classified&&classified.checked)rows=rows.filter(function(c){var n=c.follow_up_counts||{};return Number(n.spectra)>0&&Number(n.classifications)>0;});var shown=rows.slice(0,50);
-    box.innerHTML='<p role="status">'+(state.completeCatalogLoaded?'Complete retained catalog':'Loaded summary only — load the complete catalog to find the richest examples')+' · '+rows.length.toLocaleString()+' records with photometry or spectra; showing '+shown.length+'.</p><div class="ctas-evidence-table-wrap"><table class="ctas-evidence-table"><caption>Most compiled follow-up records, ordered by '+esc(key)+'. Counts are retained rows, not unique observing campaigns or measures of scientific quality.</caption><thead><tr><th>Candidate / archival field</th><th>Reported class</th><th>Photometry</th><th>Spectra</th><th>Classifications</th><th>Reports</th><th>Total</th><th>Evidence</th></tr></thead><tbody>'+shown.map(function(c){var n=c.follow_up_counts||{};return '<tr><td><button type="button" data-open-event="'+esc(c.event_id)+'">'+window.CTASPresentation.thumbnail(c)+esc(c.name)+'</button></td><td>'+esc(c.classification||'Unclassified')+'</td>'+['observations','spectra','classifications','publications'].map(function(k){return '<td>'+Number(n[k]||0).toLocaleString()+'</td>';}).join('')+'<td>'+window.CTASPresentation.weight(c).toLocaleString()+'</td><td>'+renderReferences(c.links||[])+'</td></tr>';}).join('')+'</tbody></table></div>';
+    var rows=window.CTASPresentation.examples(state.candidates,key);var classified=document.getElementById('ctas-followup-classified');if(classified&&classified.checked)rows=rows.filter(function(c){var n=c.follow_up_counts||{};return Number(n.spectra)>0&&Boolean(window.CTASPresentation.classInfo(c).physical);});var shown=rows.slice(0,50);
+    box.innerHTML='<p role="status">'+(state.completeCatalogLoaded?'Complete retained catalog':'Loaded summary only — load the complete catalog to find the richest examples')+' · '+rows.length.toLocaleString()+' records with photometry or spectra; showing '+shown.length+'.</p><div class="ctas-evidence-table-wrap"><table class="ctas-evidence-table"><caption>Most compiled follow-up records, ordered by '+esc(key)+'. Counts are retained rows. Detections are source-reported; forced measurements can include detections or limits. Spectra and reported classes do not alone certify a successful classification.</caption><thead><tr><th>Candidate / archival field</th><th>Physical class / alert</th><th>Follow-up outcomes</th><th>Photometry</th><th>Spectra</th><th>Classifications</th><th>Reports</th><th>Total</th><th>Evidence</th></tr></thead><tbody>'+shown.map(function(c){c=state.resolvedCandidates[c.event_id]||c;var n=c.follow_up_counts||{},info=window.CTASPresentation.classInfo(c);return '<tr><td><button type="button" data-open-event="'+esc(c.event_id)+'">'+window.CTASPresentation.thumbnail(c)+esc(c.name)+'</button></td><td>'+esc(info.physical||(info.alert?'Alert: '+info.alert:'Unclassified'))+'</td><td>'+esc(window.CTASPresentation.outcomeText(c))+'<br><button type="button" data-open-event="'+esc(c.event_id)+'">Inspect evidence &amp; timeline</button></td>'+['observations','spectra','classifications','publications'].map(function(k){return '<td>'+Number(n[k]||0).toLocaleString()+'</td>';}).join('')+'<td>'+window.CTASPresentation.weight(c).toLocaleString()+'</td><td>'+renderReferences(c.links||[])+'</td></tr>';}).join('')+'</tbody></table></div>';
   }
   function renderTable() {
     renderFollowupExamples();
@@ -1276,7 +1278,8 @@
       var counts = candidate.follow_up_counts || {};
       var evidence = [counts.observations ? counts.observations + " obs" : "", counts.spectra ? counts.spectra + " spectra" : "",
         counts.messenger_signals ? counts.messenger_signals + " notices" : "", counts.publications ? counts.publications + " reports" : ""].filter(Boolean).join(" · ") || "event only";
-      var label = candidate.classification || "Unclassified";
+      var classInfo=window.CTASPresentation.classInfo(candidate);
+      var label = classInfo.physical || (classInfo.alert ? "Alert: "+classInfo.alert : "Unclassified");
       return '<tr data-candidate-id="' + esc(candidate.event_id) + '"><td><button type="button" class="ctas-candidate" data-open-event="' + esc(candidate.event_id) + '"><span>' +
         window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) + '</span><small>' + esc(candidate.discovery_survey || "Survey unavailable") + " · " + esc(sexagesimal(candidate.ra_deg, candidate.dec_deg) || "position unavailable") +
         '</small></button><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></td><td class="num ctas-score-cell">' + esc(num(candidate.ctas_score, 1)) +
@@ -1430,7 +1433,7 @@
       var candidate = hit.point.candidate; el.sky.style.cursor = "pointer"; el.skyTip.hidden = false;
       if (state.hoveredEventId !== candidate.event_id) { state.hoveredEventId = candidate.event_id; repaintCandidateLinks(); }
       el.skyTip.style.left = Math.min(hit.x + 14, el.sky.clientWidth - 220) + "px"; el.skyTip.style.top = Math.max(8, hit.y - 64) + "px";
-      el.skyTip.innerHTML = "<strong>" + window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) + "</strong><span>" + esc(candidate.classification || "Unclassified") +
+      el.skyTip.innerHTML = "<strong>" + window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) + "</strong><span>" + esc(window.CTASPresentation.classInfo(candidate).physical || (window.CTASPresentation.classInfo(candidate).alert ? "Alert: "+window.CTASPresentation.classInfo(candidate).alert : "Unclassified")) +
         " · reported mag " + esc(num(candidate.discovery_magnitude, 2) || "unknown") + "</span><span>" + esc(sexagesimal(candidate.ra_deg, candidate.dec_deg)) + "</span><span>Click to open the dossier and comparison controls</span>";
     });
     el.sky.addEventListener("pointerleave", function () { el.skyTip.hidden = true; state.hoveredEventId = null; repaintCandidateLinks(); });
@@ -2214,6 +2217,7 @@
       var detail = (document_.candidates || []).find(function (candidate) { return candidate.event_id === eventId; });
       if (!detail) throw new Error("Candidate is absent from its checksum-bound detail shard.");
       state.resolvedCandidates[eventId] = Object.assign({}, detail, {detail_chunk: path});
+      renderFollowupExamples();
       return detail;
       });
     });

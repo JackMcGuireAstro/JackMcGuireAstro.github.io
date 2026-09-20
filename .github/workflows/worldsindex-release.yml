@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate WorldsIndex and CTAS static releases
+    name: Validate all website releases
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -46,8 +46,11 @@ jobs:
           node --check worldsindex/assets/app.js
           node --check worldsindex/assets/science.js
           node --check scripts/build_worldsindex_static.mjs
+      - name: QualQuest static export and public content
+        run: python3 scripts/test_qualquest_static.py
       - name: CTAS static release
         run: |
+          python3 scripts/test_ctas_outcomes.py
           python3 scripts/test_ctas_chunks.py
           python3 scripts/test_ctas_links.py
           python3 scripts/test_ctas_publisher_recovery.py

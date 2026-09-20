@@ -104,7 +104,7 @@
     var counts = candidate.follow_up_counts || {}, accounting = candidate.source_accounting || {};
     var conflicts = detail ? ((detail.astro_evidence || {}).conflictSets || []).length : Number(candidate.conflict_count || 0);
     var recent = detail && detail.science_brief && detail.science_brief.most_recent_change;
-    return '<article class="ctas-compare-card" data-compare-card="' + esc(candidate.event_id) + '"><header><span class="pill">' + esc(candidate.classification || "Unclassified") + '</span><h4>' + window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) + '</h4><small>' + esc(candidate.event_id) + '</small></header><dl>' +
+    return '<article class="ctas-compare-card" data-compare-card="' + esc(candidate.event_id) + '"><header><span class="pill">' + esc(window.CTASPresentation.classInfo(candidate).physical || "Unclassified") + '</span><h4>' + window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) + '</h4><small>' + esc(candidate.event_id) + '</small></header><dl>' +
       comparisonFact("CTAS score", Number(candidate.ctas_score || 0).toFixed(1) + " · ordering aid, not probability") +
       comparisonFact("Reported discovery", [candidate.discovery_time ? absolute(candidate.discovery_time) : "time unavailable", candidate.discovery_survey || "survey unavailable", finite(candidate.discovery_magnitude) ? Number(candidate.discovery_magnitude).toFixed(2) + " mag" : "magnitude unavailable"].join(" · ")) +
       comparisonFact("ICRS position", window.CTASCatalogModel ? window.CTASCatalogModel.sexagesimal(candidate.ra_deg, candidate.dec_deg) : "Not retained") +
