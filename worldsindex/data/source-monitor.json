@@ -3,14 +3,14 @@
   "datasetPromotion": {
     "latestOutcome": {
       "sourceId": "exoplanet-eu",
-      "runId": "promote-20260919T003146",
-      "recordedAt": "2026-09-19T00:41:09.301Z",
-      "outcome": "ACTIVATION_REVERSED",
-      "detail": "tests failed (exit 1): Subtest: required provider failures quarantine the attempt\nok 87 - required provider failures quarantine the attempt\n  ---\n  duration_ms: 761.038292\n  type: 'test'\n  ...\n# Subtest: provider schema drift is distinct from transport and authentication failures\nok 88 - provider schema drift is distinct from transport and authentication failures\n  ---\n  duration_ms: 8.65725\n  type: 'test'\n  ...\n# Subtest: required probe artifact persistence failures quarantine the attempt\nok 89 - required probe artifact persistence failures quarantine the attempt\n  ---\n  duration_ms: 5.5335\n  type: 'test'\n  ...\n# Subtest: every successful probe receives an artifact receipt without claiming local files are hosted\nok 90 - every successful probe receives an artifact receipt without claiming local files are hosted\n  ---\n  duration_ms: 6.162875\n  type: 'test'\n  ...\n# Subtest: CoRoT probe retrieves both tables completely and its marker changes on a row-level edit\nok 91 - CoRoT probe retrieves both tables completely and its marker changes on a row-level edit\n  ---\n  duration_ms: 15.782542\n  type: 'test'\n  ...\n# Subtest: an unauthenticated 403 is a provider rejection, not an authentication failure, and keeps the response excerpt\nok 92 - an unauthenticated 403 is a provider rejection, not an authentication failure, and keeps the response excerpt\n  ---\n  duration_ms: 3.589875\n  type: 'test'\n  ...\n# Subtest: OEC probe fingerprints the ingested artifact bytes, so a repository heartbeat is not a change but an XML edit is\nok 93 - OEC probe fingerprints the ingested artifact bytes, so a repository heartbeat is not a change but an XML edit is\n  ---\n  duration_ms: 17.721083\n  type: 'test'\n  ...\n# Subtest: sync state machine allows validation and fail-closed quarantine paths\nok 94 - sync state machine allows validation and fail-closed quarantine paths\n  ---\n  duration_ms: 0.8285\n  type: 'test'\n  ...\n1..94\n# tests 94\n# suites 0\n# pass 93\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 4974.24925\n",
+      "runId": "promote-20260920T041430",
+      "recordedAt": "2026-09-20T04:23:29.475Z",
+      "outcome": "PROMOTED",
+      "detail": "12 added, 27 changed, 2 removed; 2646 ambiguous identities withheld; 19 migrations",
       "candidateSnapshotId": "exoplanet-eu-a5cbae53c2279a52-full-v1",
-      "activeSnapshotId": "exoplanet-eu-633931992dd9bd16-full-v1",
+      "activeSnapshotId": "exoplanet-eu-a5cbae53c2279a52-full-v1",
       "rehearsal": false,
-      "evidenceDirectory": "outputs/promotion/exoplanet-eu/2026-09-19T0031Z-all-status"
+      "evidenceDirectory": "outputs/promotion/exoplanet-eu/2026-09-20T0414Z-all-status"
     },
     "note": "This status file reports provider checks only; it cannot promote a catalog snapshot, deploy a website, or publish changes. Promotion runs per source through its own gate after the monitor, and the static release builder records that gate's latest outcome here.",
     "sources": {
