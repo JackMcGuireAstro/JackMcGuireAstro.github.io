@@ -1,9 +1,9 @@
 {
-  "artifact_checksum_sha256": "9f2f45d1ef5ec1cc625d3fe67e5864868ad2b62b9bf2ee2b8be531dc1ec9dd2f",
+  "artifact_checksum_sha256": "ec7aaa0786d072ff3390a63013ccb3ff8131046df20b4c5c1bf0bda15f779e12",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
-  "contract_set_checksum_sha256": "4529577095a42b0560897c2ee6bbe6ddef19b1e1ce95e6f64b9d8ae81613b666",
+  "contract_set_checksum_sha256": "52ba3c47e99bf4fe3b2c478d0a31c26c7ca2efcbeba54550873fe4aa8ac95d29",
   "family_count": 10,
-  "generated_at": "2026-09-20T17:51:30Z",
+  "generated_at": "2026-09-20T18:29:23Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -436,7 +436,7 @@
       "access_mode": "live",
       "authentication_requirement": "Service-dependent account/token",
       "connector_implementation_state": "documented-configuration-required",
-      "contract_checksum_sha256": "758224b76090f3ad1b9e4aef1b0af5d7ceac64ce7a2a5961e4da6abf5c3cbf4f",
+      "contract_checksum_sha256": "721d8b105c44d4aa15eb376a8949bc76f5cc7f349483edab7f9d7f8a10f75171",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin alert",
@@ -459,7 +459,7 @@
       "protocol": "API / stream / database",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 1285
+        "candidates": 1286
       },
       "query_scope": "live",
       "rate_or_cadence_limit": "Provider-defined",
@@ -588,7 +588,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "085110f68cb76a13b8fcc6cb9ad2013b2c0c7e652eba710f2f32bea3d8141d5d",
+      "contract_checksum_sha256": "14b533e15cd58bbba107744f04d2fb4b62d9ff6d3d224c09e9d5d3adb97f9831",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -603,12 +603,12 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-09-20T17:31:22.863519Z",
-      "last_successful_at": "2026-09-20T17:20:42.893274Z",
-      "last_successful_response": "2026-09-20T17:20:42.893274Z",
+      "last_attempt_at": "2026-09-20T18:11:12.345034Z",
+      "last_successful_at": "2026-09-20T18:11:12.345034Z",
+      "last_successful_response": "2026-09-20T18:11:12.345034Z",
       "last_verified": "2026-08-08",
       "name": "Fink",
-      "operational_state": "active-returning-data",
+      "operational_state": "temporarily-unavailable",
       "organization_or_facility": "Rubin community broker",
       "primary_family": "discovery-and-alert-brokers",
       "product_contracts": [],
@@ -616,11 +616,11 @@
       "public_disposition_counts": {
         "ambiguous-identity": 17,
         "provider-failure": 552,
-        "searched-no-match": 7225,
-        "searched-with-data": 807
+        "searched-no-match": 7227,
+        "searched-with-data": 809
       },
       "public_record_counts": {
-        "observations": 48940
+        "observations": 48946
       },
       "query_scope": "live-and-targeted-query",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
@@ -679,7 +679,7 @@
       "access_mode": "poll",
       "authentication_requirement": "Authenticated POST API with TNS bot API key and mandatory tns_marker User-Agent; bulk public intake uses released CSV deltas.",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "e8623c1334da4d6cececb4472b6eca1a432e5b49c07ab85005e4e0654dc84983",
+      "contract_checksum_sha256": "72af55b75a64ad53ed6808f58a555be68b23a50344c3301b2303ee1f171165e8",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery",
@@ -703,7 +703,7 @@
       "public_disposition_counts": {},
       "public_record_counts": {
         "classifications": 5180,
-        "designations": 14746
+        "designations": 14747
       },
       "query_scope": "poll",
       "rate_or_cadence_limit": "Rolling 60-second quotas vary by operation; cone searches have a separate lower quota. CTAS must honor returned rate headers.",
@@ -1785,7 +1785,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN public-consumer OAuth client",
       "connector_implementation_state": "implemented-public-topic-credentials-required",
-      "contract_checksum_sha256": "6384dc761144abe8733cd25a8dee062731a7ec646234c0fd2afa660e6f61cddb",
+      "contract_checksum_sha256": "81a9ad4e08037b5162db44ac6ed3bf21d15df8acea5e20c025ae80ff096a46b5",
       "contract_version": "1.0.0",
       "data_types": [
         "gravitational-wave notice",
@@ -1797,8 +1797,8 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "Only explicitly public alert products may pass; private GraceDB groups and non-public event products are outside scope",
       "last_attempt_at": null,
-      "last_successful_at": "2026-09-20T17:33:32Z",
-      "last_successful_response": "2026-09-20T17:33:32Z",
+      "last_successful_at": "2026-09-20T17:38:51Z",
+      "last_successful_response": "2026-09-20T17:38:51Z",
       "last_verified": "2026-07-21",
       "name": "LIGO/Virgo/KAGRA Public Alerts",
       "operational_state": "active-no-recent-messages",
@@ -1867,7 +1867,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN Kafka client ID and secret; OAuth tokens refresh automatically and inactive credentials may be disabled.",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "b6c28456493a19fe4cb69d25f46f53d35e8fead5c3ce12cbbc11cc4615516917",
+      "contract_checksum_sha256": "ce76b6fe964f66fc2d94db1db799e52464c5447cf781da737b04b219a6133c33",
       "contract_version": "1.0.0",
       "data_types": [
         "notice",
@@ -1879,8 +1879,8 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "No proprietary topic is configured; topic authorization does not itself change rights policy",
       "last_attempt_at": null,
-      "last_successful_at": "2026-09-20T17:33:32Z",
-      "last_successful_response": "2026-09-20T17:33:32Z",
+      "last_successful_at": "2026-09-20T18:02:54.089000Z",
+      "last_successful_response": "2026-09-20T18:02:54.089000Z",
       "last_verified": "2026-08-29",
       "name": "NASA General Coordinates Network",
       "operational_state": "active-returning-data",
@@ -5422,7 +5422,7 @@
       "access_mode": "live-and-archive",
       "authentication_requirement": "GCN public-consumer OAuth client",
       "connector_implementation_state": "implemented-public-publication-stream",
-      "contract_checksum_sha256": "6d90edf99569b799a7b897ade1bcf958f1f2aa78660820e55eb74dd5ea80a5e1",
+      "contract_checksum_sha256": "22bb2273b75066e35ba4f840eada2f12b407e2809f5764a74feb61926565d7ff",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery bulletin",
@@ -5435,8 +5435,8 @@
       "implementation_state": "implemented",
       "known_limitations": "Circular prose is retained as an attributed author report; values are not promoted to machine measurements without a mission-specific parser",
       "last_attempt_at": null,
-      "last_successful_at": "2026-09-20T16:14:12.841000Z",
-      "last_successful_response": "2026-09-20T16:14:12.841000Z",
+      "last_successful_at": "2026-09-20T18:02:54.089000Z",
+      "last_successful_response": "2026-09-20T18:02:54.089000Z",
       "last_verified": "2026-08-04",
       "name": "NASA GCN Circulars",
       "operational_state": "active-returning-data",
