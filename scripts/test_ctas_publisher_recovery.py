@@ -21,9 +21,6 @@ class RecoveryTests(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.site = Path(self.temporary.name)
         self.git("init", "-q", "-b", "main")
-        # Temporary repositories must not spawn maintenance during cleanup.
-        self.git("config", "maintenance.auto", "false")
-        self.git("config", "gc.auto", "0")
         self.git("config", "user.name", "CTAS fixture")
         self.git("config", "user.email", "ctas@example.invalid")
         self.write("ctas/data/status.json", "base")
@@ -268,10 +265,6 @@ class DetailAllowlistTests(unittest.TestCase):
             return subprocess.run(["git", *args], cwd=self.site, check=True,
                                   text=True, capture_output=True).stdout.strip()
         git("init", "-q")
-        # Thousands of fixture objects can trigger detached Git maintenance,
-        # which races TemporaryDirectory.cleanup() after the assertions pass.
-        git("config", "maintenance.auto", "false")
-        git("config", "gc.auto", "0")
         git("config", "user.name", "CTAS fixture")
         git("config", "user.email", "ctas@example.invalid")
         git("add", "ctas")
