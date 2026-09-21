@@ -1,9 +1,9 @@
 {
-  "artifact_checksum_sha256": "131fc1142ada543586310c21b73e5654dc711ea39344f5e5e76d631dafa40bc5",
+  "artifact_checksum_sha256": "2de0d0f0bcab1598e97228d5debf5bf04c5e961ea2c0e384ec63eb5104ff087c",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
-  "contract_set_checksum_sha256": "2cb28e10b0da63a34d5b27ef1b68cce45ea953e417cce03d99c79562d3a0afb6",
+  "contract_set_checksum_sha256": "6d3fadac75167589b25a051fbde5b91b88b301827f684c9db2c51c65e655a8f6",
   "family_count": 10,
-  "generated_at": "2026-09-21T23:02:27Z",
+  "generated_at": "2026-09-21T23:20:11Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -588,7 +588,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "50b56007050fda5ee1bd740f866206c2a794502a78a0f1aeebb8f1961335b601",
+      "contract_checksum_sha256": "cf97cc4b8145980ee62302872444e4c8cc9f66fd365464928d5ec9f4ea53c84c",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -603,9 +603,9 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-09-21T22:41:33.686784Z",
-      "last_successful_at": "2026-09-21T22:01:13.877276Z",
-      "last_successful_response": "2026-09-21T22:01:13.877276Z",
+      "last_attempt_at": "2026-09-21T23:13:02.810362Z",
+      "last_successful_at": "2026-09-21T23:13:02.810362Z",
+      "last_successful_response": "2026-09-21T23:13:02.810362Z",
       "last_verified": "2026-08-08",
       "name": "Fink",
       "operational_state": "active-returning-data",
@@ -617,10 +617,10 @@
         "ambiguous-identity": 18,
         "provider-failure": 563,
         "searched-no-match": 7492,
-        "searched-with-data": 844
+        "searched-with-data": 847
       },
       "public_record_counts": {
-        "observations": 51017
+        "observations": 52386
       },
       "query_scope": "live-and-targeted-query",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
@@ -679,7 +679,7 @@
       "access_mode": "poll",
       "authentication_requirement": "Authenticated POST API with TNS bot API key and mandatory tns_marker User-Agent; bulk public intake uses released CSV deltas.",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "39215d526f8cc0d2c1e0e6ba0608f0dcffcc80dcd43361dc3e37fab487c5f538",
+      "contract_checksum_sha256": "e09d59f930b47d6f2d2c0c943fbdb9e82fb37452b9b35865b73092c6d713230b",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery",
@@ -703,7 +703,7 @@
       "public_disposition_counts": {},
       "public_record_counts": {
         "classifications": 5186,
-        "designations": 14839
+        "designations": 14840
       },
       "query_scope": "poll",
       "rate_or_cadence_limit": "Rolling 60-second quotas vary by operation; cone searches have a separate lower quota. CTAS must honor returned rate headers.",
@@ -4095,7 +4095,7 @@
       "access_mode": "represented event metadata",
       "authentication_requirement": "None for represented metadata",
       "connector_implementation_state": "represented-through-provider",
-      "contract_checksum_sha256": "497d35a506048170a04ad9bf00351c08e8dc30a8e9d234063c261bba83ead2e9",
+      "contract_checksum_sha256": "26a264d94573c951fdd9587ac3bf5c7a6b540ff63e2bd8441d61a2919ff0be5f",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery metadata",
@@ -4119,7 +4119,7 @@
       "protocol": "provider-dependent",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 1752
+        "candidates": 1753
       },
       "query_scope": "represented event metadata",
       "rate_or_cadence_limit": "Provider-dependent; CTAS must honor published limits.",
