@@ -1,9 +1,9 @@
 {
-  "artifact_checksum_sha256": "aada83e602de7906550be34811a75f16169a6a2d29b33498cba0023615996696",
+  "artifact_checksum_sha256": "70424f4d4c15ab80f9a610b09f5f3df27bb955b44b2c4957bdd49fa2a8f27acf",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
-  "contract_set_checksum_sha256": "95febfcf91f24ceac89bed34e42149d2654439fdb3a04ec81b6ef5ae5e8c5b7c",
+  "contract_set_checksum_sha256": "0b04d6a4cdda9072b33af79bbedd3596a3fd4237cd8b8fc4caf1e482f5e9f35c",
   "family_count": 10,
-  "generated_at": "2026-09-21T23:57:03Z",
+  "generated_at": "2026-09-22T00:15:50Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -588,7 +588,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "590025f9a1595d7ae44017a96e1f9b4498803c8b288fb624b72b25b510ccf685",
+      "contract_checksum_sha256": "d95278670eddbb67c45beed955dd0f03204a426a869b3347ff12c0fe9ad23261",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -603,12 +603,12 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-09-21T23:43:14.040507Z",
-      "last_successful_at": "2026-09-21T23:33:10.782481Z",
-      "last_successful_response": "2026-09-21T23:33:10.782481Z",
+      "last_attempt_at": "2026-09-22T00:03:21.820810Z",
+      "last_successful_at": "2026-09-21T23:53:18.550511Z",
+      "last_successful_response": "2026-09-21T23:53:18.550511Z",
       "last_verified": "2026-08-08",
       "name": "Fink",
-      "operational_state": "provider-failure",
+      "operational_state": "active-returning-data",
       "organization_or_facility": "Rubin community broker",
       "primary_family": "discovery-and-alert-brokers",
       "product_contracts": [],
@@ -616,11 +616,11 @@
       "public_disposition_counts": {
         "ambiguous-identity": 18,
         "provider-failure": 564,
-        "searched-no-match": 7496,
-        "searched-with-data": 848
+        "searched-no-match": 7497,
+        "searched-with-data": 849
       },
       "public_record_counts": {
-        "observations": 52409
+        "observations": 52410
       },
       "query_scope": "live-and-targeted-query",
       "rate_or_cadence_limit": "Two bounded tag queries every two minutes plus target-specific Rubin or ZTF history calls; explicit truncation and historical-gap states",
@@ -679,7 +679,7 @@
       "access_mode": "poll",
       "authentication_requirement": "Authenticated POST API with TNS bot API key and mandatory tns_marker User-Agent; bulk public intake uses released CSV deltas.",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "e09d59f930b47d6f2d2c0c943fbdb9e82fb37452b9b35865b73092c6d713230b",
+      "contract_checksum_sha256": "9617fb053139921231a061e95712246536b2b48ed279acd000c8f71821d73c33",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery",
@@ -703,7 +703,7 @@
       "public_disposition_counts": {},
       "public_record_counts": {
         "classifications": 5186,
-        "designations": 14840
+        "designations": 14841
       },
       "query_scope": "poll",
       "rate_or_cadence_limit": "Rolling 60-second quotas vary by operation; cone searches have a separate lower quota. CTAS must honor returned rate headers.",
