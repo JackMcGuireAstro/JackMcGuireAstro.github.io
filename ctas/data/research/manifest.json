@@ -1,34 +1,34 @@
 {
-  "catalog_content_checksum_sha256": "f191ae07b84d6144b77f96704f3cbb934d754100678664cbecbc65758a0f27b9",
+  "catalog_content_checksum_sha256": "742f2385942dda10cb95b30d1b055dbf60f17fd62ffbc2256a8cec3b6824d3bf",
   "format_note": "The zero-optional-dependency static publisher emits normalized UTF-8 CSV, an IVOA VOTable summary, and a TOM Toolkit target-import table. Complete nested evidence remains in the checksum-bound candidate shards.",
   "schema": "ctas.research-table-manifest@1.0.0",
   "tables": [
     {
-      "bytes": 1076448,
+      "bytes": 1076649,
       "format": "UTF-8 CSV with RFC 4180 quoting and LF line endings",
       "limitations": [
         "An alias is a retained assertion, not independent identity validation."
       ],
       "media_type": "text/csv; charset=utf-8",
       "path": "ctas/data/research/aliases.csv",
-      "row_count": 18199,
+      "row_count": 18202,
       "scope": "Provider-scoped public designations linked to CTAS event identifiers.",
-      "sha256": "b64258c73cff2462d39514694fabb16d307e9f679925c0516a9e03f84817c04c"
+      "sha256": "96d635c2af8daa97a5919177a2861944c2ee21134868a28d51e7afb6e2a39787"
     },
     {
-      "bytes": 10780343,
+      "bytes": 10780940,
       "format": "UTF-8 CSV with RFC 4180 quoting and LF line endings",
       "limitations": [
         "Complete nested evidence is stored in candidate shards."
       ],
       "media_type": "text/csv; charset=utf-8",
       "path": "ctas/data/research/events.csv",
-      "row_count": 15598,
+      "row_count": 15599,
       "scope": "One compact summary row for every public CTAS candidate.",
-      "sha256": "490bdbffb39b079b77a7e986088cb25260eeabd55409cc9e4d46a8d45c6dfdce"
+      "sha256": "3cc45e485b704db963d85e2cf21bdd8173d7cc9b9590dd75d61b2e1868ea24f1"
     },
     {
-      "bytes": 6452125,
+      "bytes": 6452480,
       "coordinate_frame": "ICRS",
       "format": "IVOA VOTable 1.5 TABLEDATA",
       "limitations": [
@@ -37,12 +37,12 @@
       ],
       "media_type": "application/x-votable+xml",
       "path": "ctas/data/research/events.vot",
-      "row_count": 15598,
+      "row_count": 15599,
       "scope": "One VO-compatible summary row for every public CTAS candidate.",
-      "sha256": "a20436e1c6646d448ef50acf6873f7419eccc593462d03003daaef951bbc8402"
+      "sha256": "f65ea754f842cd8ced782f1f8dfede902d39f94422ddf91f4daa2866c551bd14"
     },
     {
-      "bytes": 45555,
+      "bytes": 45548,
       "format": "UTF-8 CSV with RFC 4180 quoting and LF line endings",
       "limitations": [
         "Source inclusion does not imply uninterrupted or complete provider coverage."
@@ -51,11 +51,11 @@
       "path": "ctas/data/research/sources.csv",
       "row_count": 135,
       "scope": "Declared public source-universe contracts represented by this release.",
-      "sha256": "2563a7495b2f29a4938521e19ec438ec5b734fe1092ff12cb15a3101e75940dc"
+      "sha256": "a9adf7f611a1ccd62674417b1362d5bc80baccdce8da425fe63801b176c7a425"
     },
     {
       "alias_column_count": 7,
-      "bytes": 3926019,
+      "bytes": 3926021,
       "coordinate_epoch": 2000.0,
       "coordinate_frame": "ICRS",
       "format": "TOM Toolkit base target-import CSV",
@@ -65,11 +65,11 @@
         "Importing this file does not request telescope observations."
       ],
       "media_type": "text/csv; charset=utf-8",
-      "omitted_candidate_count": 584,
+      "omitted_candidate_count": 585,
       "path": "ctas/data/research/tom-targets.csv",
       "row_count": 15014,
       "scope": "Public CTAS candidates with complete valid ICRS coordinates.",
-      "sha256": "d89725cedf109e9ed0b8f17159937a7d65a02141ca0a12d3d667048847ab17f1"
+      "sha256": "fe12c7c986eddc80eeb0c8f4aba9ecaa8f9f7b2d4182f67fd2a34a95e640aa22"
     }
   ]
 }
