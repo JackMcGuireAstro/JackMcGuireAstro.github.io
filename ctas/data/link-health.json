@@ -1,9 +1,9 @@
 {
   "audit_version": "2.0.0",
-  "canonical_tns_link_count": 58565,
-  "catalog_content_checksum_sha256": "2f8f91e466eb52a0628c3afda3380c0344ed26e8612ea7e515727e7bab0ea5e5",
-  "checked_at": "2026-09-23T04:21:09Z",
-  "checked_candidate_link_count": 423611,
+  "canonical_tns_link_count": 58567,
+  "catalog_content_checksum_sha256": "554418d8e9b703c9255970bf3d7e2a5222087bfb52235865fcacfe7ae7b3cb76",
+  "checked_at": "2026-09-23T04:37:48Z",
+  "checked_candidate_link_count": 423621,
   "claim_boundary": "The recursive structural audit classifies every exported candidate/source URL and strictly validates canonical TNS object links. Only the listed TNS object page is sampled live; no live-health claim is made for unsampled providers. Suppressed URLs remain non-clickable provenance rather than structural failures.",
   "distinct_canonical_tns_object_count": 14849,
   "live_provider_samples": [
@@ -25,11 +25,11 @@
   "recursive_external_link_audit": {
     "artifact_counts": {
       "candidate-catalog": {
-        "https-allowlisted-renderable": 422279,
+        "https-allowlisted-renderable": 422289,
         "suppressed-insecure": 721,
         "suppressed-malformed": 2,
         "suppressed-unallowlisted": 609,
-        "url_occurrence_count": 423611
+        "url_occurrence_count": 423621
       },
       "source-universe": {
         "https-allowlisted-renderable": 66,
@@ -38,14 +38,14 @@
       }
     },
     "audit_version": "2.0.0",
-    "checked_candidate_url_occurrence_count": 423611,
+    "checked_candidate_url_occurrence_count": 423621,
     "checked_source_universe_url_occurrence_count": 67,
-    "distinct_url_count": 21053,
+    "distinct_url_count": 21054,
     "host_occurrence_counts": {
       "ampelproject.github.io": 1,
       "antares.noirlab.edu": 1,
       "api.fink-portal.org": 6,
-      "api.ztf.fink-portal.org": 119832,
+      "api.ztf.fink-portal.org": 119834,
       "apps.aavso.org": 6574,
       "archive.eso.org": 7949,
       "archive.gemini.edu": 1,
@@ -66,7 +66,7 @@
       "fallingstar-data.com": 61634,
       "fermi.gsfc.nasa.gov": 38,
       "gcn.gsfc.nasa.gov": 3812,
-      "gcn.nasa.gov": 12104,
+      "gcn.nasa.gov": 12108,
       "gemini.obspm.fr": 3,
       "github.com": 7961,
       "goto-observatory.org": 14,
@@ -112,13 +112,13 @@
       "www.mdpi.com": 11,
       "www.swift.ac.uk": 13,
       "www.weizmann.ac.il": 4,
-      "www.wis-tns.org": 98133,
+      "www.wis-tns.org": 98137,
       "www.wiserep.org": 7995,
       "yse.ucsc.edu": 1,
       "ztf.uw.edu": 1
     },
     "renderability_counts": {
-      "https-allowlisted-renderable": 422345,
+      "https-allowlisted-renderable": 422355,
       "suppressed-insecure": 721,
       "suppressed-malformed": 2,
       "suppressed-unallowlisted": 610
@@ -126,9 +126,9 @@
     "role_counts": {
       "artifact": 7505,
       "documentation": 85859,
-      "exact-object": 64048,
-      "exact-record": 11637,
-      "generic-reference": 230606,
+      "exact-object": 64050,
+      "exact-record": 11641,
+      "generic-reference": 230610,
       "query": 24023
     },
     "role_definitions": {
@@ -140,24 +140,6 @@
       "query": "A reproducible provider query; rerunning it may return current rather than frozen results."
     },
     "suppressed_sample": [
-      {
-        "artifact": "candidate-catalog",
-        "candidate_name": "Fermi-GBM-811824127",
-        "json_path": "candidates.[].follow_up.messenger_signals.[].properties.public_links.LC_URL",
-        "reason": "only HTTPS links are rendered publicly",
-        "source_key": "gcn",
-        "state": "suppressed-insecure",
-        "url": "http://heasarc.gsfc.nasa.gov/FTP/fermi/data/gbm/triggers/2026/bn260923113/quicklook/glg_lc_medres34_bn260923113.gif"
-      },
-      {
-        "artifact": "candidate-catalog",
-        "candidate_name": "Fermi-GBM-811824127",
-        "json_path": "candidates.[].follow_up.messenger_signals.[].properties.public_links.LC_URL",
-        "reason": "only HTTPS links are rendered publicly",
-        "source_key": "gcn",
-        "state": "suppressed-insecure",
-        "url": "http://heasarc.gsfc.nasa.gov/FTP/fermi/data/gbm/triggers/2026/bn260923113/quicklook/glg_lc_medres34_bn260923113.gif"
-      },
       {
         "artifact": "candidate-catalog",
         "candidate_name": "linked-public-resource-1",
@@ -184,6 +166,24 @@
         "source_key": "gcn-circulars",
         "state": "suppressed-unallowlisted",
         "url": "https://www.swift.ac.uk/sper"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-811824127",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].properties.public_links.LC_URL",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://heasarc.gsfc.nasa.gov/FTP/fermi/data/gbm/triggers/2026/bn260923113/quicklook/glg_lc_medres34_bn260923113.gif"
+      },
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "Fermi-GBM-811824127",
+        "json_path": "candidates.[].follow_up.messenger_signals.[].properties.public_links.LC_URL",
+        "reason": "only HTTPS links are rendered publicly",
+        "source_key": "gcn",
+        "state": "suppressed-insecure",
+        "url": "http://heasarc.gsfc.nasa.gov/FTP/fermi/data/gbm/triggers/2026/bn260923113/quicklook/glg_lc_medres34_bn260923113.gif"
       },
       {
         "artifact": "candidate-catalog",
@@ -367,9 +367,9 @@
       }
     ],
     "suppression_policy": "Insecure, credential-bearing, explicit-port, malformed, and unallowlisted URLs remain provenance text but must not render as clickable public links.",
-    "url_occurrence_count": 423678
+    "url_occurrence_count": 423688
   },
-  "report_checksum_sha256": "7c19c65154490b8df31b32d2c843ae9f4128044232f514cfd41d041e6e47bd38",
+  "report_checksum_sha256": "ee3b139b61d373ccc51a4b77dee567c18eafa73625eaa4b87378ac59cf759f17",
   "representative_tns": {
     "candidate_name": null,
     "checked_at": "2026-09-23T02:48:21Z",
