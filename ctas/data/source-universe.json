@@ -1,9 +1,9 @@
 {
-  "artifact_checksum_sha256": "58af5301cdcec51c06de076b8d1f59fb20019ab195720be803d6ed7e10c7fe77",
+  "artifact_checksum_sha256": "299c72f64570fb02ff8a8321ec742578816939d1eedfed6e0bc1cc80b62d5887",
   "claim_boundary": "Maintained CTAS source universe, not a claim that every astronomical source exists here or that every source was queried for every candidate.",
-  "contract_set_checksum_sha256": "d59707bbdbc0a99110d9d2ea690a59620a831dad60cffcec12ed9a7d386753fc",
+  "contract_set_checksum_sha256": "7c9e67533f9d960267dd4ab4c4fccda2369f80a693d840320a71437e4eda4a69",
   "family_count": 10,
-  "generated_at": "2026-09-24T01:14:36Z",
+  "generated_at": "2026-09-24T01:32:47Z",
   "implementation_state_vocabulary": [
     "implemented",
     "implemented-credentials-required",
@@ -26,7 +26,7 @@
     "none"
   ],
   "schema": "ctas.public-source-universe@1.0.0",
-  "source_count": 135,
+  "source_count": 136,
   "sources": [
     {
       "access_mode": "archive",
@@ -588,7 +588,7 @@
       "access_mode": "live-and-targeted-query",
       "authentication_requirement": "None for public REST APIs; registration for the separate Kafka livestream",
       "connector_implementation_state": "implemented-public-anonymous-realtime-poll-and-rubin-ztf-targeted",
-      "contract_checksum_sha256": "363084d4a4052d902715a946d5e6ca45147a45634d4fbd54601030d5ab0373e7",
+      "contract_checksum_sha256": "9303c739dbb4da6bffb3bdaf69baa4d8aaffab92f4a9c139ce7dfb82346e4e64",
       "contract_version": "1.0.0",
       "data_types": [
         "Rubin public filter alert",
@@ -603,7 +603,7 @@
       "documentation_url": "https://doc.lsst.fink-broker.org/services/summary/",
       "implementation_state": "implemented",
       "known_limitations": "Only two audited public extragalactic tags and bounded public REST fields are ingested; reliability remains uncalibrated source context",
-      "last_attempt_at": "2026-09-24T01:07:32.128973Z",
+      "last_attempt_at": "2026-09-24T01:17:40.185950Z",
       "last_successful_at": "2026-09-24T00:57:25.588837Z",
       "last_successful_response": "2026-09-24T00:57:25.588837Z",
       "last_verified": "2026-08-08",
@@ -616,7 +616,7 @@
       "public_disposition_counts": {
         "ambiguous-identity": 20,
         "provider-failure": 599,
-        "searched-no-match": 7912,
+        "searched-no-match": 7913,
         "searched-with-data": 911
       },
       "public_record_counts": {
@@ -1409,7 +1409,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN public-consumer OAuth client with the eight Fermi GBM/LAT topics selected",
       "connector_implementation_state": "implemented-public-classic-parser-live",
-      "contract_checksum_sha256": "4172a4a9ae7fb8a4efb8fc491f3f5bdb09fda0a067e33b4976bcc1028c15bf53",
+      "contract_checksum_sha256": "7f2ac8d6ea899f0b34ba622e7efaa263fb2b976068f72d9ad571c79083edfe37",
       "contract_version": "1.0.0",
       "data_types": [
         "gamma-ray trigger",
@@ -1425,8 +1425,8 @@
       "implementation_state": "implemented",
       "known_limitations": "Internal, team-only initial/diagnostic, pointing, and test topics are excluded; a high-energy trigger or localization is not an optical counterpart or a confirmed GRB classification",
       "last_attempt_at": null,
-      "last_successful_at": "2026-09-23T23:50:58Z",
-      "last_successful_response": "2026-09-23T23:50:58Z",
+      "last_successful_at": "2026-09-24T01:22:48Z",
+      "last_successful_response": "2026-09-24T01:22:48Z",
       "last_verified": "2026-08-04",
       "name": "Fermi GBM and LAT Public Notices",
       "operational_state": "active-returning-data",
@@ -1436,7 +1436,7 @@
       "protocol": "GCN Kafka Classic text notice types 110, 111, 112, 115, 121, 125, 128, and 131",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "candidates": 135
+        "candidates": 136
       },
       "query_scope": "live",
       "rate_or_cadence_limit": "Persistent Kafka consumer; mission-documented latency ranges from about five seconds to six hours by notice type",
@@ -1867,7 +1867,7 @@
       "access_mode": "live",
       "authentication_requirement": "GCN Kafka client ID and secret; OAuth tokens refresh automatically and inactive credentials may be disabled.",
       "connector_implementation_state": "implemented-credentials-required",
-      "contract_checksum_sha256": "dfeac26f50a6d9a9a39169b011b8377b691e5e6eab97c6a4431098cebf67b1aa",
+      "contract_checksum_sha256": "cf01cc34c654826d1a44d01b9b074278ab2bdab2f8bf2024f7c731dd38765a51",
       "contract_version": "1.0.0",
       "data_types": [
         "notice",
@@ -1879,8 +1879,8 @@
       "implementation_state": "implemented-credentials-required",
       "known_limitations": "No proprietary topic is configured; topic authorization does not itself change rights policy",
       "last_attempt_at": null,
-      "last_successful_at": "2026-09-24T00:38:52Z",
-      "last_successful_response": "2026-09-24T00:38:52Z",
+      "last_successful_at": "2026-09-24T01:23:59.292000Z",
+      "last_successful_response": "2026-09-24T01:23:59.292000Z",
       "last_verified": "2026-08-29",
       "name": "NASA General Coordinates Network",
       "operational_state": "active-returning-data",
@@ -1892,8 +1892,8 @@
       "public_disposition_counts": {},
       "public_record_counts": {
         "classification_history": 305,
-        "classifications": 1057,
-        "messenger_signals": 1150,
+        "classifications": 1069,
+        "messenger_signals": 1162,
         "observations": 802
       },
       "query_scope": "live",
@@ -2034,7 +2034,7 @@
       "access_mode": "live-and-follow-up",
       "authentication_requirement": "GCN public-consumer OAuth client with seven audited Swift topics selected",
       "connector_implementation_state": "implemented-public-classic-parser-live",
-      "contract_checksum_sha256": "30ecd82ca9e5e7ea5bb29e39bc89484e262c3eb574f102c22452d67e9fc15086",
+      "contract_checksum_sha256": "2b600df2f3d60c60c704e999500df5c8d12e63da67ca7c12892242e04e1c55f6",
       "contract_version": "1.0.0",
       "data_types": [
         "BAT high-energy trigger and localization",
@@ -2047,8 +2047,8 @@
       "implementation_state": "implemented",
       "known_limitations": "Retired test, image, spectrum, light-curve, pointing, emergency, and spacecraft-control topics are excluded; provider-hosted product bytes are not copied",
       "last_attempt_at": null,
-      "last_successful_at": null,
-      "last_successful_response": null,
+      "last_successful_at": "2026-09-24T01:13:47Z",
+      "last_successful_response": "2026-09-24T01:13:47Z",
       "last_verified": "2026-08-04",
       "name": "Swift BAT to XRT/UVOT Follow-up",
       "operational_state": "active-no-recent-messages",
@@ -3767,6 +3767,47 @@
       "access_mode": "represented event metadata",
       "authentication_requirement": "Not applicable to represented metadata",
       "connector_implementation_state": "represented-through-provider",
+      "contract_checksum_sha256": "776728f4b9ae7ced706a8330c12d10051754b7f6bd68ef4f12b62fdc7728e117",
+      "contract_version": "1.0.0",
+      "data_types": [
+        "source-attributed discovery metadata"
+      ],
+      "documentation_url": null,
+      "implementation_state": "represented-through-provider",
+      "known_limitations": "CTAS retains the source label but has no standalone connector contract for this survey.",
+      "last_attempt_at": null,
+      "last_successful_at": null,
+      "last_successful_response": null,
+      "last_verified": "2026-08-23",
+      "name": "Neil Gehrels Swift Observatory",
+      "operational_state": "represented-through-another-provider",
+      "organization_or_facility": "Neil Gehrels Swift Observatory",
+      "primary_family": "optical-and-time-domain-surveys",
+      "product_contracts": [
+        "public event metadata"
+      ],
+      "protocol": "represented-through-public-event-provider",
+      "public_disposition_counts": {},
+      "public_record_counts": {
+        "candidates": 1
+      },
+      "query_scope": "No standalone source query is claimed.",
+      "rate_or_cadence_limit": "Not applicable",
+      "representation_state": "through-provider",
+      "represented_directly": false,
+      "represented_through": [
+        "public-event-metadata"
+      ],
+      "rights_or_public_access_basis": "Rights-cleared source-attributed discovery label in the public CTAS event record.",
+      "secondary_families": [],
+      "source_family": "optical-and-time-domain-surveys",
+      "source_key": "represented-survey-neil-gehrels-swift-observatory",
+      "topic_contracts": []
+    },
+    {
+      "access_mode": "represented event metadata",
+      "authentication_requirement": "Not applicable to represented metadata",
+      "connector_implementation_state": "represented-through-provider",
       "contract_checksum_sha256": "6e83e0f98c3519949aa2a75af215b14c3a27a133a3689ea5b7796c95a84dda11",
       "contract_version": "1.0.0",
       "data_types": [
@@ -5422,7 +5463,7 @@
       "access_mode": "live-and-archive",
       "authentication_requirement": "GCN public-consumer OAuth client",
       "connector_implementation_state": "implemented-public-publication-stream",
-      "contract_checksum_sha256": "c63462c5a30bedcf0e0fc317af069c1220c92ec832612576e9b2e11327bee48c",
+      "contract_checksum_sha256": "bd55ad5e135524e083c4b846e66903a7f8a3eb9fb077fb9527a1a0e72ca6a875",
       "contract_version": "1.0.0",
       "data_types": [
         "discovery bulletin",
@@ -5435,8 +5476,8 @@
       "implementation_state": "implemented",
       "known_limitations": "Circular prose is retained as an attributed author report; values are not promoted to machine measurements without a mission-specific parser",
       "last_attempt_at": null,
-      "last_successful_at": "2026-09-24T00:16:29.486000Z",
-      "last_successful_response": "2026-09-24T00:16:29.486000Z",
+      "last_successful_at": "2026-09-24T01:23:59.292000Z",
+      "last_successful_response": "2026-09-24T01:23:59.292000Z",
       "last_verified": "2026-08-04",
       "name": "NASA GCN Circulars",
       "operational_state": "active-returning-data",
@@ -5446,8 +5487,8 @@
       "protocol": "GCN Kafka JSON / public Circular archive",
       "public_disposition_counts": {},
       "public_record_counts": {
-        "publication_revisions": 1817,
-        "publications": 914
+        "publication_revisions": 1818,
+        "publications": 915
       },
       "query_scope": "live-and-archive",
       "rate_or_cadence_limit": "Persistent Kafka consumer; revisions are checksum-addressed and linked URLs are not bulk-downloaded",
