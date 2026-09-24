@@ -1,9 +1,9 @@
 {
   "audit_version": "2.0.0",
   "canonical_tns_link_count": 58836,
-  "catalog_content_checksum_sha256": "499cf0407a72fd74543e7d7619ae7beda386ce2ebad4129993ab760efed09603",
-  "checked_at": "2026-09-24T05:09:56Z",
-  "checked_candidate_link_count": 435063,
+  "catalog_content_checksum_sha256": "caf390fa2c93d4b48e997fe5aa7e913187181a8165807c756977d5781d64cfab",
+  "checked_at": "2026-09-24T05:27:49Z",
+  "checked_candidate_link_count": 435084,
   "claim_boundary": "The recursive structural audit classifies every exported candidate/source URL and strictly validates canonical TNS object links. Only the listed TNS object page is sampled live; no live-health claim is made for unsampled providers. Suppressed URLs remain non-clickable provenance rather than structural failures.",
   "distinct_canonical_tns_object_count": 14931,
   "live_provider_samples": [
@@ -25,11 +25,11 @@
   "recursive_external_link_audit": {
     "artifact_counts": {
       "candidate-catalog": {
-        "https-allowlisted-renderable": 433691,
+        "https-allowlisted-renderable": 433711,
         "suppressed-insecure": 757,
         "suppressed-malformed": 2,
-        "suppressed-unallowlisted": 613,
-        "url_occurrence_count": 435063
+        "suppressed-unallowlisted": 614,
+        "url_occurrence_count": 435084
       },
       "source-universe": {
         "https-allowlisted-renderable": 66,
@@ -38,20 +38,20 @@
       }
     },
     "audit_version": "2.0.0",
-    "checked_candidate_url_occurrence_count": 435063,
+    "checked_candidate_url_occurrence_count": 435084,
     "checked_source_universe_url_occurrence_count": 67,
-    "distinct_url_count": 21230,
+    "distinct_url_count": 21231,
     "host_occurrence_counts": {
       "ampelproject.github.io": 1,
       "antares.noirlab.edu": 1,
       "api.fink-portal.org": 6,
-      "api.ztf.fink-portal.org": 126266,
-      "apps.aavso.org": 6754,
+      "api.ztf.fink-portal.org": 126271,
+      "apps.aavso.org": 6755,
       "archive.eso.org": 8155,
       "archive.gemini.edu": 1,
       "archive.stsci.edu": 1419,
       "arxiv.org": 7,
-      "asas-sn.osu.edu": 8171,
+      "asas-sn.osu.edu": 8172,
       "astro-colibri.science": 3,
       "astroarchive.noirlab.edu": 11,
       "astrosat.iucaa.in": 48,
@@ -59,14 +59,14 @@
       "blackgem.org": 1,
       "cgbm.calet.jp": 118,
       "chime-experiment.ca": 1,
-      "doc.lsst.fink-broker.org": 12542,
-      "docs.aavso.org": 8173,
+      "doc.lsst.fink-broker.org": 12547,
+      "docs.aavso.org": 8174,
       "doi.org": 28,
       "ep.bao.ac.cn": 1,
       "fallingstar-data.com": 62735,
       "fermi.gsfc.nasa.gov": 38,
       "gcn.gsfc.nasa.gov": 3906,
-      "gcn.nasa.gov": 12207,
+      "gcn.nasa.gov": 12211,
       "gemini.obspm.fr": 3,
       "github.com": 8168,
       "goto-observatory.org": 14,
@@ -76,7 +76,7 @@
       "heasarc.gsfc.nasa.gov": 9122,
       "irsa.ipac.caltech.edu": 12338,
       "lasair-ztf.lsst.ac.uk": 4400,
-      "lasair.readthedocs.io": 8162,
+      "lasair.readthedocs.io": 8163,
       "link.springer.com": 29,
       "mast.stsci.edu": 6737,
       "master.sai.msu.ru": 71,
@@ -110,26 +110,26 @@
       "www.ioffe.ru": 4,
       "www.ivoa.net": 1,
       "www.mdpi.com": 11,
-      "www.swift.ac.uk": 13,
+      "www.swift.ac.uk": 14,
       "www.weizmann.ac.il": 4,
-      "www.wis-tns.org": 98776,
-      "www.wiserep.org": 8201,
+      "www.wis-tns.org": 98777,
+      "www.wiserep.org": 8202,
       "yse.ucsc.edu": 1,
       "ztf.uw.edu": 1
     },
     "renderability_counts": {
-      "https-allowlisted-renderable": 433757,
+      "https-allowlisted-renderable": 433777,
       "suppressed-insecure": 757,
       "suppressed-malformed": 2,
-      "suppressed-unallowlisted": 614
+      "suppressed-unallowlisted": 615
     },
     "role_counts": {
-      "artifact": 7703,
-      "documentation": 87252,
+      "artifact": 7704,
+      "documentation": 87259,
       "exact-object": 64372,
-      "exact-record": 11791,
-      "generic-reference": 239499,
-      "query": 24513
+      "exact-record": 11795,
+      "generic-reference": 239507,
+      "query": 24514
     },
     "role_definitions": {
       "artifact": "A direct public data or document artifact URL.",
@@ -140,6 +140,15 @@
       "query": "A reproducible provider query; rerunning it may return current rather than frozen results."
     },
     "suppressed_sample": [
+      {
+        "artifact": "candidate-catalog",
+        "candidate_name": "linked-public-resource-1",
+        "json_path": "candidates.[].follow_up.publication_revisions.[].related_files.[].url",
+        "reason": "origin is not in the public render allowlist",
+        "source_key": "gcn-circulars",
+        "state": "suppressed-unallowlisted",
+        "url": "https://www.swift.ac.uk/xrt_positions"
+      },
       {
         "artifact": "candidate-catalog",
         "candidate_name": "Fermi-GBM-811905208",
@@ -355,21 +364,12 @@
         "source_key": "gcn",
         "state": "suppressed-insecure",
         "url": "http://heasarc.gsfc.nasa.gov/FTP/fermi/data/gbm/triggers/2026/bn260923987/quicklook/glg_lc_medres34_bn260923987.gif"
-      },
-      {
-        "artifact": "candidate-catalog",
-        "candidate_name": "Fermi-GBM-811899701",
-        "json_path": "candidates.[].follow_up.messenger_signals.[].properties.public_links.LC_URL",
-        "reason": "only HTTPS links are rendered publicly",
-        "source_key": "gcn",
-        "state": "suppressed-insecure",
-        "url": "http://heasarc.gsfc.nasa.gov/FTP/fermi/data/gbm/triggers/2026/bn260923987/quicklook/glg_lc_medres34_bn260923987.gif"
       }
     ],
     "suppression_policy": "Insecure, credential-bearing, explicit-port, malformed, and unallowlisted URLs remain provenance text but must not render as clickable public links.",
-    "url_occurrence_count": 435130
+    "url_occurrence_count": 435151
   },
-  "report_checksum_sha256": "d8b5868c2ab0b3cde9a9c23a413d250750d0cd26adfb31896cfdf8e96a38c177",
+  "report_checksum_sha256": "2dd6916c7508db5e33cf060b789190397810c02a991eccb1e427cd9a1ca33938",
   "representative_tns": {
     "candidate_name": null,
     "checked_at": "2026-09-24T00:20:30Z",
