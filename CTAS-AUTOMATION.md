@@ -106,6 +106,21 @@ bash scripts/install_ctas_mirror.sh --uninstall
 Uninstalling removes the LaunchAgent but deliberately leaves the runtime
 checkout and logs for recovery and audit.
 
+## Disk use on this Mac
+
+Two things keep the publisher from ever crowding the disk. Before each export the
+runner checks free space: the export copies the whole database into a temporary
+snapshot, so it needs that much plus a floor left for everything else
+(`PUBLISHER_MIN_FREE_GB`, default 25 GB). Below that it logs `paused: …` and skips
+the run; the site keeps its last release and the freshness watchdog reports the
+pause. Once a day `scripts/publisher_housekeeping.sh` keeps the runtime checkout
+bounded: only the newest 100 commits of history are kept (the exporter reads only
+`HEAD` and `origin/main`), recovery references older than 14 days are dropped,
+automatic "generated recovery" stash entries are cleared, and Git garbage is
+collected. Without it every data release stays in the checkout forever (about
+95 MB a day in September 2026). The authoring checkout under Documents is not
+touched.
+
 ## Freshness watchdog
 
 The publisher fails closed and stays failed until someone looks, and GitHub Pages

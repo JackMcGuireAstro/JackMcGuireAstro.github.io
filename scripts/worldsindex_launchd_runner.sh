@@ -102,6 +102,13 @@ else
   fi
 fi
 
+# Disk floor and bounded history, as in the CTAS runner (scripts/publisher_housekeeping.sh).
+if DISK_NOTE=$(bash "$SITE/scripts/publisher_housekeeping.sh" disk 0); then :; else
+  [ $? -eq 3 ] && { say "paused: $DISK_NOTE; nothing built"; exit 0; }
+fi
+HOUSEKEEPING=$(bash "$SITE/scripts/publisher_housekeeping.sh" maintain worldsindex "$BRANCH" "$LOG_DIR/.last-housekeeping" 2>&1) || true
+[ -z "$HOUSEKEEPING" ] || say "$HOUSEKEEPING"
+
 # Cadence: every scheduled cycle runs the fast path, which follows the local source files and
 # publishes only when the publication inputs changed and every static gate passed. Once every
 # WORLDSINDEX_FULL_EVERY seconds (default one hour) — or when no full run has ever completed —

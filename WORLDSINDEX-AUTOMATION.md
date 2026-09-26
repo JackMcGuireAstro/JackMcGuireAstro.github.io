@@ -78,6 +78,13 @@ The publisher can stage only:
 No token, `.env` file, source checkout, raw private receipt, or arbitrary site
 file is included.
 
+## Disk use on this Mac
+
+The runner shares `scripts/publisher_housekeeping.sh` with CTAS: it skips a cycle when free
+space is below `PUBLISHER_MIN_FREE_GB` (default 25 GB), and once a day it keeps the runtime
+checkout to the newest 100 commits, drops `refs/worldsindex-recovery/*` older than 14 days,
+clears automatic recovery stash entries and collects Git garbage.
+
 ## Freshness watchdog
 
 `.github/workflows/freshness-watchdog.yml` checks the live `worldsindex/data/manifest.json`

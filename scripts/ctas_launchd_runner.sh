@@ -169,6 +169,19 @@ else
 
 fi
 
+# ------------------------------------------------------------ disk and history
+# Each export copies the whole database into a temporary snapshot, so a run needs
+# that much free space on top of a floor left for everything else on this Mac;
+# otherwise skip it (the live site keeps its last release and the freshness
+# watchdog reports the pause). Once a day, keep this checkout's history bounded.
+DB_BYTES=$(python3 -c 'import os,sys; print(sum(os.path.getsize(sys.argv[1] + s) for s in ("", "-wal") if os.path.exists(sys.argv[1] + s)))' "$DB" 2>/dev/null || echo 0)
+if DISK_NOTE=$(bash "$SITE/scripts/publisher_housekeeping.sh" disk "$DB_BYTES"); then :; else
+  [ $? -eq 3 ] && { say "paused: $DISK_NOTE; nothing exported"; exit 0; }
+fi
+HOUSEKEEPING=$(bash "$SITE/scripts/publisher_housekeeping.sh" maintain ctas "$BRANCH" "$LOG_DIR/.last-housekeeping" 2>&1) || true
+[ -z "$HOUSEKEEPING" ] || say "$HOUSEKEEPING"
+touch "$RUNNER_LOCK" 2>/dev/null || true
+
 env CTAS_SITE="$SITE" CTAS_DB="$DB" CTAS_BRANCH="$BRANCH" CTAS_LOG_DIR="$LOG_DIR" \
   /bin/bash "$SITE/scripts/publish_ctas.sh"
 exit $?
