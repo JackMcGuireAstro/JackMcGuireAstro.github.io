@@ -106,6 +106,8 @@ jobs:
           set -o pipefail
           python3 -m pip install --quiet playwright jsonschema
           python3 -m playwright install --with-deps chromium >/dev/null
+          # axe-core for the WCAG check; installed beside the checkout so it never enters the site
+          npm install --no-save --silent --prefix .. axe-core >/dev/null
           status=0
           python3 scripts/test_ctas_astro_evidence.py 2>&1 | tail -5 || status=1
           python3 scripts/test_ctas_browser.py 2>&1 | tail -40 || status=1
