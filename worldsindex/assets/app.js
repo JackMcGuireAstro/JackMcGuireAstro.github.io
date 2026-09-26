@@ -1,4 +1,4 @@
-import { mountLightcurves } from './lightcurves.js?v=20260920';
+import { mountLightcurves } from './lightcurves.js?v=20260927';
 import { eccentricAnomaly } from './photometry.js?v=20260920';
 import { classifyPropertyAgreement, convertMeasurementToUnit, convertUncertaintyPair, makeExportMetadata, makePreferredValueRationale } from './science.js?v=20260831-evidence3';
 

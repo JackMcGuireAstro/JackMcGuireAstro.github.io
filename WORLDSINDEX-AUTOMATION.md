@@ -151,3 +151,12 @@ Operational files live in:
 
 The public application is
 <https://jackmcguireastro.github.io/worldsindex/>.
+
+## Live light curves from MAST
+
+When no light curve is packaged for an object, the Light curves tab offers to look
+for TESS, Kepler and K2 light curves at MAST within 5″ of its position
+(`worldsindex/assets/live-mast.js`). The search runs directly against the MAST API;
+the FITS file comes through the pass-through relay in `relay/` (address in
+`/live-config.json`) and is read in the browser (quality-0 rows, PDCSAP flux). Nothing
+is stored by WorldsIndex.
