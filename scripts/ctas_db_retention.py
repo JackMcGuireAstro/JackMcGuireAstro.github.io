@@ -23,6 +23,12 @@ Policy (all thresholds are arguments):
 * ``certification_runs``: keep the newest ``--cert-keep`` per scope and every run
   whose id is cited by a reference file.
 
+A table the backend itself protects from deletion (a ``BEFORE DELETE`` trigger that
+raises, as ``certification_runs``, ``publication_bundles`` and
+``security_audit_events`` have had since the backend declared them immutable) is
+never pruned: its rows are reported and left alone. Found on the live database on
+2026-09-26, when the first prune stopped at the certification step.
+
 Modes:
 
 * ``preview``  read-only: print what would be pruned and roughly how much.
@@ -124,6 +130,16 @@ def certification_prune_ids(con: sqlite3.Connection, cert_keep: int, keep: set[s
     return [row[0] for row in rows if row[0] not in keep]
 
 
+def protected_tables(con: sqlite3.Connection) -> set[str]:
+    """Tables whose rows the database refuses to delete (a BEFORE DELETE trigger that raises)."""
+    protected = set()
+    for table, sql in con.execute("SELECT tbl_name, sql FROM sqlite_master WHERE type = 'trigger'"):
+        text = " ".join((sql or "").upper().split())
+        if " BEFORE DELETE ON " in text and "RAISE(" in text.replace("RAISE (", "RAISE("):
+            protected.add(table)
+    return protected
+
+
 def estimated_bytes(con: sqlite3.Connection, table: str, ids: list[str], columns: str) -> int:
     total = 0
     for start in range(0, len(ids), BATCH):
@@ -208,14 +224,23 @@ def main(argv: list[str] | None = None) -> int:
         con.execute("PRAGMA busy_timeout = 60000")
     before = file_bytes(db)
 
+    protected = protected_tables(con)
     analysis_ids = analysis_prune_ids(con, churn, cutoff, keep)
     cert_ids = certification_prune_ids(con, args.cert_keep, keep)
     analysis_total = con.execute("SELECT COUNT(*) FROM analysis_runs").fetchone()[0]
     cert_total = con.execute("SELECT COUNT(*) FROM certification_runs").fetchone()[0]
-    log(f"analysis_runs: prune {len(analysis_ids):,} of {analysis_total:,} "
-        f"(~{estimated_bytes(con, 'analysis_runs', analysis_ids, ANALYSIS_SIZE) / 1e9:.2f} GB of row data)")
-    log(f"certification_runs: prune {len(cert_ids):,} of {cert_total:,} "
-        f"(~{estimated_bytes(con, 'certification_runs', cert_ids, CERT_SIZE) / 1e9:.2f} GB of row data)")
+
+    def report(table: str, ids: list[str], total: int, size: str) -> list[str]:
+        estimate = estimated_bytes(con, table, ids, size) / 1e9
+        if table in protected:
+            log(f"{table}: {len(ids):,} of {total:,} are past the retention policy (~{estimate:.2f} GB), "
+                "but the database protects this table from deletion; left as they are")
+            return []
+        log(f"{table}: prune {len(ids):,} of {total:,} (~{estimate:.2f} GB of row data)")
+        return ids
+
+    analysis_ids = report("analysis_runs", analysis_ids, analysis_total, ANALYSIS_SIZE)
+    cert_ids = report("certification_runs", cert_ids, cert_total, CERT_SIZE)
 
     if args.mode == "preview":
         log(f"preview only; database is {before / 1e9:.2f} GB and was not modified")

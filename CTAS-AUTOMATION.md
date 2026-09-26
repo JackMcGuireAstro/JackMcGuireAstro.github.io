@@ -165,8 +165,9 @@ bounded without touching source data or anything read as current:
 `science-interest` and `population-anomaly` analysis runs (recomputed whenever the
 population shifts) keep the newest run per candidate, everything from the last
 three days, and every run cited by a benchmark, publication or certification file;
-certification runs keep the newest ten per scope. Other analysis types are never
-pruned. `preview` reports without writing; `prune --archive … --vacuum` archives
+certification runs would keep the newest ten per scope, but the backend declares
+them immutable (a `BEFORE DELETE` trigger), and any table protected that way is only
+reported, never pruned. Other analysis types are never pruned. `preview` reports without writing; `prune --archive … --vacuum` archives
 every removed row to gzip NDJSON first and compacts the file (run with the backend
 stopped); `daily` prunes in small batches while the backend runs and reclaims pages
 with incremental vacuum. The publisher checks its optional `CTAS_MIN_INTERVAL`

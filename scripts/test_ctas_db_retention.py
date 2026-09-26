@@ -150,6 +150,50 @@ class RetentionTests(unittest.TestCase):
         self.assertEqual(len(anomaly), 20 * 5 + 1)
         self.assertTrue(anomaly <= remaining)
 
+    def protect_certifications(self):
+        # the live backend's own rule (found on soc.db 2026-09-26)
+        with sqlite3.connect(self.db) as con:
+            con.executescript("""
+            CREATE TRIGGER certification_runs_no_delete BEFORE DELETE ON certification_runs
+            BEGIN SELECT RAISE(ABORT, 'certification runs are immutable'); END;
+            CREATE TRIGGER certification_runs_no_update BEFORE UPDATE ON certification_runs
+            BEGIN SELECT RAISE(ABORT, 'certification runs are immutable'); END;""")
+
+    def test_tables_the_database_protects_are_reported_not_pruned(self):
+        self.protect_certifications()
+        preview = self.run_tool("preview")
+        self.assertEqual(preview.returncode, 0, preview.stderr)
+        self.assertIn("certification_runs: 4 of 14 are past the retention policy", preview.stdout)
+        self.assertIn("protects this table from deletion; left as they are", preview.stdout)
+        archive = self.data / "_to_delete" / "pruned.ndjson.gz"
+        result = self.run_tool("prune", "--archive", str(archive), "--vacuum")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.ids("analysis_runs"), self.expected_kept)
+        self.assertEqual(self.ids("certification_runs"), self.cert_kept | self.cert_pruned)
+        with gzip.open(archive, "rt") as handle:
+            tables = {json.loads(line)["table"] for line in handle}
+        self.assertEqual(tables, {"analysis_runs"})
+        self.assertIn("quick_check=ok", result.stdout)
+        daily = self.run_tool("daily")
+        self.assertEqual(daily.returncode, 0, daily.stdout + daily.stderr)
+        self.assertIn("deleted 0 rows", daily.stdout)
+
+    def test_prune_after_a_partial_earlier_prune_finishes_the_job(self):
+        # 2026-09-26: analysis rows were deleted, then the certification step stopped
+        # the run before compaction. A second run must archive only what remains and compact.
+        self.protect_certifications()
+        first = self.run_tool("daily")
+        self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
+        archive = self.data / "_to_delete" / "second.ndjson.gz"
+        second = self.run_tool("prune", "--archive", str(archive), "--vacuum")
+        self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
+        self.assertIn("analysis_runs: prune 0 of", second.stdout)
+        self.assertIn("deleted 0 rows", second.stdout)
+        self.assertIn("quick_check=ok", second.stdout)
+        with sqlite3.connect(self.db) as con:
+            self.assertEqual(con.execute("PRAGMA auto_vacuum").fetchone()[0], 2)
+            self.assertEqual(con.execute("PRAGMA freelist_count").fetchone()[0], 0)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
