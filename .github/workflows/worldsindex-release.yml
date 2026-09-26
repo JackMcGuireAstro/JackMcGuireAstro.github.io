@@ -75,6 +75,7 @@ jobs:
           node --check worldsindex/assets/science.js
           node --check scripts/build_worldsindex_static.mjs
           python3 scripts/test_worldsindex_publisher_recovery.py
+          node scripts/test_worldsindex_live_mast.mjs
       - name: QualQuest static export and public content
         run: python3 scripts/test_qualquest_static.py
       - name: CTAS static release
@@ -94,6 +95,8 @@ jobs:
           python3 scripts/test_ctas_static.py
           node scripts/test_ctas_chunk_loader.js
           node scripts/test_ctas_presentation.js
+          node scripts/test_ctas_live_sources.js
+          node scripts/test_live_relay.mjs
       # The Mac publisher has no browser, so these checks were skipped on every release
       # (test_ctas_browser "Ran 0 tests"; two astro-evidence schema tests skipped for
       # want of jsonschema). They run here on the real release, off the Mac. Report-only
