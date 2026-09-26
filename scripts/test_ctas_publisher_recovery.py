@@ -322,5 +322,198 @@ class DetailAllowlistTests(unittest.TestCase):
         self.assertNotEqual(self.collect().returncode, 0)
 
 
+class UnfinishedGeneratedFilesTests(unittest.TestCase):
+    """Run the runner's preserve-and-clear step against a checkout left dirty by an
+    interrupted or refused export. Until 2026-09-24 this step was a pathspec
+    `git stash`, whose internal `git apply` refuses patches of 1 GiB or more; a
+    fully regenerated catalog exceeded that and the publisher failed every run."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="ctas-unfinished-")
+        self.addCleanup(self.temporary.cleanup)
+        self.site = Path(self.temporary.name).resolve()
+        self.git("init", "-q", "-b", "main")
+        self.git("config", "user.name", "CTAS fixture")
+        self.git("config", "user.email", "ctas@example.invalid")
+        self.write("ctas/app.js", "public code")
+        self.write("ctas/data/status.json", "published status")
+        self.write("ctas/data/candidate-chunks/000.json", "published root")
+        self.write("ctas/data/candidate-chunks/001.json", "root to be retired")
+        self.write("ctas/data/catalog-pages/0001.json", "published page")
+        self.git("add", "--all")
+        self.git("commit", "-qm", "CTAS data: fixture")
+        self.head = self.git("rev-parse", "HEAD")
+        self.git("update-ref", "refs/remotes/origin/main", self.head)
+        self.runner = (ROOT / "scripts/ctas_launchd_runner.sh").read_text()
+        self.block = self.runner[self.runner.index("# Only generated public data may be dirty"):
+                                 self.runner.index("# ------------------------------------------------- recover generated-only commits")]
+
+    def git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.site, check=True,
+                              text=True, capture_output=True).stdout.strip()
+
+    def write(self, path, content):
+        target = self.site / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content)
+
+    def dirty_export(self):
+        self.write("ctas/data/status.json", "unfinished status")
+        self.write("ctas/data/candidate-chunks/000.json", "unfinished root")
+        self.write("ctas/data/candidate-chunks/000.part-000001.json", "new part")
+        self.write("ctas/data/catalog-pages/0002.json", "new page")
+        (self.site / "ctas/data/candidate-chunks/001.json").unlink()
+
+    def run_block(self):
+        script = ("set -uo pipefail\nBRANCH=main\n"
+                  "say() { printf '%s\\n' \"$*\"; }\n"
+                  "die() { printf 'FAIL  %s\\n' \"$*\" >&2; exit 1; }\n" + self.block)
+        return subprocess.run(["/bin/bash", "-c", script], cwd=self.site, text=True, capture_output=True)
+
+    def recovery_refs(self):
+        refs = self.git("for-each-ref", "--format=%(refname) %(objectname)", "refs/ctas-recovery/")
+        return [line.split() for line in refs.splitlines()]
+
+    def test_unfinished_files_are_preserved_on_a_recovery_ref_and_cleared(self):
+        self.dirty_export()
+        result = self.run_block()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("preserved unfinished generated files at refs/ctas-recovery/", result.stdout)
+        self.assertEqual(self.git("status", "--porcelain", "--untracked-files=all"), "")
+        self.assertEqual(self.git("rev-parse", "HEAD"), self.head)
+        self.assertEqual(self.git("diff", "--cached", "--name-only"), "")
+        refs = self.recovery_refs()
+        self.assertEqual(len(refs), 1)
+        ref, commit = refs[0]
+        self.assertIn("-unfinished-", ref)
+        self.assertEqual(self.git("show", "-s", "--format=%P", commit), self.head)
+        self.assertEqual(self.git("show", commit + ":ctas/data/status.json"), "unfinished status")
+        self.assertEqual(self.git("show", commit + ":ctas/data/candidate-chunks/000.json"), "unfinished root")
+        self.assertEqual(self.git("show", commit + ":ctas/data/candidate-chunks/000.part-000001.json"), "new part")
+        self.assertEqual(self.git("show", commit + ":ctas/data/catalog-pages/0002.json"), "new page")
+        self.assertEqual(self.git("show", commit + ":ctas/app.js"), "public code")
+        preserved_paths = self.git("ls-tree", "-r", "--name-only", commit).splitlines()
+        self.assertNotIn("ctas/data/candidate-chunks/001.json", preserved_paths)
+        self.assertEqual((self.site / "ctas/data/candidate-chunks/001.json").read_text(), "root to be retired")
+
+    def test_preservation_failure_still_clears_the_checkout(self):
+        self.dirty_export()
+        # A plain file where the recovery namespace should live makes update-ref fail.
+        (self.site / ".git/refs/ctas-recovery").write_text("blocked")
+        result = self.run_block()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("could not preserve unfinished generated files; discarding them", result.stdout)
+        self.assertEqual(self.git("status", "--porcelain", "--untracked-files=all"), "")
+        self.assertEqual(self.git("rev-parse", "HEAD"), self.head)
+        self.assertEqual((self.site / "ctas/data/status.json").read_text(), "published status")
+
+    def test_clean_checkout_is_left_alone(self):
+        result = self.run_block()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(self.recovery_refs(), [])
+
+    def test_non_generated_changes_still_stop_the_runner(self):
+        for path in ("ctas/app.js", "ctas/data/private-notes.json"):
+            with self.subTest(path=path):
+                self.write(path, "not generated")
+                self.write("ctas/data/status.json", "unfinished status")
+                result = self.run_block()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("unexpected non-generated changes", result.stderr)
+                self.assertEqual((self.site / path).read_text(), "not generated")
+                self.assertEqual((self.site / "ctas/data/status.json").read_text(), "unfinished status")
+                self.assertEqual(self.recovery_refs(), [])
+                self.git("checkout", "--", "ctas")
+                (self.site / path).unlink(missing_ok=True)
+                self.git("checkout", "--", ".")
+
+    def test_generated_files_never_go_through_a_patch(self):
+        code = "\n".join(line for line in self.runner.splitlines() if not line.lstrip().startswith("#"))
+        self.assertNotIn("git stash", code)
+        self.assertNotIn("git apply", code)
+
+
+class PublisherDiscardTests(unittest.TestCase):
+    """The publisher must leave no regenerated file behind on any non-committing
+    exit. `git restore -- a b c` restores nothing when any listed path is absent
+    from HEAD, so a run that produced a new page or part used to leave the whole
+    regenerated catalog dirty after a refused release."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="ctas-discard-")
+        self.addCleanup(self.temporary.cleanup)
+        self.site = Path(self.temporary.name).resolve()
+        self.git("init", "-q", "-b", "main")
+        self.git("config", "user.name", "CTAS fixture")
+        self.git("config", "user.email", "ctas@example.invalid")
+        self.write("ctas/app.js", "public code")
+        self.write("ctas/data/status.json", "published status")
+        self.write("ctas/data/candidate-chunks/000.json", "published root")
+        self.write("ctas/data/catalog-pages/0001.json", "published page")
+        self.git("add", "--all")
+        self.git("commit", "-qm", "CTAS data: fixture")
+        publisher = (ROOT / "scripts/publish_ctas.sh").read_text()
+        self.functions = publisher[publisher.index("discard_generated_files() {"):
+                                   publisher.index("trap cleanup EXIT")]
+        self.write("ctas/app.js", "edited code stays")
+        self.write("ctas/data/status.json", "refused status")
+        self.write("ctas/data/candidate-chunks/000.json", "refused root")
+        self.write("ctas/data/candidate-chunks/000.part-000001.json", "new part")
+        self.write("ctas/data/catalog-pages/0002.json", "new page")
+        (self.site / "ctas/data/catalog-pages/0001.json").unlink()
+        self.git("add", "--", "ctas/data/status.json")
+
+    def git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.site, check=True,
+                              text=True, capture_output=True).stdout.strip()
+
+    def write(self, path, content):
+        target = self.site / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content)
+
+    def run_script(self, body):
+        script = ("set -uo pipefail\nSITE=" + repr(str(self.site)) + "\nSITE_READY=1\nPUBLISH_DB=''\n"
+                  "LOCKDIR=" + repr(str(self.site / "lock.d")) + "\n" + self.functions + "\n" + body)
+        return subprocess.run(["/bin/bash", "-c", script], cwd=self.site, text=True, capture_output=True)
+
+    def assert_generated_files_match_head(self):
+        self.assertEqual(self.git("status", "--porcelain", "--untracked-files=all", "--", "ctas/data"), "")
+        self.assertEqual((self.site / "ctas/data/status.json").read_text(), "published status")
+        self.assertEqual((self.site / "ctas/data/catalog-pages/0001.json").read_text(), "published page")
+        self.assertFalse((self.site / "ctas/data/candidate-chunks/000.part-000001.json").exists())
+        self.assertFalse((self.site / "ctas/data/catalog-pages/0002.json").exists())
+        self.assertEqual((self.site / "ctas/app.js").read_text(), "edited code stays")
+
+    def test_discard_returns_all_generated_files_to_head_and_keeps_code_edits(self):
+        result = self.run_script("discard_generated_files\n")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assert_generated_files_match_head()
+
+    def test_failed_run_cleanup_discards_new_pages_and_parts(self):
+        (self.site / "lock.d").mkdir()
+        result = self.run_script("false\ncleanup\n")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assert_generated_files_match_head()
+        self.assertFalse((self.site / "lock.d").exists())
+
+    def test_successful_run_cleanup_keeps_the_working_tree(self):
+        (self.site / "lock.d").mkdir()
+        result = self.run_script("true\ncleanup\n")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.site / "ctas/data/status.json").read_text(), "refused status")
+        self.assertTrue((self.site / "ctas/data/catalog-pages/0002.json").exists())
+
+    def test_every_non_committing_exit_discards_generated_files(self):
+        publisher = (ROOT / "scripts/publish_ctas.sh").read_text()
+        for message in ("publication paused", "next freshness heartbeat in",
+                        "already match HEAD; nothing to publish", "--dry-run:"):
+            with self.subTest(message=message):
+                index = publisher.index(message)
+                following = publisher[index:publisher.index("exit 0", index)]
+                self.assertIn("discard_generated_files", following)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

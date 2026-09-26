@@ -142,6 +142,16 @@ Recovery references remain available locally with:
 git for-each-ref refs/ctas-recovery/
 ```
 
+Two kinds of reference appear there. `<stamp>-<commit>` preserves an unpublished
+generated-data commit that had to be replaced by current `origin/main`.
+`<stamp>-unfinished-<commit>` preserves regenerated files that an interrupted or
+refused export left in the working tree; the runner snapshots them through a
+temporary index (never through a patch, which Git refuses above 1 GiB for a full
+catalog) and returns the checkout to `HEAD` before syncing. The publisher itself
+returns every generated file under `ctas/data` to `HEAD` on any exit that does
+not commit, so these references are expected to be rare. Both kinds are safe to
+delete once inspected; the next export reproduces the data.
+
 A code update must be pushed and deployed before restarting a repaired runtime;
 its next run fetches current `main`, exports the current local database, validates
 the full release, and publishes it. Check the successful publisher log and live

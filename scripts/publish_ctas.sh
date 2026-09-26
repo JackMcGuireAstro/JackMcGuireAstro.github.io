@@ -96,10 +96,21 @@ if ! mkdir "$LOCKDIR" 2>/dev/null; then
     exit 0
   fi
 fi
+# Return every generated file under ctas/data to HEAD: tracked modifications,
+# staged changes, deletions, and untracked new pages or parts. Always address
+# the directory, never the expanded PUBLIC_FILES list: `git restore -- a b c`
+# restores nothing at all when any listed path is absent from HEAD (a freshly
+# generated part or page), which on 2026-09-24 left ~4,000 regenerated files
+# behind after a refused release and stalled the publisher for two days.
+discard_generated_files() {
+  git -C "$SITE" restore --source=HEAD --staged --worktree -- ctas/data 2>/dev/null || true
+  git -C "$SITE" clean -fdq -- ctas/data 2>/dev/null || true
+}
+
 cleanup() {
   status=$?
   if [ "$status" -ne 0 ] && [ "$SITE_READY" -eq 1 ]; then
-    git -C "$SITE" restore --source=HEAD --staged --worktree -- "${PUBLIC_FILES[@]}" 2>/dev/null || true
+    discard_generated_files
   fi
   if [ -n "$PUBLISH_DB" ]; then
     rm -f -- "$PUBLISH_DB" "$PUBLISH_DB-journal" "$PUBLISH_DB-wal" "$PUBLISH_DB-shm"
@@ -404,6 +415,7 @@ print(",".join(sorted(gate["id"] for gate in report.get("gates", []) if gate.get
   case "$FAILED_GATES" in
     deployed-code-binding,local-origin-code-alignment|deployed-code-binding|local-origin-code-alignment)
       say "local checksum-bound code successor is not published; publication paused"
+      discard_generated_files
       exit 0
       ;;
     *) die "static-snapshot verification is $CERT_STATUS ($FAILED_GATES); refusing publication" ;;
@@ -460,7 +472,7 @@ if [ "$CURRENT_STATE" = "$HEAD_STATE" ] && [ "$PENDING_CTAS_COMMIT" -eq 0 ] \
   esac
   if [ "$FORCE" -eq 0 ] && [ "$HEARTBEAT_AGE" -ge 0 ] && [ "$HEARTBEAT_AGE" -lt "$HEARTBEAT_INTERVAL" ]; then
     say "publication state unchanged; next freshness heartbeat in $((HEARTBEAT_INTERVAL - HEARTBEAT_AGE))s"
-    git checkout -- "${PUBLIC_FILES[@]}" 2>/dev/null || true
+    discard_generated_files
     exit 0
   fi
   if [ "$FORCE" -eq 1 ]; then
@@ -476,6 +488,7 @@ UNTRACKED_PUBLIC=$(git ls-files --others -- "${PUBLIC_FILES[@]}") \
   || die "could not inspect untracked public artifacts"
 if git diff --quiet HEAD -- "${PUBLIC_FILES[@]}" 2>/dev/null && [ -z "$UNTRACKED_PUBLIC" ]; then
   say "public artifacts already match HEAD; nothing to publish"
+  discard_generated_files
   exit 0
 fi
 
@@ -483,7 +496,7 @@ COUNT=$(python3 -c "import json;print(json.load(open('ctas/data/catalog-index.js
 
 if [ "$DRY" -eq 1 ]; then
   say "--dry-run: $COUNT candidates; would commit ${#PUBLIC_FILES[@]} allowlisted public CTAS artifacts and push to $BRANCH"
-  git restore --source=HEAD --worktree -- "${PUBLIC_FILES[@]}" 2>/dev/null || true
+  discard_generated_files
   exit 0
 fi
 

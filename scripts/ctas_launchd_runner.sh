@@ -41,7 +41,7 @@ CURRENT_BRANCH=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)
 [ "$CURRENT_BRANCH" = "$BRANCH" ] || die "publisher checkout must remain on $BRANCH (found ${CURRENT_BRANCH:-detached})"
 
 # Only generated public data may be dirty in the operational checkout. Preserve
-# such files in a named stash before syncing; the next export reproduces them.
+# such files on a recovery ref before syncing; the next export reproduces them.
 NON_DATA_DIRTY=""
 while IFS= read -r line; do
   path=${line:3}
@@ -50,10 +50,49 @@ while IFS= read -r line; do
   fi
 done < <(git status --porcelain --untracked-files=all)
 [ -z "$NON_DATA_DIRTY" ] || die "unexpected non-generated changes in publisher checkout:$NON_DATA_DIRTY"
+
+# Snapshot every unfinished generated file under ctas/data as a commit on
+# refs/ctas-recovery/<stamp>-unfinished-<id> (parent HEAD), built through a
+# temporary index, then return the checkout to HEAD. This never builds a patch:
+# a pathspec `git stash push -- ctas/data` routes the whole diff through
+# `git apply`, which refuses patches of 1 GiB or more ("patch too large"), and a
+# fully regenerated catalog of ~4,000 single-line JSON files exceeds that. On
+# 2026-09-24 that left the publisher failing every run until the files were
+# discarded by hand. Generated files carry no information that the database
+# cannot reproduce, so a failed snapshot is reported but never blocks the sync.
+# Prints the recovery ref (or "none") on stdout; the caller decides what to say.
+preserve_generated_files() {
+  local stamp preserve_index ref
+  [ -n "$(git status --porcelain --untracked-files=all -- ctas/data)" ] || { printf 'none'; return 0; }
+  stamp=$(date -u '+%Y%m%dT%H%M%SZ')
+  preserve_index=$(mktemp "${TMPDIR:-/tmp}/ctas-preserve-index.XXXXXX") || return 1
+  ref=$(
+    export GIT_INDEX_FILE="$preserve_index"
+    git read-tree HEAD || exit 1
+    git add --all -- ctas/data || exit 1
+    tree=$(git write-tree) || exit 1
+    commit=$(git commit-tree "$tree" -p HEAD -m "CTAS generated recovery $stamp (unfinished export)") || exit 1
+    ref="refs/ctas-recovery/$stamp-unfinished-$(git rev-parse --short=12 "$commit")"
+    git update-ref "$ref" "$commit" "" || exit 1
+    printf '%s' "$ref"
+  )
+  local preserved=$?
+  rm -f -- "$preserve_index"
+  [ "$preserved" -eq 0 ] || return 1
+  printf '%s' "$ref"
+}
+
 if [ -n "$(git status --porcelain --untracked-files=all -- ctas/data)" ]; then
-  git stash push --include-untracked -m "CTAS generated recovery $(date -u '+%Y%m%dT%H%M%SZ')" -- ctas/data >/dev/null \
-    || die "could not preserve generated files before sync"
-  say "preserved unfinished generated files before repository sync"
+  if PRESERVED_REF=$(preserve_generated_files); then
+    say "preserved unfinished generated files at $PRESERVED_REF before repository sync"
+  else
+    say "could not preserve unfinished generated files; discarding them (the next export reproduces them)"
+  fi
+  git restore --source=HEAD --staged --worktree -- ctas/data \
+    && git clean -fdq -- ctas/data \
+    || die "could not clear generated files before sync"
+  [ -z "$(git status --porcelain --untracked-files=all -- ctas/data)" ] \
+    || die "generated files remain in the publisher checkout after clearing"
 fi
 
 # ------------------------------------------------- recover generated-only commits
