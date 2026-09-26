@@ -1,0 +1,28 @@
+name: Deploy a new data release
+
+# The CTAS and WorldsIndex publishers replace their data branch (ctas-data,
+# worldsindex-data) with one commit per release, and every such commit carries this
+# file so the push starts a deployment. The deployment itself always runs from main
+# ("Validate and deploy site"), which combines main's code with the latest commit of
+# both data branches; GitHub Pages only accepts deployments from main.
+
+on:
+  push:
+    branches: [ctas-data, worldsindex-data]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    name: Start the main deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run "Validate and deploy site" on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run worldsindex-release.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo "deployment requested for $GITHUB_REF_NAME at $GITHUB_SHA"
