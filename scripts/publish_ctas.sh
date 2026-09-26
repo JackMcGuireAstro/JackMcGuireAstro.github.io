@@ -125,6 +125,18 @@ trap cleanup EXIT
 cd "$SITE"     || die "cannot enter $SITE"
 SITE_READY=1
 
+# ------------------------------------------------------------- rate guard
+# Checked before the frozen snapshot: the snapshot copies the whole database, so a
+# run that is going to wait out the floor must not pay for (and write) that copy.
+if [ "$FORCE" -eq 0 ] && [ "$MIN_INTERVAL" -gt 0 ] && [ -f "$STAMP" ]; then
+  last=$(cat "$STAMP" 2>/dev/null || echo 0)
+  age=$(( $(date +%s) - last ))
+  if [ "$age" -lt "$MIN_INTERVAL" ]; then
+    say "last publish ${age}s ago; waiting out the ${MIN_INTERVAL}s floor"
+    exit 0
+  fi
+fi
+
 # Freeze one transactionally consistent SQLite view for the whole release.
 # The live pipeline may continue writing to the canonical database while link
 # checks and assurance artifacts are generated, but no publication mixes two
@@ -178,16 +190,6 @@ then
   die "could not create a complete pinned database snapshot; nothing exported or committed"
 fi
 [ -s "$PUBLISH_DB" ] || die "database snapshot is empty"
-
-# ------------------------------------------------------------- rate guard
-if [ "$FORCE" -eq 0 ] && [ "$MIN_INTERVAL" -gt 0 ] && [ -f "$STAMP" ]; then
-  last=$(cat "$STAMP" 2>/dev/null || echo 0)
-  age=$(( $(date +%s) - last ))
-  if [ "$age" -lt "$MIN_INTERVAL" ]; then
-    say "last publish ${age}s ago; waiting out the ${MIN_INTERVAL}s floor"
-    exit 0
-  fi
-fi
 
 # ----------------------------------------------------------------- export
 python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \

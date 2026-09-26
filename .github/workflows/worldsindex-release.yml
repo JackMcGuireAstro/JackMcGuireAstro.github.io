@@ -66,10 +66,11 @@ jobs:
           python3 scripts/test_ctas_static.py
           node scripts/test_ctas_chunk_loader.js
           node scripts/test_ctas_presentation.js
-      - name: Freshness watchdog and publisher housekeeping
+      - name: Freshness watchdog, publisher housekeeping and database retention
         run: |
           python3 scripts/test_watchdog_freshness.py
           python3 scripts/test_publisher_housekeeping.py
+          python3 scripts/test_ctas_db_retention.py
       - name: Whitespace and credential-shaped content
         run: |
           git diff --check

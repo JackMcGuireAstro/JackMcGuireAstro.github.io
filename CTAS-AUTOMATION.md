@@ -121,6 +121,22 @@ collected. Without it every data release stays in the checkout forever (about
 95 MB a day in September 2026). The authoring checkout under Documents is not
 touched.
 
+## Local database retention
+
+The source data CTAS receives (alert envelopes, observations) is small; almost all
+database growth was derived bookkeeping. `scripts/ctas_db_retention.py` keeps it
+bounded without touching source data or anything read as current:
+`science-interest` and `population-anomaly` analysis runs (recomputed whenever the
+population shifts) keep the newest run per candidate, everything from the last
+three days, and every run cited by a benchmark, publication or certification file;
+certification runs keep the newest ten per scope. Other analysis types are never
+pruned. `preview` reports without writing; `prune --archive … --vacuum` archives
+every removed row to gzip NDJSON first and compacts the file (run with the backend
+stopped); `daily` prunes in small batches while the backend runs and reclaims pages
+with incremental vacuum. The publisher checks its optional `CTAS_MIN_INTERVAL`
+floor before taking the frozen database snapshot, so a waiting run never copies
+the database.
+
 ## Freshness watchdog
 
 The publisher fails closed and stays failed until someone looks, and GitHub Pages
