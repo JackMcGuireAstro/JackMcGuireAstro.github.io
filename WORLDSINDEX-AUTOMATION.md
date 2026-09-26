@@ -83,7 +83,7 @@ file is included.
 `.github/workflows/freshness-watchdog.yml` checks the live `worldsindex/data/manifest.json`
 (and the CTAS status) hourly from GitHub Actions and keeps one `freshness-watchdog` issue open
 while either publisher has stalled, closing it on recovery. A WorldsIndex release older than
-24 h, or older than 3 h while CTAS is still publishing, raises the alert. See CTAS-AUTOMATION.md
+30 h, or older than 3 h while CTAS is still publishing, raises the alert. See CTAS-AUTOMATION.md
 for the full description; the limits are in the workflow's `env:` block.
 
 ## Operations
@@ -110,6 +110,12 @@ local files only; `--full` also runs the monitor, the promotion gate and the tes
 
 Force the next scheduled cycle to run the full path: `touch`-free — delete
 `~/Library/Logs/worldsindex-mirror/.last-full-run`, or run the installer again.
+
+If a build is interrupted and leaves regenerated files in the runtime checkout, the next
+cycle snapshots them on `refs/worldsindex-recovery/<stamp>-unfinished-<commit>` (through a
+temporary index, never a patch) and returns the checkout to `HEAD` before syncing; the
+publisher itself returns `worldsindex/data` to `HEAD` on every exit that does not commit.
+Such references are safe to delete once inspected; the next build reproduces the data.
 
 Disable the service while retaining its recoverable checkout:
 

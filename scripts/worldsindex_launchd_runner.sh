@@ -33,16 +33,56 @@ cd "$SITE" || die "cannot enter the publisher checkout"
 CURRENT_BRANCH=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)
 [ "$CURRENT_BRANCH" = "$BRANCH" ] || die "publisher checkout must remain on $BRANCH"
 
+# Only generated public data may be dirty in the operational checkout. Preserve
+# such files on a recovery ref before syncing; the next build reproduces them.
 NON_DATA_DIRTY=""
 while IFS= read -r line; do
   path=${line:3}
   case "$path" in worldsindex/data/*) ;; *) NON_DATA_DIRTY="$NON_DATA_DIRTY $path" ;; esac
 done < <(git status --porcelain --untracked-files=all)
 [ -z "$NON_DATA_DIRTY" ] || die "unexpected non-data changes in publisher checkout:$NON_DATA_DIRTY"
+
+# Snapshot unfinished generated files under worldsindex/data as a commit on
+# refs/worldsindex-recovery/<stamp>-unfinished-<id> (parent HEAD), built through a
+# temporary index, then return the checkout to HEAD. Same shape as the CTAS
+# runner: a pathspec `git stash push` routes the whole diff through `git apply`,
+# which refuses patches of 1 GiB or more, and that stalled the CTAS publisher for
+# two days in September 2026. WorldsIndex releases are far smaller, but the
+# failure mode is identical, so it must not be possible here either. Generated
+# files carry nothing the local source cannot reproduce, so a failed snapshot is
+# reported but never blocks the sync.
+preserve_generated_files() {
+  local stamp preserve_index ref
+  [ -n "$(git status --porcelain --untracked-files=all -- worldsindex/data)" ] || { printf 'none'; return 0; }
+  stamp=$(date -u '+%Y%m%dT%H%M%SZ')
+  preserve_index=$(mktemp "${TMPDIR:-/tmp}/worldsindex-preserve-index.XXXXXX") || return 1
+  ref=$(
+    export GIT_INDEX_FILE="$preserve_index"
+    git read-tree HEAD || exit 1
+    git add --all -- worldsindex/data || exit 1
+    tree=$(git write-tree) || exit 1
+    commit=$(git commit-tree "$tree" -p HEAD -m "WorldsIndex generated recovery $stamp (unfinished build)") || exit 1
+    ref="refs/worldsindex-recovery/$stamp-unfinished-$(git rev-parse --short=12 "$commit")"
+    git update-ref "$ref" "$commit" "" || exit 1
+    printf '%s' "$ref"
+  )
+  local preserved=$?
+  rm -f -- "$preserve_index"
+  [ "$preserved" -eq 0 ] || return 1
+  printf '%s' "$ref"
+}
+
 if [ -n "$(git status --porcelain --untracked-files=all -- worldsindex/data)" ]; then
-  git stash push --include-untracked -m "WorldsIndex generated recovery $(date -u '+%Y%m%dT%H%M%SZ')" -- worldsindex/data >/dev/null \
-    || die "could not preserve unfinished generated files"
-  say "preserved unfinished generated data before repository sync"
+  if PRESERVED_REF=$(preserve_generated_files); then
+    say "preserved unfinished generated data at $PRESERVED_REF before repository sync"
+  else
+    say "could not preserve unfinished generated data; discarding it (the next build reproduces it)"
+  fi
+  git restore --source=HEAD --staged --worktree -- worldsindex/data \
+    && git clean -fdq -- worldsindex/data \
+    || die "could not clear generated data before sync"
+  [ -z "$(git status --porcelain --untracked-files=all -- worldsindex/data)" ] \
+    || die "generated data remain in the publisher checkout after clearing"
 fi
 
 export GIT_TERMINAL_PROMPT=0

@@ -46,6 +46,7 @@ jobs:
           node --check worldsindex/assets/app.js
           node --check worldsindex/assets/science.js
           node --check scripts/build_worldsindex_static.mjs
+          python3 scripts/test_worldsindex_publisher_recovery.py
       - name: QualQuest static export and public content
         run: python3 scripts/test_qualquest_static.py
       - name: CTAS static release

@@ -57,10 +57,21 @@ if ! mkdir "$LOCKDIR" 2>/dev/null; then
     exit 0
   fi
 fi
+# Return every generated file under worldsindex/data to HEAD: tracked
+# modifications, staged changes, deletions, and untracked new artifacts. Always
+# address the directory, never the expanded PUBLIC_FILES list: `git restore -- a b c`
+# restores nothing at all when any listed path is absent from HEAD (a new shard or
+# artifact), which left the CTAS publisher's checkout dirty after a refused release
+# in September 2026.
+discard_generated_files() {
+  git -C "$SITE" restore --source=HEAD --staged --worktree -- worldsindex/data 2>/dev/null || true
+  git -C "$SITE" clean -fdq -- worldsindex/data 2>/dev/null || true
+}
+
 cleanup() {
   status=$?
   if [ "$status" -ne 0 ] && [ -d "$SITE/.git" ]; then
-    git -C "$SITE" restore --source=HEAD --staged --worktree -- "${PUBLIC_FILES[@]}" 2>/dev/null || true
+    discard_generated_files
   fi
   rmdir "$LOCKDIR" 2>/dev/null
   return "$status"
@@ -303,6 +314,7 @@ say "artifact guard: $REQUIRED_COUNT manifest-declared artifacts are all present
 if git diff --quiet HEAD -- "${PUBLIC_FILES[@]}" 2>/dev/null && [ "$FORCE" -eq 0 ]; then
   say "validated public release already matches HEAD; nothing to publish"
   input_fingerprint >"$INPUT_STAMP" 2>/dev/null || true
+  discard_generated_files
   exit 0
 fi
 
@@ -312,7 +324,7 @@ RECORDS=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifes
 if [ "$DRY" -eq 1 ]; then
   say "--dry-run: validated $OBJECTS objects and $RECORDS native rows; would stage ${#PUBLIC_FILES[@]} allowlisted artifacts covering $REQUIRED_COUNT manifest-declared artifacts"
   printf '%s\n' "$REQUIRED_ARTIFACTS" | sed 's/^/  would stage: /' >>"$LOG"
-  git restore --source=HEAD --worktree -- "${PUBLIC_FILES[@]}" 2>/dev/null || true
+  discard_generated_files
   exit 0
 fi
 
