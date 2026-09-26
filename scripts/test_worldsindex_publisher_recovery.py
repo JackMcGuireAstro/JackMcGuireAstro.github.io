@@ -167,7 +167,7 @@ class PublisherDiscardTests(GitFixture):
 
     def test_non_committing_exits_discard_generated_files(self):
         publisher = (ROOT / "scripts/publish_worldsindex.sh").read_text()
-        for message in ("already matches HEAD; nothing to publish", "--dry-run:"):
+        for message in ("--dry-run:",):
             with self.subTest(message=message):
                 index = publisher.index(message)
                 following = publisher[index:publisher.index("exit 0", index)]

@@ -101,6 +101,37 @@
     if (assembledChecksum !== document_.assembled_sha256) throw new Error("Assembled candidate chunk SHA-256 does not match its descriptor.");
     return validateChunk(parse(assembled, "assembled candidate chunk"), bucket, metadata.candidate_count);
   }
-  return Object.freeze({decode: decode, CHUNK_SCHEMA: CHUNK_SCHEMA, DESCRIPTOR_SCHEMA: DESCRIPTOR_SCHEMA,
-    PART_SCHEMA: PART_SCHEMA, MAX_FILE_BYTES: MAX_FILE_BYTES});
+  function isGzip(bytes) {
+    var view = new Uint8Array(bytes, 0, Math.min(2, bytes.byteLength));
+    return view.length === 2 && view[0] === 0x1f && view[1] === 0x8b;
+  }
+  async function gunzip(bytes) {
+    if (typeof DecompressionStream !== "function") {
+      throw new Error("This browser cannot decompress the published catalog files (no DecompressionStream).");
+    }
+    var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    return new Response(stream).arrayBuffer();
+  }
+  // The deployed site serves each dossier root and part as <path>.gz (the release commit
+  // keeps plain JSON; scripts/compress_ctas_chunks.sh compresses the deployed copy and sets
+  // ctas/delivery.json to "gzip"). With encoding "gzip" this fetches <path>.gz and returns
+  // the decompressed JSON bytes, which the caller verifies against the manifest's plain-JSON
+  // length and SHA-256 exactly as before; a server that already decoded the gzip (a
+  // Content-Encoding header) is recognised by the magic number. Any other encoding fetches
+  // the plain path. Exactly one request is made per file, so nothing probes for 404s.
+  async function fetchPublished(url, fetchImpl, encoding) {
+    var get = fetchImpl || fetch;
+    var compressed = encoding === "gzip";
+    var target = compressed ? url + ".gz" : url;
+    var response = await get(target, {cache: "no-cache"});
+    if (!response.ok) throw new Error(target + " returned HTTP " + response.status);
+    var bytes = await response.arrayBuffer();
+    return compressed && isGzip(bytes) ? gunzip(bytes) : bytes;
+  }
+  function chunkEncoding(descriptor) {
+    return descriptor && descriptor.schema === "ctas.delivery@1.0.0" &&
+      descriptor.candidate_chunk_encoding === "gzip" ? "gzip" : "identity";
+  }
+  return Object.freeze({decode: decode, fetchPublished: fetchPublished, chunkEncoding: chunkEncoding, CHUNK_SCHEMA: CHUNK_SCHEMA,
+    DESCRIPTOR_SCHEMA: DESCRIPTOR_SCHEMA, PART_SCHEMA: PART_SCHEMA, MAX_FILE_BYTES: MAX_FILE_BYTES});
 }));

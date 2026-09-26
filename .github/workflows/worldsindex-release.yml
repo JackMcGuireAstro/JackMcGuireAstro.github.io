@@ -1,13 +1,19 @@
 name: Validate and deploy site
 
 # Validation is the gate, not a post-mortem. GitHub Pages is deployed by the `deploy`
-# job below, which only runs when `validate` succeeds, so a commit that fails the static
+# job below, which only runs when `validate` succeeds, so a release that fails the static
 # release tests never becomes the live site; the previous successful deployment stays up.
 # This requires the repository's Pages source to be set to "GitHub Actions".
 #
-# Rollback: re-run the last green workflow run from the Actions tab (it redeploys that
-# commit's tree), or `git revert` the offending commit and push. Every successful deploy
-# leaves its commit SHA in the deployment history and in the `verify-live` job output.
+# The site is main's code plus the latest commit of the two data branches, ctas-data and
+# worldsindex-data, which each publisher replaces on every release (one commit each, no
+# history; see scripts/data_branch.sh). A data-branch push starts this workflow on main
+# through "Deploy a new data release". The validate job assembles and tests exactly the
+# tree that is deployed, then gzips the CTAS dossier chunks (scripts/compress_ctas_chunks.sh)
+# so the published site stays well inside GitHub Pages' 1 GB limit.
+#
+# Rollback: re-run the last green workflow run from the Actions tab, or revert the code
+# commit on main. Each run's summary names the data commits it deployed.
 
 on:
   push:
@@ -28,15 +34,37 @@ jobs:
   validate:
     name: Validate all website releases
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
+    outputs:
+      ctas_commit: ${{ steps.expect.outputs.ctas_commit }}
+      worldsindex_commit: ${{ steps.expect.outputs.worldsindex_commit }}
+      wi_manifest_sha: ${{ steps.expect.outputs.wi_manifest_sha }}
+      wi_index_sha: ${{ steps.expect.outputs.wi_index_sha }}
+      wi_objects: ${{ steps.expect.outputs.wi_objects }}
+      wi_rows: ${{ steps.expect.outputs.wi_rows }}
+      ctas_status_sha: ${{ steps.expect.outputs.ctas_status_sha }}
+      ctas_chunk_path: ${{ steps.expect.outputs.ctas_chunk_path }}
+      ctas_chunk_sha: ${{ steps.expect.outputs.ctas_chunk_sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Combine main with the latest data releases
+        id: overlay
+        run: |
+          bash scripts/overlay_published_data.sh | tee overlay.txt
+          {
+            echo "ctas_commit=$(awk '$1 == "ctas-data" {print $2}' overlay.txt)"
+            echo "worldsindex_commit=$(awk '$1 == "worldsindex-data" {print $2}' overlay.txt)"
+          } >> "$GITHUB_OUTPUT"
+          rm overlay.txt
+          echo "Deploying main $(git rev-parse --short HEAD) with ctas-data $(git rev-parse --short origin/ctas-data) and worldsindex-data $(git rev-parse --short origin/worldsindex-data)" >> "$GITHUB_STEP_SUMMARY"
       - name: WorldsIndex static data, manifest-declared artifacts, and application
         run: |
           python3 scripts/test_worldsindex_static.py
@@ -66,11 +94,18 @@ jobs:
           python3 scripts/test_ctas_static.py
           node scripts/test_ctas_chunk_loader.js
           node scripts/test_ctas_presentation.js
-      - name: Freshness watchdog, publisher housekeeping and database retention
+      - name: Freshness watchdog, publishing, housekeeping and database retention
+        env:
+          GIT_CONFIG_COUNT: "2"
+          GIT_CONFIG_KEY_0: maintenance.auto
+          GIT_CONFIG_VALUE_0: "false"
+          GIT_CONFIG_KEY_1: gc.auto
+          GIT_CONFIG_VALUE_1: "0"
         run: |
           python3 scripts/test_watchdog_freshness.py
           python3 scripts/test_publisher_housekeeping.py
           python3 scripts/test_ctas_db_retention.py
+          python3 scripts/test_data_branch.py
       - name: Whitespace and credential-shaped content
         run: |
           git diff --check
@@ -80,6 +115,30 @@ jobs:
           if grep -R -I -E 'ADS_API_TOKEN[[:space:]]*=|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}' worldsindex ctas >/dev/null 2>&1; then
             echo "credential-shaped text under the public tree" >&2; exit 1
           fi
+      - name: Record what the live site must serve after deployment
+        id: expect
+        run: |
+          set -euo pipefail
+          chunk=$(python3 -c 'import json;m=json.load(open("ctas/data/candidate-chunks/manifest.json"));r=max(m["chunks"],key=lambda c:c["bytes"]);print(r["path"], r["sha256"])')
+          {
+            echo "ctas_commit=${{ steps.overlay.outputs.ctas_commit }}"
+            echo "worldsindex_commit=${{ steps.overlay.outputs.worldsindex_commit }}"
+            echo "wi_manifest_sha=$(sha256sum worldsindex/data/manifest.json | cut -d' ' -f1)"
+            echo "wi_index_sha=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifest.json"))["catalogIndexSha256"])')"
+            echo "wi_objects=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifest.json"))["objectCount"])')"
+            echo "wi_rows=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifest.json"))["detailRecordCount"])')"
+            echo "ctas_status_sha=$(sha256sum ctas/data/status.json | cut -d' ' -f1)"
+            echo "ctas_chunk_path=${chunk%% *}"
+            echo "ctas_chunk_sha=${chunk##* }"
+          } >> "$GITHUB_OUTPUT"
+      - name: Compress CTAS dossier chunks for GitHub Pages
+        run: |
+          bash scripts/compress_ctas_chunks.sh . | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "published site size: $(du -sh --exclude=.git . | cut -f1)" | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
 
   deploy:
     name: Deploy to GitHub Pages
@@ -92,37 +151,41 @@ jobs:
     outputs:
       page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
       - id: deployment
         uses: actions/deploy-pages@v4
 
   verify-live:
-    name: Verify the live WorldsIndex release matches this commit
-    needs: deploy
+    name: Verify the live releases match what was deployed
+    needs: [validate, deploy]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - name: Compare live manifest and catalog index against the deployed commit
+      - name: Compare live WorldsIndex manifest and index, CTAS status and a compressed CTAS chunk
         env:
           PAGE_URL: ${{ needs.deploy.outputs.page_url || 'https://jackmcguireastro.github.io/' }}
+          WI_MANIFEST_SHA: ${{ needs.validate.outputs.wi_manifest_sha }}
+          WI_INDEX_SHA: ${{ needs.validate.outputs.wi_index_sha }}
+          WI_OBJECTS: ${{ needs.validate.outputs.wi_objects }}
+          WI_ROWS: ${{ needs.validate.outputs.wi_rows }}
+          CTAS_STATUS_SHA: ${{ needs.validate.outputs.ctas_status_sha }}
+          CTAS_CHUNK_PATH: ${{ needs.validate.outputs.ctas_chunk_path }}
+          CTAS_CHUNK_SHA: ${{ needs.validate.outputs.ctas_chunk_sha }}
+          CTAS_COMMIT: ${{ needs.validate.outputs.ctas_commit }}
+          WI_COMMIT: ${{ needs.validate.outputs.worldsindex_commit }}
         run: |
           set -euo pipefail
-          base="${PAGE_URL%/}/worldsindex/data"
-          expected_manifest=$(sha256sum worldsindex/data/manifest.json | cut -d' ' -f1)
-          expected_index=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifest.json"))["catalogIndexSha256"])')
+          site="${PAGE_URL%/}"
+          fetch() { curl -fsSL -H 'Cache-Control: no-cache' "$site/$1?verify=$GITHUB_RUN_ID"; }
           for attempt in $(seq 1 12); do
-            live_manifest=$(curl -fsSL -H 'Cache-Control: no-cache' "$base/manifest.json?verify=$GITHUB_SHA" | sha256sum | cut -d' ' -f1 || true)
-            if [ "$live_manifest" = "$expected_manifest" ]; then break; fi
-            echo "attempt $attempt: live manifest $live_manifest != expected $expected_manifest; waiting for CDN"; sleep 20
+            live_manifest=$(fetch worldsindex/data/manifest.json | sha256sum | cut -d' ' -f1 || true)
+            if [ "$live_manifest" = "$WI_MANIFEST_SHA" ]; then break; fi
+            echo "attempt $attempt: live manifest $live_manifest != expected $WI_MANIFEST_SHA; waiting for CDN"; sleep 20
           done
-          [ "$live_manifest" = "$expected_manifest" ] || { echo "live manifest never matched commit $GITHUB_SHA" >&2; exit 1; }
-          live_index=$(curl -fsSL -H 'Cache-Control: no-cache' "$base/catalog-index.json.gz?verify=$GITHUB_SHA" | sha256sum | cut -d' ' -f1)
-          [ "$live_index" = "$expected_index" ] || { echo "live catalog index $live_index != manifest $expected_index" >&2; exit 1; }
-          objects=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifest.json"))["objectCount"])')
-          rows=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifest.json"))["detailRecordCount"])')
-          echo "live WorldsIndex release verified for $GITHUB_SHA: $objects objects, $rows native rows, catalog index $expected_index"
+          [ "$live_manifest" = "$WI_MANIFEST_SHA" ] || { echo "live WorldsIndex manifest never matched the deployed release" >&2; exit 1; }
+          live_index=$(fetch worldsindex/data/catalog-index.json.gz | sha256sum | cut -d' ' -f1)
+          [ "$live_index" = "$WI_INDEX_SHA" ] || { echo "live catalog index $live_index != manifest $WI_INDEX_SHA" >&2; exit 1; }
+          live_status=$(fetch ctas/data/status.json | sha256sum | cut -d' ' -f1)
+          [ "$live_status" = "$CTAS_STATUS_SHA" ] || { echo "live CTAS status $live_status != deployed $CTAS_STATUS_SHA" >&2; exit 1; }
+          live_chunk=$(fetch "${CTAS_CHUNK_PATH}.gz" | gunzip -c | sha256sum | cut -d' ' -f1)
+          [ "$live_chunk" = "$CTAS_CHUNK_SHA" ] || { echo "live ${CTAS_CHUNK_PATH}.gz does not decompress to its manifest checksum" >&2; exit 1; }
+          echo "live site verified: WorldsIndex ${WI_COMMIT:0:10} ($WI_OBJECTS objects, $WI_ROWS rows), CTAS ${CTAS_COMMIT:0:10} (status and compressed chunk ${CTAS_CHUNK_PATH##*/}.gz)" | tee -a "$GITHUB_STEP_SUMMARY"

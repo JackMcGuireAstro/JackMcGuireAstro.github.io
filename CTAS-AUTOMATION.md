@@ -19,12 +19,37 @@ Python public exporter and validators
         |
         | sub-2 MiB live summary + 4096 stable detail roots with bounded parts + research tables
         v
-dedicated runtime checkout (public repository only)
+dedicated runtime checkout (public repository only, code from main)
         |
-        | allowlisted commit, ordinary SSH push
+        | allowlisted release -> one parentless commit replacing the ctas-data branch
+        v
+GitHub Actions: main's code + latest ctas-data + latest worldsindex-data,
+validated, dossier chunks gzipped, deployed
+        |
         v
 GitHub Pages /ctas.html
 ```
+
+Generated data is not committed to `main`. Each release replaces the `ctas-data`
+branch with a single commit holding exactly the allowlisted artifacts (see
+`scripts/data_branch.sh`); the previous release is simply superseded, so the
+repository keeps no history of data releases. Only this publisher writes
+`ctas-data`, and `main` is never force-pushed. The snapshot is built in a small
+bare store inside the runtime checkout's `.git` directory
+(`.git/ctas-data-store`), which keeps only the current release; the exporter reads
+the previous release from it to compute release history. A data-branch push starts
+the deployment through `.github/workflows/data-branch-deploy.yml`, which that
+commit carries. To preview the complete site locally, run
+`bash scripts/overlay_published_data.sh` in any checkout of `main`; generated paths
+are ignored by `.gitignore`.
+
+On the live site the dossier roots and overflow parts are served gzip-compressed as
+`<path>.json.gz` (the deployed copy is compressed by `scripts/compress_ctas_chunks.sh`;
+the release commit and its certificate keep plain JSON). Decompressed bytes match the
+manifest's byte counts and SHA-256 exactly. `ctas/delivery.json` names the form: it
+says `identity` on `main` (plain JSON, as in any local preview) and the deploy step
+rewrites the deployed copy to `gzip`; `ctas/chunk-loader.js` makes exactly one request
+per file in the declared form.
 
 The runtime checkout is kept at
 `~/Library/Application Support/CTASPublisher/site`. It is intentionally outside
@@ -49,8 +74,8 @@ The authoring checkout remains under `~/Documents/Codex/JackMcGuireAstro Website
   states while ingestion continues.
 - Only named public metadata/research files and validated manifest-listed catalog pages, detail roots, and overflow parts are staged. Every requested detail file stays within 4 MiB; overflow parts preserve all original JSON and are verified by size and SHA-256 before reconstruction.
 - Dirty files outside the generated-artifact allowlist stop the job.
-- A rejected push remains local. If it later diverges from the remote, the runner verifies every unpublished commit: each must be an ordinary automatic `CTAS data:` commit changing only known generated public artifacts. It preserves the old tip under `refs/ctas-recovery/`, synchronizes this dedicated runtime checkout, and regenerates against current code and a fresh database snapshot. Code changes, other files, merge commits, and unrecognized commits stop recovery with the checkout preserved. Published history is never force-pushed.
-- Superseded tracked overflow parts and catalog pages are removed in the same publication commit; only narrowly matched generated filenames may be retired.
+- A rejected push keeps the release as `refs/pending/ctas-data` in the store and the next run pushes it before exporting again. The runtime checkout never commits to `main`; it only fast-forwards to it. (A checkout that still holds an automatic `CTAS data:` commit on `main` from before the data branch existed is recovered as before: the commit is preserved under `refs/ctas-recovery/` and the checkout is reset to `origin/main`.) `main` is never force-pushed.
+- Superseded overflow parts and catalog pages disappear with the release they belonged to: every release is built from an empty generated tree and lists only what the current manifest declares.
 - Recursive safety checks reject credentials, private paths, malformed public
   records, and unverified link hosts.
 - Insecure source URLs are retained as non-clickable provenance rather than

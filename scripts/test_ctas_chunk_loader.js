@@ -119,6 +119,62 @@ async function main() {
     const bytes = raw(document_), metadata = {...meta(rootPath(document_.bucket), bytes), candidate_count: 1};
     await assert.rejects(loader.decode(bytes, metadata, [], () => {}, digest), /does not bind/);
   });
+  const zlib = require("node:zlib");
+  const served = files => async (url) => files.has(url)
+    ? {ok: true, status: 200, arrayBuffer: async () => { const b = files.get(url); return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength); }}
+    : {ok: false, status: 404, arrayBuffer: async () => new ArrayBuffer(0)};
+  await test("published .json.gz files decompress to the exact manifest-bound bytes", async () => {
+    const document_ = sample(), bytes = raw(document_);
+    const metadata = {...meta(rootPath(document_.bucket), bytes), candidate_count: 1};
+    const fetchImpl = served(new Map([["data/efe.json.gz", zlib.gzipSync(bytes)]]));
+    const fetched = Buffer.from(await loader.fetchPublished("data/efe.json", fetchImpl, "gzip"));
+    assert.equal(hash(fetched), metadata.sha256);
+    assert.deepEqual(await loader.decode(fetched, metadata, [], () => { throw new Error("no parts"); }, digest), document_);
+  });
+  await test("multipart roots and parts are read through the compressed form", async () => {
+    const fixture = multipart(sample()), {bytes, metadata} = root(fixture), files = new Map();
+    files.set("data/" + metadata.path.split("/").pop() + ".gz", zlib.gzipSync(bytes));
+    for (const [path, part] of fixture.artifacts) files.set("data/" + path.split("/").pop() + ".gz", zlib.gzipSync(part));
+    const fetchImpl = served(files);
+    const readBytes = async path => Buffer.from(await loader.fetchPublished("data/" + path.split("/").pop(), fetchImpl, "gzip"));
+    const rootBytes = await readBytes(metadata.path);
+    assert.deepEqual(await loader.decode(rootBytes, metadata, fixture.parts, readBytes, digest), fixture.document_);
+  });
+  await test("a body the server already decoded is used as is", async () => {
+    const bytes = raw(sample());
+    const fetched = Buffer.from(await loader.fetchPublished("data/efe.json", served(new Map([["data/efe.json.gz", bytes]])), "gzip"));
+    assert.equal(hash(fetched), hash(bytes));
+  });
+  await test("identity delivery fetches only the plain path, one request per file", async () => {
+    const bytes = raw(sample()), calls = [];
+    const base = served(new Map([["data/efe.json", bytes]]));
+    const fetchImpl = async (url, options) => { calls.push(url); return base(url, options); };
+    for (const encoding of ["identity", undefined]) {
+      const fetched = Buffer.from(await loader.fetchPublished("data/efe.json", fetchImpl, encoding));
+      assert.equal(hash(fetched), hash(bytes));
+    }
+    assert.deepEqual(calls, ["data/efe.json", "data/efe.json"]);
+  });
+  await test("HTTP errors are reported for the requested form", async () => {
+    const fetchImpl = async () => ({ok: false, status: 503, arrayBuffer: async () => new ArrayBuffer(0)});
+    await assert.rejects(loader.fetchPublished("data/efe.json", fetchImpl, "gzip"), /efe\.json\.gz returned HTTP 503/);
+    await assert.rejects(loader.fetchPublished("data/missing.json", served(new Map()), "identity"), /missing\.json returned HTTP 404/);
+  });
+  await test("a corrupted compressed file fails verification rather than loading", async () => {
+    const document_ = sample(), bytes = raw(document_);
+    const metadata = {...meta(rootPath(document_.bucket), bytes), candidate_count: 1};
+    const other = raw({...document_, candidates: []});
+    const fetched = Buffer.from(await loader.fetchPublished("data/efe.json", served(new Map([["data/efe.json.gz", zlib.gzipSync(other)]])), "gzip"));
+    await assert.rejects(loader.decode(fetched, metadata, [], () => {}, digest));
+  });
+  await test("the delivery descriptor selects gzip only when it says so", async () => {
+    assert.equal(loader.chunkEncoding({schema: "ctas.delivery@1.0.0", candidate_chunk_encoding: "gzip"}), "gzip");
+    assert.equal(loader.chunkEncoding({schema: "ctas.delivery@1.0.0", candidate_chunk_encoding: "identity"}), "identity");
+    assert.equal(loader.chunkEncoding({schema: "other", candidate_chunk_encoding: "gzip"}), "identity");
+    assert.equal(loader.chunkEncoding(null), "identity");
+    const committed = JSON.parse(require("node:fs").readFileSync(require("node:path").join(__dirname, "../ctas/delivery.json"), "utf8"));
+    assert.equal(loader.chunkEncoding(committed), "identity");
+  });
   console.log(passed + " CTAS chunk-loader tests passed.");
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -1608,6 +1608,18 @@
     }
     return state.sourceMatrixPatternsPromise;
   }
+  // How this deployment serves dossier chunks: "gzip" on GitHub Pages, "identity" in a
+  // checkout of main. A missing or unreadable descriptor means plain JSON.
+  function chunkEncoding() {
+    if (!state.chunkEncodingPromise) {
+      state.chunkEncodingPromise = fetch("ctas/delivery.json", {cache: "no-cache"}).then(function (response) {
+        return response.ok ? response.json() : null;
+      }).catch(function () { return null; }).then(function (descriptor) {
+        return window.CTASChunkLoader.chunkEncoding(descriptor);
+      });
+    }
+    return state.chunkEncodingPromise;
+  }
   function loadChunk(path) {
     if (!state.chunks[path]) {
       var epoch = state.releaseEpoch;
@@ -1615,10 +1627,10 @@
       function readBytes(publicPath) {
         checkRelease();
         if (!safeCatalogDownloadPath(publicPath)) return Promise.reject(new Error("Invalid candidate data path."));
-        return fetch(DATA_DIR + publicPath.replace(/^ctas\/data\//, ""), {cache: "no-cache"}).then(function (response) {
+        if (!window.CTASChunkLoader) return Promise.reject(new Error("The candidate data loader is unavailable. Refresh to load the current application."));
+        return chunkEncoding().then(function (encoding) {
           checkRelease();
-          if (!response.ok) throw new Error(publicPath + " returned HTTP " + response.status);
-          return response.arrayBuffer();
+          return window.CTASChunkLoader.fetchPublished(DATA_DIR + publicPath.replace(/^ctas\/data\//, ""), undefined, encoding);
         }).then(function (bytes) { checkRelease(); return bytes; });
       }
       state.chunks[path] = ensureCatalogManifest().then(function (manifest) {

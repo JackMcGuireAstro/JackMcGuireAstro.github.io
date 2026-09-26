@@ -137,6 +137,22 @@ if [ "$FORCE" -eq 0 ] && [ "$MIN_INTERVAL" -gt 0 ] && [ -f "$STAMP" ]; then
   fi
 fi
 
+# ------------------------------------------------------ published data branch
+# Releases live on their own branch as one latest-only commit (scripts/data_branch.sh);
+# main holds only code. The exporter reads the previous release from that commit
+# through the store's objects, and every run starts from an empty generated tree.
+DATA_BRANCH="${CTAS_DATA_BRANCH:-ctas-data}"
+DATA_STORE="$SITE/.git/ctas-data-store"
+with_release() { GIT_ALTERNATE_OBJECT_DIRECTORIES="$DATA_STORE/objects" "$@"; }
+if RETRY_NOTE=$(bash scripts/data_branch.sh retry "$DATA_STORE" "$DATA_BRANCH"); then
+  [ -z "$RETRY_NOTE" ] || say "$RETRY_NOTE"
+else
+  say "the release kept from a failed push is still unpublished: $RETRY_NOTE"
+fi
+DATA_TIP=$(bash scripts/data_branch.sh sync "$DATA_STORE" "$DATA_BRANCH") \
+  || die "could not read the published $DATA_BRANCH release: $DATA_TIP"
+git clean -fdqX -- ctas/data || die "could not clear the previous generated files"
+
 # Freeze one transactionally consistent SQLite view for the whole release.
 # The live pipeline may continue writing to the canonical database while link
 # checks and assurance artifacts are generated, but no publication mixes two
@@ -192,8 +208,8 @@ fi
 [ -s "$PUBLISH_DB" ] || die "database snapshot is empty"
 
 # ----------------------------------------------------------------- export
-python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
-  --release-base-ref origin/main >>"$LOG" 2>&1 \
+with_release python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
+  --release-base-ref "$DATA_TIP" >>"$LOG" 2>&1 \
   || die "export failed; nothing committed"
 python3 scripts/check_ctas_links.py --catalog-index ctas/data/catalog-index.json \
   --candidate-manifest ctas/data/candidate-chunks/manifest.json \
@@ -201,8 +217,8 @@ python3 scripts/check_ctas_links.py --catalog-index ctas/data/catalog-index.json
   || die "public link validation failed; nothing committed"
 # Rebuild once so the verification report binds the current link-health artifact and
 # its catalog-content checksum. The exported scientific rows are deterministic.
-python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
-  --release-base-ref origin/main >>"$LOG" 2>&1 \
+with_release python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
+  --release-base-ref "$DATA_TIP" >>"$LOG" 2>&1 \
   || die "verification-report rebuild failed; nothing committed"
 
 # ----------------------------------------------------------- collect detail files
@@ -437,7 +453,7 @@ doc = json.load(open(sys.argv[1]))
 rows = {key: value.get("sha256") for key, value in doc.get("files", {}).items() if not key.startswith("ctas/data/")}
 print(hashlib.sha256(json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()).hexdigest())
 ' ctas/data/certification.json 2>/dev/null || echo "")
-HEAD_META=$(git show HEAD:ctas/data/status.json 2>/dev/null | python3 -c '
+HEAD_META=$(git --git-dir="$DATA_STORE" show "$DATA_TIP:ctas/data/status.json" 2>/dev/null | python3 -c '
 import datetime, json, sys
 doc = json.load(sys.stdin)
 stamp = doc.get("last_successful_update") or doc.get("generated_at") or ""
@@ -448,7 +464,7 @@ except (TypeError, ValueError):
     epoch = 0
 print("{}\t{}".format(doc.get("publication_state_checksum_sha256", ""), epoch))
 ' 2>/dev/null || true)
-HEAD_CODE_BINDING=$(git show HEAD:ctas/data/certification.json 2>/dev/null | python3 -c '
+HEAD_CODE_BINDING=$(git --git-dir="$DATA_STORE" show "$DATA_TIP:ctas/data/certification.json" 2>/dev/null | python3 -c '
 import hashlib, json, sys
 doc = json.load(sys.stdin)
 rows = {key: value.get("sha256") for key, value in doc.get("files", {}).items() if not key.startswith("ctas/data/")}
@@ -460,11 +476,8 @@ NOW_EPOCH=$(date +%s)
 CODE_BINDING_CHANGED=0
 [ -n "$CURRENT_CODE_BINDING" ] && [ "$CURRENT_CODE_BINDING" = "$HEAD_CODE_BINDING" ] \
   || CODE_BINDING_CHANGED=1
+# A release kept from a failed push was retried above, so nothing is pending here.
 PENDING_CTAS_COMMIT=0
-if git log -1 --pretty=%s 2>/dev/null | grep -q '^CTAS data: ' \
-   && ! git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
-  PENDING_CTAS_COMMIT=1
-fi
 
 if [ "$CURRENT_STATE" = "$HEAD_STATE" ] && [ "$PENDING_CTAS_COMMIT" -eq 0 ] \
    && [ "$CODE_BINDING_CHANGED" -eq 0 ]; then
@@ -486,110 +499,39 @@ elif [ "$CODE_BINDING_CHANGED" -eq 1 ]; then
   say "bound public code changed; publishing a matching snapshot-verification refresh"
 fi
 
-UNTRACKED_PUBLIC=$(git ls-files --others -- "${PUBLIC_FILES[@]}") \
-  || die "could not inspect untracked public artifacts"
-if git diff --quiet HEAD -- "${PUBLIC_FILES[@]}" 2>/dev/null && [ -z "$UNTRACKED_PUBLIC" ]; then
-  say "public artifacts already match HEAD; nothing to publish"
-  discard_generated_files
-  exit 0
-fi
-
 COUNT=$(python3 -c "import json;print(json.load(open('ctas/data/catalog-index.json'))['candidate_count'])" 2>/dev/null || echo "?")
 
 if [ "$DRY" -eq 1 ]; then
-  say "--dry-run: $COUNT candidates; would commit ${#PUBLIC_FILES[@]} allowlisted public CTAS artifacts and push to $BRANCH"
+  say "--dry-run: $COUNT candidates; would publish ${#PUBLIC_FILES[@]} allowlisted public CTAS artifacts to $DATA_BRANCH"
   discard_generated_files
   exit 0
 fi
 
-# ------------------------------------------------------- refuse a dirty index
-# Only ctas/data may be committed. If anything else is already staged, stop
-# rather than sweeping work-in-progress into an automated commit.
-STAGED_OTHER=$(git diff --cached --name-only | while IFS= read -r staged; do
-  allowed=0
-  for public_file in "${PUBLIC_FILES[@]}"; do [ "$staged" = "$public_file" ] && allowed=1; done
-  [ "$allowed" -eq 1 ] || printf '%s\n' "$staged"
-done)
-if [ -n "$STAGED_OTHER" ]; then
-  die "other files are already staged; refusing to commit. Staged: $(echo "$STAGED_OTHER" | tr '\n' ' ')"
-fi
-
-git add -- "${PUBLIC_FILES[@]}" || die "git add failed"
-
-STAGED=$(git diff --cached --name-only)
-for staged in $STAGED; do
-  allowed=0
-  for public_file in "${PUBLIC_FILES[@]}"; do [ "$staged" = "$public_file" ] && allowed=1; done
-  [ "$allowed" -eq 1 ] || die "unexpected staged path after allowlisted add: $staged"
-done
-
-# If the last commit is one of ours and has not reached origin yet, amend it
-# instead of stacking a new commit every cycle. A run of failing pushes then
-# leaves ONE pending commit carrying the newest data, not dozens of stale ones.
-AMEND=""
-if [ "$PENDING_CTAS_COMMIT" -eq 1 ]; then
-  AMEND="--amend"
-  say "previous CTAS commit is still unpushed; amending it rather than stacking"
-fi
-
-git commit -q $AMEND -m "CTAS data: $COUNT candidates ($(date -u '+%Y-%m-%d %H:%M UTC'))" \
-  || die "git commit failed"
-SHA=$(git rev-parse --short HEAD)
-
-PUSH_ERR=$(git push origin "$BRANCH" 2>&1)
-PUSH_STATUS=$?
-if [ "$PUSH_STATUS" -ne 0 ]; then
-  say "first push attempt failed; refreshing origin before one safe retry"
-  if git fetch --quiet origin "$BRANCH"; then
-    REBASE_ERR=$(git rebase "origin/$BRANCH" 2>&1)
-    REBASE_STATUS=$?
-    if [ "$REBASE_STATUS" -eq 0 ]; then
-      SHA=$(git rev-parse --short HEAD)
-      # A concurrent site-only commit is safe to integrate. If it changed any
-      # checksum-bound CTAS code, keep the local data commit and let the next
-      # scheduled run rebuild the release against that code before publishing.
-      if python3 - <<'PY'
-import hashlib
-import json
-from pathlib import Path
-
-report = json.loads(Path("ctas/data/certification.json").read_text())
-mismatches = []
-for path, row in report.get("files", {}).items():
-    if path.startswith("ctas/data/"):
-        continue
-    file_path = Path(path)
-    expected = row.get("sha256") if isinstance(row, dict) else None
-    actual = hashlib.sha256(file_path.read_bytes()).hexdigest() if file_path.is_file() else None
-    if actual != expected:
-        mismatches.append(path)
-if mismatches:
-    raise SystemExit("checksum-bound code changed: " + ", ".join(mismatches))
-PY
-      then
-        say "remote update preserved checksum-bound CTAS code; retrying without force"
-        PUSH_ERR=$(git push origin "$BRANCH" 2>&1)
-        PUSH_STATUS=$?
-      else
-        PUSH_ERR="remote update changed checksum-bound CTAS code; the next scheduled run must rebuild the release"
-        PUSH_STATUS=1
-      fi
-    else
-      git rebase --abort >/dev/null 2>&1 || true
-      PUSH_ERR="safe rebase onto origin/$BRANCH failed: $(printf '%s' "$REBASE_ERR" | tr '\n' ' ' | cut -c1-220)"
-      PUSH_STATUS=1
-    fi
-  else
-    PUSH_ERR="could not refresh origin/$BRANCH after the rejected push"
-    PUSH_STATUS=1
-  fi
-fi
-if [ "$PUSH_STATUS" -eq 0 ]; then
-  date +%s >"$STAMP"
-  say "published $SHA  ($COUNT candidates)"
-else
-  printf '%s\n' "$PUSH_ERR" >>"$LOG"
-  say "push failed; commit $SHA stays local, nothing forced"
-  say "git said: $(printf '%s' "$PUSH_ERR" | tr '\n' ' ' | cut -c1-300)"
-  exit 1
-fi
+# ----------------------------------------------------------------- publish
+# Replace the data branch with one commit holding exactly the allowlisted release
+# files (retired paths simply are not listed). main is never committed to or
+# force-pushed here; only this publisher writes $DATA_BRANCH.
+RELEASE_LIST=$(mktemp "${TMPDIR:-/tmp}/ctas-release-files.XXXXXX") || die "could not list the release files"
+for public_file in "${PUBLIC_FILES[@]}"; do
+  [ -f "$public_file" ] && printf '%s\n' "$public_file"
+done >"$RELEASE_LIST"
+PUBLISH_OUTPUT=$(bash scripts/data_branch.sh publish "$DATA_STORE" "$DATA_BRANCH" \
+  "CTAS data: $COUNT candidates ($(date -u '+%Y-%m-%d %H:%M UTC'))" "$RELEASE_LIST")
+PUBLISH_STATUS=$?
+rm -f "$RELEASE_LIST"
+case "$PUBLISH_STATUS" in
+  0)
+    date +%s >"$STAMP"
+    SHA=$(printf '%s' "$PUBLISH_OUTPUT" | awk '{print substr($2, 1, 11)}')
+    say "published $SHA  ($COUNT candidates) to $DATA_BRANCH"
+    ;;
+  10)
+    say "public artifacts already match the published $DATA_BRANCH release; nothing to publish"
+    ;;
+  *)
+    printf '%s\n' "$PUBLISH_OUTPUT" >>"$LOG"
+    say "push failed; the release is kept for the next run and nothing was forced"
+    say "git said: $(printf '%s' "$PUBLISH_OUTPUT" | tr '\n' ' ' | cut -c1-300)"
+    exit 1
+    ;;
+esac

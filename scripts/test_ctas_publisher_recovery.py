@@ -507,8 +507,7 @@ class PublisherDiscardTests(unittest.TestCase):
 
     def test_every_non_committing_exit_discards_generated_files(self):
         publisher = (ROOT / "scripts/publish_ctas.sh").read_text()
-        for message in ("publication paused", "next freshness heartbeat in",
-                        "already match HEAD; nothing to publish", "--dry-run:"):
+        for message in ("publication paused", "next freshness heartbeat in", "--dry-run:"):
             with self.subTest(message=message):
                 index = publisher.index(message)
                 following = publisher[index:publisher.index("exit 0", index)]

@@ -233,6 +233,19 @@ say "regenerating the source-resolved atlas from the active frozen snapshots"
 date -u '+%Y-%m-%dT%H:%M:%SZ' >"$LOG_DIR/.last-full-run"
 fi  # MODE=full
 
+# Releases live on their own branch as one latest-only commit (scripts/data_branch.sh);
+# main holds only code. Every build starts from an empty generated tree.
+DATA_BRANCH="${WORLDSINDEX_DATA_BRANCH:-worldsindex-data}"
+DATA_STORE="$SITE/.git/worldsindex-data-store"
+if RETRY_NOTE=$(cd "$SITE" && bash scripts/data_branch.sh retry "$DATA_STORE" "$DATA_BRANCH"); then
+  [ -z "$RETRY_NOTE" ] || say "$RETRY_NOTE"
+else
+  say "the release kept from a failed push is still unpublished: $RETRY_NOTE"
+fi
+DATA_TIP=$(cd "$SITE" && bash scripts/data_branch.sh sync "$DATA_STORE" "$DATA_BRANCH") \
+  || die "could not read the published $DATA_BRANCH release: $DATA_TIP"
+git -C "$SITE" clean -fdqX -- worldsindex/data || die "could not clear the previous generated files"
+
 say "building the GitHub-native static release"
 (cd "$SITE" && WORLDSINDEX_SOURCE_DIR="$SOURCE" node scripts/build_worldsindex_static.mjs) >>"$LOG" 2>&1 \
   || die "static release build failed"
@@ -303,7 +316,7 @@ while IFS= read -r line; do
   allowed=0
   for public_file in "${PUBLIC_FILES[@]}"; do [ "$path" = "$public_file" ] && allowed=1; done
   [ "$allowed" -eq 1 ] || UNLISTED_DIRTY="$UNLISTED_DIRTY $path"
-done < <(git status --porcelain --untracked-files=all -- worldsindex/data)
+done < <(cd "$SITE" && find worldsindex/data -type f | sort | sed 's/^/?? /')
 [ -z "$SYNC_DUPLICATES" ] || say "warning: sync duplicate files under worldsindex/data are ignored:$SYNC_DUPLICATES"
 [ -z "$UNLISTED_DIRTY" ] \
   || die "build changed files outside the publication allowlist; refusing a partial release:$UNLISTED_DIRTY"
@@ -311,69 +324,38 @@ REQUIRED_COUNT=$(printf '%s\n' "$REQUIRED_ARTIFACTS" | grep -c .)
 say "artifact guard: $REQUIRED_COUNT manifest-declared artifacts are all present and allowlisted"
 # ----------------------------------------------------------------------------------------
 
-if git diff --quiet HEAD -- "${PUBLIC_FILES[@]}" 2>/dev/null && [ "$FORCE" -eq 0 ]; then
-  say "validated public release already matches HEAD; nothing to publish"
-  input_fingerprint >"$INPUT_STAMP" 2>/dev/null || true
-  discard_generated_files
-  exit 0
-fi
-
 OBJECTS=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifest.json"))["objectCount"])' 2>/dev/null || echo '?')
 RECORDS=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifest.json"))["detailRecordCount"])' 2>/dev/null || echo '?')
 
 if [ "$DRY" -eq 1 ]; then
-  say "--dry-run: validated $OBJECTS objects and $RECORDS native rows; would stage ${#PUBLIC_FILES[@]} allowlisted artifacts covering $REQUIRED_COUNT manifest-declared artifacts"
-  printf '%s\n' "$REQUIRED_ARTIFACTS" | sed 's/^/  would stage: /' >>"$LOG"
+  say "--dry-run: validated $OBJECTS objects and $RECORDS native rows; would publish ${#PUBLIC_FILES[@]} allowlisted artifacts covering $REQUIRED_COUNT manifest-declared artifacts to $DATA_BRANCH"
+  printf '%s\n' "$REQUIRED_ARTIFACTS" | sed 's/^/  would publish: /' >>"$LOG"
   discard_generated_files
   exit 0
 fi
 
-STAGED_OTHER=$(git diff --cached --name-only)
-[ -z "$STAGED_OTHER" ] || die "other files are already staged; refusing automated commit: $(printf '%s' "$STAGED_OTHER" | tr '\n' ' ')"
-git add -- "${PUBLIC_FILES[@]}" || die "could not stage the explicit WorldsIndex artifact allowlist"
-LEFT_BEHIND=$(git status --porcelain --untracked-files=all -- worldsindex/data | grep -v '^[MADRC] ' | grep -v -E ' [0-9]+\.[^/]*$' || true)
-[ -z "$LEFT_BEHIND" ] || die "artifacts remain unstaged after allowlist staging; refusing a partial release: $(printf '%s' "$LEFT_BEHIND" | tr '\n' ' ')"
-
-while IFS= read -r staged; do
-  allowed=0
-  for public_file in "${PUBLIC_FILES[@]}"; do [ "$staged" = "$public_file" ] && allowed=1; done
-  [ "$allowed" -eq 1 ] || die "unexpected staged path: $staged"
-done < <(git diff --cached --name-only)
-
-PENDING=0
-if git log -1 --pretty=%s | grep -q '^WorldsIndex data: ' \
-   && ! git merge-base --is-ancestor HEAD "origin/$BRANCH" 2>/dev/null; then
-  PENDING=1
-fi
-AMEND=""
-if [ "$PENDING" -eq 1 ]; then
-  AMEND="--amend"
-  say "amending the previous unpublished WorldsIndex data commit"
-fi
-git commit -q $AMEND -m "WorldsIndex data: $OBJECTS objects, $RECORDS rows ($(date -u '+%Y-%m-%d %H:%M UTC'))" \
-  || die "could not create the WorldsIndex release commit"
-SHA=$(git rev-parse --short HEAD)
-
-PUSH_OUTPUT=$(git push origin "$BRANCH" 2>&1)
-PUSH_STATUS=$?
-if [ "$PUSH_STATUS" -ne 0 ]; then
-  say "push raced with another site update; checking whether a safe rebase is possible"
-  git fetch --quiet origin "$BRANCH" || die "could not refresh origin/$BRANCH after rejected push"
-  BOUND_CODE=$(git diff --name-only HEAD "origin/$BRANCH" -- worldsindex/index.html worldsindex/assets scripts/build_worldsindex_static.mjs scripts/test_worldsindex_static.py)
-  [ -z "$BOUND_CODE" ] || die "remote WorldsIndex code changed during the build; next run must rebuild against it"
-  if git rebase "origin/$BRANCH" >/dev/null 2>&1; then
-    SHA=$(git rev-parse --short HEAD)
-    PUSH_OUTPUT=$(git push origin "$BRANCH" 2>&1)
-    PUSH_STATUS=$?
-  else
-    git rebase --abort >/dev/null 2>&1 || true
-    die "could not safely rebase the release onto origin/$BRANCH"
-  fi
-fi
-if [ "$PUSH_STATUS" -ne 0 ]; then
-  printf '%s\n' "$PUSH_OUTPUT" >>"$LOG"
-  die "push failed; commit $SHA remains local and nothing was forced"
-fi
-
-input_fingerprint >"$INPUT_STAMP" 2>/dev/null || true
-say "published $SHA; GitHub Actions validates and deploys the static release"
+# Replace the data branch with one commit holding exactly the allowlisted artifacts.
+# main is never committed to or force-pushed here; only this publisher writes it.
+RELEASE_LIST=$(mktemp "${TMPDIR:-/tmp}/worldsindex-release-files.XXXXXX") || die "could not list the release files"
+for public_file in "${PUBLIC_FILES[@]}"; do
+  [ -f "$public_file" ] && printf '%s\n' "$public_file"
+done >"$RELEASE_LIST"
+PUBLISH_OUTPUT=$(bash scripts/data_branch.sh publish "$DATA_STORE" "$DATA_BRANCH" \
+  "WorldsIndex data: $OBJECTS objects, $RECORDS rows ($(date -u '+%Y-%m-%d %H:%M UTC'))" "$RELEASE_LIST")
+PUBLISH_STATUS=$?
+rm -f "$RELEASE_LIST"
+case "$PUBLISH_STATUS" in
+  0)
+    input_fingerprint >"$INPUT_STAMP" 2>/dev/null || true
+    SHA=$(printf '%s' "$PUBLISH_OUTPUT" | awk '{print substr($2, 1, 11)}')
+    say "published $SHA to $DATA_BRANCH; GitHub Actions validates and deploys the static release"
+    ;;
+  10)
+    say "validated public release already matches the published $DATA_BRANCH release; nothing to publish"
+    input_fingerprint >"$INPUT_STAMP" 2>/dev/null || true
+    ;;
+  *)
+    printf '%s\n' "$PUBLISH_OUTPUT" >>"$LOG"
+    die "push failed; the release is kept for the next run and nothing was forced"
+    ;;
+esac

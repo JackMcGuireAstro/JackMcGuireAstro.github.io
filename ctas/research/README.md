@@ -67,6 +67,12 @@ and concatenate the `json_fragment` strings from the verified JSON envelopes.
 Check the assembled byte count and SHA-256 before parsing the original bucket.
 Every observation, source receipt, and other published field is preserved.
 
+On the live site the bucket roots and parts are served gzip-compressed: fetch
+`<path>.gz` for any `path` in the manifest (for example
+`ctas/data/candidate-chunks/efe.json.gz`) and decompress it. The decompressed bytes
+are exactly the file the manifest describes, so verify byte counts and SHA-256
+after decompression. The manifest itself is served uncompressed.
+
 The website performs this reconstruction when a dossier is opened. Python
 consumers can use `scripts/ctas_chunks.py` for the same lossless decoding;
 `scripts/check_ctas_links.py` also verifies manifest integrity, exact part

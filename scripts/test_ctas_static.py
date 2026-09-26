@@ -656,22 +656,17 @@ class PublisherPageAllowlistTests(unittest.TestCase):
                 self.assertTrue((self.pages_dir / "0003.json").is_file())
 
     def test_repair_only_untracked_pages_are_not_mistaken_for_no_change(self):
-        self.write_pages(1)
-        self.git("add", "ctas/data/catalog-pages/manifest.json")
-        self.git("commit", "-qm", "manifest-only historical defect")
-        self.assertEqual(self.git("diff", "HEAD", "--", "ctas/data"), "")
-        start = self.publisher.index("UNTRACKED_PUBLIC=$(git ls-files")
-        end = self.publisher.index("\nCOUNT=", start)
-        script = ('set -euo pipefail\ncd "$1"\nPUBLIC_FILES=(ctas/data/catalog-pages/0001.json)\n'
-                  'die() { exit 1; }\nsay() { echo "$*"; }\n' + self.publisher[start:end]
-                  + '\necho REPAIR_NEEDED\n')
-        result = subprocess.run(["/bin/bash", "-c", script, "untracked-test", str(self.site)],
-                                text=True, capture_output=True)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("REPAIR_NEEDED", result.stdout)
-        self.assertEqual(self.collect().returncode, 0)
-        self.assertIn("ctas/data/catalog-pages/0001.json", self.git("ls-tree", "-r", "--name-only", "HEAD"))
+        """A release whose only change is a page the previous release lacked must publish.
 
+        The unchanged decision is data_branch.sh comparing the complete new release tree
+        with the published one, so a file that was never in the previous release always
+        makes the trees differ (see test_data_branch.py for the end-to-end check)."""
+        self.assertIn('10)\n    say "public artifacts already match the published $DATA_BRANCH release', self.publisher)
+        self.assertNotIn("git diff --quiet HEAD", self.publisher)
+        helper = (ROOT / "scripts/data_branch.sh").read_text()
+        self.assertIn('[ "$(store rev-parse "$CURRENT^{tree}")" = "$TREE" ]', helper)
+        self.write_pages(1)
+        self.assertEqual(self.collect(commit=False).returncode, 0)
 
 class CertificateAndArtifactTests(unittest.TestCase):
     @classmethod
@@ -1297,7 +1292,8 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn('for index in range(4096)', publisher)
         self.assertIn('used_parts != set(part_metadata)', publisher)
         self.assertIn('HEARTBEAT_INTERVAL="${CTAS_HEARTBEAT_INTERVAL:-900}"', publisher)
-        self.assertEqual(publisher.count('--release-base-ref origin/main'), 2)
+        self.assertEqual(publisher.count('--release-base-ref "$DATA_TIP"'), 2)
+        self.assertEqual(publisher.count('with_release python3 scripts/export_ctas_snapshot.py'), 2)
         self.assertIn('restore --source=HEAD --staged --worktree', publisher)
         self.assertIn('discard_generated_files() {', publisher)
         self.assertIn('clean -fdq -- ctas/data', publisher)
@@ -1308,10 +1304,12 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn("HEAD_CODE_BINDING", publisher)
         self.assertIn("CODE_BINDING_CHANGED", publisher)
         self.assertIn("export PYTHONDONTWRITEBYTECODE=1", publisher)
-        self.assertIn('git fetch --quiet origin "$BRANCH"', publisher)
-        self.assertIn('git rebase "origin/$BRANCH"', publisher)
-        self.assertIn("remote update preserved checksum-bound CTAS code", publisher)
-        self.assertNotIn("git push --force", publisher)
+        self.assertIn('scripts/data_branch.sh sync "$DATA_STORE" "$DATA_BRANCH"', publisher)
+        self.assertIn('scripts/data_branch.sh retry "$DATA_STORE" "$DATA_BRANCH"', publisher)
+        self.assertIn('scripts/data_branch.sh publish "$DATA_STORE" "$DATA_BRANCH"', publisher)
+        self.assertIn('DATA_BRANCH="${CTAS_DATA_BRANCH:-ctas-data}"', publisher)
+        self.assertNotIn("git push", publisher)
+        self.assertNotIn("git commit", publisher)
         self.assertIn("deployed-code-binding,local-origin-code-alignment", publisher)
         self.assertIn("local checksum-bound code successor is not published; publication paused", publisher)
         mirror = (ROOT / "scripts/mirror_loop.sh").read_text()

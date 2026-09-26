@@ -1,7 +1,7 @@
 # WorldsIndex local refresh and GitHub publication
 
 WorldsIndex uses the same operating pattern as CTAS: the research checks run on
-this Mac, a dedicated local checkout commits only generated public artifacts,
+this Mac, a dedicated local checkout publishes only generated public artifacts (to its own data branch),
 and GitHub Pages serves the site. ChatGPT-hosted Sites and Codex scheduled tasks
 are not part of this path.
 
@@ -57,6 +57,18 @@ This is the mode that makes "constantly updated from my local files" literally t
 
 `.env.local` remains local with mode 0600 and is never copied into the public-site checkout.
 
+## Where releases are published
+
+Releases are not committed to `main`. Each publication replaces the
+`worldsindex-data` branch with one commit holding exactly the allowlisted artifacts
+below (`scripts/data_branch.sh`, store in the runtime checkout's
+`.git/worldsindex-data-store`); the deploy workflow combines `main` with the latest
+commit of `worldsindex-data` and `ctas-data`. Only this publisher writes the branch,
+so the two publishers can no longer collide on `main`, and the repository keeps no
+history of data releases. Every build starts from an empty `worldsindex/data`
+(ignored on `main`). `bash scripts/overlay_published_data.sh` places the published
+data in a local checkout for previews.
+
 ## Scientific boundary
 
 A provider change marker is evidence that a source may have changed. It is not
@@ -67,7 +79,7 @@ provenance, and regression gates pass. Failed and quarantined runs leave the
 last-good catalog measurements unchanged; their typed failure state remains
 publicly visible instead of being mistaken for freshness.
 
-The publisher can stage only:
+The publisher can publish only:
 
 - `worldsindex/data/manifest.json`
 - `worldsindex/data/registry.json.gz`
