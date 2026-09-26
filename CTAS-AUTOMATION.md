@@ -70,8 +70,19 @@ The authoring checkout remains under `~/Documents/Codex/JackMcGuireAstro Website
 
 ## Safety behavior
 
-- The exporter reads a frozen SQLite backup, so a release cannot mix database
-  states while ingestion continues.
+- The exporter reads one frozen database state, so a release cannot mix database
+  states while ingestion continues. The publisher pins a read transaction on the
+  live file (opened read-only) and, on APFS, clones the database and its WAL
+  copy-on-write (`clonefile`) inside it: the clone shares every block with the
+  live file, so a release no longer writes a multi-gigabyte copy. The pin keeps
+  checkpoints from moving newer state into the main file and keeps the WAL from
+  being reset between the two clones, so the pair always recovers to one committed
+  state. The clone's WAL is then recovered into it, it is converted to a standalone
+  rollback-journal file, and `PRAGMA quick_check` must pass. Where cloning is not
+  possible, or the clone fails its check, the SQLite backup API copies the pinned
+  state instead (`CTAS_SNAPSHOT_METHOD=backup` forces this). The snapshot lives in
+  the runtime checkout's `.git` directory (same volume as the database) and is
+  removed at the end of every run; one left by a killed run is removed after an hour.
 - Only named public metadata/research files and validated manifest-listed catalog pages, detail roots, and overflow parts are staged. Every requested detail file stays within 4 MiB; overflow parts preserve all original JSON and are verified by size and SHA-256 before reconstruction.
 - Dirty files outside the generated-artifact allowlist stop the job.
 - A rejected push keeps the release as `refs/pending/ctas-data` in the store and the next run pushes it before exporting again. The runtime checkout never commits to `main`; it only fast-forwards to it. (A checkout that still holds an automatic `CTAS data:` commit on `main` from before the data branch existed is recovered as before: the commit is preserved under `refs/ctas-recovery/` and the checkout is reset to `origin/main`.) `main` is never force-pushed.
@@ -159,8 +170,7 @@ pruned. `preview` reports without writing; `prune --archive … --vacuum` archiv
 every removed row to gzip NDJSON first and compacts the file (run with the backend
 stopped); `daily` prunes in small batches while the backend runs and reclaims pages
 with incremental vacuum. The publisher checks its optional `CTAS_MIN_INTERVAL`
-floor before taking the frozen database snapshot, so a waiting run never copies
-the database.
+floor before taking the frozen database snapshot, so a waiting run never takes one.
 
 ## Freshness watchdog
 

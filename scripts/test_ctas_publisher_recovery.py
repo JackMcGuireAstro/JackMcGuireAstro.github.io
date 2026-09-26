@@ -146,7 +146,8 @@ class PinnedDatabaseBackupTests(unittest.TestCase):
                 self.assertTrue(str(database).endswith("?mode=ro"))
                 kwargs["factory"] = source_factory
             return self.connect(database, *args, **kwargs)
-        with patch("sqlite3.connect", connect), \
+        # these tests cover the backup API copy; on APFS the default would clone instead
+        with patch("sqlite3.connect", connect), patch.dict("os.environ", {"CTAS_SNAPSHOT_METHOD": "backup"}), \
                 patch.object(sys, "argv", ["publisher-backup-test", str(self.source), str(self.destination)]), \
                 contextlib.redirect_stdout(self.output), contextlib.redirect_stderr(self.output):
             with patch("time.monotonic", clock) if clock else contextlib.nullcontext():
@@ -201,6 +202,179 @@ class PinnedDatabaseBackupTests(unittest.TestCase):
         self.assertEqual(error.exception.code, 1)
         self.assertIn("600-second deadline", self.output.getvalue())
         self.assert_cleaned()
+
+
+class ClonedDatabaseSnapshotTests(unittest.TestCase):
+    """Run the publisher's snapshot code with a stand-in for clonefile(2), so the
+    copy-on-write path (APFS only) is exercised here: live writers and checkpoints
+    between pinning, cloning the main file and cloning its WAL must never produce a
+    snapshot that mixes two committed states."""
+
+    ACCOUNTS = 64
+    TOTAL = 64 * 1000
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="ctas-cloned-snapshot-")
+        self.addCleanup(self.temporary.cleanup)
+        self.folder = Path(self.temporary.name)
+        self.source = self.folder / "live soc.db"
+        self.destination = self.folder / "ctas-publish.snapshot"
+        self.destination.write_bytes(b"")  # mktemp leaves an empty file behind
+        self.live = sqlite3.connect(self.source, timeout=0.2)
+        self.addCleanup(self.live.close)
+        self.live.execute("PRAGMA journal_mode=WAL")
+        self.live.execute("PRAGMA wal_autocheckpoint=0")
+        self.live.execute("CREATE TABLE events (id INTEGER PRIMARY KEY, balance INTEGER, payload TEXT)")
+        self.live.executemany("INSERT INTO events VALUES (?,?,?)", [
+            (index, 1000, "x" * 3000) for index in range(self.ACCOUNTS)])
+        self.live.commit()
+        publisher = (ROOT / "scripts/publish_ctas.sh").read_text()
+        self.code = publisher.split("<<'PYCTASBACKUP'\n", 1)[1].split("\nPYCTASBACKUP", 1)[0]
+        self.output = io.StringIO()
+        self.clone_calls = []
+        self.hooks = {}
+        self.clone_errno = {}
+        self.corrupt_main_clone = False
+
+    # one live transaction: move value between accounts and append one event, so any
+    # snapshot mixing two states breaks the balance total or the event/transfer pairing
+    def transfer(self, step, checkpoint=None):
+        with self.live:
+            self.live.execute("UPDATE events SET balance = balance - 7 WHERE id = ?", (step % self.ACCOUNTS,))
+            self.live.execute("UPDATE events SET balance = balance + 7 WHERE id = ?", ((step * 13 + 5) % self.ACCOUNTS,))
+            self.live.execute("INSERT INTO events VALUES (?,?,?)", (100000 + step, 0, "y" * 5000))
+        if checkpoint:
+            self.live.execute(f"PRAGMA wal_checkpoint({checkpoint})").fetchall()
+
+    def clone_stand_in(self, source, target, flags):
+        source, target = source.decode(), target.decode()
+        kind = "wal" if source.endswith("-wal") else "main"
+        self.clone_calls.append(kind)
+        self.hooks.get(kind, lambda: None)()
+        if kind in self.clone_errno:
+            self.errno_value = self.clone_errno[kind]
+            return -1
+        if Path(target).exists():
+            self.errno_value = 17  # EEXIST, as clonefile(2) reports
+            return -1
+        Path(target).write_bytes(Path(source).read_bytes())
+        if kind == "main" and self.corrupt_main_clone:
+            # damage b-tree pages the WAL does not carry (a page the WAL holds would
+            # legitimately be restored by recovery)
+            with open(target, "r+b") as handle:
+                handle.seek(4096)
+                handle.write(bytes([0x55]) * 4096 * 3)
+        return 0
+
+    def fake_cdll(self):
+        stand_in = self.clone_stand_in
+        class Library:
+            def __init__(self, name, use_errno=False):
+                def clonefile(source, target, flags):
+                    return stand_in(source, target, flags)
+                self.clonefile = clonefile
+        return Library
+
+    def execute(self, method=None):
+        environment = {"CTAS_SNAPSHOT_METHOD": method} if method else {}
+        self.errno_value = 0
+        with patch("ctypes.CDLL", self.fake_cdll()), patch("ctypes.get_errno", lambda: self.errno_value), \
+                patch.dict("os.environ", environment), \
+                patch.object(sys, "argv", ["publisher-clone-test", str(self.source), str(self.destination)]), \
+                contextlib.redirect_stdout(self.output), contextlib.redirect_stderr(self.output):
+            exec(compile(self.code, "publisher-clone", "exec"), {})
+
+    def assert_consistent_snapshot(self):
+        for suffix in ("-wal", "-shm", "-journal"):
+            self.assertFalse(Path(str(self.destination) + suffix).exists(), suffix)
+        with contextlib.closing(sqlite3.connect(self.destination.as_uri() + "?mode=ro", uri=True)) as frozen:
+            if "copy-on-write clone" in self.output.getvalue().splitlines()[-1]:
+                # a settled clone stands alone: its WAL was recovered and retired
+                self.assertEqual(frozen.execute("PRAGMA journal_mode").fetchone()[0], "delete")
+            self.assertEqual(frozen.execute("PRAGMA quick_check").fetchone()[0], "ok")
+            total = frozen.execute("SELECT SUM(balance) FROM events").fetchone()[0]
+            transfers = frozen.execute("SELECT COUNT(*) FROM events WHERE id >= 100000").fetchone()[0]
+            moved = frozen.execute("SELECT SUM(ABS(balance - 1000)) FROM events WHERE id < ?", (self.ACCOUNTS,)).fetchone()[0]
+            self.assertEqual(total, self.TOTAL)
+            return transfers, moved
+
+    def test_writes_and_checkpoints_around_each_clone_give_one_committed_state(self):
+        step = iter(range(10000))
+        for round_ in range(12):
+            with self.subTest(round=round_):
+                for _ in range(round_ % 4):
+                    self.transfer(next(step))
+                checkpoint = ("PASSIVE", "FULL", None)[round_ % 3]
+                self.hooks = {
+                    "main": lambda: [self.transfer(next(step), checkpoint) for _ in range(1 + round_ % 3)],
+                    "wal": lambda: [self.transfer(next(step), "PASSIVE") for _ in range(2)],
+                }
+                self.clone_calls = []
+                self.destination.unlink(missing_ok=True)
+                self.destination.write_bytes(b"")
+                self.execute()
+                self.assertEqual(self.clone_calls, ["main", "wal"])
+                self.assertIn("copy-on-write clone", self.output.getvalue())
+                transfers, _ = self.assert_consistent_snapshot()
+                with contextlib.closing(sqlite3.connect(self.source)) as live:
+                    live_transfers = live.execute("SELECT COUNT(*) FROM events WHERE id >= 100000").fetchone()[0]
+                self.assertLessEqual(transfers, live_transfers)
+            if round_ % 4 == 3:
+                self.live.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchall()
+
+    def test_snapshot_taken_from_a_fully_checkpointed_wal_survives_a_wal_reset(self):
+        self.live.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchall()
+        self.hooks = {"main": lambda: [self.transfer(step, "PASSIVE") for step in range(5)]}
+        self.execute()
+        transfers, _ = self.assert_consistent_snapshot()
+        self.assertIn(transfers, (0, 5))
+
+    def test_unsupported_volume_falls_back_to_a_full_copy_of_the_pinned_state(self):
+        import errno as errors
+        self.clone_errno = {"main": errors.ENOTSUP}
+        self.hooks = {"main": lambda: self.transfer(1, "PASSIVE")}
+        self.execute()
+        self.assertIn("full copy", self.output.getvalue())
+        transfers, _ = self.assert_consistent_snapshot()
+        self.assertEqual(transfers, 0)  # the backup copies exactly the pinned state
+
+    def test_wal_that_cannot_be_cloned_falls_back_to_a_full_copy(self):
+        import errno as errors
+        self.clone_errno = {"wal": errors.EXDEV}
+        self.transfer(1)
+        self.execute()
+        self.assertEqual(self.clone_calls, ["main", "wal"])
+        self.assertIn("full copy", self.output.getvalue())
+        self.assertEqual(self.assert_consistent_snapshot()[0], 1)
+
+    def test_unusable_clone_falls_back_to_a_full_copy(self):
+        self.transfer(1, "TRUNCATE")
+        self.corrupt_main_clone = True
+        self.execute()
+        self.assertIn("Cloned snapshot unusable", self.output.getvalue())
+        self.assertIn("full copy", self.output.getvalue())
+        self.assertEqual(self.assert_consistent_snapshot()[0], 1)
+
+    def test_other_clone_errors_stop_the_run_and_remove_the_snapshot(self):
+        self.clone_errno = {"main": 13}  # EACCES
+        with self.assertRaises(SystemExit) as error:
+            self.execute()
+        self.assertEqual(error.exception.code, 1)
+        self.assertIn("clonefile failed", self.output.getvalue())
+        for suffix in ("", "-wal", "-shm", "-journal"):
+            self.assertFalse(Path(str(self.destination) + suffix).exists(), suffix)
+
+    def test_backup_method_never_clones(self):
+        self.execute("backup")
+        self.assertEqual(self.clone_calls, [])
+        self.assertIn("full copy", self.output.getvalue())
+        self.assert_consistent_snapshot()
+
+    def test_live_database_is_only_read(self):
+        before = self.source.stat().st_mtime_ns
+        self.execute()
+        self.assertEqual(self.source.stat().st_mtime_ns, before)
+        self.assert_consistent_snapshot()
 
 
 class DetailAllowlistTests(unittest.TestCase):

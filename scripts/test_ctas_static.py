@@ -1271,6 +1271,11 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertNotIn("git add -- ctas/data\n", publisher)
         self.assertIn('source.execute("BEGIN")', publisher)
         self.assertIn('source.backup(destination, pages=4096', publisher)
+        # the frozen view is a copy-on-write clone where possible, pinned by the same
+        # read transaction and structurally checked, never a copy per refresh
+        self.assertIn('cloned = clone(source_path, destination_path)', publisher)
+        self.assertIn('frozen.execute("PRAGMA quick_check")', publisher)
+        self.assertIn('SNAPSHOT_DIR="${CTAS_SNAPSHOT_DIR:-$SITE/.git}"', publisher)
         self.assertIn('source_path.as_uri() + "?mode=ro"', publisher)
         self.assertEqual(publisher.count('export_ctas_snapshot.py --database "$PUBLISH_DB"'), 2)
         self.assertIn('test_ctas_ingest_provenance.py --database "$PUBLISH_DB"', publisher)

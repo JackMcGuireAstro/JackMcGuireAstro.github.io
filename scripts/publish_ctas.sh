@@ -126,8 +126,8 @@ cd "$SITE"     || die "cannot enter $SITE"
 SITE_READY=1
 
 # ------------------------------------------------------------- rate guard
-# Checked before the frozen snapshot: the snapshot copies the whole database, so a
-# run that is going to wait out the floor must not pay for (and write) that copy.
+# Checked before the frozen snapshot, so a run that is going to wait out the floor
+# does not take one (where cloning is unavailable it is a full database copy).
 if [ "$FORCE" -eq 0 ] && [ "$MIN_INTERVAL" -gt 0 ] && [ -f "$STAMP" ]; then
   last=$(cat "$STAMP" 2>/dev/null || echo 0)
   age=$(( $(date +%s) - last ))
@@ -157,14 +157,34 @@ git clean -fdqX -- ctas/data || die "could not clear the previous generated file
 # The live pipeline may continue writing to the canonical database while link
 # checks and assurance artifacts are generated, but no publication mixes two
 # database states.
-PUBLISH_DB=$(mktemp "${TMPDIR:-/tmp}/ctas-publish.XXXXXX") \
+#
+# On APFS the frozen view is a copy-on-write clone (clonefile) of the database and
+# its WAL, taken inside one read transaction on the live file. The clone shares
+# every block with the original, so a release no longer writes a full copy of the
+# multi-gigabyte database (30+ times a day); only blocks either side changes while
+# the release is built take new space, and they are freed with the clone. Where
+# cloning is unavailable the SQLite backup API copies the pinned state instead.
+# CTAS_SNAPSHOT_METHOD=backup forces the copy.
+SNAPSHOT_DIR="${CTAS_SNAPSHOT_DIR:-$SITE/.git}"
+# a run killed outright (power loss, kill -9) cannot remove its snapshot; runs never
+# last an hour (the lock is reclaimed after 30 minutes), so older ones are debris
+for folder in "$SNAPSHOT_DIR" "${TMPDIR:-/tmp}"; do
+  find "$folder" -maxdepth 1 -name 'ctas-publish.*' -type f -mmin +60 -exec rm -f {} + 2>/dev/null || true
+done
+PUBLISH_DB=$(mktemp "$SNAPSHOT_DIR/ctas-publish.XXXXXX") \
   || die "could not allocate a temporary database snapshot"
-# Establish an explicit read transaction before copying. Without this pin,
-# SQLite may restart a long backup on every live ingestion write. WAL writers
-# can continue while all backup pages come from this one established state.
-if ! python3 - "$DB" "$PUBLISH_DB" >>"$LOG" 2>&1 <<'PYCTASBACKUP'
+# Establish an explicit read transaction before cloning or copying. In WAL mode it
+# stops checkpoints from moving any state newer than this snapshot into the main
+# file and stops the WAL from being reset, so the main file and WAL cloned in turn
+# always recover to one committed state; in rollback mode it keeps writers out of
+# the main file. It also stops SQLite restarting a long backup on every live
+# ingestion write. WAL writers continue throughout either way.
+if ! CTAS_SNAPSHOT_METHOD="${CTAS_SNAPSHOT_METHOD:-auto}" python3 - "$DB" "$PUBLISH_DB" >>"$LOG" 2>&1 <<'PYCTASBACKUP'
 from contextlib import closing
 from pathlib import Path
+import ctypes
+import errno
+import os
 import shutil
 import sqlite3
 import sys
@@ -172,35 +192,120 @@ import time
 
 source_path = Path(sys.argv[1]).resolve()
 destination_path = Path(sys.argv[2])
+method = os.environ.get("CTAS_SNAPSHOT_METHOD", "auto")
 complete = False
 started = time.monotonic()
-try:
-    if source_path == destination_path.resolve() or destination_path.is_symlink():
-        raise ValueError("Snapshot destination must be distinct from the source and not redirected")
+DEADLINE = 600
+UNSUPPORTED = {errno.ENOTSUP, errno.EXDEV, errno.ENOSYS, getattr(errno, "EOPNOTSUPP", errno.ENOTSUP)}
+
+
+def sidecar(path, suffix):
+    return Path(str(path) + suffix)
+
+
+def remove_snapshot():
+    for suffix in ("", "-journal", "-wal", "-shm"):
+        sidecar(destination_path, suffix).unlink(missing_ok=True)
+
+
+def clone(source, target):
+    """clonefile(2): True when cloned, False when this system or volume cannot clone."""
+    function = None
+    for library in (None, "/usr/lib/libSystem.B.dylib"):
+        try:
+            function = ctypes.CDLL(library, use_errno=True).clonefile
+            break
+        except (AttributeError, OSError):
+            continue
+    if function is None:
+        return False
+    function.argtypes = (ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint32)
+    function.restype = ctypes.c_int
+    if function(os.fsencode(str(source)), os.fsencode(str(target)), 1) == 0:  # CLONE_NOFOLLOW
+        return True
+    code = ctypes.get_errno()
+    if code in UNSUPPORTED:
+        return False
+    raise OSError(code, "clonefile failed: " + os.strerror(code), str(target))
+
+
+def past_deadline():
+    return time.monotonic() - started > DEADLINE
+
+
+def settle_clone():
+    """Recover the cloned WAL into the clone and make it a standalone rollback-journal
+    database, then check its structure. Returns its event count."""
+    with closing(sqlite3.connect(str(destination_path), timeout=15)) as frozen:
+        frozen.set_progress_handler(past_deadline, 100000)
+        frozen.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        frozen.execute("PRAGMA journal_mode=DELETE")
+        verdict = frozen.execute("PRAGMA quick_check").fetchall()
+        if verdict != [("ok",)]:
+            raise ValueError("Cloned database failed its structural check: " + str(verdict[:3]))
+        return frozen.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+
+
+def pin_and_freeze(allow_clone):
+    """Pin one read transaction on the live file and freeze it: clone when allowed and
+    possible, otherwise copy through the backup API. Returns (cloned, pinned events)."""
     with closing(sqlite3.connect(source_path.as_uri() + "?mode=ro", uri=True, timeout=15)) as source:
         source.execute("BEGIN")
         candidate_count = source.execute("SELECT COUNT(*) FROM events").fetchone()[0]
-        expected_bytes = source.execute("PRAGMA page_count").fetchone()[0] * source.execute("PRAGMA page_size").fetchone()[0]
-        if shutil.disk_usage(destination_path.parent).free < expected_bytes + 64 * 1024 * 1024:
-            raise OSError("Insufficient free disk space for the complete frozen database snapshot")
-        with closing(sqlite3.connect(str(destination_path), timeout=15)) as destination:
-            def progress(status, remaining, total):
-                if time.monotonic() - started > 600:
-                    raise TimeoutError("Frozen database backup exceeded its 600-second deadline")
-            source.backup(destination, pages=4096, progress=progress, sleep=0.05)
-            copied_count = destination.execute("SELECT COUNT(*) FROM events").fetchone()[0]
-            if copied_count != candidate_count:
-                raise ValueError("Frozen database event count differs from the pinned source")
+        wal_mode = source.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal"
+        cloned = False
+        if allow_clone:
+            destination_path.unlink(missing_ok=True)  # clonefile creates its target
+            cloned = clone(source_path, destination_path)
+            source_wal = sidecar(source_path, "-wal")
+            if cloned and wal_mode and source_wal.exists() and not clone(source_wal, sidecar(destination_path, "-wal")):
+                cloned = False
+        if not cloned:
+            remove_snapshot()
+            expected_bytes = source.execute("PRAGMA page_count").fetchone()[0] * source.execute("PRAGMA page_size").fetchone()[0]
+            if shutil.disk_usage(destination_path.parent).free < expected_bytes + 64 * 1024 * 1024:
+                raise OSError("Insufficient free disk space for the complete frozen database snapshot")
+            with closing(sqlite3.connect(str(destination_path), timeout=15)) as destination:
+                def progress(status, remaining, total):
+                    if past_deadline():
+                        raise TimeoutError("Frozen database backup exceeded its 600-second deadline")
+                source.backup(destination, pages=4096, progress=progress, sleep=0.05)
+                copied_count = destination.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+                if copied_count != candidate_count:
+                    raise ValueError("Frozen database event count differs from the pinned source")
         source.rollback()
+    return cloned, candidate_count
+
+
+try:
+    if source_path == destination_path.resolve() or destination_path.is_symlink():
+        raise ValueError("Snapshot destination must be distinct from the source and not redirected")
+    if method not in ("auto", "backup"):
+        raise ValueError("CTAS_SNAPSHOT_METHOD must be auto or backup")
+    cloned, candidate_count = pin_and_freeze(method == "auto")
+    if cloned:
+        # The clone holds the pinned state plus any transactions committed to the WAL
+        # before it was cloned: one committed state, which is all the release needs.
+        try:
+            frozen_count = settle_clone()
+        except (sqlite3.DatabaseError, ValueError) as error:
+            if past_deadline():
+                raise TimeoutError("Frozen database clone check exceeded its 600-second deadline") from error
+            print(f"Cloned snapshot unusable ({error}); taking a full copy instead", file=sys.stderr)
+            remove_snapshot()
+            cloned, candidate_count = pin_and_freeze(False)
+    if cloned:
+        print(f"Frozen read-only database snapshot (copy-on-write clone): {frozen_count} events "
+              f"({candidate_count} when pinned) in {time.monotonic() - started:.1f}s")
+    else:
+        print(f"Frozen read-only database snapshot (full copy): {candidate_count} events in {time.monotonic() - started:.1f}s")
     complete = True
-    print(f"Frozen read-only database snapshot: {candidate_count} events in {time.monotonic() - started:.1f}s")
 except (sqlite3.Error, OSError, ValueError, TimeoutError) as error:
     print(f"Database snapshot failed: {error}", file=sys.stderr)
     raise SystemExit(1)
 finally:
     if not complete and source_path != destination_path.resolve():
-        for suffix in ("", "-journal", "-wal", "-shm"):
-            Path(str(destination_path) + suffix).unlink(missing_ok=True)
+        remove_snapshot()
 PYCTASBACKUP
 then
   die "could not create a complete pinned database snapshot; nothing exported or committed"
