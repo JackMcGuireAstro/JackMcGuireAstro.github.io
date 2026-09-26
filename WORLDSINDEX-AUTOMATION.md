@@ -78,6 +78,14 @@ The publisher can stage only:
 No token, `.env` file, source checkout, raw private receipt, or arbitrary site
 file is included.
 
+## Freshness watchdog
+
+`.github/workflows/freshness-watchdog.yml` checks the live `worldsindex/data/manifest.json`
+(and the CTAS status) hourly from GitHub Actions and keeps one `freshness-watchdog` issue open
+while either publisher has stalled, closing it on recovery. A WorldsIndex release older than
+24 h, or older than 3 h while CTAS is still publishing, raises the alert. See CTAS-AUTOMATION.md
+for the full description; the limits are in the workflow's `env:` block.
+
 ## Operations
 
 Install or repair the service:

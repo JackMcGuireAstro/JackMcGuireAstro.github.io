@@ -1,0 +1,65 @@
+name: Publisher freshness watchdog
+
+# Both publishers run on one Mac and fail closed: when one refuses a release it keeps
+# refusing, silently, and GitHub Pages keeps serving the last snapshot. This workflow
+# runs in the cloud, independent of the Mac, reads the public status files once an
+# hour and maintains one issue labelled `freshness-watchdog`: opened when a publisher
+# stalls (with an @mention, so it reaches email), updated when the picture changes or
+# every 12 hours while it persists, closed automatically on recovery. It changes
+# nothing on the site. See scripts/watchdog_freshness.py for the checks.
+#
+# Tune the limits below rather than the script. The laptop is open about ten hours a
+# day, so closed stretches of ~14 hours are normal; the absolute limits sit above
+# that, and the cross-check catches a stuck publisher within about three hours
+# whenever the other one is still running, regardless of sleep.
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+concurrency:
+  group: freshness-watchdog
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check the live releases
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SITE_URL: https://jackmcguireastro.github.io
+      WATCHDOG_MENTION: "@JackMcGuireAstro"
+      CTAS_MAX_AGE_HOURS: "18"
+      WORLDSINDEX_MAX_AGE_HOURS: "30"
+      CROSS_CHECK_FRESH_HOURS: "2"
+      CROSS_CHECK_STALE_HOURS: "3"
+      WATCHDOG_REMIND_HOURS: "12"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Result of the last deployment
+        run: |
+          gh run list --repo "$GITHUB_REPOSITORY" --workflow "Validate and deploy site" --branch main \
+            --limit 20 --json conclusion,status,createdAt,headSha,url,displayTitle > deploy.json \
+            || echo '[]' > deploy.json
+      - name: Read the live CTAS and WorldsIndex releases
+        run: |
+          python3 scripts/watchdog_freshness.py \
+            --base "$SITE_URL" --deploy-json deploy.json --mention "$WATCHDOG_MENTION" \
+            --ctas-max-age-hours "$CTAS_MAX_AGE_HOURS" \
+            --worldsindex-max-age-hours "$WORLDSINDEX_MAX_AGE_HOURS" \
+            --cross-check-fresh-hours "$CROSS_CHECK_FRESH_HOURS" \
+            --cross-check-stale-hours "$CROSS_CHECK_STALE_HOURS" \
+            --report report.json --markdown report.md
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Open, update or close the alert issue
+        run: bash scripts/watchdog_issue.sh report.json report.md

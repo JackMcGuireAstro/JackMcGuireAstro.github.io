@@ -106,6 +106,21 @@ bash scripts/install_ctas_mirror.sh --uninstall
 Uninstalling removes the LaunchAgent but deliberately leaves the runtime
 checkout and logs for recovery and audit.
 
+## Freshness watchdog
+
+The publisher fails closed and stays failed until someone looks, and GitHub Pages
+keeps serving the last snapshot meanwhile. `.github/workflows/freshness-watchdog.yml`
+therefore runs hourly in GitHub Actions, independent of this Mac, reads the live
+`ctas/data/status.json` and `worldsindex/data/manifest.json`, and maintains one
+issue labelled `freshness-watchdog`: opened (with an @mention) when a publisher has
+stalled, updated when the picture changes or every 12 hours while it persists,
+closed automatically on recovery. Its strongest signal is the cross-check: if
+WorldsIndex published within two hours but CTAS has not for three, the Mac is up
+and this publisher is stuck. Absolute limits (18 h for CTAS, 30 h for WorldsIndex)
+sit above the ~14 h a day the laptop is normally closed. Limits live in the workflow's `env:` block; the
+checks are `scripts/watchdog_freshness.py`, tested by
+`scripts/test_watchdog_freshness.py` in the release validation.
+
 ## Public artifacts
 
 - `ctas/data/live-summary.json`: the sub-2 MiB first-screen data used by the public interface. The obsolete `catalog-bootstrap.json` is retired.
