@@ -1611,7 +1611,12 @@ table.ctas-table { min-width: 900px; }
 }
 
 @media (max-width: 900px) {
-  .ctas-navigation__inner { grid-template-columns: 1fr auto; }
+  /* minmax(0, …): the section links may not force the bar wider than a phone (320 px
+     overflowed by 20 px); on narrow screens they scroll sideways inside the bar instead */
+  .ctas-navigation__inner { grid-template-columns: minmax(0, 1fr) auto; }
+  .ctas-console-links { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .ctas-console-links::-webkit-scrollbar { display: none; }
+  .ctas-console-links a { flex: none; }
   .ctas-console-search { grid-column: 1 / -1; grid-row: 2; }
   .ctas-stream__list { grid-template-columns: 1fr; }
   .ctas-stream .ctas-section-heading,
