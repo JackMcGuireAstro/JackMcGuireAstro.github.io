@@ -580,6 +580,9 @@
       " plottable rows shown. Hover a point for the retained source values; downward arrows mark limits.</p></div>";
   }
 
+  // Shared with ctas/live-sources.js so live provider data is drawn exactly like retained data.
+  window.CTASRender = {photometrySvg: function (rows) { return photometrySvg(rows); }, spectrumSvg: function (row, points, index) { return spectrumSvg(row, points, index); }};
+
   function renderPhotometry(candidate) {
     var rows = (candidate.follow_up || {}).observations || [];
     if (!rows.length) return "";
@@ -948,7 +951,8 @@
       (window.CTASWorkbench && window.CTASWorkbench.skyContextPanel ? window.CTASWorkbench.skyContextPanel(candidate) : "") +
       renderIdentity(candidate) + renderScoreFactors(candidate) + renderCompleteness(candidate) + renderSourceCoverage(candidate) +
       renderEvidenceLedger(candidate) +
-      renderPhotometry(candidate) + renderSpectra(candidate) + renderMessenger(candidate) +
+      renderPhotometry(candidate) + renderSpectra(candidate) +
+      (window.CTASLive && window.CTASLive.panel ? window.CTASLive.panel(candidate) : "") + renderMessenger(candidate) +
       renderClassifications(candidate) + renderEnvironment(candidate) + renderTimeline(candidate) + renderAnalysis(candidate) +
       (window.CTASWorkbench && window.CTASWorkbench.candidatePanels ? window.CTASWorkbench.candidatePanels(candidate) : "") +
       renderExports(candidate) + "</div>";

@@ -4333,7 +4333,7 @@ def main() -> int:
 
     code_paths = (
         "ctas.html", "ctas/app.js", "ctas/chunk-loader.js", "ctas/presentation.js", "ctas/catalog-model.js", "ctas/astro-evidence.js",
-        "ctas/workbench.js", "ctas/observability.js", "ctas/ctas.css",
+        "ctas/workbench.js", "ctas/observability.js", "ctas/live-sources.js", "ctas/ctas.css",
         "ctas/data/observatories.json",
         "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
         "ctas/schema/astro-evidence-core-0.1.0.schema.json",

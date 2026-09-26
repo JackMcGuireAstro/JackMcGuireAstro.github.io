@@ -140,6 +140,48 @@ class BrowserTests(unittest.TestCase):
         self.assertGreater(rows, 10, "the shared no-evidence pattern must expand in the browser")
         self.assertIn("source-matrix-patterns.json", self.requests)
 
+    def test_live_source_data_is_fetched_only_on_request_and_labelled(self):
+        """The live panel contacts providers only when asked, draws what they return
+        with the retained-data renderer, and says the values are outside the snapshot."""
+        import json as _json
+        calls = []
+        lightcurve = {"detections": [{"mjd": 61200.5 + i, "fid": 1 + i % 2, "magpsf": 18 + i / 10,
+                                      "sigmapsf": 0.05, "isdiffpos": "t"} for i in range(6)],
+                      "non_detections": [{"mjd": 61199.5, "fid": 1, "diffmaglim": 20.3}]}
+
+        def provider(route):
+            url = route.request.url
+            calls.append(url)
+            if url.endswith("/lightcurve"):
+                body = lightcurve
+            elif "/ztf/v1/objects/?" in url:
+                from urllib.parse import urlparse, parse_qs
+                q = parse_qs(urlparse(url).query)
+                body = {"items": [{"oid": "ZTF26testobj", "meanra": float(q["ra"][0]), "meandec": float(q["dec"][0])}]}
+            elif "fink-portal" in url:
+                body = []
+            else:
+                body = {}
+            route.fulfill(status=200, content_type="application/json", body=_json.dumps(body),
+                          headers={"Access-Control-Allow-Origin": "*"})
+        self.page.route("https://api.alerce.online/**", provider)
+        self.page.route("https://api.lsst.fink-portal.org/**", provider)
+        self.page.locator("#ctas-results [data-open-event]").first.click()
+        self.page.wait_for_selector("#candidate-workspace [data-live-panel]", state="attached", timeout=45000)
+        self.assertEqual(calls, [], "opening a dossier must not contact live providers")
+        self.page.evaluate("""() => { document.querySelector('[data-live-panel]').open = true;
+          document.querySelector('[data-live-fetch]').dispatchEvent(new MouseEvent('click', {bubbles: true})); }""")
+        self.page.wait_for_function(
+            "() => /Fetched /.test(document.querySelector('[data-live-results]').textContent)", timeout=60000)
+        results = self.page.locator("[data-live-results]").inner_text()
+        self.assertIn("ZTF via ALeRCE", results)
+        self.assertIn("7 measurements", results, "six detections and one limit from the stubbed light curve")
+        self.assertEqual(self.page.locator("[data-live-results] .ctas-lightcurve svg").count(), 1)
+        self.assertIn("Rubin via Fink", results)
+        self.assertIn("relay", results, "relay-only sources say they need the relay rather than failing silently")
+        self.assertTrue(calls, "providers are contacted after the request")
+        self.assertTrue(all(u.startswith(("https://api.alerce.online/", "https://api.lsst.fink-portal.org/")) for u in calls))
+
     def test_complete_catalog_arrives_only_on_request(self):
         self.page.locator("#ctas-load-complete").click()
         self.page.wait_for_function(

@@ -240,3 +240,13 @@ A code update must be pushed and deployed before restarting a repaired runtime;
 its next run fetches current `main`, exports the current local database, validates
 the full release, and publishes it. Check the successful publisher log and live
 catalog count rather than assuming a loaded LaunchAgent has published data.
+
+## Live provider data (fetched in the visitor's browser)
+
+A dossier's "Live data from the sources" panel (`ctas/live-sources.js`) fetches the
+object's current light curves and spectra from the providers only when the visitor
+asks: ZTF through ALeRCE (by ZTF name, else by position within 2″) and Rubin through
+Fink directly, and Gaia Science Alerts, Pan-STARRS DR2 and TNS public spectrum files
+through the pass-through relay in `relay/` (address in `/live-config.json`). Nothing
+is stored by CTAS or on the publishing computer, and these values are labelled as
+live provider data outside the checksum-verified snapshot.
