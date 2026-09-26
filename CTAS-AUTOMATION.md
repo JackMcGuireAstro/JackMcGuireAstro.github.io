@@ -64,8 +64,10 @@ The authoring checkout remains under `~/Documents/Codex/JackMcGuireAstro Website
 - Candidate or durable source-state changes publish immediately on the next
   check.
 - Unchanged state does not create a commit every two minutes. A bounded
-  15-minute heartbeat refreshes the certificate before its 30-minute validity
-  window expires.
+  15-minute heartbeat refreshes the certificate well before its 90-minute validity
+  window expires (building and deploying a release takes 20-40 minutes, so a
+  30-minute window made the live page report "Snapshot out of date" for part of
+  every cycle).
 - Code-only changes also force a matching certificate refresh.
 
 ## Safety behavior

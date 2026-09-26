@@ -48,7 +48,8 @@ MIN_INTERVAL="${CTAS_MIN_INTERVAL:-0}"
 # The watcher still checks every two minutes. When neither candidate content nor
 # durable source state changed, publish only a bounded freshness heartbeat.
 # This avoids a meaningless large catalog commit every poll while keeping the
-# public snapshot report comfortably inside its 30-minute verification window.
+# public snapshot report inside its 90-minute freshness window (a release itself
+# takes 20-40 minutes to build and deploy).
 HEARTBEAT_INTERVAL="${CTAS_HEARTBEAT_INTERVAL:-900}"
 
 LOG_DIR="${CTAS_LOG_DIR:-$HOME/Library/Logs/ctas-mirror}"

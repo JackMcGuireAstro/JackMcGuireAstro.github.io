@@ -223,7 +223,7 @@ def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, d
 
     if ctas.get("available") and ctas.get("certificate_expired") and not any(
             row["code"].startswith("ctas") for row in alerts):
-        notes.append("The CTAS certificate has expired (30-minute validity) but the release is within limits; "
+        notes.append("The CTAS certificate has expired (90-minute validity) but the release is within limits; "
                      "this is the normal state while the Mac sleeps.")
     if ctas.get("pipeline_status") == "degraded":
         notes.append(f"CTAS reports pipeline_status=degraded ({ctas.get('degraded_source_count')} upstream "

@@ -75,6 +75,7 @@ CANDIDATE_DOWNLOAD_MANIFEST_SCHEMA = "ctas.public-complete-catalog-manifest@1.0.
 CANDIDATE_MANIFEST_SCHEMA = CANDIDATE_DOWNLOAD_MANIFEST_SCHEMA
 RELEASE_HISTORY_SCHEMA = "ctas.public-release-history@1.0.0"
 CANDIDATE_BUCKET_COUNT = 4096
+SNAPSHOT_VALIDITY_MINUTES = 90  # status.valid_until; see the payload below
 LIVE_SUMMARY_SCHEMA = "ctas.public-live-summary@1.0.0"
 CATALOG_PAGE_SCHEMA = "ctas.public-catalog-page@1.0.0"
 CATALOG_PAGE_MANIFEST_SCHEMA = "ctas.public-catalog-page-manifest@1.0.0"
@@ -3422,7 +3423,11 @@ def main() -> int:
         "schema_version": SCHEMA_VERSION,
         "generated_at": generated_at,
         "export_checked_at": generated_at,
-        "valid_until": (generated_dt + timedelta(minutes=30)).isoformat().replace("+00:00", "Z"),
+        # A release takes 20-40 minutes to build and deploy after generated_at, so a
+        # 30-minute window left the live page saying "Snapshot out of date" for part of
+        # every cycle. 90 minutes covers one full cycle plus a missed one; a longer gap
+        # (the Mac asleep or the publisher stuck) still shows as out of date.
+        "valid_until": (generated_dt + timedelta(minutes=SNAPSHOT_VALIDITY_MINUTES)).isoformat().replace("+00:00", "Z"),
         "latest_record_update": max(
             (row.get("updated_at") or row.get("discovery_time") or "" for row in candidates),
             default="",
