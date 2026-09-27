@@ -246,7 +246,9 @@ catalog count rather than assuming a loaded LaunchAgent has published data.
 A dossier's "Live data from the sources" panel (`ctas/live-sources.js`) fetches the
 object's current light curves and spectra from the providers only when the visitor
 asks: ZTF through ALeRCE (by ZTF name, else by position within 2″) and Rubin through
-Fink directly, and Gaia Science Alerts, Pan-STARRS DR2 and TNS public spectrum files
-through the pass-through relay in `relay/` (address in `/live-config.json`). Nothing
+Fink directly, and Gaia Science Alerts, Pan-STARRS DR2, TNS public spectrum files,
+Lasair (Rubin light curve and Sherlock host context) and NASA ADS papers through the
+pass-through relay in `relay/` (address in `/live-config.json`; Lasair and ADS use
+free keys stored only as relay secrets). Nothing
 is stored by CTAS or on the publishing computer, and these values are labelled as
 live provider data outside the checksum-verified snapshot.

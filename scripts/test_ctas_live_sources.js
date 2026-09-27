@@ -62,4 +62,29 @@ assert.equal(live.relayUrl("https://r.example/", "https://a.b/c?d=1"), "https://
 const text = live.csv(alerce);
 assert.match(text, /not part of the verified snapshot/);
 assert.equal(text.trim().split("\n").length, 2 + alerce.length);
+// Lasair (Rubin): sources found wherever the object response keeps them; duplicates dropped
+const lasairObj = {objectId: 1, objectData: {}, diaSourcesList: [
+  {midpointMjdTai: 61300.1, band: "g", psfFlux: 10000, psfFluxErr: 100, diaSourceId: 1},
+  {midpointMjdTai: 61300.1, band: "g", psfFlux: 10000, psfFluxErr: 100, diaSourceId: 1},
+], extra: {forced: [{midpointMjdTai: 61301.1, band: "r", psfFlux: 20, psfFluxErr: 30, diaForcedSourceId: 9}]}};
+const las = live.parseLasairObject(lasairObj, "1234");
+assert.equal(las.length, 2);
+assert.ok(Math.abs(las[0].magnitude - 21.4) < 1e-9);
+assert.equal(las[1].detection, 0);
+assert.match(las[1].photometry_method, /forced/);
+assert.deepEqual(live.lasairNearest({object: "170657518965489670", separation: 0.4}), {objectId: "170657518965489670", sep: 0.4});
+assert.deepEqual(live.lasairNearest([{objectId: 42, separation: 1.2}]), {objectId: "42", sep: 1.2});
+assert.equal(live.lasairNearest({}), null);
+assert.deepEqual(live.sherlockSummary({classifications: [{classification: "SN", description: "offset from galaxy"}]}), {label: "SN", text: "offset from galaxy"});
+assert.deepEqual(live.sherlockSummary({classification: "NT"}), {label: "NT", text: ""});
+
+// ADS: TNS names searched by their year+suffix; other names quoted exactly
+const q = live.adsQuery({name: "SN2026pel", designations: [{designation: "AT2026pel"}, {designation: "ZTF26abblsak"}, {designation: "GRB 260926A"}]});
+assert.match(q, /^full:\(/);
+assert.ok(q.includes('"2026pel"') && q.includes('"ZTF26abblsak"') && q.includes('"GRB 260926A"'));
+assert.equal(q.split('"2026pel"').length, 2, "the same TNS name is searched once");
+assert.equal(live.adsQuery({designations: []}), "");
+const papers = live.parseAds({response: {docs: [{bibcode: "2026TNSAN.254....1K", title: ["Follow-up"], author: ["A", "B", "C", "D"], pubdate: "2026-06-00", doctype: "circular"}]}});
+assert.equal(papers[0].authors, "A; B; C et al.");
+assert.match(papers[0].url, /ui\.adsabs\.harvard\.edu\/abs\/2026TNSAN/);
 console.log("CTAS live sources: all checks passed");

@@ -59,4 +59,35 @@ const calls = upstreamCalls.length;
 r = await call("https://gsaweb.ast.cam.ac.uk/alerts/alert/Gaia15big/lightcurve.csv");
 assert.equal(r.status, 413, "oversized responses are refused");
 assert.equal(upstreamCalls.length, calls + 1);
+// NASA Exoplanet Archive TAP: SELECT on public tables only
+const tap = (qy, fmt = "json") => "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=" + encodeURIComponent(qy) + "&format=" + fmt;
+assert.ok(matchRoute(tap("select pl_name,spec_type,spec_path from spectra where pl_name = 'WASP-18 b'")));
+assert.ok(matchRoute(tap("select * from stellarhosts where hostname = 'WASP-18'")));
+assert.equal(matchRoute(tap("select * from secret_table where 1=1")), null);
+assert.equal(matchRoute(tap("select * from ps where 1=1; drop table ps")), null);
+assert.equal(matchRoute(tap("select * from ps where 1=1") + "&maxrec=5"), null);
+assert.ok(matchRoute("https://exoplanetarchive.ipac.caltech.edu/data/ExoData/0103/0103495/data/trans/WASP_18_b_spec.tbl"));
+assert.ok(matchRoute("https://exofop.ipac.caltech.edu/tess/target.php?toi=1000.01&json"));
+
+// keyed sources: the key comes from the Worker's secrets, never from the page
+const ads = "https://api.adsabs.harvard.edu/v1/search/query?q=" + encodeURIComponent('full:"2026pel"') + "&fl=bibcode,title,author,pubdate&rows=20&sort=date+desc";
+assert.ok(matchRoute(ads));
+assert.equal(matchRoute(ads.replace("fl=bibcode", "fl=body,bibcode")), null, "only listed fields may be requested");
+r = await call(ads);
+assert.equal(r.status, 503, "without ADS_TOKEN the relay says the key is missing");
+const withKey = (target, env) => worker.fetch(new Request("https://relay.example/?url=" + encodeURIComponent(target), { headers: { Origin: SITE_ORIGINS[0] } }), env);
+r = await withKey(ads, { ADS_TOKEN: "ads-secret" });
+assert.equal(r.status, 200);
+assert.equal(upstreamCalls.at(-1).init.headers.Authorization, "Bearer ads-secret");
+assert.ok(!(await r.text()).includes("ads-secret"));
+const lasair = "https://api.lasair.lsst.ac.uk/api/cone/?ra=10.5&dec=-20.1&radius=2&requestType=nearest";
+r = await withKey(lasair, { LASAIR_TOKEN: "lasair-secret" });
+assert.equal(r.status, 200);
+assert.equal(upstreamCalls.at(-1).url, "https://api.lasair.lsst.ac.uk/api/cone/");
+assert.equal(upstreamCalls.at(-1).init.method, "POST");
+assert.equal(upstreamCalls.at(-1).init.body, "ra=10.5&dec=-20.1&radius=2&requestType=nearest");
+assert.equal(upstreamCalls.at(-1).init.headers.Authorization, "Token lasair-secret");
+assert.equal(matchRoute("https://api.lasair.lsst.ac.uk/api/query/?selected=*&tables=objects"), null, "free-form Lasair queries are not relayed");
+assert.equal(matchRoute("https://api.lasair.lsst.ac.uk/api/cone/?ra=1&dec=2&radius=900"), null);
+assert.equal(matchRoute(tap("select pl_name from spectra where pl_name='x'")) && (await withKey(tap("select pl_name from spectra where pl_name='x'"), {})).status, 200, "public NASA queries need no key");
 console.log("live relay: all checks passed");

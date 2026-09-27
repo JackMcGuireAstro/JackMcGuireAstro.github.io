@@ -126,6 +126,78 @@
     return points.length >= 10 ? points : [];
   }
 
+  // Lasair (Rubin): find the object's source list wherever the response keeps it.
+  function lasairSourceArrays(json) {
+    var found = [];
+    (function walk(value, depth) {
+      if (!value || typeof value !== "object" || depth > 3) return;
+      if (Array.isArray(value)) {
+        if (value.length && value[0] && typeof value[0] === "object" && "midpointMjdTai" in value[0] && ("psfFlux" in value[0] || "scienceFlux" in value[0])) found.push(value);
+        return;
+      }
+      Object.keys(value).forEach(function (key) { walk(value[key], depth + 1); });
+    })(json, 0);
+    return found;
+  }
+  function parseLasairObject(json, objectId) {
+    var rows = [], seen = {};
+    lasairSourceArrays(json).forEach(function (list) {
+      list.forEach(function (s) {
+        var mjd = finite(s.midpointMjdTai), flux = finite(s.psfFlux !== undefined ? s.psfFlux : s.scienceFlux);
+        var err = finite(s.psfFluxErr !== undefined ? s.psfFluxErr : s.scienceFluxErr);
+        if (mjd === null || flux === null) return;
+        var key = mjd + ":" + (s.band || "");
+        if (seen[key]) return;
+        seen[key] = 1;
+        var forced = "diaForcedSourceId" in s;
+        var row = {observed_at: mjdToIso(mjd), mjd: mjd, band: String(s.band || ""), flux: flux, flux_error: err, flux_unit: "nJy",
+          difference_photometry: 1, magnitude_system: "AB", photometry_method: forced ? "Rubin forced difference PSF" : "Rubin difference-image PSF",
+          provider: "Lasair (Rubin " + objectId + ")", source_key: "lasair-lsst"};
+        if (flux > 0 && err !== null && flux / err >= 3) { row.magnitude = 31.4 - 2.5 * Math.log10(flux); row.magnitude_error = 1.0857 * err / flux; row.detection = 1; }
+        else if (err !== null && err > 0) { row.limiting_magnitude = 31.4 - 2.5 * Math.log10(3 * err); row.detection = 0; }
+        else return;
+        rows.push(row);
+      });
+    });
+    return rows;
+  }
+  function lasairNearest(json) {
+    var hit = Array.isArray(json) ? json[0] : json;
+    if (!hit || typeof hit !== "object") return null;
+    var id = hit.object || hit.objectId || hit.diaObjectId;
+    return id === undefined || id === null ? null : {objectId: String(id), sep: finite(hit.separation)};
+  }
+  function sherlockSummary(json) {
+    var node = json && json.sherlock ? json.sherlock : json;
+    if (Array.isArray(node)) node = node[0];
+    if (node && Array.isArray(node.classifications)) node = node.classifications[0];
+    else if (node && node.classifications && typeof node.classifications === "object") {
+      var first = node.classifications[Object.keys(node.classifications)[0]];
+      if (Array.isArray(first)) node = {classification: first[0], description: first[1]};
+    }
+    if (!node || typeof node !== "object") return null;
+    var label = node.classification || node.sherlock_classification || node["class"];
+    return label ? {label: String(label), text: String(node.description || node.annotator || "")} : null;
+  }
+  // NASA ADS: search names the way papers write them.
+  function adsQuery(candidate) {
+    var terms = {};
+    designations(candidate).forEach(function (name) {
+      var tns = /^(?:AT|SN|TDE|FRB|FBOT|LRN|ILRT|Nova)\s?(\d{4}[a-z]{2,4})$/i.exec(name.trim());
+      if (tns) terms['"' + tns[1] + '"'] = 1;
+      else if (/^[A-Za-z][\w+\-. ]{2,30}$/.test(name.trim())) terms['"' + name.trim().replace(/"/g, "") + '"'] = 1;
+    });
+    var list = Object.keys(terms).slice(0, 6);
+    return list.length ? "full:(" + list.join(" OR ") + ")" : "";
+  }
+  function parseAds(json) {
+    return ((json && json.response && json.response.docs) || []).map(function (doc) {
+      var authors = doc.author || [];
+      return {bibcode: doc.bibcode, title: (doc.title || [""])[0], authors: authors.slice(0, 3).join("; ") + (authors.length > 3 ? " et al." : ""),
+        date: doc.pubdate || "", type: doc.doctype || "", url: "https://ui.adsabs.harvard.edu/abs/" + encodeURIComponent(doc.bibcode) + "/abstract"};
+    });
+  }
+
   // ---------------------------------------------------------------- fetching
   function timed(url, options) {
     var controller = typeof AbortController === "function" ? new AbortController() : null;
@@ -154,16 +226,23 @@
   function ztf(candidate) {
     var oid = findName(candidate, /^ZTF\d{2}[a-z]{7}$/);
     var ra = finite(candidate.ra_deg), dec = finite(candidate.dec_deg);
-    var how = oid ? "by its ZTF name " + oid : "by position (within " + MATCH_ARCSEC + "″)";
-    var lookup = oid ? Promise.resolve({oid: oid}) : ra === null ? Promise.resolve(null)
-      : getJson(ALERCE + "/objects/?ra=" + ra + "&dec=" + dec + "&radius=" + MATCH_ARCSEC + "&page_size=5")
-        .then(function (json) { return nearestAlerceObject(json, ra, dec); });
-    return lookup.then(function (hit) {
-      if (!hit) return {source: "ZTF via ALeRCE", how: how, rows: [], note: "No ZTF object found"};
+    var byPosition = function (prefix) {
+      if (ra === null || dec === null) return Promise.resolve(null);
+      return getJson(ALERCE + "/objects/?ra=" + ra + "&dec=" + dec + "&radius=" + MATCH_ARCSEC + "&page_size=5")
+        .then(function (json) { var hit = nearestAlerceObject(json, ra, dec); if (hit) hit.how = (prefix || "") + "by position: " + hit.oid + " (" + hit.sep.toFixed(2) + "″)"; return hit; });
+    };
+    var curve = function (hit) {
       return getJson(ALERCE + "/objects/" + encodeURIComponent(hit.oid) + "/lightcurve").then(function (json) {
-        var rows = json ? parseAlerceLightcurve(json, hit.oid) : [];
-        return {source: "ZTF via ALeRCE", how: oid ? how : "by position: " + hit.oid + " (" + hit.sep.toFixed(2) + "″)", rows: rows,
-          link: "https://alerce.online/object/" + encodeURIComponent(hit.oid), note: json ? "" : "ALeRCE has no record of " + hit.oid};
+        return json ? {source: "ZTF via ALeRCE", how: hit.how, rows: parseAlerceLightcurve(json, hit.oid), link: "https://alerce.online/object/" + encodeURIComponent(hit.oid)} : null;
+      });
+    };
+    var first = oid ? curve({oid: oid, how: "by its ZTF name " + oid}) : Promise.resolve(null);
+    return first.then(function (result) {
+      if (result) return result;
+      // ALeRCE may not know a TNS-reported ZTF name; the nearest ZTF object is the fallback
+      return byPosition(oid ? oid + " not in ALeRCE; " : "").then(function (hit) {
+        if (!hit) return {source: "ZTF via ALeRCE", how: oid ? "by name " + oid + " and by position" : "by position (within " + MATCH_ARCSEC + "″)", rows: [], note: "No ZTF object found"};
+        return curve(hit).then(function (found) { return found || {source: "ZTF via ALeRCE", how: hit.how, rows: [], note: "ALeRCE has no light curve for " + hit.oid}; });
       });
     });
   }
@@ -213,6 +292,40 @@
     }));
   }
 
+  function lasair(candidate, relay) {
+    var ra = finite(candidate.ra_deg), dec = finite(candidate.dec_deg);
+    if (ra === null || dec === null) return Promise.resolve(null);
+    if (!relay) return Promise.resolve({source: "Rubin via Lasair", rows: [], note: "Needs the live-data relay"});
+    var base = "https://api.lasair.lsst.ac.uk/api/";
+    var context = getJson(relayUrl(relay, base + "sherlock/position/?ra=" + ra + "&dec=" + dec + "&lite=true")).then(sherlockSummary, function () { return null; });
+    var cone = timed(relayUrl(relay, base + "cone/?ra=" + ra + "&dec=" + dec + "&radius=" + MATCH_ARCSEC + "&requestType=nearest"));
+    return cone.then(function (r) {
+      if (r.status === 503) return {source: "Rubin via Lasair", rows: [], note: "Needs a free Lasair key added to the relay"};
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json().then(function (json) {
+        var hit = lasairNearest(json);
+        if (!hit) return {source: "Rubin via Lasair", how: "by position (within " + MATCH_ARCSEC + "″)", rows: [], note: "No Rubin object at this position"};
+        return getJson(relayUrl(relay, base + "object/?objectId=" + encodeURIComponent(hit.objectId))).then(function (obj) {
+          return {source: "Rubin via Lasair", how: "by position: " + hit.objectId + (hit.sep !== null ? " (" + hit.sep.toFixed(2) + "″)" : ""),
+            rows: obj ? parseLasairObject(obj, hit.objectId) : [], link: "https://lasair.lsst.ac.uk/objects/" + encodeURIComponent(hit.objectId) + "/"};
+        });
+      });
+    }).then(function (result) {
+      return context.then(function (sherlock) { if (result) result.context = sherlock; return result; });
+    });
+  }
+  function papers(candidate, relay) {
+    var q = adsQuery(candidate);
+    if (!q) return Promise.resolve(null);
+    if (!relay) return Promise.resolve({papers: [], note: "Needs the live-data relay"});
+    var target = "https://api.adsabs.harvard.edu/v1/search/query?q=" + encodeURIComponent(q) +
+      "&fl=bibcode,title,author,pubdate,doctype&rows=25&sort=" + encodeURIComponent("date desc");
+    return timed(relayUrl(relay, target)).then(function (r) {
+      if (r.status === 503) return {papers: [], note: "Needs a free NASA ADS key added to the relay", query: q};
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json().then(function (json) { return {papers: parseAds(json), query: q}; });
+    }).catch(function (error) { return {papers: [], note: "Unavailable right now (" + error.message + ")", query: q}; });
+  }
   function settle(promise, label) {
     return promise.then(function (value) { return value; }, function (error) {
       return {source: label, rows: [], note: "Unavailable right now (" + (error && error.name === "AbortError" ? "timed out" : error.message) + ")"};
@@ -224,9 +337,11 @@
       return Promise.all([
         settle(ztf(candidate), "ZTF via ALeRCE"), settle(rubin(candidate), "Rubin via Fink"),
         settle(gaia(candidate, relay), "Gaia Science Alerts"), settle(panstarrs(candidate, relay), "Pan-STARRS1 DR2"),
+        settle(lasair(candidate, relay), "Rubin via Lasair"),
         spectra(candidate, relay).catch(function () { return []; }),
+        papers(candidate, relay),
       ]).then(function (results) {
-        return {fetchedAt: new Date().toISOString(), relay: relay, photometry: results.slice(0, 4).filter(Boolean), spectra: results[4]};
+        return {fetchedAt: new Date().toISOString(), relay: relay, photometry: results.slice(0, 5).filter(Boolean), spectra: results[5], papers: results[6]};
       });
     });
   }
@@ -243,8 +358,8 @@
     candidates[candidate.event_id] = candidate;
     return '<details class="ctas-evidence-panel ctas-live" data-live-panel="' + esc(candidate.event_id) + '" data-dossier-view="live">' +
       "<summary>Live data from the sources <small>fetched on request, not stored</small></summary><div class=\"ctas-evidence-panel__body\">" +
-      "<p>Fetch this object’s current light curves and spectra straight from ZTF (via ALeRCE), Rubin (via Fink), Gaia Science Alerts, " +
-      "Pan-STARRS and TNS. Nothing is saved by CTAS; values are shown as the providers return them now, labelled by source, and are " +
+      "<p>Fetch this object’s current light curves, spectra and papers straight from ZTF (via ALeRCE), Rubin (via Fink and Lasair), Gaia Science Alerts, " +
+      "Pan-STARRS, TNS and NASA ADS. Nothing is saved by CTAS; values are shown as the providers return them now, labelled by source, and are " +
       "<strong>not part of the checksum-verified snapshot</strong> above.</p>" +
       '<button type="button" data-live-fetch="' + esc(candidate.event_id) + '">Fetch live data</button>' +
       '<div data-live-results role="status" aria-live="polite"></div></div></details>';
@@ -261,7 +376,8 @@
       rows = rows.concat(item.rows || []);
       var count = (item.rows || []).length;
       return "<li><strong>" + esc(item.source) + "</strong> — " + (count ? count.toLocaleString() + " measurements" : esc(item.note || "no measurements")) +
-        (item.how ? " <small>(" + esc(item.how) + ")</small>" : "") + (item.link ? ' <a href="' + esc(item.link) + '" target="_blank" rel="noopener">open at source<span class="sr-only"> (opens in a new tab)</span></a>' : "") + "</li>";
+        (item.how ? " <small>(" + esc(item.how) + ")</small>" : "") + (item.link ? ' <a href="' + esc(item.link) + '" target="_blank" rel="noopener">open at source<span class="sr-only"> (opens in a new tab)</span></a>' : "") +
+        (item.context ? "<br><small>Lasair Sherlock context: <strong>" + esc(item.context.label) + "</strong>" + (item.context.text ? " — " + esc(item.context.text) : "") + "</small>" : "") + "</li>";
     }).join("");
     var html = "<ul class=\"ctas-live__sources\">" + list + "</ul>";
     if (rows.length && render.photometrySvg) {
@@ -273,7 +389,16 @@
       html += "<h5>Spectrum: " + esc(label) + " <small>(TNS public file" + (item.row.instrument ? ", " + esc(item.row.instrument) : "") + ")</small></h5>" +
         (item.points.length && render.spectrumSvg ? render.spectrumSvg(item.row, item.points, "live-" + index) : "<p>" + esc(item.note) + "</p>");
     });
-    if (!result.relay) html += "<p class=\"ctas-link-empty\">Gaia Science Alerts, Pan-STARRS and TNS spectrum files need the site’s live-data relay, which is not configured yet.</p>";
+    if (result.papers) {
+      var p = result.papers;
+      html += "<h5>Papers and reports (NASA ADS)</h5>" + (p.papers && p.papers.length
+        ? "<ol class=\"ctas-live__papers\">" + p.papers.map(function (paper) {
+            return '<li><a href="' + esc(paper.url) + '" target="_blank" rel="noopener">' + esc(paper.title || paper.bibcode) + '<span class="sr-only"> (opens in a new tab)</span></a> <small>' +
+              esc([paper.authors, paper.date, paper.type].filter(Boolean).join(" · ")) + "</small></li>";
+          }).join("") + "</ol><p><small>ADS full-text search for " + esc(p.query) + "; a match means the name appears in the paper, not that the paper is about this object.</small></p>"
+        : "<p>" + esc(p.note || "No papers found in ADS for this object’s names.") + "</p>");
+    }
+    if (!result.relay) html += "<p class=\"ctas-link-empty\">Gaia Science Alerts, Pan-STARRS, Lasair, ADS and TNS spectrum files need the site’s live-data relay, which is not configured yet.</p>";
     html += "<p><small>Fetched " + esc(result.fetchedAt) + ". Provider values are unmodified apart from unit conversion where labelled (Rubin and Pan-STARRS fluxes to AB magnitudes). Matching by position uses a " + MATCH_ARCSEC + "″ radius and can pick up an unrelated neighbour.</small></p>";
     return {html: html, rows: rows};
   }
@@ -306,7 +431,8 @@
 
   var api = {panel: panel, load: load, parseAlerceLightcurve: parseAlerceLightcurve, nearestAlerceObject: nearestAlerceObject,
     parseFinkSources: parseFinkSources, parseGaiaCsv: parseGaiaCsv, parsePanstarrs: parsePanstarrs,
-    parseAsciiSpectrum: parseAsciiSpectrum, separationArcsec: separationArcsec, mjdToIso: mjdToIso, relayUrl: relayUrl, csv: csv};
+    parseAsciiSpectrum: parseAsciiSpectrum, parseLasairObject: parseLasairObject, lasairNearest: lasairNearest,
+    sherlockSummary: sherlockSummary, adsQuery: adsQuery, parseAds: parseAds, separationArcsec: separationArcsec, mjdToIso: mjdToIso, relayUrl: relayUrl, csv: csv};
   root.CTASLive = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);
