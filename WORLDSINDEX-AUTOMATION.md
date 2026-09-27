@@ -160,3 +160,9 @@ for TESS, Kepler and K2 light curves at MAST within 5″ of its position
 the FITS file comes through the pass-through relay in `relay/` (address in
 `/live-config.json`) and is read in the browser (quality-0 rows, PDCSAP flux). Nothing
 is stored by WorldsIndex.
+
+The Sources tab's "Live from the archives" section fetches, on request and through
+the same relay, the planet's atmospheric spectra (NASA Exoplanet Archive `spectra`
+table, with the data file plotted in the browser), host-star records
+(`stellarhosts`), microlensing solutions (`ml`) for microlensing planets, the
+ExoFOP-TESS overview for TOIs, and papers from NASA ADS (free key held by the relay).
