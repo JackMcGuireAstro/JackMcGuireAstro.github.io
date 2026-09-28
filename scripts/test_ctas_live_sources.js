@@ -75,6 +75,15 @@ assert.match(las[1].photometry_method, /forced/);
 assert.deepEqual(live.lasairNearest({object: "170657518965489670", separation: 0.4}), {objectId: "170657518965489670", sep: 0.4});
 assert.deepEqual(live.lasairNearest([{objectId: 42, separation: 1.2}]), {objectId: "42", sep: 1.2});
 assert.equal(live.lasairNearest({}), null);
+// real Lasair-LSST answers (2026-09-28): {"nearest": {...}}, bare NaN, 18-digit ids
+const realCone = live.parseLasairText('{"nearest":{"object":170028512255672336,"separation":8.894137537394414}}');
+assert.deepEqual(live.lasairNearest(realCone), {objectId: "170028512255672336", sep: 8.894137537394414});
+const realObj = live.parseLasairText('{"diaObjectId":"170028512255672336","diaSourcesList":[{"diaObjectId":170028512255672336,"midpointMjdTai":61090.18,"diaSourceId":170028512255672336,"band":"g","psfFlux":968.7,"psfFluxErr":50.1,"dipoleAngle":NaN}],"diaForcedSourcesList":[{"midpointMjdTai":61091.2,"band":"r","diaForcedSourceId":314003015460192583,"psfFlux":-12.5,"psfFluxErr":20.0,"scienceFlux":NaN}]}');
+assert.equal(realObj.diaSourcesList[0].dipoleAngle, null);
+const realRows = live.parseLasairObject(realObj, "170028512255672336");
+assert.equal(realRows.length, 2);
+assert.deepEqual(live.sherlockSummary({classifications: {query0: ["SN", "The transient is possibly associated with <em><a href=\"https://ned.example\">COSMOS1660609</a></em>; a J=20.5 mag galaxy."]}}),
+  {label: "SN", text: "The transient is possibly associated with COSMOS1660609; a J=20.5 mag galaxy."});
 assert.deepEqual(live.sherlockSummary({classifications: [{classification: "SN", description: "offset from galaxy"}]}), {label: "SN", text: "offset from galaxy"});
 assert.deepEqual(live.sherlockSummary({classification: "NT"}), {label: "NT", text: ""});
 

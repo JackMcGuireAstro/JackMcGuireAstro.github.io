@@ -161,7 +161,15 @@
     });
     return rows;
   }
+  // Lasair answers with bare NaN values (not valid JSON) and with 18-digit object ids
+  // that lose digits as JavaScript numbers; repair both before parsing.
+  function parseLasairText(text) {
+    return JSON.parse(String(text)
+      .replace(/"(object|objectId|diaObjectId|diaSourceId|diaForcedSourceId)"\s*:\s*(-?\d{16,})/g, '"$1":"$2"')
+      .replace(/:\s*-?(NaN|Infinity)\b/g, ":null"));
+  }
   function lasairNearest(json) {
+    if (json && !Array.isArray(json) && json.nearest) json = json.nearest;
     var hit = Array.isArray(json) ? json[0] : json;
     if (!hit || typeof hit !== "object") return null;
     var id = hit.object || hit.objectId || hit.diaObjectId;
@@ -177,7 +185,8 @@
     }
     if (!node || typeof node !== "object") return null;
     var label = node.classification || node.sherlock_classification || node["class"];
-    return label ? {label: String(label), text: String(node.description || node.annotator || "")} : null;
+    var text = String(node.description || node.annotator || "").replace(/<[^>]*>/g, "").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+    return label ? {label: String(label), text: text} : null;
   }
   // NASA ADS: search names the way papers write them.
   function adsQuery(candidate) {
@@ -211,6 +220,13 @@
       if (r.status === 404) return null;
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
+    });
+  }
+  function getLasair(url) {
+    return timed(url).then(function (r) {
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.text().then(parseLasairText);
     });
   }
   function relayUrl(relay, target) { return relay.replace(/\/+$/, "") + "/?url=" + encodeURIComponent(target); }
@@ -297,15 +313,15 @@
     if (ra === null || dec === null) return Promise.resolve(null);
     if (!relay) return Promise.resolve({source: "Rubin via Lasair", rows: [], note: "Needs the live-data relay"});
     var base = "https://api.lasair.lsst.ac.uk/api/";
-    var context = getJson(relayUrl(relay, base + "sherlock/position/?ra=" + ra + "&dec=" + dec + "&lite=true")).then(sherlockSummary, function () { return null; });
+    var context = getLasair(relayUrl(relay, base + "sherlock/position/?ra=" + ra + "&dec=" + dec + "&lite=true")).then(sherlockSummary, function () { return null; });
     var cone = timed(relayUrl(relay, base + "cone/?ra=" + ra + "&dec=" + dec + "&radius=" + MATCH_ARCSEC + "&requestType=nearest"));
     return cone.then(function (r) {
       if (r.status === 503) return {source: "Rubin via Lasair", rows: [], note: "Needs a free Lasair key added to the relay"};
       if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json().then(function (json) {
+      return r.text().then(parseLasairText).then(function (json) {
         var hit = lasairNearest(json);
         if (!hit) return {source: "Rubin via Lasair", how: "by position (within " + MATCH_ARCSEC + "″)", rows: [], note: "No Rubin object at this position"};
-        return getJson(relayUrl(relay, base + "object/?objectId=" + encodeURIComponent(hit.objectId))).then(function (obj) {
+        return getLasair(relayUrl(relay, base + "object/?objectId=" + encodeURIComponent(hit.objectId))).then(function (obj) {
           return {source: "Rubin via Lasair", how: "by position: " + hit.objectId + (hit.sep !== null ? " (" + hit.sep.toFixed(2) + "″)" : ""),
             rows: obj ? parseLasairObject(obj, hit.objectId) : [], link: "https://lasair.lsst.ac.uk/objects/" + encodeURIComponent(hit.objectId) + "/"};
         });
@@ -431,7 +447,7 @@
 
   var api = {panel: panel, load: load, parseAlerceLightcurve: parseAlerceLightcurve, nearestAlerceObject: nearestAlerceObject,
     parseFinkSources: parseFinkSources, parseGaiaCsv: parseGaiaCsv, parsePanstarrs: parsePanstarrs,
-    parseAsciiSpectrum: parseAsciiSpectrum, parseLasairObject: parseLasairObject, lasairNearest: lasairNearest,
+    parseAsciiSpectrum: parseAsciiSpectrum, parseLasairObject: parseLasairObject, parseLasairText: parseLasairText, lasairNearest: lasairNearest,
     sherlockSummary: sherlockSummary, adsQuery: adsQuery, parseAds: parseAds, separationArcsec: separationArcsec, mjdToIso: mjdToIso, relayUrl: relayUrl, csv: csv};
   root.CTASLive = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
