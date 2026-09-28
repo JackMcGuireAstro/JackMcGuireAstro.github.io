@@ -24,13 +24,14 @@ export function planetNames(object) {
   const joined = name.replace(/\s+([a-z])$/, '$1');
   return [...new Set([name, joined].filter(Boolean))];
 }
+// The archive serves spectrum files only from a short-lived workspace; the relay turns
+// this request (the spectra table's spec_path) into the file itself.
 export function spectrumFileUrl(path) {
   const p = String(path || '').trim();
-  if (!p) return '';
-  if (/^https:\/\/exoplanetarchive\.ipac\.caltech\.edu\/data\/ExoData\//.test(p)) return p;
-  if (p.startsWith('/data/ExoData/')) return ARCHIVE + p;
-  return `${ARCHIVE}/data/ExoData/${p.replace(/^\/+/, '')}`;
+  if (!/^\d{2}\/\d{2}\/\d{2}\/\d{2}\/[A-Za-z0-9_.+\-]+\.tbl$/.test(p)) return '';
+  return `${ARCHIVE}/cgi-bin/atmospheres/nph-firefly?atmospheres&spec_path=${p}`;
 }
+export const spectraPage = name => `${ARCHIVE}/cgi-bin/atmospheres/nph-firefly?atmospheres&planet=${encodeURIComponent(`'${name}'`)}`;
 export function exofopTarget(object) {
   const tic = /^TIC\s*(\d{1,12})$/i.exec(String(object.hostName || '').trim());
   if (tic) return {param: 'id', value: tic[1], label: `TIC ${tic[1]}`};
@@ -59,7 +60,7 @@ export function parseIpacTable(text) {
   });
   return {columns, rows};
 }
-const VALUE_COLUMNS = ['PL_TRANDEP', 'PL_RATRORSQ', 'PL_RATROR', 'ESPECLIPDEP', 'FLAMBDA', 'FNU', 'PL_FLUXRATIO'];
+const VALUE_COLUMNS = ['PL_TRANDEP', 'ESPECLIPDEP', 'PL_ECLDEP', 'PL_RATRORSQ', 'PL_RATROR', 'FLAMBDA', 'FNU', 'PL_FLUXRATIO'];
 export function spectrumPoints(table) {
   const upper = new Map(table.columns.map(c => [c.toUpperCase(), c]));
   const wave = [...upper.keys()].find(c => /^(CENTRALWAVELNG|WAVELENGTH|WAVELNG|WAVE)$/.test(c));
@@ -154,7 +155,7 @@ export function mountLiveExtras(container, object) {
       const r = await fetch(via(relay, url), {credentials: 'omit'});
       if (!r.ok) throw Error(`HTTP ${r.status}`);
       const {points, value} = spectrumPoints(parseIpacTable(await r.text()));
-      plot.innerHTML = `<p><strong>${esc(row.spec_type || 'Spectrum')}</strong> · ${esc(row.instrument || '')} · ${esc(row.authors || row.bibcode || '')} · ${points.length} points${value ? ` of ${esc(value)}` : ''} · <a href="${esc(url)}" target="_blank" rel="noopener">data file ↗</a></p>${spectrumSvg(points, `${row.spec_type || 'Spectrum'} of ${object.name}`)}`;
+      plot.innerHTML = `<p><strong>${esc(row.spec_type || 'Spectrum')}</strong> · ${esc(row.instrument || '')} · ${esc(row.authors || row.bibcode || '')} · ${points.length} points${value ? ` of ${esc(value)}` : ''} · <a href="${esc(spectraPage(object.name))}" target="_blank" rel="noopener">archive spectra page ↗</a></p>${spectrumSvg(points, `${row.spec_type || 'Spectrum'} of ${object.name}`)}`;
     } catch (error) { plot.innerHTML = `<p>Could not load the spectrum: ${esc(error.message)}.</p>`; }
   });
 }

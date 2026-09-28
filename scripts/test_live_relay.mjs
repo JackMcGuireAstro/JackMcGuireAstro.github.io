@@ -66,7 +66,26 @@ assert.ok(matchRoute(tap("select * from stellarhosts where hostname = 'WASP-18'"
 assert.equal(matchRoute(tap("select * from secret_table where 1=1")), null);
 assert.equal(matchRoute(tap("select * from ps where 1=1; drop table ps")), null);
 assert.equal(matchRoute(tap("select * from ps where 1=1") + "&maxrec=5"), null);
-assert.ok(matchRoute("https://exoplanetarchive.ipac.caltech.edu/data/ExoData/0103/0103495/data/trans/WASP_18_b_spec.tbl"));
+// atmosphere spectrum files: the relay opens the archive's page, then reads the file from its workspace
+const spec = "https://exoplanetarchive.ipac.caltech.edu/cgi-bin/atmospheres/nph-firefly?atmospheres&spec_path=80/70/32/30/WASP_39_b_3.11466_3868_2.tbl";
+assert.ok(matchRoute(spec));
+assert.equal(matchRoute(spec.replace("80/70", "../70")), null);
+assert.equal(matchRoute(spec + "&planet=x"), null);
+assert.equal(matchRoute("https://exoplanetarchive.ipac.caltech.edu/cgi-bin/atmospheres/nph-firefly?atmospheres"), null);
+const realFetch = globalThis.fetch;
+globalThis.fetch = async (url, init) => {
+  upstreamCalls.push({ url, init });
+  if (String(url).endsWith("nph-firefly?atmospheres")) return new Response(`<body onload="FF_InitPage ('/work/TMP_Ab_12/atmospheres/tab1', '/workspace/TMP_Ab_12', '/exodata/FDL', 'x')">`);
+  return new Response("|CENTRALWAVELNG|PL_TRANDEP|\n 1.0 2.0\n", { status: 200 });
+};
+r = await call(spec);
+assert.equal(r.status, 200);
+assert.equal(upstreamCalls.at(-1).url, "https://exoplanetarchive.ipac.caltech.edu/workspace/TMP_Ab_12/atmospheres/tab1/data/80/70/32/30/WASP_39_b_3.11466_3868_2.tbl");
+assert.ok((await r.text()).includes("CENTRALWAVELNG"));
+globalThis.fetch = async (url, init) => { upstreamCalls.push({ url, init }); return new Response("<html>maintenance</html>"); };
+r = await call(spec);
+assert.equal(r.status, 502, "no workspace on the page means the source is unavailable");
+globalThis.fetch = realFetch;
 assert.ok(matchRoute("https://exofop.ipac.caltech.edu/tess/target.php?toi=1000.01&json"));
 
 // keyed sources: the key comes from the Worker's secrets, never from the page

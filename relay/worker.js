@@ -63,10 +63,15 @@ export const ROUTES = [
     query: (q) => /^select\s[\w\s,*().]{1,400}\sfrom\s(spectra|ml|stellarhosts|ps|pscomppars|toi|k2pandc)\s+where\s[^;]{1,600}$/i.test(q.get("query") || "")
       && ["json", "csv"].includes(q.get("format") || "") && [...q.keys()].every((k) => k === "query" || k === "format"),
   },
-  { // NASA Exoplanet Archive atmospheric-spectrum data files
+  { // NASA Exoplanet Archive atmospheric-spectrum data files, by the spectra table's spec_path.
+    // The archive serves these files only from inside a short-lived workspace that its
+    // atmospheres page creates, so the relay opens that page and reads the file from the
+    // workspace it names (see resolveSpectrum).
     host: "exoplanetarchive.ipac.caltech.edu",
-    path: /^\/data\/ExoData\/[A-Za-z0-9_\-./%+]+\.(tbl|txt|csv|dat)$/,
-    query: (q) => q.toString() === "",
+    path: /^\/cgi-bin\/atmospheres\/nph-firefly$/,
+    query: (q) => [...q.keys()].join(",") === "atmospheres,spec_path" && q.get("atmospheres") === ""
+      && SPEC_PATH.test(q.get("spec_path") || ""),
+    resolve: (url, init) => resolveSpectrum(url, init),
   },
   { // NASA ADS search: papers about an object (key: ADS_TOKEN)
     host: "api.adsabs.harvard.edu",
@@ -85,6 +90,17 @@ export const ROUTES = [
     postForm: true,
   },
 ];
+
+export const SPEC_PATH = /^\d{2}\/\d{2}\/\d{2}\/\d{2}\/[A-Za-z0-9_.+\-]+\.tbl$/;
+const WORKSPACE = /FF_InitPage \('[^']*', '(\/workspace\/TMP_[A-Za-z0-9_]+)'/;
+
+// spec_path → the file's address inside a fresh archive workspace.
+export async function resolveSpectrum(url, init, fetcher = fetch) {
+  const page = await fetcher(url.origin + "/cgi-bin/atmospheres/nph-firefly?atmospheres", { method: "GET", headers: init.headers, redirect: "follow" });
+  const found = page.ok ? WORKSPACE.exec(await page.text()) : null;
+  if (!found) throw new Error("the archive's atmospheres page did not open a workspace");
+  return url.origin + found[1] + "/atmospheres/tab1/data/" + url.searchParams.get("spec_path");
+}
 
 export function findRoute(target) {
   let url;
@@ -142,8 +158,22 @@ export default {
       delete init.cf;
     }
 
+    // Sources whose files sit behind a per-visit address are cached here under the
+    // stable request address instead, so repeat views do not reopen the source.
+    const cache = route.resolve && typeof caches !== "undefined" ? caches.default : null;
+    const cacheKey = new Request("https://relay.cache/" + encodeURIComponent(upstream.toString()));
+    if (cache) {
+      const hit = await cache.match(cacheKey);
+      if (hit) {
+        const headers = new Headers(hit.headers);
+        headers.set("Access-Control-Allow-Origin", origin);
+        return new Response(hit.body, { status: hit.status, headers });
+      }
+    }
+
     let response;
     try {
+      if (route.resolve) { address = await route.resolve(upstream, init); delete init.cf; }
       response = await fetch(address, init);
     } catch (error) {
       return reply(502, "The source could not be reached: " + String(error && error.message || error).slice(0, 200), origin);
@@ -171,6 +201,12 @@ export default {
     headers.set("Vary", "Origin");
     headers.set("Cache-Control", "public, max-age=" + CACHE_SECONDS);
     headers.set("X-Relay-Source", upstream.hostname);
-    return new Response(response.body ? response.body.pipeThrough(limiter) : null, { status: response.status, headers });
+    const out = new Response(response.body ? response.body.pipeThrough(limiter) : null, { status: response.status, headers });
+    if (cache && response.ok) {
+      const [forPage, forCache] = out.body.tee();
+      await cache.put(cacheKey, new Response(forCache, { status: out.status, headers }));
+      return new Response(forPage, { status: out.status, headers });
+    }
+    return out;
   },
 };
