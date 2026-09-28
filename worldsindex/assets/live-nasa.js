@@ -84,10 +84,19 @@ function spectrumSvg(points, label) {
     `<text x="${L}" y="${h - 12}" fill="#b6c9d9" font-size="12">${x0.toFixed(2)} µm</text><text x="${w - R}" y="${h - 12}" fill="#b6c9d9" font-size="12" text-anchor="end">${x1.toFixed(2)} µm</text>` +
     `<text x="${L - 6}" y="${T + 10}" fill="#b6c9d9" font-size="11" text-anchor="end">${esc(y1.toPrecision(3))}</text><text x="${L - 6}" y="${h - B}" fill="#b6c9d9" font-size="11" text-anchor="end">${esc(y0.toPrecision(3))}</text>${marks}</svg>`;
 }
-function table(rows, columns, labels = {}) {
+// The archive gives references as HTML (<a refstr=… href=…>Name et al. 2017</a>);
+// show the name, linked only to ADS or DOI addresses.
+export function referenceHtml(value) {
+  const text = String(value ?? '');
+  const label = text.replace(/<[^>]*>/g, '').trim();
+  const href = /href=["']?([^"'\s>]+)/i.exec(text)?.[1] || '';
+  return /^https:\/\/(ui\.adsabs\.harvard\.edu|doi\.org)\//.test(href)
+    ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)}</a>` : esc(label);
+}
+function table(rows, columns, labels = {}, render = {}) {
   if (!rows.length) return '';
   const cols = columns.filter(c => rows.some(r => r[c] !== null && r[c] !== undefined && r[c] !== ''));
-  return `<div class="table-wrap"><table><thead><tr>${cols.map(c => `<th>${esc(labels[c] || c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${cols.map(c => `<td>${esc(r[c] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  return `<div class="table-wrap"><table><thead><tr>${cols.map(c => `<th>${esc(labels[c] || c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${cols.map(c => `<td>${render[c] ? render[c](r[c]) : esc(r[c] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
 export function mountLiveExtras(container, object) {
@@ -114,12 +123,12 @@ export function mountLiveExtras(container, object) {
     let html = '';
     spectraRows = spec.status === 'fulfilled' ? spec.value || [] : [];
     html += `<h4>Atmospheric spectra (NASA Exoplanet Archive)</h4>` + (spec.status === 'rejected' ? `<p>Unavailable right now (${esc(spec.reason.message)}).</p>` : spectraRows.length
-      ? table(spectraRows.map((r, i) => ({...r, range: `${r.minwavelng ?? '?'}–${r.maxwavelng ?? '?'} µm`, plot: i})), ['spec_type', 'instrument', 'facility', 'range', 'num_datapoints', 'authors', 'bibcode', 'note'], {spec_type: 'Type', num_datapoints: 'Points', range: 'Wavelengths'})
+      ? table(spectraRows.map((r, i) => ({...r, range: `${r.minwavelng ?? '?'}–${r.maxwavelng ?? '?'} µm`, plot: i})), ['spec_type', 'instrument', 'facility', 'range', 'num_datapoints', 'authors', 'bibcode', 'note'], {spec_type: 'Type', instrument: 'Instrument', facility: 'Facility', num_datapoints: 'Points', range: 'Wavelengths', authors: 'Authors', bibcode: 'Bibcode', note: 'Note'}, {bibcode: b => b ? `<a href="https://ui.adsabs.harvard.edu/abs/${encodeURIComponent(b)}/abstract" target="_blank" rel="noopener">${esc(b)}</a>` : ''})
         + spectraRows.map((r, i) => `<button type="button" class="text-link" data-live-spectrum="${i}">Plot ${esc(r.spec_type || 'spectrum')} · ${esc(r.instrument || '')} (${esc(r.bibcode || '')})</button>`).join(' ') + '<div data-live-spectrum-plot></div>'
       : '<p class="muted">The archive lists no atmospheric spectrum for this planet name.</p>');
     const hostRows = hosts.status === 'fulfilled' ? hosts.value || [] : [];
     html += `<h4>Host star records (NASA Exoplanet Archive)</h4>` + (hosts.status === 'rejected' ? `<p>Unavailable right now (${esc(hosts.reason.message)}).</p>` : hostRows.length
-      ? table(hostRows, ['st_refname', 'st_spectype', 'st_teff', 'st_rad', 'st_mass', 'st_met', 'st_age', 'st_lum', 'sy_dist'], {st_refname: 'Reference', st_spectype: 'Spectral type', st_teff: 'Teff (K)', st_rad: 'Radius (R☉)', st_mass: 'Mass (M☉)', st_met: '[Fe/H]', st_age: 'Age (Gyr)', st_lum: 'log L (L☉)', sy_dist: 'Distance (pc)'}) + '<p class="fineprint">One row per published solution; values are not combined.</p>'
+      ? table(hostRows, ['st_refname', 'st_spectype', 'st_teff', 'st_rad', 'st_mass', 'st_met', 'st_age', 'st_lum', 'sy_dist'], {st_refname: 'Reference', st_spectype: 'Spectral type', st_teff: 'Teff (K)', st_rad: 'Radius (R☉)', st_mass: 'Mass (M☉)', st_met: '[Fe/H]', st_age: 'Age (Gyr)', st_lum: 'log L (L☉)', sy_dist: 'Distance (pc)'}, {st_refname: referenceHtml}) + '<p class="fineprint">One row per published solution; values are not combined.</p>'
       : '<p class="muted">No host-star records under this host name.</p>');
     if (ml.status === 'fulfilled' && ml.value) {
       const rows = ml.value;

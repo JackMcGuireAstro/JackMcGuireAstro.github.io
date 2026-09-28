@@ -1,6 +1,6 @@
 // Tests for worldsindex/assets/live-nasa.js helpers (no network).
 import assert from 'node:assert/strict';
-import { planetNames, spectrumFileUrl, exofopTarget, adsQuery, parseIpacTable, spectrumPoints } from '../worldsindex/assets/live-nasa.js';
+import { referenceHtml, planetNames, spectrumFileUrl, exofopTarget, adsQuery, parseIpacTable, spectrumPoints } from '../worldsindex/assets/live-nasa.js';
 
 assert.deepEqual(planetNames({name: 'WASP-18 b'}), ['WASP-18 b', 'WASP-18b']);
 assert.deepEqual(planetNames({name: 'TOI-1000.01'}), ['TOI-1000.01']);
@@ -40,4 +40,8 @@ const trans = `|CENTRALWAVELNG|BANDWIDTH|PL_TRANDEP|PL_TRANDEPERR1|PL_TRANDEPERR
         0.33000   0.08000    2.08196        0.06690       -0.06584             0         Calculated /docs/atmospheres/atmospheres_calc.html
 `;
 assert.deepEqual(spectrumPoints(parseIpacTable(trans)).points, [{x: 0.33, y: 2.08196, e: 0.0669}]);
+assert.equal(referenceHtml('<a refstr=BONOMO_ET_AL__2017 href=https://ui.adsabs.harvard.edu/abs/2017A&A...602A.107B/abstract target=ref>Bonomo et al. 2017</a>'),
+  '<a href="https://ui.adsabs.harvard.edu/abs/2017A&amp;A...602A.107B/abstract" target="_blank" rel="noopener">Bonomo et al. 2017</a>');
+assert.equal(referenceHtml('<a href=javascript:alert(1)>x</a>'), 'x', 'only ADS or DOI links are kept');
+assert.equal(referenceHtml('Plain <b>text</b>'), 'Plain text');
 console.log('WorldsIndex live NASA: all checks passed');
