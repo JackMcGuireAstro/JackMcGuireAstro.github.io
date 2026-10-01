@@ -21,6 +21,9 @@
 #       Build a tree from the listed working-tree paths (relative to this checkout)
 #       plus this checkout's .github/workflows/data-branch-deploy.yml (so the push
 #       triggers a deploy), and replace the branch with one parentless commit.
+#       DATA_BRANCH_DISPATCHER=0 leaves that workflow file out: GitHub refuses a push
+#       of workflow files made with an Actions workflow token, and such a push would
+#       not start a deploy anyway, so the cloud publisher requests the deploy itself.
 #       Prints `published <sha>` (exit 0), `unchanged <sha>` (exit 10) when the tree
 #       equals the current release, or keeps the commit as `refs/pending/<branch>`
 #       and exits 1 when the push fails.
@@ -89,9 +92,11 @@ case "$MODE" in
     [ -z "$missing" ] || { echo "listed files are missing: $(printf '%s' "$missing" | head -5 | tr '\n' ' ')"; exit 1; }
     store --work-tree="$ROOT" read-tree --empty || exit 1
     grep -v "^$" "$LIST" | GIT_LITERAL_PATHSPECS=1 store --work-tree="$ROOT" add --force --pathspec-from-file=- || { echo "could not stage the release files"; exit 1; }
-    DISPATCH_BLOB=$(git cat-file blob "HEAD:$DISPATCHER" 2>/dev/null | store hash-object -w --stdin) \
-      && [ -n "$DISPATCH_BLOB" ] || { echo "HEAD has no $DISPATCHER"; exit 1; }
-    store update-index --add --cacheinfo "100644,$DISPATCH_BLOB,$DISPATCHER" || exit 1
+    if [ "${DATA_BRANCH_DISPATCHER:-1}" != "0" ]; then
+      DISPATCH_BLOB=$(git cat-file blob "HEAD:$DISPATCHER" 2>/dev/null | store hash-object -w --stdin) \
+        && [ -n "$DISPATCH_BLOB" ] || { echo "HEAD has no $DISPATCHER"; exit 1; }
+      store update-index --add --cacheinfo "100644,$DISPATCH_BLOB,$DISPATCHER" || exit 1
+    fi
     TREE=$(store write-tree) || exit 1
     unset GIT_INDEX_FILE
     CURRENT=$(store rev-parse --verify --quiet "$TRACKING^{commit}" || true)

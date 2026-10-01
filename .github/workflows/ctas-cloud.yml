@@ -1,0 +1,114 @@
+name: CTAS cloud collector and publisher
+
+# CTAS runs here, not on Jack's Mac. Every hour this job restores the collector's
+# database from the private state repository, runs the collector (the same
+# `supernova-ops api` program that used to run on the Mac) for a while, publishes a
+# release to the ctas-data branch with scripts/publish_ctas.sh, saves the database
+# back, and starts the site deployment. See scripts/ctas_cloud_run.sh.
+#
+# Secrets:
+#   CTAS_STATE_TOKEN   fine-grained token: Contents read/write on the private state repo
+#   CTAS_BACKEND_ENV   the collector's settings file (.env: source access keys)
+# Variable (optional): CTAS_STATE_REPO, default JackMcGuireAstro/ctas-state
+
+on:
+  schedule:
+    - cron: "11 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build a release but push and save nothing"
+        type: boolean
+        default: false
+      collect_minutes:
+        description: "Minutes of collection before publishing"
+        type: string
+        default: "15"
+
+permissions:
+  contents: write   # push the ctas-data release branch
+  actions: write    # start "Validate and deploy site"
+
+# One run at a time; a run that starts while another is going waits for it.
+concurrency:
+  group: ctas-cloud
+  cancel-in-progress: false
+
+jobs:
+  cycle:
+    name: Collect and publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    env:
+      CTAS_STATE_REPO: ${{ vars.CTAS_STATE_REPO || 'JackMcGuireAstro/ctas-state' }}
+    steps:
+      - name: Site code (main)
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          path: site
+          persist-credentials: false
+      - name: Collector code (private state repository)
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ env.CTAS_STATE_REPO }}
+          token: ${{ secrets.CTAS_STATE_TOKEN }}
+          path: backend
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements-cloud.txt
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Install the collector
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check -r backend/requirements-cloud.txt
+          python3 -m pip install --quiet --disable-pip-version-check --no-deps -e backend
+      - name: Collector settings and git identity
+        env:
+          BACKEND_ENV: ${{ secrets.CTAS_BACKEND_ENV }}
+          PUSH_TOKEN: ${{ github.token }}
+        run: |
+          umask 077
+          printf '%s\n' "$BACKEND_ENV" > backend/.env
+          # Hide every settings value from this run's public log.
+          while IFS= read -r line; do
+            case "$line" in ''|'#'*) continue ;; esac
+            value=${line#*=}; value=${value%\"}; value=${value#\"}
+            [ ${#value} -ge 4 ] && echo "::add-mask::$value"
+          done < backend/.env
+          git config --global user.name "CTAS cloud publisher"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global maintenance.auto false
+          git config --global gc.auto 0
+          # Lets the publisher's own data store (scripts/data_branch.sh) push ctas-data.
+          git config --global "http.https://github.com/.extraheader" \
+            "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$PUSH_TOKEN" | base64 -w0)"
+      - name: Collect, publish and save
+        env:
+          SITE: ${{ github.workspace }}/site
+          BACKEND: ${{ github.workspace }}/backend
+          STATE_TOKEN: ${{ secrets.CTAS_STATE_TOKEN }}
+          DEPLOY_TOKEN: ${{ github.token }}
+          COLLECT_MINUTES: ${{ inputs.collect_minutes || '15' }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          WORK: ${{ runner.temp }}/ctas-cloud
+        run: bash site/scripts/ctas_cloud_run.sh
+      - name: Clean up credentials
+        if: always()
+        run: |
+          rm -f backend/.env
+          git config --global --unset-all "http.https://github.com/.extraheader" || true
+          # The collector's own log can contain source addresses with access keys; it is
+          # not kept. The publisher's log (public data only) is kept for five days.
+          rm -f "$RUNNER_TEMP/ctas-cloud/logs/collector.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ctas-publish-log-${{ github.run_id }}
+          path: ${{ runner.temp }}/ctas-cloud/logs
+          retention-days: 5
+          if-no-files-found: ignore

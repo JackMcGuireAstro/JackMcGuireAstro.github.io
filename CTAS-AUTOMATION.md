@@ -1,9 +1,37 @@
 # CTAS public-catalog automation
 
-CTAS is published as a public static catalog. The scientific database and
-Python ingestion pipeline run locally; a user LaunchAgent checks every 120
-seconds and pushes only an explicit allowlist of public artifacts to this
-GitHub Pages repository.
+CTAS is published as a public static catalog. Since October 2026 the scientific
+database and the Python ingestion pipeline run in GitHub Actions, not on the Mac
+(see "Cloud operation" below); the publisher pushes only an explicit allowlist
+of public artifacts to this GitHub Pages repository. The LaunchAgent sections
+further down describe the earlier Mac operation, kept for reference and for
+falling back to it.
+
+## Cloud operation (current)
+
+`.github/workflows/ctas-cloud.yml` runs every hour (minute 11) and on demand:
+
+1. `scripts/ctas_cloud_state.py restore` downloads the collector's database and
+   fixed input files from the private repository `JackMcGuireAstro/ctas-state`
+   (release `state`: `static-inputs.tar.gz` and `soc-<UTC stamp>.db.gz`).
+2. The collector (`supernova-ops api`, code from the same private repository,
+   settings from the `CTAS_BACKEND_ENV` secret) gathers alerts for 15 minutes.
+3. `scripts/publish_ctas.sh` builds, verifies and publishes a release to
+   `ctas-data` while the collector keeps running, exactly as on the Mac, with
+   `DATA_BRANCH_DISPATCHER=0` because an Actions token may not push workflow files;
+   the run then starts "Validate and deploy site" itself.
+4. The collector stops cleanly and `ctas_cloud_state.py save` checkpoints the
+   database, requires `PRAGMA quick_check` = ok, uploads a new copy and keeps the
+   newest three plus one per day for the two days before. A damaged or failed copy
+   never replaces the last good one.
+
+Secrets: `CTAS_STATE_TOKEN` (fine-grained, Contents read/write on ctas-state only)
+and `CTAS_BACKEND_ENV`. The collector's own log is not kept (it may contain
+source addresses with keys); the publisher's log is a five-day artifact. Dry run:
+Actions -> "CTAS cloud collector and publisher" -> Run workflow -> dry run.
+The move from the Mac was done by `Move CTAS to GitHub.command`, which also
+dropped all but the newest three `certification_runs` (August audit evidence,
+1.8 GB) from the uploaded copy.
 
 No local dashboard, managed database, secret manager, or human approval step is
 part of this publication path.

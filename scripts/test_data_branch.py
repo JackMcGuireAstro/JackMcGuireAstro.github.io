@@ -102,6 +102,15 @@ class DataBranchTests(unittest.TestCase):
         self.assertEqual(self.origin_git("rev-list", "--count", "main"), "1")
         self.assertEqual(run(["git", "status", "--porcelain"], self.site).stdout, "")
 
+    def test_cloud_publish_can_leave_the_dispatcher_out(self):
+        # The cloud publisher pushes with an Actions token, which may not push workflow files.
+        paths = self.write_release(1)
+        result = run(["bash", str(SCRIPT), "publish", str(self.store), "ctas-data", "CTAS data: cloud", str(self.list)],
+                     self.site, check=False, DATA_BRANCH_DISPATCHER="0")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        files = set(self.origin_git("ls-tree", "-r", "--name-only", "ctas-data").splitlines())
+        self.assertEqual(files, set(paths))
+
     def test_unchanged_release_is_not_republished(self):
         self.write_release(1)
         first = self.publish()
