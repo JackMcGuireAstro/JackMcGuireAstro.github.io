@@ -134,6 +134,8 @@ jobs:
           python3 scripts/test_ctas_db_retention.py
           python3 scripts/test_data_branch.py
           python3 scripts/test_ctas_cloud_state.py
+          python3 scripts/test_worldsindex_cloud_state.py
+          bash -n scripts/worldsindex_cloud_run.sh
           bash -n scripts/ctas_cloud_run.sh
       - name: Whitespace and credential-shaped content
         run: |

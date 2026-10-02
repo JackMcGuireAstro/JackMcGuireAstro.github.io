@@ -5,6 +5,23 @@ this Mac, a dedicated local checkout publishes only generated public artifacts (
 and GitHub Pages serves the site. ChatGPT-hosted Sites and Codex scheduled tasks
 are not part of this path.
 
+## Cloud operation (current)
+
+Since October 2026 WorldsIndex is built in GitHub Actions, not on the Mac.
+`.github/workflows/worldsindex-cloud.yml` runs every hour (minute 41) and on demand:
+it checks out main (`site/`) and the ExoNexus builder from the private repository
+`JackMcGuireAstro/worldsindex-state` (`source/`, then `npm ci`), restores the builder's
+working data with `scripts/worldsindex_cloud_state.py restore` (release `state`, asset
+`wi-state-<UTC stamp>.tar.gz`: `data/snapshots`, `data/observations`, `data/atlas`,
+`public/data`, `outputs`), runs the unchanged `scripts/publish_worldsindex.sh --full`
+with `DATA_BRANCH_DISPATCHER=0`, saves the working data back (an archive without frozen
+snapshots is never uploaded; newest three plus one per day for two days are kept) and
+starts "Validate and deploy site" when a release was published. The K2 refresh needs
+the Mac-only science runtime and is skipped (prior photometry retained), as it already
+was on the Mac. The builder's `.env.local`, if any, is the `WORLDSINDEX_ENV` secret and
+its values are scrubbed from the kept publish log. The move was done by
+`Move WorldsIndex to GitHub.command`. The sections below describe the earlier Mac operation.
+
 ## What runs
 
 `io.github.jackmcguireastro.worldsindex-mirror` runs **every two minutes** while the Mac is

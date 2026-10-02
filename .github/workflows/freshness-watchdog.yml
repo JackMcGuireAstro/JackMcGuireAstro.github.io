@@ -1,7 +1,7 @@
 name: Publisher freshness watchdog
 
-# CTAS publishes from GitHub Actions (ctas-cloud.yml); WorldsIndex still publishes from
-# the Mac. Both fail closed: when one refuses a release it keeps
+# Both publishers run in GitHub Actions (ctas-cloud.yml, worldsindex-cloud.yml) and fail
+# closed: when one refuses a release it keeps
 # refusing, silently, and GitHub Pages keeps serving the last snapshot. This workflow
 # runs in the cloud, independent of the Mac, reads the public status files once an
 # hour and maintains one issue labelled `freshness-watchdog`: opened when a publisher

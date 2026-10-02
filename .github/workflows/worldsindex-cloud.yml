@@ -1,0 +1,127 @@
+name: WorldsIndex cloud builder and publisher
+
+# WorldsIndex is built here, not on Jack's Mac. Every hour this job restores the
+# ExoNexus builder's working data from the private state repository, runs the unchanged
+# full publisher (scripts/publish_worldsindex.sh: provider monitor, promotion gate,
+# ExoNexus tests and build, atlas, static release, worldsindex-data push), saves the
+# working data back, and starts the site deployment. See scripts/worldsindex_cloud_run.sh.
+#
+# Secrets:
+#   CTAS_STATE_TOKEN   key with Contents read/write on the private state repositories
+#   WORLDSINDEX_ENV    the builder's .env.local (optional; provider keys, if any)
+# Variables: WORLDSINDEX_CLOUD_ENABLED=true turns on the hourly schedule;
+#            WORLDSINDEX_STATE_REPO (optional), default JackMcGuireAstro/worldsindex-state
+
+on:
+  schedule:
+    - cron: "41 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build and validate but push and save nothing"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # push the worldsindex-data release branch
+  actions: write    # start "Validate and deploy site"
+
+concurrency:
+  group: worldsindex-cloud
+  cancel-in-progress: false
+
+jobs:
+  cycle:
+    name: Build and publish
+    # Scheduled runs start only once the move from the Mac is switched on (repository
+    # variable WORLDSINDEX_CLOUD_ENABLED=true), so the Mac and the cloud never both publish.
+    if: github.event_name == 'workflow_dispatch' || vars.WORLDSINDEX_CLOUD_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      WORLDSINDEX_STATE_REPO: ${{ vars.WORLDSINDEX_STATE_REPO || 'JackMcGuireAstro/worldsindex-state' }}
+    steps:
+      - name: Site code (main)
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          path: site
+          persist-credentials: false
+      - name: Builder code (private state repository)
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ env.WORLDSINDEX_STATE_REPO }}
+          token: ${{ secrets.CTAS_STATE_TOKEN }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install the builder
+        working-directory: source
+        run: npm ci --no-audit --no-fund
+      - name: Builder settings and git identity
+        env:
+          BUILDER_ENV: ${{ secrets.WORLDSINDEX_ENV }}
+          PUSH_TOKEN: ${{ github.token }}
+        run: |
+          umask 077
+          if [ -n "$BUILDER_ENV" ]; then
+            printf '%s\n' "$BUILDER_ENV" > source/.env.local
+            while IFS= read -r line; do
+              case "$line" in ''|'#'*) continue ;; esac
+              value=${line#*=}; value=${value%\"}; value=${value#\"}
+              [ ${#value} -ge 4 ] && echo "::add-mask::$value"
+            done < source/.env.local
+          fi
+          git config --global user.name "WorldsIndex cloud publisher"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global maintenance.auto false
+          git config --global gc.auto 0
+          git config --global "http.https://github.com/.extraheader" \
+            "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$PUSH_TOKEN" | base64 -w0)"
+      - name: Build, publish and save
+        env:
+          SITE: ${{ github.workspace }}/site
+          SOURCE: ${{ github.workspace }}/source
+          STATE_TOKEN: ${{ secrets.CTAS_STATE_TOKEN }}
+          DEPLOY_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          WORK: ${{ runner.temp }}/worldsindex-cloud
+        run: bash site/scripts/worldsindex_cloud_run.sh
+      - name: Clean up credentials and scrub the log
+        if: always()
+        run: |
+          # Replace any settings value that reached the publish log before keeping it.
+          if [ -f source/.env.local ] && [ -d "$RUNNER_TEMP/worldsindex-cloud/logs" ]; then
+            python3 - source/.env.local "$RUNNER_TEMP/worldsindex-cloud/logs" <<'PY'
+          import pathlib, sys
+          values = []
+          for line in open(sys.argv[1], encoding="utf-8", errors="replace"):
+              line = line.strip()
+              if line and not line.startswith("#") and "=" in line:
+                  v = line.split("=", 1)[1].strip().strip('"').strip("'")
+                  if len(v) >= 6:
+                      values.append(v)
+          for path in pathlib.Path(sys.argv[2]).rglob("*"):
+              if path.is_file():
+                  text = path.read_text(errors="replace")
+                  for v in values:
+                      text = text.replace(v, "***")
+                  path.write_text(text)
+          PY
+          fi
+          rm -f source/.env.local
+          git config --global --unset-all "http.https://github.com/.extraheader" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: worldsindex-publish-log-${{ github.run_id }}
+          path: ${{ runner.temp }}/worldsindex-cloud/logs
+          retention-days: 5
+          if-no-files-found: ignore
