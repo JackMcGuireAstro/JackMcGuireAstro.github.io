@@ -16,6 +16,7 @@
 #   DEPLOY_TOKEN      this repository's workflow token (actions: write)
 #   COLLECT_MINUTES   minutes of collection before publishing (default 15)
 #   DRY_RUN           1 = collect and build a release but push nothing and save nothing
+#   CHAIN             1 (default) = start the next cycle when this one saved its database
 #   WORK              scratch folder for logs (default $RUNNER_TEMP or /tmp)
 set -uo pipefail
 
@@ -100,6 +101,13 @@ if [ "$PUBLISHED" -eq 1 ] && [ "$DRY_RUN" != "1" ]; then
   # A push made with the workflow token does not start other workflows by itself.
   GH_TOKEN="$DEPLOY_TOKEN" gh workflow run worldsindex-release.yml --repo "${GITHUB_REPOSITORY:-JackMcGuireAstro/JackMcGuireAstro.github.io}" --ref main \
     && say "deployment requested" || say "could not request the deployment; the next run or a main push will deploy it"
+fi
+# GitHub's hourly schedule is unreliable for this repository (runs arrive hours apart),
+# so each successful cycle starts the next one; the hourly schedule only restarts the
+# chain if it ever breaks. A cycle that could not save its database does not chain.
+if [ "${CHAIN:-1}" = "1" ] && [ "$DRY_RUN" != "1" ]; then
+  GH_TOKEN="$DEPLOY_TOKEN" gh workflow run ctas-cloud.yml --repo "${GITHUB_REPOSITORY:-JackMcGuireAstro/JackMcGuireAstro.github.io}" --ref main \
+    && say "next cycle requested" || say "could not request the next cycle; the hourly schedule will start it"
 fi
 [ "$PUBLISH_STATUS" -eq 0 ] || { say "the publisher reported a problem (exit $PUBLISH_STATUS); see the publish log artifact"; exit "$PUBLISH_STATUS"; }
 say "done"

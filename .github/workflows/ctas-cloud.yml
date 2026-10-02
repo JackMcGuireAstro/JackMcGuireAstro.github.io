@@ -1,6 +1,7 @@
 name: CTAS cloud collector and publisher
 
-# CTAS runs here, not on Jack's Mac. Every hour this job restores the collector's
+# CTAS runs here, not on Jack's Mac. Each cycle starts the next one when it finishes
+# (about every 45 minutes); the hourly schedule only restarts the chain. A cycle restores the collector's
 # database from the private state repository, runs the collector (the same
 # `supernova-ops api` program that used to run on the Mac) for a while, publishes a
 # release to the ctas-data branch with scripts/publish_ctas.sh, saves the database
@@ -24,6 +25,10 @@ on:
         description: "Minutes of collection before publishing"
         type: string
         default: "15"
+      chain:
+        description: "Start the next cycle when this one finishes"
+        type: boolean
+        default: true
 
 permissions:
   contents: write   # push the ctas-data release branch
@@ -95,6 +100,7 @@ jobs:
           DEPLOY_TOKEN: ${{ github.token }}
           COLLECT_MINUTES: ${{ inputs.collect_minutes || '15' }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          CHAIN: ${{ (github.event_name == 'schedule' || inputs.chain) && '1' || '0' }}
           WORK: ${{ runner.temp }}/ctas-cloud
         run: bash site/scripts/ctas_cloud_run.sh
       - name: Clean up credentials
