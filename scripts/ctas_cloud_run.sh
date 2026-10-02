@@ -76,7 +76,9 @@ say "collected for $COLLECT_MINUTES minutes"
 PUBLISH_ARGS=()
 [ "$DRY_RUN" = "1" ] && PUBLISH_ARGS=(--dry-run)
 say "building the release${PUBLISH_ARGS:+ (dry run)}"
-PUBLISH_OUT=$(CTAS_SITE="$SITE" CTAS_DB="$DATA/soc.db" CTAS_LOG_DIR="$LOGS/publish" CTAS_SNAPSHOT_METHOD=backup \
+# CTAS_SNAPSHOT_METHOD is left unset: "auto" already takes a full backup on Linux (no
+# clonefile), and setting it would leak into the publisher's own snapshot tests.
+PUBLISH_OUT=$(CTAS_SITE="$SITE" CTAS_DB="$DATA/soc.db" CTAS_LOG_DIR="$LOGS/publish" \
   DATA_BRANCH_DISPATCHER=0 bash "$SITE/scripts/publish_ctas.sh" "${PUBLISH_ARGS[@]}" 2>&1)
 PUBLISH_STATUS=$?
 printf '%s\n' "$PUBLISH_OUT" | tail -20
