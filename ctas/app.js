@@ -849,8 +849,15 @@
         '</td><td>' + esc(row.asserted_at ? absolute(row.asserted_at) : "Assertion time not retained") + '</td><td>' +
         (sourceLink ? renderReferences([sourceLink]) : '<span class="ctas-link-unavailable">No verified object link retained</span>') + '</td></tr>';
     }).join("");
+    var near = ((candidate.positional_neighbours || {}).neighbours || []);
+    var nearHtml = near.length ? '<section class="ctas-detail__section ctas-neighbours"><h4>Other records at this position</h4><p>' +
+      esc((candidate.positional_neighbours || {}).policy || "") + '</p><ul>' + near.map(function (row) {
+        return '<li><button type="button" class="ctas-link-button" data-open-event="' + esc(row.event_id) + '">' + esc(row.name || row.event_id) +
+          '</button> <small>' + esc(num(row.separation_arcsec, 2) + "″ away") + (row.discovery_time ? " · discovered " + esc(absolute(row.discovery_time)) : "") + '</small></li>';
+      }).join("") + '</ul></section>' : "";
     return '<details class="ctas-evidence-panel ctas-identity" data-dossier-view="identity"><summary>Identity and aliases <small>' +
-      aliases.length + ' source-native aliases</small></summary><div class="ctas-evidence-panel__body">' + warning +
+      aliases.length + ' source-native aliases' + (near.length ? " · " + near.length + " other record" + (near.length === 1 ? "" : "s") + " at this position" : "") +
+      '</small></summary><div class="ctas-evidence-panel__body">' + warning + nearHtml +
       '<dl class="ctas-detail__facts">' + fact("Stable event UUID", candidate.event_id) + fact("Identity state", humanKey(identity.state || "UNREVIEWED")) +
       fact("Lookup policy", identity.policy || "Provider-scoped exact alias; unscoped ambiguity is explicit") + '</dl>' +
       (rows ? '<div class="ctas-evidence-table-wrap" role="region" aria-label="Provider-scoped event aliases" tabindex="0"><table class="ctas-evidence-table"><caption>Source-native aliases remain attached to the stable event UUID through display-name changes.</caption><thead><tr><th scope="col">Alias</th><th scope="col">Provider</th><th scope="col">Binding</th><th scope="col">Asserted</th><th scope="col">Original source</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<p>No source-native alias is retained.</p>') +

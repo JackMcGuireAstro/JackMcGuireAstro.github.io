@@ -164,6 +164,10 @@ class BrowserTests(unittest.TestCase):
                 body = {}
             route.fulfill(status=200, content_type="application/json", body=_json.dumps(body),
                           headers={"Access-Control-Allow-Origin": "*"})
+        # No relay configured, so the relay-only sources must say so (live-config.json on the
+        # real site names the relay, whose answers this offline test cannot rely on).
+        self.page.route("**/live-config.json", lambda route: route.fulfill(
+            status=200, content_type="application/json", body="{}"))
         self.page.route("https://api.alerce.online/**", provider)
         self.page.route("https://api.lsst.fink-portal.org/**", provider)
         self.page.locator("#ctas-results [data-open-event]").first.click()

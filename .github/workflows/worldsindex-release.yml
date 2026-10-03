@@ -79,6 +79,10 @@ jobs:
           node scripts/test_worldsindex_live_nasa.mjs
       - name: QualQuest static export and public content
         run: python3 scripts/test_qualquest_static.py
+      - name: Tonight's sky planner
+        run: |
+          node --check tonight/planner.js
+          node scripts/test_tonight_planner.mjs
       - name: CTAS static release
         # Fixture commits can start detached Git maintenance that outlives the
         # test and races temporary-directory cleanup. Limit this to CI checks.
@@ -94,17 +98,17 @@ jobs:
           python3 scripts/test_ctas_links.py
           python3 scripts/test_ctas_publisher_recovery.py
           python3 scripts/test_ctas_static.py
+          python3 scripts/test_ctas_positional.py
           node scripts/test_ctas_chunk_loader.js
           node scripts/test_ctas_presentation.js
           node scripts/test_ctas_live_sources.js
           node scripts/test_live_relay.mjs
-      # The Mac publisher has no browser, so these checks were skipped on every release
-      # (test_ctas_browser "Ran 0 tests"; two astro-evidence schema tests skipped for
-      # want of jsonschema). They run here on the real release, off the Mac. Report-only
-      # until they have passed on live data for a while; then drop continue-on-error.
-      - name: CTAS page in a real browser, and evidence schema (report-only)
+      # The page in a real browser (layout at phone width, sticky bars, heading outline,
+      # WCAG via axe-core, no first-party console errors, the live panel's behaviour) and
+      # the evidence schema. Blocking since 2026-10-03: a release that fails them is not
+      # deployed and the previous green deployment stays live.
+      - name: CTAS page in a real browser, and evidence schema
         id: browser
-        continue-on-error: true
         timeout-minutes: 10
         run: |
           set -o pipefail
@@ -115,10 +119,11 @@ jobs:
           status=0
           python3 scripts/test_ctas_astro_evidence.py 2>&1 | tail -5 || status=1
           python3 scripts/test_ctas_browser.py 2>&1 | tail -40 || status=1
+          python3 scripts/test_tonight_browser.py 2>&1 | tail -10 || status=1
           if [ "$status" -eq 0 ]; then
             echo "CTAS browser and evidence-schema checks: passed" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "CTAS browser or evidence-schema checks FAILED (report-only; see the step log)" >> "$GITHUB_STEP_SUMMARY"
+            echo "CTAS browser or evidence-schema checks FAILED; not deployed (see the step log)" >> "$GITHUB_STEP_SUMMARY"
           fi
           exit "$status"
       - name: Freshness watchdog, publishing, housekeeping and database retention

@@ -1568,6 +1568,63 @@ def rows_by_event(
     return grouped
 
 
+POSITIONAL_NEIGHBOUR_ARCSEC = 2.0
+POSITIONAL_NEIGHBOUR_LIMIT = 5
+
+
+def positional_neighbours(candidates: list[dict[str, Any]], radius_arcsec: float = POSITIONAL_NEIGHBOUR_ARCSEC) -> dict[str, list[dict[str, Any]]]:
+    """Other retained follow-up targets within `radius_arcsec` of each target.
+
+    Identity in CTAS is provider-scoped and never guessed, so an alert that reaches CTAS
+    under a new name is not merged with an existing object at the same position. This
+    reports such coincidences as advisory context only: no merge, no identity change.
+    Only follow-up targets with retained coordinates take part (localization regions and
+    detector triggers have positions that are not point-like)."""
+    import math as _math
+    cell = radius_arcsec / 3600.0
+    points = []
+    for candidate in candidates:
+        if candidate.get("record_role") not in TARGET_ROLES:
+            continue
+        ra, dec = candidate.get("ra_deg"), candidate.get("dec_deg")
+        if not isinstance(ra, (int, float)) or not isinstance(dec, (int, float)):
+            continue
+        if not (_math.isfinite(ra) and _math.isfinite(dec)):
+            continue
+        points.append((str(candidate["event_id"]), float(ra) % 360.0, float(dec), candidate))
+    grid: dict[tuple[int, int], list[int]] = {}
+    for index, (_, ra, dec, _) in enumerate(points):
+        grid.setdefault((int(_math.floor(dec / cell)), int(_math.floor(ra / cell))), []).append(index)
+    found: dict[str, list[dict[str, Any]]] = {}
+
+    def separation(a, b):
+        ra1, dec1, ra2, dec2 = map(_math.radians, (a[1], a[2], b[1], b[2]))
+        h = _math.sin((dec2 - dec1) / 2) ** 2 + _math.cos(dec1) * _math.cos(dec2) * _math.sin((ra2 - ra1) / 2) ** 2
+        return _math.degrees(2 * _math.asin(min(1.0, _math.sqrt(h)))) * 3600.0
+
+    for index, point in enumerate(points):
+        dec_cell = int(_math.floor(point[2] / cell))
+        ra_cell = int(_math.floor(point[1] / cell))
+        ra_cells = int(_math.ceil(360.0 / cell))
+        span = min(ra_cells // 2 + 1, max(1, int(_math.ceil(1.0 / max(_math.cos(_math.radians(point[2])), 1e-9)))))
+        for d in (-1, 0, 1):
+            for r in range(-span, span + 1):
+                for other in grid.get((dec_cell + d, (ra_cell + r) % ra_cells), ()):
+                    if other <= index:
+                        continue
+                    sep = separation(point, points[other])
+                    if sep > radius_arcsec:
+                        continue
+                    for a, b in ((point, points[other]), (points[other], point)):
+                        found.setdefault(a[0], []).append({
+                            "event_id": b[0], "name": b[3].get("name"),
+                            "separation_arcsec": round(sep, 2), "discovery_time": b[3].get("discovery_time"),
+                        })
+    for event_id in found:
+        found[event_id] = sorted(found[event_id], key=lambda row: (row["separation_arcsec"], str(row["event_id"])))[:POSITIONAL_NEIGHBOUR_LIMIT]
+    return found
+
+
 def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     uri = f"file:{db_path}?mode=ro"
     con = sqlite3.connect(uri, uri=True, timeout=15)
@@ -2300,6 +2357,17 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             "provider_disagreements": provider_disagreements,
             "provider_designation_conflicts": designation_conflicts,
             "multiple_preferred_designations": multiple_designations,
+        }
+
+    neighbours = positional_neighbours(out)
+    for candidate in out:
+        rows = neighbours.get(str(candidate["event_id"]), [])
+        candidate["positional_neighbours"] = {
+            "schema": "ctas.positional-neighbours@1.0.0",
+            "radius_arcsec": POSITIONAL_NEIGHBOUR_ARCSEC,
+            "policy": ("Other retained follow-up targets within the radius, from source-retained coordinates. "
+                       "Advisory only: CTAS does not merge records or change identity by position."),
+            "neighbours": rows,
         }
 
     provider_counts: dict[str, dict[str, int]] = {}

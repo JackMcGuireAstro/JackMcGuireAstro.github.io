@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tonight’s sky | Jack McGuire</title>
+<meta name="description" content="Plan an observing night: which CTAS transients and WorldsIndex planetary systems are up tonight from your observatory, for how long, and how far from the Moon.">
+<meta name="theme-color" content="#f4f1ea">
+<link rel="canonical" href="https://jackmcguireastro.github.io/tonight/">
+<link rel="stylesheet" href="planner.css?v=20261003">
+<script type="module" src="planner.js?v=20261003"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="top"><div class="shell top-inner">
+  <a class="wordmark" href="../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
+  <nav aria-label="Primary"><a href="../index.html">Home</a><a href="../worldsindex/">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="./" aria-current="page">Tonight</a></nav>
+</div></header>
+<main id="main" class="shell">
+  <section class="intro">
+    <p class="eyebrow">Observing / Planning</p>
+    <h1>Tonight’s sky</h1>
+    <p>Pick an observatory and a night. This page works out when it gets dark and which targets from CTAS or WorldsIndex stay above your altitude limit, for how long, and how far each one is from the Moon. Everything is computed in your browser from this site’s published catalogs. Nothing you enter is sent anywhere.</p>
+  </section>
+
+  <form id="form" class="controls" aria-describedby="status">
+    <div class="field wide"><label for="site">Observatory</label><select id="site"></select></div>
+    <div id="custom" class="custom" hidden>
+      <div class="field"><label for="lat">Latitude (°N)</label><input id="lat" type="number" step="0.0001" min="-90" max="90" value="41.3114"></div>
+      <div class="field"><label for="lon">Longitude (°E)</label><input id="lon" type="number" step="0.0001" min="-180" max="180" value="-105.5911"></div>
+      <div class="field"><label for="tz">Time zone</label><input id="tz" type="text" autocomplete="off" spellcheck="false"></div>
+    </div>
+    <div class="field"><label for="date">Night starting</label><input id="date" type="date" required></div>
+    <div class="field"><label for="twilight">Dark means</label><select id="twilight"><option value="-6">Civil twilight (Sun below −6°)</option><option value="-12" selected>Nautical twilight (Sun below −12°)</option><option value="-18">Astronomical twilight (Sun below −18°)</option></select></div>
+    <div class="field"><label for="altlimit">Lowest altitude</label><select id="altlimit"><option value="20">20° (airmass 2.9)</option><option value="30" selected>30° (airmass 2.0)</option><option value="40">40° (airmass 1.6)</option><option value="50">50° (airmass 1.3)</option></select></div>
+    <div class="field"><label for="list">Targets</label><select id="list"><option value="ctas" selected>CTAS follow-up transients</option><option value="worlds">WorldsIndex planetary systems</option></select></div>
+    <div id="ctas-only" class="field"><label for="maglimit">Discovery mag. brighter than</label><input id="maglimit" type="number" step="0.5" min="5" max="25" placeholder="any"></div>
+    <div id="worlds-only" class="field check" hidden><input id="withcandidates" type="checkbox"><label for="withcandidates">Include candidate planets</label></div>
+    <div class="actions"><button type="submit" class="button">Show tonight’s targets</button><button type="button" id="locate" class="button button-quiet">Use my location</button></div>
+  </form>
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+
+  <section aria-labelledby="night-title"><h2 id="night-title">The night</h2><div id="night"></div></section>
+  <section aria-labelledby="targets-title"><h2 id="targets-title">Targets</h2><div id="results"></div><div id="chart" class="chart" aria-live="polite"></div></section>
+
+  <section class="notes" aria-labelledby="notes-title">
+    <h2 id="notes-title">How this is worked out</h2>
+    <p>The Sun and Moon come from low-precision almanac formulae, accurate to about 0.01° for the Sun and 0.3° for the Moon. That is plenty for planning, but it is not good enough to point a telescope. The night is sampled every five minutes from local noon to the next noon. “Hours up” counts the dark samples with the target above your altitude limit. Airmass uses the Kasten &amp; Young (1989) formula. Atmospheric refraction, the horizon profile and telescope limits are ignored.</p>
+    <p>CTAS transients are the current follow-up targets in the <a href="../ctas.html">live CTAS release</a>. Their brightness is the reported discovery magnitude, so it is not a forecast. WorldsIndex systems are grouped by host star and include confirmed planets by default. Check a target’s dossier before you spend telescope time on it.</p>
+  </section>
+</main>
+<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../index.html">Home</a> · <a href="../worldsindex/">WorldsIndex</a> · <a href="../ctas.html">CTAS</a></p></div></footer>
+</body>
+</html>

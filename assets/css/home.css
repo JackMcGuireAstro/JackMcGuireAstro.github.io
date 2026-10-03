@@ -745,18 +745,18 @@ button,summary,a {
 }
 .tool-grid {
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(4,1fr);
+  gap:1px;
+  background:var(--line);
   border:1px solid var(--line)
 }
 .tool-card {
   padding:2rem;
+  background:var(--paper);
   text-decoration:none;
   display:flex;
   align-items:flex-start;
   flex-direction:column
-}
-.tool-card+.tool-card {
-  border-left:1px solid var(--line)
 }
 .tool-card:hover {
   background:var(--paper-deep);
@@ -887,6 +887,9 @@ section[id],article[id],details[id],h4[id],a[id] {
   }
   .section-nav-inner {
     gap:1.8rem
+  }
+  .tool-grid {
+    grid-template-columns:repeat(2,1fr)
   }
   .tool-card {
     padding:1.4rem
@@ -1160,10 +1163,6 @@ section[id],article[id],details[id],h4[id],a[id] {
   }
   .tool-card {
     padding:1.5rem
-  }
-  .tool-card+.tool-card {
-    border-left:0;
-    border-top:1px solid var(--line)
   }
   .tool-mark {
     margin-bottom:1rem
