@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Check that the live CTAS and WorldsIndex releases are still being published.
 
-Both publishers run on one Mac and fail closed: when either refuses a release it
+Both publishers run in GitHub Actions (ctas-cloud.yml, worldsindex-cloud.yml; until
+October 2026 on one Mac) and fail closed: when either refuses a release it
 keeps refusing, silently, until someone looks. GitHub Pages keeps serving the last
 snapshot, so nothing on the site says "the publisher stopped". This check runs in
 GitHub Actions on a schedule (see .github/workflows/freshness-watchdog.yml), reads
@@ -9,13 +10,13 @@ the public status files, and decides whether either publisher has stalled.
 
 Three signals, in order of certainty:
 
-1. Cross-check. The two launchd agents run under the same conditions (Mac awake,
-   logged in, online). If WorldsIndex published within the last couple of hours but
-   CTAS has not published for several, the Mac is evidently up and the CTAS
-   publisher itself is stuck; the reverse holds for WorldsIndex. This catches the
+1. Cross-check. The two publishers run under the same conditions (GitHub Actions
+   available). If WorldsIndex published within the last couple of hours but CTAS has
+   not published for several, Actions is evidently working and the CTAS publisher
+   itself is stuck; the reverse holds for WorldsIndex. This catches the
    2026-09-07 and 2026-09-24 CTAS outages within hours instead of days.
-2. Absolute age. A release older than the configured maximum means either the Mac
-   has been asleep or offline for that long or both publishers are stuck. Either is
+2. Absolute age. A release older than the configured maximum means either GitHub
+   Actions has not run them for that long or both publishers are stuck. Either is
    worth knowing about.
 3. Deployment. If the last "Validate and deploy site" run failed, pushes are
    landing but the live site is frozen at the previous green commit.
@@ -189,16 +190,16 @@ def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, d
     ctas_age = ctas.get("age_hours")
     worlds_age = worlds.get("age_hours")
 
-    # 1. cross-check: one publisher running proves the Mac is up.
+    # 1. cross-check: one publisher running proves the runners are working.
     if ctas_age is not None and worlds_age is not None:
         if worlds_age <= limits["cross_check_fresh_hours"] and ctas_age > limits["cross_check_stale_hours"]:
             alert("ctas-stalled-while-worldsindex-publishes",
                   f"CTAS has not published for {ctas_age:g} h while WorldsIndex published "
-                  f"{worlds_age:g} h ago, so the Mac is up and the CTAS publisher itself is stuck.")
+                  f"{worlds_age:g} h ago, so the cloud runs are working and the CTAS publisher itself is stuck.")
         if ctas_age <= limits["cross_check_fresh_hours"] and worlds_age > limits["cross_check_stale_hours"]:
             alert("worldsindex-stalled-while-ctas-publishes",
                   f"WorldsIndex has not published for {worlds_age:g} h while CTAS published "
-                  f"{ctas_age:g} h ago, so the Mac is up and the WorldsIndex publisher itself is stuck.")
+                  f"{ctas_age:g} h ago, so the cloud runs are working and the WorldsIndex publisher itself is stuck.")
 
     # 2. absolute age.
     if ctas_age is not None and ctas_age > limits["ctas_max_age_hours"]:
@@ -224,7 +225,7 @@ def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, d
     if ctas.get("available") and ctas.get("certificate_expired") and not any(
             row["code"].startswith("ctas") for row in alerts):
         notes.append("The CTAS certificate has expired (90-minute validity) but the release is within limits; "
-                     "this is the normal state while the Mac sleeps.")
+                     "the next cloud run renews it.")
     if ctas.get("pipeline_status") == "degraded":
         notes.append(f"CTAS reports pipeline_status=degraded ({ctas.get('degraded_source_count')} upstream "
                      "sources); that concerns providers, not publication.")
@@ -280,16 +281,16 @@ def render_markdown(report, site_url, mention=""):
             lines.append(f"_{note}_")
     if not report["ok"]:
         lines.append("")
-        lines.append("**Where to look on the Mac**")
+        lines.append("**Where to look**")
         lines.append("")
-        lines.append("- CTAS: `tail -n 20 ~/Library/Logs/ctas-mirror/runner.log` and `publish.log`; "
-                     "`bash scripts/diagnose_ctas_mirror.sh`. A `FAIL` line repeating every minute is a stuck "
-                     "publisher, not a sleeping Mac — see CTAS-AUTOMATION.md, \"Recover an interrupted "
-                     "generated-data publication\".")
-        lines.append("- WorldsIndex: `tail -n 20 ~/Library/Logs/worldsindex-mirror/runner.log`; "
-                     "`./scripts/diagnose_worldsindex_mirror.sh`.")
-        lines.append("- Both silent with the Mac awake: `launchctl print gui/$(id -u)/io.github.jackmcguireastro.ctas-mirror` "
-                     "and the WorldsIndex label; a failed deploy: re-run the last green workflow or revert the commit.")
+        lines.append("- CTAS: Actions -> \"CTAS cloud collector and publisher\": the newest run's log and its "
+                     "`ctas-publish-log` artifact. Runs chain themselves; the relay's 20-minute keeper restarts them. "
+                     "Run it by hand with \"Run workflow\".")
+        lines.append("- WorldsIndex: Actions -> \"WorldsIndex cloud builder and publisher\" and its "
+                     "`worldsindex-publish-log` artifact.")
+        lines.append("- Every run failing at the first checkout or state step: the CTAS_STATE_TOKEN key has stopped "
+                     "working (gh signed out or revoked); run `Renew cloud key.command`. A failed deploy: re-run the "
+                     "last green workflow or revert the commit.")
         lines.append("")
         lines.append("This issue is maintained by the freshness watchdog workflow: it comments when the situation "
                      "changes (and every 12 hours while it persists) and closes itself when both publishers are current again.")

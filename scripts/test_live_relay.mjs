@@ -1,6 +1,6 @@
 // Tests for relay/worker.js with a stand-in for the network.
 import assert from "node:assert/strict";
-import worker, { matchRoute, SITE_ORIGINS } from "../relay/worker.js";
+import worker, { matchRoute, SITE_ORIGINS, keep, KEEP } from "../relay/worker.js";
 
 let upstreamCalls = [];
 globalThis.fetch = async (url, init) => {
@@ -109,4 +109,33 @@ assert.equal(upstreamCalls.at(-1).init.headers.Authorization, "Token lasair-secr
 assert.equal(matchRoute("https://api.lasair.lsst.ac.uk/api/query/?selected=*&tables=objects"), null, "free-form Lasair queries are not relayed");
 assert.equal(matchRoute("https://api.lasair.lsst.ac.uk/api/cone/?ra=1&dec=2&radius=900"), null);
 assert.equal(matchRoute(tap("select pl_name from spectra where pl_name='x'")) && (await withKey(tap("select pl_name from spectra where pl_name='x'"), {})).status, 200, "public NASA queries need no key");
+// keeper: restarts a workflow only when nothing is running and its last real run is old
+{
+  const now = Date.parse("2026-10-03T12:00:00Z");
+  const ago = (m) => new Date(now - m * 60000).toISOString();
+  const runsFor = {
+    "ctas-cloud.yml": [{ status: "completed", conclusion: "cancelled", created_at: ago(5) }, { status: "completed", conclusion: "success", created_at: ago(120) }],
+    "worldsindex-cloud.yml": [{ status: "in_progress", conclusion: null, created_at: ago(3) }],
+    "freshness-watchdog.yml": [{ status: "completed", conclusion: "success", created_at: ago(20) }],
+  };
+  const calls = [];
+  const fetcher = async (url, init = {}) => {
+    calls.push({ url, method: init.method || "GET", auth: init.headers && init.headers.Authorization, body: init.body });
+    const wf = url.match(/workflows\/([^/]+)\//)[1];
+    if (init.method === "POST") return new Response(null, { status: 204 });
+    return new Response(JSON.stringify({ workflow_runs: runsFor[wf] }), { status: 200 });
+  };
+  const results = await keep({ GH_DISPATCH_TOKEN: "gh-secret" }, fetcher, now);
+  assert.deepEqual(results.map((r) => r.action), ["started", "running", "recent (20 min)"],
+    "a cancelled run does not count as recent; a running one is left alone");
+  const posts = calls.filter((c) => c.method === "POST");
+  assert.equal(posts.length, 1);
+  assert.ok(posts[0].url.endsWith("/actions/workflows/ctas-cloud.yml/dispatches"));
+  assert.equal(JSON.parse(posts[0].body).ref, "main");
+  assert.ok(calls.every((c) => c.auth === "Bearer gh-secret"));
+  assert.equal(KEEP.length, 3);
+  assert.deepEqual(await keep({}, fetcher, now), [{ workflow: "*", action: "skipped: no GH_DISPATCH_TOKEN secret" }]);
+  const broken = await keep({ GH_DISPATCH_TOKEN: "x" }, async () => new Response("no", { status: 401 }), now);
+  assert.ok(broken.every((r) => r.action.includes("HTTP 401")));
+}
 console.log("live relay: all checks passed");

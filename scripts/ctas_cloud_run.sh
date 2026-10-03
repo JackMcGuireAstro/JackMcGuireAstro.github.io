@@ -88,6 +88,11 @@ printf '%s\n' "$PUBLISH_OUT" | grep -q '^published ' && PUBLISHED=1
 
 # ------------------------------------------------------------------ 4. save
 stop_collector
+# Keep derived bookkeeping bounded (the Mac ran this daily; without it the database
+# grew ~165 MB a day): newest analysis run per candidate and type, last 3 days, and
+# anything a reference file cites. Source data is never touched.
+python3 "$SITE/scripts/ctas_db_retention.py" daily --db "$DATA/soc.db" >"$LOGS/retention.log" 2>&1 \
+  && say "trimmed superseded derived records" || say "database retention skipped this cycle (see retention.log)"
 if [ "$DRY_RUN" = "1" ]; then
   say "dry run: the database is not saved and nothing was pushed"
 else

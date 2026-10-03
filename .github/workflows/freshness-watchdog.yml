@@ -9,10 +9,11 @@ name: Publisher freshness watchdog
 # every 12 hours while it persists, closed automatically on recovery. It changes
 # nothing on the site. See scripts/watchdog_freshness.py for the checks.
 #
-# Tune the limits below rather than the script. The laptop is open about ten hours a
-# day, so closed stretches of ~14 hours are normal; the absolute limits sit above
-# that, and the cross-check catches a stuck publisher within about three hours
-# whenever the other one is still running, regardless of sleep.
+# Tune the limits below rather than the script. Both publishers now run in the cloud:
+# CTAS about every 30 minutes (each run starts the next) and WorldsIndex hourly, both
+# also restarted every 20 minutes by the live-data relay's keeper (relay/worker.js),
+# because GitHub's own schedule fires only every few hours for this repository. The
+# keeper also starts this check hourly; the schedule below is a backup.
 
 on:
   schedule:
@@ -37,8 +38,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       SITE_URL: https://jackmcguireastro.github.io
       WATCHDOG_MENTION: "@JackMcGuireAstro"
-      CTAS_MAX_AGE_HOURS: "18"
-      WORLDSINDEX_MAX_AGE_HOURS: "30"
+      CTAS_MAX_AGE_HOURS: "4"
+      WORLDSINDEX_MAX_AGE_HOURS: "6"
       CROSS_CHECK_FRESH_HOURS: "2"
       CROSS_CHECK_STALE_HOURS: "3"
       WATCHDOG_REMIND_HOURS: "12"

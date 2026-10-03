@@ -8,7 +8,9 @@ are not part of this path.
 ## Cloud operation (current)
 
 Since October 2026 WorldsIndex is built in GitHub Actions, not on the Mac.
-`.github/workflows/worldsindex-cloud.yml` runs every hour (minute 41) and on demand:
+`.github/workflows/worldsindex-cloud.yml` runs about hourly, started by the live-data
+relay's keeper (`relay/worker.js`, Cloudflare cron every 20 minutes, when the last real
+run is over 55 minutes old; GitHub's own minute-41 schedule is unreliable here) and on demand:
 it checks out main (`site/`) and the ExoNexus builder from the private repository
 `JackMcGuireAstro/worldsindex-state` (`source/`, then `npm ci`), restores the builder's
 working data with `scripts/worldsindex_cloud_state.py restore` (release `state`, asset

@@ -128,7 +128,56 @@ function reply(status, message, origin) {
   return new Response(message + "\n", { status, headers });
 }
 
+
+// ------------------------------------------------------------------ keeper
+// CTAS and WorldsIndex are built by GitHub Actions workflows. GitHub's own schedule
+// fires only every few hours for this repository, so a Cloudflare cron trigger
+// (wrangler.toml, every 20 minutes) calls keep(): for each workflow below that has no
+// run queued or going and whose last real run (success or failure; skipped and
+// cancelled runs do not count) started more than `idleMinutes` ago, it starts one.
+// CTAS also starts its own next cycle; the keeper only restarts that chain if it breaks.
+// The key (secret GH_DISPATCH_TOKEN) is used only for these GitHub API calls.
+export const KEEP_REPO = "JackMcGuireAstro/JackMcGuireAstro.github.io";
+export const KEEP = [
+  { workflow: "ctas-cloud.yml", idleMinutes: 75 },
+  { workflow: "worldsindex-cloud.yml", idleMinutes: 55 },
+  { workflow: "freshness-watchdog.yml", idleMinutes: 55 },
+];
+const ACTIVE = ["queued", "in_progress", "waiting", "pending", "requested"];
+
+export async function keep(env = {}, fetcher = fetch, now = Date.now()) {
+  const token = env.GH_DISPATCH_TOKEN;
+  if (!token) return [{ workflow: "*", action: "skipped: no GH_DISPATCH_TOKEN secret" }];
+  const headers = {
+    Authorization: "Bearer " + token, Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "jackmcguireastro-live-relay keeper",
+  };
+  const results = [];
+  for (const { workflow, idleMinutes } of KEEP) {
+    const base = `https://api.github.com/repos/${KEEP_REPO}/actions/workflows/${workflow}`;
+    try {
+      const listing = await fetcher(`${base}/runs?per_page=10`, { headers });
+      if (!listing.ok) { results.push({ workflow, action: `could not list runs (HTTP ${listing.status})` }); continue; }
+      const runs = (await listing.json()).workflow_runs || [];
+      if (runs.some((r) => ACTIVE.includes(r.status))) { results.push({ workflow, action: "running" }); continue; }
+      const real = runs.find((r) => r.conclusion === "success" || r.conclusion === "failure");
+      const idle = real ? (now - Date.parse(real.created_at)) / 60000 : Infinity;
+      if (idle < idleMinutes) { results.push({ workflow, action: `recent (${Math.round(idle)} min)` }); continue; }
+      const started = await fetcher(`${base}/dispatches`, {
+        method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ ref: "main" }),
+      });
+      results.push({ workflow, action: started.status === 204 ? "started" : `start refused (HTTP ${started.status})` });
+    } catch (error) {
+      results.push({ workflow, action: "error: " + String(error && error.message || error).slice(0, 120) });
+    }
+  }
+  return results;
+}
+
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(keep(env).then((r) => console.log(JSON.stringify(r))));
+  },
   async fetch(request, env = {}) {
     const origin = allowedOrigin(request);
     if (request.method === "OPTIONS") {

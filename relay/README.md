@@ -29,3 +29,16 @@ the page (run from this folder, paste the key when asked):
 
 Without them the relay answers 503 for those two sources and the pages say a key
 is needed. Tests: `node scripts/test_live_relay.mjs`.
+
+## Keeper (scheduled restarts)
+
+GitHub's own schedule fires only every few hours for the site repository, so the Worker
+also has a cron trigger (`wrangler.toml`, every 20 minutes) that calls `keep()` in
+`worker.js`. For `ctas-cloud.yml` (75 min), `worldsindex-cloud.yml` (55 min) and
+`freshness-watchdog.yml` (55 min) it starts a run when none is queued or going and the
+last real run (success or failure) started longer ago than that. It needs one secret, the
+owner's GitHub key:
+
+    gh auth token | npx wrangler secret put GH_DISPATCH_TOKEN
+
+Without it the keeper does nothing. `npx wrangler tail` shows its decisions.

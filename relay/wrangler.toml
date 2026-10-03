@@ -4,3 +4,9 @@ name = "jackmcguireastro-live-relay"
 main = "worker.js"
 compatibility_date = "2024-09-23"
 workers_dev = true
+
+# The keeper (worker.js, keep()) checks every 20 minutes that the CTAS and WorldsIndex
+# cloud workflows and the freshness watchdog are running, and starts them if not.
+# It needs one secret:  gh auth token | npx wrangler secret put GH_DISPATCH_TOKEN
+[triggers]
+crons = ["*/20 * * * *"]

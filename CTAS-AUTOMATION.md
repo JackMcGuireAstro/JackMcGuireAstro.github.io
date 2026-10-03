@@ -9,7 +9,11 @@ falling back to it.
 
 ## Cloud operation (current)
 
-`.github/workflows/ctas-cloud.yml` runs every hour (minute 11) and on demand:
+`.github/workflows/ctas-cloud.yml` runs in a chain: each cycle that saved its database
+starts the next (about every 30 minutes). GitHub's own schedule (minute 11) fires only
+every few hours for this repository, so the live-data relay's keeper (`relay/worker.js`,
+a Cloudflare cron trigger every 20 minutes) restarts the chain whenever no run is going
+and the last real run started more than 75 minutes ago. Each cycle:
 
 1. `scripts/ctas_cloud_state.py restore` downloads the collector's database and
    fixed input files from the private repository `JackMcGuireAstro/ctas-state`
@@ -20,13 +24,16 @@ falling back to it.
    `ctas-data` while the collector keeps running, exactly as on the Mac, with
    `DATA_BRANCH_DISPATCHER=0` because an Actions token may not push workflow files;
    the run then starts "Validate and deploy site" itself.
-4. The collector stops cleanly and `ctas_cloud_state.py save` checkpoints the
+4. The collector stops cleanly, `scripts/ctas_db_retention.py daily` trims superseded
+   derived records (as the Mac's daily job did), and `ctas_cloud_state.py save` checkpoints the
    database, requires `PRAGMA quick_check` = ok, uploads a new copy and keeps the
    newest three plus one per day for the two days before. A damaged or failed copy
    never replaces the last good one.
 
-Secrets: `CTAS_STATE_TOKEN` (fine-grained, Contents read/write on ctas-state only)
-and `CTAS_BACKEND_ENV`. The collector's own log is not kept (it may contain
+Secrets: `CTAS_STATE_TOKEN` (the owner's `gh` sign-in key; fine-grained keys could not
+see the new private repository) and `CTAS_BACKEND_ENV`; the relay holds the same key as
+`GH_DISPATCH_TOKEN`. If the key stops working (gh signed out, password change), every
+run fails at the private checkout; `Renew cloud key.command` replaces both copies. The collector's own log is not kept (it may contain
 source addresses with keys); the publisher's log is a five-day artifact. Dry run:
 Actions -> "CTAS cloud collector and publisher" -> Run workflow -> dry run.
 The move from the Mac was done by `Move CTAS to GitHub.command`, which also

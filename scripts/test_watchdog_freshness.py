@@ -99,7 +99,7 @@ class EvaluateTests(unittest.TestCase):
         report = watchdog.evaluate(ctas_status("2026-09-26T06:00:00Z"), None,
                                    worlds_manifest("2026-09-26T05:50:00Z"), None, deploy(), now=now)
         self.assertTrue(report["ok"], report["alerts"])
-        self.assertTrue(any("normal state while the Mac sleeps" in note for note in report["notes"]))
+        self.assertTrue(any("the next cloud run renews it" in note for note in report["notes"]))
         # 14 h closed (the laptop is open ~10 h a day): still no alert.
         report = watchdog.evaluate(ctas_status("2026-09-26T06:00:00Z"), None,
                                    worlds_manifest("2026-09-26T05:50:00Z"), None, deploy(),
@@ -170,7 +170,8 @@ class RenderAndCliTests(unittest.TestCase):
         self.assertIn("`deploy-failed`", text)
         self.assertIn("| [CTAS](https://example.test/ctas.html) | 2026-09-24T05:28:18Z | 16.53 h | 18 h |", text)
         self.assertIn("[failure](https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/36204259009)", text)
-        self.assertIn("Where to look on the Mac", text)
+        self.assertIn("Where to look", text)
+        self.assertIn("Renew cloud key.command", text)
         ok = watchdog.render_markdown(watchdog.evaluate(
             ctas_status("2026-09-24T21:50:00Z"), None, worlds_manifest("2026-09-24T21:21:00Z"), None, deploy(), now=now),
             "https://example.test", "@owner")

@@ -111,7 +111,7 @@ jobs:
           # The collector's own log can contain source addresses with access keys; it is
           # not kept. The publisher's log (public data only) is kept for five days.
           rm -f "$RUNNER_TEMP/ctas-cloud/logs/collector.log"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: ctas-publish-log-${{ github.run_id }}
