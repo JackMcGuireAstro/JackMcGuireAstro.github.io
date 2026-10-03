@@ -77,12 +77,24 @@ jobs:
           python3 scripts/test_worldsindex_publisher_recovery.py
           node scripts/test_worldsindex_live_mast.mjs
           node scripts/test_worldsindex_live_nasa.mjs
+          node --check worldsindex/assets/live-mast.js
+          node --check worldsindex/assets/ephemeris.js
+          node --check scripts/worldsindex_transit_ephemerides.mjs
+          node scripts/test_worldsindex_ephemerides.mjs
       - name: QualQuest static export and public content
         run: python3 scripts/test_qualquest_static.py
-      - name: Tonight's sky planner
+      - name: Tonight's sky planner and observing tools
         run: |
           node --check tonight/planner.js
+          node --check tonight/astro.js
           node scripts/test_tonight_planner.mjs
+          node --check tools/lib/astrometry.js
+          node --check tools/coordinates/coordinates.js
+          node --check tools/exposure/exposure.js
+          node --check tools/finder/finder.js
+          node scripts/test_tools_coordinates.mjs
+          node scripts/test_tools_exposure.mjs
+          node scripts/test_tools_finder.mjs
       - name: CTAS static release
         # Fixture commits can start detached Git maintenance that outlives the
         # test and races temporary-directory cleanup. Limit this to CI checks.
@@ -100,10 +112,13 @@ jobs:
           python3 scripts/test_ctas_static.py
           python3 scripts/test_ctas_positional.py
           python3 scripts/test_ctas_source_health.py
+          python3 scripts/test_ctas_feed.py
           node scripts/test_ctas_chunk_loader.js
           node scripts/test_ctas_presentation.js
           node scripts/test_ctas_live_sources.js
           node scripts/test_live_relay.mjs
+          node scripts/test_ctas_spectrum_ascii.js
+          node scripts/test_ctas_lightcurve_summary.js
       # The page in a real browser (layout at phone width, sticky bars, heading outline,
       # WCAG via axe-core, no first-party console errors, the live panel's behaviour) and
       # the evidence schema. Blocking since 2026-10-03: a release that fails them is not
@@ -121,6 +136,8 @@ jobs:
           python3 scripts/test_ctas_astro_evidence.py 2>&1 | tail -5 || status=1
           python3 scripts/test_ctas_browser.py 2>&1 | tail -40 || status=1
           python3 scripts/test_tonight_browser.py 2>&1 | tail -10 || status=1
+          python3 scripts/test_tools_browser.py 2>&1 | tail -15 || status=1
+          python3 scripts/test_worldsindex_lightcurves_browser.py 2>&1 | tail -10 || status=1
           if [ "$status" -eq 0 ]; then
             echo "CTAS browser and evidence-schema checks: passed" >> "$GITHUB_STEP_SUMMARY"
           else

@@ -82,6 +82,11 @@ jobs:
         run: |
           umask 077
           printf '%s\n' "$BACKEND_ENV" > backend/.env
+          # The settings secret was copied from an older .env.example that pinned the
+          # recurring re-check limit at 24; drop that line so the collector's own budgeted
+          # default (2026-10-04: 200 watches + 200 rotation slots, 150 refreshes/day) applies.
+          grep -v '^ANALYSIS_AUTO_WATCH_LIMIT=24$' backend/.env > backend/.env.new || true
+          mv backend/.env.new backend/.env
           if [ -n "$AAVSO_AID_API_TOKEN_OVERRIDE" ]; then
             grep -v '^AAVSO_AID_API_TOKEN=' backend/.env > backend/.env.new || true
             printf 'AAVSO_AID_API_TOKEN=%s\n' "$AAVSO_AID_API_TOKEN_OVERRIDE" >> backend/.env.new
