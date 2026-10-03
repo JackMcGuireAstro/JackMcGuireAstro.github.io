@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finder charts | Jack McGuire</title>
+<meta name="description" content="Make a printable finder chart for any object: a DSS2, Pan-STARRS or 2MASS image with a target reticle, north and east arrows, a scale bar and an offset-star helper.">
+<meta name="theme-color" content="#f4f1ea">
+<link rel="canonical" href="https://jackmcguireastro.github.io/tools/finder/">
+<link rel="stylesheet" href="../tools.css?v=20261003">
+<script type="module" src="finder.js?v=20261003"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="top"><div class="shell top-inner">
+  <a class="wordmark" href="../../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
+  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../" aria-current="true">Tools</a></nav>
+</div></header>
+<main id="main" class="shell">
+  <section class="intro">
+    <p class="eyebrow">Tools / Finder charts</p>
+    <h1>Finder charts</h1>
+    <p>A finder chart is a picture of the sky around your target, so you can recognise the field at the telescope. Type an object name or its coordinates, and choose how much sky to show and which survey to use. The chart marks the target and shows which way is north and east, with a scale bar. It prints on one page. You can also enter a nearby bright “offset star” to get the move from that star to the target.</p>
+    <p>The survey image comes from the CDS hips2fits service. The page sends it only the position, field size and survey. If you type a name, the name is sent to the CDS Sesame name resolver. Nothing else is sent, and nothing is stored.</p>
+  </section>
+
+  <form id="finder-form" class="controls" novalidate aria-describedby="finder-status">
+    <div class="field wide"><label for="target">Object name or coordinates</label><input id="target" type="text" autocomplete="off" spellcheck="false" required aria-describedby="target-hint"><p class="hint" id="target-hint">M 51, SN 2026abc, 13 29 52.7 +47 11 43 or 202.4696 47.1952</p></div>
+    <div class="field wide"><label for="label">Label on the chart <span class="hint">(optional)</span></label><input id="label" type="text" autocomplete="off" spellcheck="false"></div>
+    <div class="field"><label for="fov">Field of view (arcmin)</label><input id="fov" type="number" min="2" max="60" step="any" value="10" aria-describedby="fov-hint"><p class="hint" id="fov-hint">2 to 60</p></div>
+    <div class="field"><label for="survey">Survey</label><select id="survey"></select></div>
+    <div class="field check"><input id="invert" type="checkbox"><label for="invert">Black stars on white</label></div>
+    <div class="actions"><button type="submit" class="button">Make chart</button><button type="button" id="print" class="button button-quiet" disabled>Print</button><a id="coords-link" class="button button-quiet" href="../coordinates/" hidden>Coordinates and altitude</a></div>
+  </form>
+  <p id="finder-status" class="status" role="status" aria-live="polite"></p>
+
+  <section aria-labelledby="chart-title">
+    <h2 id="chart-title" class="no-print">Chart</h2>
+    <figure id="chart-figure" class="chart-figure">
+      <div id="chart-frame" class="chart-frame">
+        <p id="chart-placeholder" class="placeholder">Enter a target above to make a chart.</p>
+        <img id="chart-img" alt="" width="1000" height="1000" decoding="async" referrerpolicy="no-referrer" hidden>
+        <div id="overlay-slot"></div>
+      </div>
+      <figcaption id="caption"></figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="offset-title" class="no-print">
+    <h2 id="offset-title">Offset star</h2>
+    <form id="offset-form" class="controls" novalidate>
+      <div class="field wide"><label for="offset">Offset star RA and Dec (J2000)</label><input id="offset" type="text" autocomplete="off" spellcheck="false" aria-describedby="offset-hint"><p class="hint" id="offset-hint">A bright star near the target, in any coordinate format. Leave empty to remove it.</p></div>
+      <div class="actions"><button type="submit" class="button">Show the offset</button></div>
+    </form>
+    <div id="offset-result" aria-live="polite"></div>
+  </section>
+
+  <section class="notes" aria-labelledby="notes-title">
+    <h2 id="notes-title">How this is worked out</h2>
+    <p><strong>The image</strong> is cut from the survey’s HiPS tiles by CDS hips2fits in a gnomonic (TAN) projection on ICRS axes. It is centred on your target and 1000 pixels across, so north is up and east is left, as on the sky seen from inside the celestial sphere. DSS2 and 2MASS cover the whole sky. Pan-STARRS covers only declinations north of −30°. The plate scale is the field of view divided by 1000 pixels: 0.6″ per pixel for a 10′ field.</p>
+    <p><strong>The overlay</strong> is drawn by this page on top of the image, so it does not depend on the image loading. The reticle leaves the target itself clear. The scale bar is a round length no longer than a quarter of the field. Survey images are years or decades old. A transient or a high proper-motion star will not be at the marked position in the image, so check the epoch when it matters.</p>
+    <p><strong>The offset</strong> is measured on the tangent plane centred on the offset star. East and north are arcseconds on the sky: ΔRA·cos δ and ΔDec. It is exact at any distance, which matters near the celestial poles, where the small-angle shortcut fails. The move is what the telescope must do after you centre the offset star. Many control systems define the sign of an offset the other way round, so check yours.</p>
+    <p><strong>Printing</strong> keeps just the chart and its caption on one A4 or Letter page. The image is shown in black on white (inverted), and the overlay is drawn in black.</p>
+  </section>
+</main>
+<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../../index.html">Home</a> · <a href="../../worldsindex/">WorldsIndex</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../tonight/">Tonight</a> · <a href="../">Tools</a></p></div></footer>
+</body>
+</html>
