@@ -5,11 +5,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CTAS | Cowboy Transient Alert System | Jack McGuire</title>
-<meta name="description" content="The Cowboy Transient Alert System (CTAS), built by Jack McGuire, brings public transient alerts and follow-up reports together in a searchable, source-attributed catalog that checks for updates every 2 minutes.">
+<meta name="description" content="The Cowboy Transient Alert System (CTAS), built by Jack McGuire, brings public transient alerts and follow-up reports together in a searchable, source-attributed catalog refreshed about every 30 minutes.">
 <link rel="canonical" href="https://jackmcguireastro.github.io/ctas.html">
 <meta property="og:type" content="website">
 <meta property="og:title" content="CTAS | Cowboy Transient Alert System">
-<meta property="og:description" content="Explore public supernova and multimessenger candidates, available follow-up, and original sources. CTAS checks for a new public snapshot every 2 minutes.">
+<meta property="og:description" content="Explore public supernova and multimessenger candidates, available follow-up, and original sources. CTAS publishes a new snapshot about every 30 minutes.">
 <meta property="og:url" content="https://jackmcguireastro.github.io/ctas.html">
 <meta property="og:image" content="https://jackmcguireastro.github.io/assets/images/ctas/ctas-card.png">
 <meta name="twitter:card" content="summary">
@@ -397,9 +397,9 @@
             AstroEvidence 0.1.0 JSON, ECSV, and IVOA VOTable, with stable UUIDs and a checksum manifest. Missing
             legacy receipt metadata remains null; export does not manufacture provider releases, latency, or rights.</p></section>
           <section><h3>Automated snapshot checks</h3><p>The published report binds the static catalog, interface, source
-            universe, shards, and validation results to exact checksums. The background publisher checks every 120 seconds
-            while its Mac is awake, online, and logged in. “Verified” means those automated
-            integrity checks passed for that snapshot; it is not scientific certification or human peer review. Failed background runs retry automatically while the Mac is awake, online, and logged in.</p></section>
+            universe, shards, and validation results to exact checksums. A new snapshot is collected, checked, and
+            published automatically about every 30 minutes on GitHub's servers. “Verified” means those automated
+            integrity checks passed for that snapshot; it is not scientific certification or human peer review. A failed run keeps the previous snapshot live and the next run retries automatically.</p></section>
           <section id="use-and-cite"><h3>Use and cite</h3><p>Cite CTAS as “Cowboy Transient Alert System
             (Jack McGuire), version 1.5.0,” include the catalog checksum and access date, and cite each original
             provider used in scientific work. <a href="mailto:jackmcg7@live.com?subject=CTAS%20citation">Contact Jack</a>

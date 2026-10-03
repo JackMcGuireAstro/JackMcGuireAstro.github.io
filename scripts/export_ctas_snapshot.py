@@ -3597,7 +3597,7 @@ def main() -> int:
             default="",
         ) or None,
         "origin": "local-snapshot",
-        "cadence": "about every 2 minutes",
+        "cadence": "about every 30 minutes",
         "candidate_count": len(candidates),
         "degraded": False,
         "score_clock": score_clock,
@@ -4357,7 +4357,7 @@ def main() -> int:
         "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
         "publication_state_checksum_sha256": publication_state_checksum,
         "degraded_source_count": len(degraded_sources),
-        "cadence": "about every 2 minutes",
+        "cadence": "about every 30 minutes",
         "statistics": payload["statistics"],
         "sources": payload["sources"],
         "surveys": payload["surveys"],
@@ -4723,7 +4723,7 @@ def main() -> int:
         "renderCatalogDownloads", "candidate-chunks/manifest.json",
     )
     cadence_contract = (
-        payload["cadence"] == "about every 2 minutes" and
+        payload["cadence"] == "about every 30 minutes" and
         "<key>StartInterval</key>" in publisher_text and
         "<integer>120</integer>" in publisher_text and
         "ctas_launchd_runner.sh" in publisher_text and
