@@ -1,6 +1,6 @@
-import { mountLightcurves } from './lightcurves.js?v=20260927';
-import { mountLiveExtras } from './live-nasa.js?v=20260930';
-import { eccentricAnomaly } from './photometry.js?v=20260920';
+import { mountLightcurves } from './lightcurves.js?v=20261004';
+import { mountLiveExtras } from './live-nasa.js?v=20261004';
+import { eccentricAnomaly } from './photometry.js?v=20261004';
 import { classifyPropertyAgreement, convertMeasurementToUnit, convertUncertaintyPair, makeExportMetadata, makePreferredValueRationale } from './science.js?v=20260831-evidence3';
 
 const $ = (selector) => document.querySelector(selector);

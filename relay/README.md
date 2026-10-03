@@ -3,7 +3,8 @@
 A tiny Cloudflare Worker that lets the CTAS and WorldsIndex pages read public
 astronomy data from archives that do not allow other websites to read them
 directly (TNS public spectrum files, Gaia Science Alerts light curves, Pan-STARRS
-detections at MAST, TESS/Kepler/K2 light-curve files at MAST, IRSA ZTF light
+detections at MAST, TESS/Kepler/K2 light-curve files at MAST (mission files and the
+TESS-SPOC full-frame light curves), IRSA ZTF light
 curves, ExoFOP-TESS, the NASA Exoplanet Archive's TAP service and spectrum files,
 NASA ADS and Lasair). It fetches one allow-listed public address when a visitor
 asks, and passes the answer straight back. It keeps nothing; Cloudflare may hold

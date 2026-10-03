@@ -42,10 +42,11 @@ export const ROUTES = [
     path: /^\/api\/v0\.1\/panstarrs\/dr2\/(detection|mean)\.(json|csv)$/,
     query: (q) => q.has("ra") && q.has("dec") && Number(q.get("radius")) > 0 && Number(q.get("radius")) <= 0.01,
   },
-  { // TESS / Kepler / K2 light-curve files from MAST
+  { // TESS / Kepler / K2 light-curve files from MAST: mission light curves, and the
+    // TESS-SPOC full-frame-image light curves (a MAST high-level science product)
     host: "mast.stsci.edu",
     path: /^\/api\/v0\.1\/Download\/file$/,
-    query: (q) => /^mast:(TESS|Kepler|K2)\/[A-Za-z0-9_\-./]+_(lc|llc|slc)\.fits$/.test(q.get("uri") || ""),
+    query: (q) => [...q.keys()].join(",") === "uri" && MAST_LIGHTCURVE.test(q.get("uri") || "") && !(q.get("uri") || "").includes(".."),
   },
   { // ZTF data-release light curves from IRSA (cone search)
     host: "irsa.ipac.caltech.edu",
@@ -91,6 +92,8 @@ export const ROUTES = [
   },
 ];
 
+export const MAST_LIGHTCURVE = new RegExp("^mast:(?:(?:TESS|Kepler|K2)/[A-Za-z0-9_\\-./]+_(?:lc|llc|slc)"
+  + "|HLSP/tess-spoc/[A-Za-z0-9_\\-./]+/hlsp_tess-spoc_tess_phot_\\d{16}-s\\d{4}_tess_v\\d+_lc)\\.fits$");
 export const SPEC_PATH = /^\d{2}\/\d{2}\/\d{2}\/\d{2}\/[A-Za-z0-9_.+\-]+\.tbl$/;
 const WORKSPACE = /FF_InitPage \('[^']*', '(\/workspace\/TMP_[A-Za-z0-9_]+)'/;
 

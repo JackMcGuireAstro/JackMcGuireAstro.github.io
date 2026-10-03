@@ -173,12 +173,37 @@ The public application is
 
 ## Live light curves from MAST
 
-When no light curve is packaged for an object, the Light curves tab offers to look
-for TESS, Kepler and K2 light curves at MAST within 5″ of its position
-(`worldsindex/assets/live-mast.js`). The search runs directly against the MAST API;
-the FITS file comes through the pass-through relay in `relay/` (address in
-`/live-config.json`) and is read in the browser (quality-0 rows, PDCSAP flux). Nothing
-is stored by WorldsIndex.
+Packaged light curves are only the HATNet discovery light curves the builder copies
+(`public/data/lightcurves`, ~58 HAT-P planets). For every object whose host star has a
+TIC, KIC or EPIC number in its catalog rows (PSCompPars `tic_id`, TOI `tid`, KOI `kepid`,
+K2 `epic_hostname`/`tic_id`, or a host named "TIC …"), the Light curves tab can load TESS,
+Kepler and K2 light curves from MAST on request (`worldsindex/assets/live-mast.js`):
+
+- **Lookup** runs directly against the MAST API (`Mast.Caom.Filtered`, exact
+  `target_name`: the TIC number, `kplr` + 9-digit KIC, `ktwo` + 9-digit EPIC), then
+  `Mast.Caom.Products`. Canonical planets without an identifier in the rows ask the NASA
+  Exoplanet Archive (PSCompPars, through the relay's TAP route) for the TIC number. Only
+  when nothing is found by identifier does it fall back to a 5″ cone around the position;
+  if that cone holds several stars, each file is labelled with its star.
+- **Files offered**: TESS SPOC 2-minute light curves, TESS-SPOC full-frame light curves
+  (a MAST high-level science product; the relay route for these is in `relay/worker.js`
+  and must be deployed before they load), Kepler and K2 30- and 1-minute light curves,
+  grouped by mission with the sector, quarter (from the file timestamp) or campaign.
+- **Reading**: the FITS file comes through the relay (`/live-config.json`) and is parsed in
+  the browser: PDCSAP_FLUX (SAP_FLUX when PDCSAP is empty), TSCAL/TZERO/TNULL applied,
+  cadences with lightkurve's default QUALITY bits dropped (TESS 175, Kepler/K2 1130799;
+  or strictly QUALITY = 0), each file normalised to its median. Several files can be
+  loaded and viewed separately or together.
+- **Folding**: the period and mid-transit epoch of one catalog row (the same policy as
+  `transit-ephemerides.json.gz`, see `worldsindex/assets/ephemeris.js`) shade the
+  predicted transit windows on the time view and drive a folded view with binned medians,
+  optional running-median trend removal (transits masked), a rough observed depth and the
+  propagated mid-time uncertainty.
+
+Nothing is stored by WorldsIndex. Tests: `node scripts/test_worldsindex_live_mast.mjs`
+(synthetic FITS files written by astropy, `scripts/make_worldsindex_lc_fixtures.py`),
+`node scripts/test_worldsindex_photometry.mjs`, `node scripts/test_worldsindex_ephemerides.mjs`
+and `python3 scripts/test_worldsindex_lightcurves_browser.py` (MAST and relay stubbed).
 
 The Sources tab's "Live from the archives" section fetches, on request and through
 the same relay, the planet's atmospheric spectra (NASA Exoplanet Archive `spectra`

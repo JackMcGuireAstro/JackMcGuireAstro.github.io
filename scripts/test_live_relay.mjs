@@ -16,6 +16,9 @@ const allowed = [
   "https://gsaweb.ast.cam.ac.uk/alerts/alert/Gaia15adl/lightcurve.csv",
   "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr2/detection.json?ra=250.29&dec=39.29&radius=0.0006",
   "https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:TESS/product/tess2018206045859-s0001-0000000100100827-0120-s_lc.fits",
+  "https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:HLSP/tess-spoc/s0040/target/0000/0002/6113/6679/hlsp_tess-spoc_tess_phot_0000000261136679-s0040_tess_v1_lc.fits",
+  "https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:Kepler/url/missions/kepler/lightcurves/0114/011446443/kplr011446443-2009131105131_llc.fits",
+  "https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:K2/url/missions/k2/lightcurves/c1/201300000/67000/ktwo201367065-c01_llc.fits",
   "https://irsa.ipac.caltech.edu/cgi-bin/ZTF/nph_light_curves?POS=CIRCLE%20250.29%2039.29%200.0004&FORMAT=csv",
   "https://exofop.ipac.caltech.edu/tess/target.php?id=261136679&json",
 ];
@@ -26,6 +29,10 @@ const refused = [
   "https://evil.example/system/files/uploaded/a.dat",                          // other host
   "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr2/detection.json?ra=1&dec=2&radius=5", // huge cone
   "https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:HST/product/x_drz.fits", // not a light curve
+  "https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:HLSP/qlp/s0001/0000/0000/2515/5310/hlsp_qlp_tess_ffi_s0001-0000000025155310_tess_v01_llc.fits", // other HLSP
+  "https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:HLSP/tess-spoc/s0040/hlsp_tess-spoc_tess_phot_0000000261136679-s0040_tess_v1_tp.fits", // pixels
+  "https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:TESS/product/../x_lc.fits", // path games
+  "https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:TESS/product/a_lc.fits&extra=1", // extra parameter
   "https://user:pw@gsaweb.ast.cam.ac.uk/alerts/alert/Gaia15adl/lightcurve.csv",
   "https://exofop.ipac.caltech.edu/tess/target.php?id=../../etc&json",
   "not a url",

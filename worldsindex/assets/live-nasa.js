@@ -3,7 +3,7 @@
 // them directly, so requests go through the site's pass-through relay (address in
 // /live-config.json); ADS needs a key that lives only inside the relay. Nothing is
 // stored by WorldsIndex, and nothing here is part of the WorldsIndex release.
-import {relayAddress} from './live-mast.js?v=20260927';
+import {relayAddress} from './live-mast.js?v=20261004';
 
 const TAP = 'https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=';
 const ARCHIVE = 'https://exoplanetarchive.ipac.caltech.edu';

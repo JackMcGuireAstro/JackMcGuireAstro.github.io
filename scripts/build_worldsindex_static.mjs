@@ -108,7 +108,9 @@ function nasaComposite(row, sourceRecordId) {
   return {
     sourceId: 'nasa-pscomppars', sourceRecordId, recordType: 'source composite', name: row.pl_name, hostName: row.hostname,
     references,
-    values: selected(row, [
+    // tic_id (the host's TESS Input Catalog number) lets the light-curve viewer find the
+    // host's TESS/Kepler/K2 files at MAST by identifier rather than by position.
+    values: selected(row, ['tic_id',
       'pl_tranmid','pl_tranmiderr1','pl_tranmiderr2','pl_ratror','pl_ratrorerr1','pl_ratrorerr2','pl_ratdor','pl_ratdorerr1','pl_ratdorerr2','pl_imppar','pl_impparerr1','pl_impparerr2','st_rad','st_raderr1','st_raderr2','pl_orbper','pl_orbpererr1','pl_orbpererr2','pl_orbperlim',
       'pl_rade','pl_radeerr1','pl_radeerr2','pl_radelim',
       'pl_bmasse','pl_bmasseerr1','pl_bmasseerr2','pl_bmasselim','pl_bmassprov',
