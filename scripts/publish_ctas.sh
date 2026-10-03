@@ -39,6 +39,7 @@ PUBLIC_FILES=(
   ctas/data/release-history.json
   ctas/data/link-health.json
   ctas/data/certification.json
+  ctas/data/feed.xml
 )
 
 # Floor between published commits, not a schedule. 0 = publish as soon as the
@@ -326,6 +327,9 @@ python3 scripts/check_ctas_links.py --catalog-index ctas/data/catalog-index.json
 with_release python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
   --release-base-ref "$DATA_TIP" >>"$LOG" 2>&1 \
   || die "verification-report rebuild failed; nothing committed"
+# Atom feed of strong new follow-up targets, from the final first-screen summary.
+python3 scripts/ctas_feed.py --summary ctas/data/live-summary.json --output ctas/data/feed.xml >>"$LOG" 2>&1 \
+  || die "new-target feed failed; nothing committed"
 
 # ----------------------------------------------------------- collect detail files
 # The completed manifest is the only source of root/part paths. Overflow parts
