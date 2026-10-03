@@ -2,13 +2,15 @@
 :root {
   --paper:#f4f1ea; --paper-deep:#eae6dc; --card:#fffdf8; --ink:#202d30; --muted:#5b635d; --line:#d1d0c7;
   --rust:#a3432e; --night:#142e32; --moon:#7a8a99; --target:#a3432e; --twilight:#e3ddcf;
+  --transit:#e9c3b4; --transit-sigma:#f3e1d9;
   --serif:Georgia,"Times New Roman",serif; --sans:"Avenir Next","Segoe UI",system-ui,sans-serif;
   --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark) {
   :root { --paper:#10201f; --paper-deep:#182b2a; --card:#152726; --ink:#e9e6dd; --muted:#a9b1aa; --line:#2f4442;
-    --rust:#e08a6f; --night:#0b1716; --moon:#a9bccb; --target:#f09a7c; --twilight:#1d3331; color-scheme:dark; }
+    --rust:#e08a6f; --night:#0b1716; --moon:#a9bccb; --target:#f09a7c; --twilight:#1d3331;
+    --transit:#5b3a2f; --transit-sigma:#33302a; color-scheme:dark; }
 }
 *,*::before,*::after { box-sizing:border-box }
 body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.65 var(--sans); -webkit-font-smoothing:antialiased }
@@ -78,6 +80,8 @@ small { color:var(--muted) }
 .chart .grid { stroke:var(--line); stroke-width:1 }
 .chart .axis { stroke:var(--muted) }
 .chart .twilight { fill:var(--twilight) }
+.chart .transit { fill:var(--transit) }
+.chart .transit-sigma { fill:var(--transit-sigma) }
 .chart .limit { stroke:var(--rust); stroke-dasharray:5 4; stroke-width:1.2 }
 .chart path { fill:none; stroke-width:2.2 }
 .chart path.target { stroke:var(--target) }
@@ -88,6 +92,13 @@ small { color:var(--muted) }
 .key.moon { border-color:var(--moon); border-top-style:dotted }
 .key.limit { border-color:var(--rust); border-top-style:dashed; border-top-width:1.5px }
 .key.twilight { height:12px; border:1px solid var(--line); background:var(--twilight) }
+.key.transit { height:12px; border:1px solid var(--line); background:var(--transit) }
+.key.transit-sigma { height:12px; border:1px solid var(--line); background:var(--transit-sigma) }
+.bjd-note { max-width:80ch }
+.keep-case { text-transform:none }
+.nowrap { white-space:nowrap }
+.chart p sub, .bjd-note sub, .notes sub { font-size:.7em }
+.notes h3 { margin-top:1.6rem }
 
 .notes { max-width:75ch; padding-bottom:2rem }
 .notes p { color:var(--muted); font-size:.92rem }

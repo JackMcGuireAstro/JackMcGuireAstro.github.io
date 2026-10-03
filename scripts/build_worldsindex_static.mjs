@@ -6,6 +6,7 @@ import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync, gzipSync } from 'node:zlib';
+import { extractTransitEphemerides, SCHEMA_VERSION as TRANSIT_EPHEMERIDES_SCHEMA } from './worldsindex_transit_ephemerides.mjs';
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const sourceRoot = resolve(process.env.WORLDSINDEX_SOURCE_DIR ?? '/Users/johnmcguire/Documents/Codex/CTAS and WorldsIndex/WorldsIndex Development/work/worldsindex');
@@ -79,8 +80,16 @@ function selected(row, fields) {
   return Object.fromEntries(fields.map((field) => [field, clean(row[field])]));
 }
 
+// Transit columns the frozen NASA PS / PSCompPars projections do not carry yet (the
+// 2026-08-23 snapshot has no pl_tranmid, durations, depths or magnitudes). They are copied
+// only when a snapshot row has them, so older snapshots produce byte-identical shards.
+const OPTIONAL_TRANSIT_FIELDS = ['pl_trandur','pl_trandurerr1','pl_trandurerr2','pl_trandep','pl_trandeperr1','pl_trandeperr2','pl_tsystemref','sy_vmag','sy_tmag'];
+function optional(row, fields) {
+  return Object.fromEntries(fields.filter((field) => Object.hasOwn(row, field)).map((field) => [field, clean(row[field])]));
+}
+
 function nasaPublished(row, sourceRecordId) {
-  return {
+  const record = {
     sourceId: 'nasa-ps',
     sourceRecordId,
     recordType: 'published solution',
@@ -98,6 +107,8 @@ function nasaPublished(row, sourceRecordId) {
       'pl_orbeccen','pl_orbeccenerr1','pl_orbeccenerr2','pl_orbeccenlim','pl_insol','pl_eqt',
     ]),
   };
+  Object.assign(record.values, optional(row, OPTIONAL_TRANSIT_FIELDS));
+  return record;
 }
 
 function nasaComposite(row, sourceRecordId) {
@@ -105,7 +116,8 @@ function nasaComposite(row, sourceRecordId) {
   for (const key of ['pl_orbper','pl_rade','pl_bmasse','pl_orbsmax','pl_orbeccen','pl_insol','pl_eqt']) {
     references[key] = stripLink(row[`${key}_reflink`]);
   }
-  return {
+  if (Object.hasOwn(row, 'pl_tranmid_reflink')) references.pl_tranmid = stripLink(row.pl_tranmid_reflink);
+  const record = {
     sourceId: 'nasa-pscomppars', sourceRecordId, recordType: 'source composite', name: row.pl_name, hostName: row.hostname,
     references,
     // tic_id (the host's TESS Input Catalog number) lets the light-curve viewer find the
@@ -118,6 +130,8 @@ function nasaComposite(row, sourceRecordId) {
       'pl_orbeccen','pl_orbeccenerr1','pl_orbeccenerr2','pl_orbeccenlim','pl_insol','pl_eqt',
     ]),
   };
+  Object.assign(record.values, optional(row, OPTIONAL_TRANSIT_FIELDS));
+  return record;
 }
 
 function candidateName(table, row) {
@@ -269,6 +283,14 @@ for (const [bucket, payload] of buckets) {
   await writeFile(join(detailRoot, `${bucket}.json.gz`), gzipSync(JSON.stringify(payload), { level: 9 }));
 }
 
+// One transit ephemeris per transiting planet (period and mid-transit epoch from one
+// catalog row; see scripts/worldsindex_transit_ephemerides.mjs). Stamped with the atlas time
+// so the file changes only when the atlas or its catalog rows change.
+const { artifact: transitEphemerides, stats: transitStats } = extractTransitEphemerides({
+  detections: atlas.detections, detailsById: details, generatedAt: atlas.generatedAt, sourceSnapshots: atlas.sourceSnapshots ?? [],
+});
+await writeFile(join(outputRoot, 'transit-ephemerides.json.gz'), gzipSync(JSON.stringify(transitEphemerides), { level: 9 }));
+
 const registryCode = `import { SOURCE_REGISTRY, SOURCE_UNIVERSE_VERSION, sourceStateCounts } from './packages/exonexus/archive/source-registry.ts'; import { DETECTION_METHODS, DETECTION_METHOD_REGISTRY_VERSION } from './packages/exonexus/methods/registry.ts'; console.log(JSON.stringify({sources:{version:SOURCE_UNIVERSE_VERSION,stateCounts:sourceStateCounts(),entries:SOURCE_REGISTRY},methods:{version:DETECTION_METHOD_REGISTRY_VERSION,entries:DETECTION_METHODS}}));`;
 const registry = JSON.parse(execFileSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', registryCode], { cwd: sourceRoot, encoding: 'utf8', maxBuffer: 20_000_000 }));
 await writeFile(join(outputRoot, 'registry.json.gz'), gzipSync(JSON.stringify(registry), { level: 9 }));
@@ -302,6 +324,7 @@ const artifactPaths = [
   'sky-detections.json.gz',
   'catalog-index.json.gz',
   'registry.json.gz',
+  'transit-ephemerides.json.gz',
   ...lightcurvePaths,
   'source-monitor.json',
   ...[...buckets.keys()].sort().map((bucket) => `details/${bucket}.json.gz`),
@@ -326,8 +349,12 @@ const manifest = {
   sourceUniverseVersion: registry.sources.version,
   methodRegistryVersion: registry.methods.version,
   atlasSha256: createHash('sha256').update(await readFile(join(outputRoot, 'sky-detections.json.gz'))).digest('hex'),
+  transitEphemerides: {
+    path: 'transit-ephemerides.json.gz', schemaVersion: TRANSIT_EPHEMERIDES_SCHEMA, count: transitEphemerides.count,
+    referenceBjd: transitEphemerides.referenceBjd, bySource: transitStats.bySource, crossMatchedToi: transitStats.crossMatchedToi,
+  },
   artifacts,
   scientificBoundary: 'Static public catalog projection. Source membership is not independent confirmation; source-composite values are not self-consistent publication solutions; catalog projections are not completeness-corrected populations.',
 };
 await writeFile(join(outputRoot, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
-console.log(`WorldsIndex static data: ${manifest.objectCount.toLocaleString()} objects, ${manifest.detailRecordCount.toLocaleString()} retained native rows, ${manifest.detailShards.length} detail shards.`);
+console.log(`WorldsIndex static data: ${manifest.objectCount.toLocaleString()} objects, ${manifest.detailRecordCount.toLocaleString()} retained native rows, ${manifest.detailShards.length} detail shards, ${transitEphemerides.count.toLocaleString()} transit ephemerides.`);

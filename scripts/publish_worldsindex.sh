@@ -36,6 +36,7 @@ PUBLIC_FILES=(
   worldsindex/data/registry.json.gz
   worldsindex/data/sky-detections.json.gz
   worldsindex/data/source-monitor.json
+  worldsindex/data/transit-ephemerides.json.gz
 )
 for bucket_index in {0..255}; do
   printf -v bucket '%02x' "$bucket_index"
@@ -101,7 +102,8 @@ input_fingerprint() {
     for file in "$SOURCE/public/data/lightcurves/index.json" "$SOURCE/public/data/sky-detections.json.gz" "$SOURCE/public/data/sync/latest.json" \
                 "$SOURCE/data/snapshots/exoplanet-eu/ACTIVE.json" "$SOURCE/data/atlas/release-contract.json" \
                 "$SOURCE/outputs/promotion/exoplanet-eu/latest.json" \
-                "$SITE/scripts/build_worldsindex_static.mjs" "$SITE/worldsindex/index.html" "$SITE/worldsindex/assets/app.js" \
+                "$SITE/scripts/build_worldsindex_static.mjs" "$SITE/scripts/worldsindex_transit_ephemerides.mjs" "$SITE/worldsindex/assets/ephemeris.js" \
+                "$SITE/worldsindex/index.html" "$SITE/worldsindex/assets/app.js" \
                 "$SITE/worldsindex/assets/lightcurves.js" "$SITE/worldsindex/assets/photometry.js" "$SITE/worldsindex/assets/science.js" "$SITE/worldsindex/assets/app.css"; do
       [ -f "$file" ] && shasum -a 256 "$file" 2>/dev/null || sha256sum "$file" 2>/dev/null || printf 'missing  %s\n' "$file"
     done

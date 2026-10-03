@@ -104,6 +104,7 @@ The publisher can publish only:
 - `worldsindex/data/registry.json.gz`
 - `worldsindex/data/sky-detections.json.gz`
 - `worldsindex/data/source-monitor.json`
+- `worldsindex/data/transit-ephemerides.json.gz`
 - `worldsindex/data/details/00.json.gz` through `ff.json.gz`
 
 No token, `.env` file, source checkout, raw private receipt, or arbitrary site
@@ -170,6 +171,35 @@ Operational files live in:
 
 The public application is
 <https://jackmcguireastro.github.io/worldsindex/>.
+
+## Transit ephemerides
+
+`worldsindex/data/transit-ephemerides.json.gz` (schema
+`worldsindex-transit-ephemerides.v1`, declared in `manifest.artifacts` and summarised in
+`manifest.transitEphemerides`) lists one ephemeris per transiting planet for the Tonight's
+sky transit predictor and the light-curve fold. It is columnar (`columns` + `rows`): objectId,
+name, host, raDeg, decDeg, status, periodDays (+ periodErrDays), t0Bjd (BJD_TDB, + t0ErrDays),
+durationHours, depthPpt, hostMag + hostMagBand (V or TESS), timeSystem, and the source
+row (sourceId, sourceTable, sourceRecordId, reference, referenceUrl, matchedVia).
+
+`scripts/worldsindex_transit_ephemerides.mjs` builds it from the builder's detail records:
+period and epoch always from one row (PSCompPars, then the PS default row, then the newest PS
+row, then the TOI/K2/KOI row with the smallest mid-time uncertainty propagated to the atlas
+date), false-positive rows never used, each catalog row used for one planet only (NASA
+planets first), and a separate TOI record attached to a NASA planet only when the TIC matches
+and the periods agree within 0.5%. KOI epochs are converted from BKJD (+2454833). Symmetric
+1-sigma = the larger reported error. The file is stamped with the atlas time, so it changes
+only when the atlas or its rows do.
+
+The frozen NASA PS / PSCompPars snapshot (2026-08-23) has no `pl_tranmid`, durations, depths
+or magnitudes, so today every ephemeris comes from the TOI, KOI or K2 tables (about 12,700
+planets on the 2026-10-03 state; about 4,480 of the 4,690 NASA planets discovered by transit).
+When the ExoNexus snapshot adds `pl_tranmid`, `pl_tranmiderr1/2`, `pl_trandur`, `pl_trandep`,
+`pl_tsystemref`, `sy_vmag`, `sy_tmag` (and `pl_tranmid_reflink` for PSCompPars), the builder
+copies them and the policy prefers them automatically. Measure a release with
+`node scripts/worldsindex_transit_ephemerides.mjs worldsindex/data`; tests:
+`node scripts/test_worldsindex_ephemerides.mjs` and the checks in
+`scripts/test_worldsindex_static.py` (every period and epoch equals its cited row).
 
 ## Live light curves from MAST
 

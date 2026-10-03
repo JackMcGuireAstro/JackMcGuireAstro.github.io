@@ -6,6 +6,13 @@ let generation=0,resizeObserver;
 async function unpack(url){const r=await fetch(url);if(!r.ok)throw Error(`Data unavailable (${r.status})`);return JSON.parse(await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text());}
 function download(name,text,type='text/csv'){const u=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
 const nowBjd=()=>Date.now()/86400000+2440587.5;
+// The release's chosen ephemeris per object (transit-ephemerides.json.gz), fetched once and
+// only when a light curve is on screen. A missing file (older release) just means no extra row.
+let releaseEphemerides=null;
+function releaseEphemerisFor(objectId){
+ releaseEphemerides??=unpack(new URL('../data/transit-ephemerides.json.gz',import.meta.url)).then(a=>new Map((a.rows||[]).map(r=>{const e=Object.fromEntries(a.columns.map((c,i)=>[c,r[i]]));return [e.objectId,{...e,reference:e.reference||e.referenceUrl?{label:e.reference,href:e.referenceUrl}:null,releaseChoice:true}];}))).catch(()=>new Map());
+ return releaseEphemerides.then(m=>m.get(objectId)||null);
+}
 const ALL_LIVE='__all-live';
 const sameStar=(a,b)=>!a||!b||String(a).replace(/\D+/g,' ').trim().split(' ').map(Number).join()===String(b).replace(/\D+/g,' ').trim().split(' ').map(Number).join();
 
@@ -16,6 +23,7 @@ export async function mountLightcurves(container,object,records,options={}){
  const solutions=records.filter(r=>finite(r.values?.pl_orbper)>0);
  const own=selectEphemeris(records,{referenceBjd:nowBjd()}).candidates;
  const ephemerides=options.ephemeris&&!own.some(e=>e.sourceRecordId===options.ephemeris.sourceRecordId)?[options.ephemeris,...own]:own;
+ const ephLabel=e=>`${describeEphemeris(e)}${e.matchedVia?' (TOI matched by TIC and period)':''}${e.releaseChoice?' · release choice':''} · P ${e.periodDays} d`;
  const ids=hostIdentifiers(object,records),hasPosition=Number.isFinite(object.raDeg)&&Number.isFinite(object.decDeg);
  container.innerHTML=`<div class="section-heading"><div><p class="eyebrow">Observe · compare · model</p><h2>Light curves &amp; measurements</h2></div></div><p>Inspect measured brightness over time, align repeating signals, and compare an adjustable transit model. Measurements remain linked to their original source.</p>
  <div class="curve-toolbar"><label>Published parameter row<select id="lc-solution"><option value="">Custom exploratory parameters</option>${solutions.map((r,i)=>`<option value="${i}">${esc(r.sourceId)} · ${esc(r.reference?.label||r.sourceRecordId||i+1)}</option>`).join('')}</select></label><label>View<select id="lc-view"><option value="time">Time</option><option value="phase">Orbital phase</option></select></label><label>Observed filter / station<select id="lc-stream"><option>No photometry loaded</option></select></label><label><input id="lc-model" type="checkbox" disabled> Show calculated model</label></div>
@@ -24,7 +32,7 @@ export async function mountLightcurves(container,object,records,options={}){
  <div class="curve-toolbar"><button id="lc-custom" type="button">Explore a custom model</button><label><input id="lc-time-confirm" type="checkbox"> I have checked that the epoch uses BJD_TDB</label></div><p id="lc-coverage" class="observation-coverage" role="status">Checking observation coverage…</p><div class="curve-chart"><canvas id="lc-canvas" tabindex="0" aria-label="Observed relative flux and calculated transit model. Use view and range controls to inspect data; a data table is below."></canvas></div><p id="lc-status" role="status">Checking packaged observations…</p>
  <div class="curve-toolbar"><label>Window center<input id="lc-center" type="range" min="0" max="100" value="50"></label><label>Zoom<input id="lc-zoom" type="range" min="1" max="40" value="1"></label><label>Flux center<input id="lc-ycenter" type="number" value="1" step="0.001"></label><label>Flux half-range (blank = auto)<input id="lc-yspan" type="number" min="0.000001" step="0.001" placeholder="Auto: all observations"></label><button id="lc-reset" type="button">Reset view</button><button id="lc-csv" type="button" disabled>Download observations</button><button id="lc-model-csv" type="button" disabled>Download model</button></div>
  <section id="lc-fold" class="curve-fold" aria-labelledby="lc-fold-title" hidden><h3 id="lc-fold-title">Folded on the orbital period</h3>
- <div class="curve-toolbar"><label>Ephemeris (one catalog row)<select id="lc-fold-eph">${ephemerides.map((e,i)=>`<option value="${i}">${esc(describeEphemeris(e))} · P ${esc(e.periodDays)} d</option>`).join('')}</select></label><label>Phase window<select id="lc-fold-window"><option value="auto">Around the transit</option><option value="full">Whole orbit</option></select></label><label><input id="lc-fold-flatten" type="checkbox" checked> Remove slow trends (transits masked)</label></div>
+ <div class="curve-toolbar"><label>Ephemeris (one catalog row)<select id="lc-fold-eph">${ephemerides.map((e,i)=>`<option value="${i}">${esc(ephLabel(e))}</option>`).join('')}</select></label><label>Phase window<select id="lc-fold-window"><option value="auto">Around the transit</option><option value="full">Whole orbit</option></select></label><label><input id="lc-fold-flatten" type="checkbox" checked> Remove slow trends (transits masked)</label></div>
  <p id="lc-fold-summary" class="fineprint"></p><div class="curve-chart"><canvas id="lc-fold-canvas" role="img" aria-label="Measurements folded on the orbital period; the shaded band is the catalog transit duration. The summary above gives the numbers."></canvas></div></section>
  <details class="source-row"><summary>Scientific assumptions &amp; data provenance</summary><p>The blue points are source observations, normalized to the median of the selected filter and station (each MAST file separately). The gold line is a circular-orbit, uniform-disc geometric model. It omits limb darkening, dilution, stellar activity, eccentricity, and exposure integration. This is an exploratory overlay, not a fitted solution or a detection test.</p><p>Shaded bands mark the transit windows predicted by one catalog row’s period, mid-transit epoch and duration. The folded view uses that same row; its optional trend removal divides by a running median of the out-of-transit flux, which can distort long or shallow transits.</p><p id="lc-provenance"></p><p>Reported measurement errors do not capture every uncertainty introduced by detrending, stellar variability, or residual systematics. Display reduction is labeled; downloads retain all accepted observations.</p></details>
  <details class="source-row"><summary>Observation table</summary><div class="table-wrap" id="lc-table"></div></details>`;
@@ -81,7 +89,11 @@ export async function mountLightcurves(container,object,records,options={}){
   $('provenance').innerHTML=datasets.map(d=>`<a href="${esc(d.sourceUrl)}" target="_blank" rel="noopener">Original source data${d.label?` (${esc(d.label)})`:''}</a> · ${d.pointCount.toLocaleString()} accepted / ${d.rawRowCount.toLocaleString()} rows. Retrieved ${esc(d.retrievedAt)}. Raw SHA-256: <code>${esc(d.rawSha256)}</code>. ${esc(d.qualitySelection)} ${esc(d.uncertaintyNote||'')}`).join('<br>')+(packagedNote?`<br>${esc(packagedNote)}`:'');}
  function useProduct(data,{select=false}={}){const first=!datasets.length;datasets.push(data);const {previous}=rebuildStreams();
   if(select){const live=streams.filter(s=>s.dataset===data);$('stream').value=live[0]?.key||previous;}else if(previous&&[...$('stream').options].some(o=>o.value===previous))$('stream').value=previous;
-  describeCoverage();if(first&&solutions.length){$('solution').value='0';$('solution').onchange();}chooseStream();}
+  describeCoverage();if(first&&solutions.length){$('solution').value='0';$('solution').onchange();}chooseStream();if(first)addReleaseEphemeris();}
+ async function addReleaseEphemeris(){const eph=await releaseEphemerisFor(object.objectId);if(revision!==generation||!eph)return;
+  let index=ephemerides.findIndex(e=>e.sourceRecordId===eph.sourceRecordId);
+  if(index<0){ephemerides.unshift(eph);index=0;}else ephemerides[index]={...ephemerides[index],releaseChoice:true,matchedVia:eph.matchedVia};
+  $('fold-eph').innerHTML=ephemerides.map((e,i)=>`<option value="${i}">${esc(ephLabel(e))}</option>`).join('');$('fold-eph').value=String(index);redraw();}
 
  for(const id of ['view','period','epoch','ratio','axis','impact','model','center','zoom','ycenter','yspan','time-confirm'])$(id).addEventListener('input',draw);
  for(const id of ['fold-eph','fold-window','fold-flatten'])$(id).addEventListener('input',redraw);
@@ -95,7 +107,7 @@ export async function mountLightcurves(container,object,records,options={}){
   $('coverage').after(box);
   $('live-search').onclick=async()=>{const note=$('live-note'),button=$('live-search');button.disabled=true;note.textContent='Searching MAST…';
    try{let search=ids,via='';
-    if(!ids.tic.length&&!ids.kic.length&&!ids.epic.length&&object.identityState==='CANONICAL'){const tic=await lookupTicByName(object.name,await relayAddress()).catch(()=>null);if(revision!==generation)return;if(tic){search={tic:[tic],kic:[],epic:[]};via=` (TIC ${tic}, found in the NASA Exoplanet Archive)`;}}
+    if(!ids.tic.length&&!ids.kic.length&&!ids.epic.length&&object.identityState==='CANONICAL'){const tic=await lookupTicByName(object.name,await relayAddress()).catch(()=>null);if(revision!==generation)return;if(tic){search={tic:[tic],kic:[],epic:[]};via=', from the NASA Exoplanet Archive';}}
     const found=await findLightcurves({ids:search,ra:object.raDeg,dec:object.decDeg});if(revision!==generation)return;
     const label=identifierLabel(search);
     if(!found.products.length){note.textContent=`MAST has no TESS, Kepler or K2 light-curve file ${label?`for ${label}${via}`:''}${label&&hasPosition?' or ':''}${hasPosition?'within 5″ of the catalog position':''}. Other pipelines and missions may still have data.`;button.disabled=false;return;}

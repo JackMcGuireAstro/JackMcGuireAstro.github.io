@@ -6,11 +6,19 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import math
 import re
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+TRANSIT_COLUMNS = [
+    "objectId", "name", "host", "raDeg", "decDeg", "status",
+    "periodDays", "periodErrDays", "t0Bjd", "t0ErrDays", "durationHours", "depthPpt",
+    "hostMag", "hostMagBand", "timeSystem", "sourceId", "sourceTable", "sourceRecordId", "reference", "referenceUrl", "matchedVia",
+]
+TRANSIT_SOURCES = {"nasa-pscomppars": "pscomppars", "nasa-ps": "ps", "nasa-toi": "toi", "nasa-koi": "cumulative", "nasa-k2": "k2pandc"}
+BKJD_OFFSET = 2454833.0
 APP = ROOT / "worldsindex"
 DATA = APP / "data"
 
@@ -81,6 +89,7 @@ def main() -> None:
     assert len(detail_paths) == len(manifest["detailShards"]) == 256
     detail_object_count = 0
     packaged_record_ids: dict[str, set[str]] = {}
+    packaged_records: dict[str, dict] = {}
     for path in detail_paths:
         shard = read_gzip_json(path)
         detail_object_count += len(shard)
@@ -89,6 +98,8 @@ def main() -> None:
             ids = {record.get("sourceRecordId") for record in item["records"]}
             assert None not in ids, f"{object_id} has a native row without a stable source-record id"
             packaged_record_ids[object_id] = ids
+            for record in item["records"]:
+                packaged_records.setdefault(record["sourceRecordId"], record)
     assert detail_object_count == manifest["objectCount"]
 
     packaged_sources = {"nasa-pscomppars", "nasa-toi", "nasa-koi", "nasa-k2", "exoplanet-eu"}
@@ -98,6 +109,8 @@ def main() -> None:
                 assert value.get("sourceRecordId") in packaged_record_ids[detection["objectId"]], (
                     f"{detection['objectId']} display value cannot be joined to its exact native source record"
                 )
+
+    transit_count = check_transit_ephemerides(manifest, by_id, packaged_records)
 
     assert "object-hd-209458-b" in by_id
     assert by_id["object-hd-209458-b"]["sourceRecordCount"] >= 20
@@ -159,9 +172,65 @@ def main() -> None:
         "WorldsIndex static release passed: "
         f"{manifest['objectCount']:,} objects; "
         f"{manifest['detailRecordCount']:,} native rows; "
-        f"{len(registry['sources']['entries'])} source contracts; "
+        + (f"{transit_count:,} transit ephemerides; " if transit_count is not None else "")
+        + f"{len(registry['sources']['entries'])} source contracts; "
         f"{len(registry['methods']['entries'])} methods."
     )
+
+
+def _number(value):
+    if value is None or value == "":
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def check_transit_ephemerides(manifest: dict, by_id: dict, packaged_records: dict) -> int | None:
+    """transit-ephemerides.json.gz: one ephemeris per planet, each traceable to one packaged row.
+
+    Optional like the observation products: a release built before the artifact existed does
+    not declare it, and is reported rather than failed. Once declared, it is checked fully.
+    """
+    declared = manifest.get("transitEphemerides")
+    if "transit-ephemerides.json.gz" not in manifest["artifacts"]:
+        assert declared is None, "manifest describes transit ephemerides but does not declare the artifact"
+        print("note: this release predates transit-ephemerides.json.gz (built by an older builder)")
+        return None
+    assert declared and declared["path"] == "transit-ephemerides.json.gz"
+    payload = read_gzip_json(DATA / "transit-ephemerides.json.gz")
+    assert payload["schemaVersion"] == declared["schemaVersion"] == "worldsindex-transit-ephemerides.v1"
+    assert payload["timeStandard"] == "BJD_TDB"
+    assert payload["columns"] == TRANSIT_COLUMNS, "transit ephemeris columns changed without a schema version change"
+    assert payload["count"] == len(payload["rows"]) == declared["count"] > 0
+    assert sum(declared["bySource"].values()) == declared["count"]
+    rows = [dict(zip(payload["columns"], row)) for row in payload["rows"]]
+    assert all(len(row) == len(TRANSIT_COLUMNS) for row in payload["rows"])
+    assert len({row["objectId"] for row in rows}) == len(rows), "one ephemeris per planet"
+    assert len({row["sourceRecordId"] for row in rows}) == len(rows), "a catalog row is used for one planet only"
+    period_keys = {"nasa-koi": "koi_period"}
+    for row in rows:
+        object_id = row["objectId"]
+        atlas = by_id.get(object_id)
+        assert atlas is not None, f"{object_id}: transit ephemeris for an object outside the atlas"
+        assert row["status"] == atlas["normalizedStatus"] in {"CONFIRMED", "CANDIDATE", "CONTROVERSIAL"}, object_id
+        assert abs(row["raDeg"] - atlas["raDeg"]) < 1e-5 and abs(row["decDeg"] - atlas["decDeg"]) < 1e-5, object_id
+        assert row["sourceTable"] == TRANSIT_SOURCES.get(row["sourceId"]), f"{object_id}: unknown ephemeris source {row['sourceId']}"
+        assert row["periodDays"] > 0 and 2400000 < row["t0Bjd"] < 2500000, object_id
+        for key in ("periodErrDays", "t0ErrDays", "durationHours", "depthPpt"):
+            assert row[key] is None or row[key] > 0, f"{object_id}: {key} must be positive or null"
+        assert row["hostMagBand"] in (None, "V", "TESS") and (row["hostMag"] is None) == (row["hostMagBand"] is None), object_id
+        assert row["matchedVia"] in (None, "tic+period") and (row["matchedVia"] is None or row["sourceId"] == "nasa-toi"), object_id
+        # Never averaged: the period and epoch are exactly the cited row's values.
+        record = packaged_records.get(row["sourceRecordId"])
+        assert record is not None and record["sourceId"] == row["sourceId"], f"{object_id}: ephemeris row {row['sourceRecordId']} is not packaged"
+        values = record["values"]
+        assert _number(values.get(period_keys.get(row["sourceId"], "pl_orbper"))) == row["periodDays"], f"{object_id}: period differs from its source row"
+        epoch = _number(values.get("koi_time0bk")) + BKJD_OFFSET if row["sourceId"] == "nasa-koi" else _number(values.get("pl_tranmid"))
+        assert abs(epoch - row["t0Bjd"]) < 1e-7, f"{object_id}: epoch differs from its source row"
+    return len(rows)
 
 
 if __name__ == "__main__":

@@ -83,7 +83,7 @@ class LightcurveBrowserTests(unittest.TestCase):
         cls.server.shutdown()
         cls.server.server_close()
 
-    def open(self, scheme="dark", width=1280, mast_status=200, relay_status=None):
+    def open(self, scheme="dark", width=1280, mast_status=200, relay_status=None, object_id=None, release_rows=None):
         page = self.browser.new_page(viewport={"width": width, "height": 900}, color_scheme=scheme)
         errors, self.mast_calls, self.relay_urls = [], [], []
         page.on("pageerror", lambda e: errors.append(str(e)))
@@ -97,6 +97,10 @@ class LightcurveBrowserTests(unittest.TestCase):
 
         def relay(route):
             self.relay_urls.append(route.request.url)
+            if "TAP%2Fsync" in route.request.url:  # TIC lookup in the NASA Exoplanet Archive
+                route.fulfill(status=200, headers={"Access-Control-Allow-Origin": "*"}, content_type="application/json",
+                              body=json.dumps([{"tic_id": "TIC 86396382"}]))
+                return
             hlsp = "hlsp_tess-spoc" in route.request.url
             status = relay_status if relay_status is not None else (400 if hlsp else 200)
             route.fulfill(status=status, headers={"Access-Control-Allow-Origin": "*"}, content_type="application/fits" if status == 200 else "text/plain",
@@ -105,7 +109,13 @@ class LightcurveBrowserTests(unittest.TestCase):
         page.route("**/live-config.json", lambda route: route.fulfill(status=200, content_type="application/json", body=json.dumps({"relay": RELAY})))
         page.route("https://mast.stsci.edu/api/v0/invoke", mast)
         page.route(f"{RELAY}/**", relay)
-        page.goto(f"{self.base}/worldsindex/?object={self.object_id}&section=object", wait_until="networkidle", timeout=90000)
+        columns = ["objectId", "name", "host", "raDeg", "decDeg", "status", "periodDays", "periodErrDays", "t0Bjd", "t0ErrDays", "durationHours",
+                   "depthPpt", "hostMag", "hostMagBand", "timeSystem", "sourceId", "sourceTable", "sourceRecordId", "reference", "referenceUrl", "matchedVia"]
+        release = gzip.compress(json.dumps({"schemaVersion": "worldsindex-transit-ephemerides.v1", "columns": columns,
+                                            "rows": [[row.get(c) for c in columns] for row in (release_rows or [])]}).encode())
+        page.route("**/worldsindex/data/transit-ephemerides.json.gz", lambda route: route.fulfill(
+            status=200 if release_rows is not None else 404, content_type="application/gzip", body=release if release_rows is not None else b""))
+        page.goto(f"{self.base}/worldsindex/?object={object_id or self.object_id}&section=object", wait_until="networkidle", timeout=90000)
         page.click("#object-tab-lightcurves")
         page.wait_for_selector("#lc-live-search", timeout=30000)
         return page, errors
@@ -137,6 +147,27 @@ class LightcurveBrowserTests(unittest.TestCase):
         self.assertGreater(page.eval_on_selector("#lc-fold-canvas", "c => c.width"), 0)
         page.select_option("#lc-fold-window", "full")
         self.assertIn("532 of 532", page.text_content("#lc-fold-summary"))
+        self.assertEqual(errors, [])
+        page.close()
+
+    def test_planet_page_folds_on_the_release_ephemeris(self):
+        # A NASA planet whose own rows carry no mid-transit epoch: the fold uses the release's
+        # chosen row (here a TOI row matched by TIC and period), and the TIC comes from the
+        # rows or, for older releases, from the NASA Exoplanet Archive.
+        release = [{"objectId": "object-wasp-12-b", "name": "WASP-12 b", "host": "WASP-12", "raDeg": 97.636645, "decDeg": 29.6722662, "status": "CONFIRMED",
+                    "periodDays": 1.0914304, "periodErrDays": 2e-7, "t0Bjd": 2458842.997159, "t0ErrDays": 5.6e-5, "durationHours": 3.05, "depthPpt": 15.4,
+                    "sourceId": "nasa-toi", "sourceTable": "toi", "sourceRecordId": "toi:849", "matchedVia": "tic+period"}]
+        page, errors = self.open(object_id="object-wasp-12-b", release_rows=release)
+        page.click("#lc-live-search")
+        page.wait_for_selector("#lc-live-load", timeout=20000)
+        self.assertRegex(page.text_content("#lc-live-note"), r"found by identifier \(TIC 86396382(, from the NASA Exoplanet Archive)?\)")
+        self.assertIn("86396382", self.mast_calls[0]["params"]["filters"][0]["values"])
+        page.click("#lc-live-load")
+        page.wait_for_function("document.querySelector('#lc-live-note').textContent.startsWith('Loaded')", timeout=20000)
+        page.wait_for_function("!document.querySelector('#lc-fold').hidden", timeout=20000)
+        self.assertIn("release choice", page.eval_on_selector("#lc-fold-eph", "s => s.options[s.selectedIndex].textContent"))
+        self.assertIn("TOI matched by TIC and period", page.text_content("#lc-fold-eph"))
+        self.assertIn("P = 1.0914304 d", page.text_content("#lc-fold-summary"))
         self.assertEqual(errors, [])
         page.close()
 
