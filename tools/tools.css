@@ -1,0 +1,180 @@
+/* Observing tools: the Tonight's sky palette (tonight/planner.css), kept self-contained. */
+:root {
+  --paper:#f4f1ea; --paper-deep:#eae6dc; --card:#fffdf8; --ink:#202d30; --muted:#5b635d; --line:#d1d0c7;
+  --rust:#a3432e; --night:#142e32; --moon:#7a8a99; --target:#a3432e; --twilight:#e3ddcf; --ok:#2f6b4f;
+  --overlay:#ffd36b; --overlay-2:#7fe0ff; --on-rust:#fff;
+  --serif:Georgia,"Times New Roman",serif; --sans:"Avenir Next","Segoe UI",system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark) {
+  :root { --paper:#10201f; --paper-deep:#182b2a; --card:#152726; --ink:#e9e6dd; --muted:#a9b1aa; --line:#2f4442;
+    --rust:#e08a6f; --night:#0b1716; --moon:#a9bccb; --target:#f09a7c; --twilight:#1d3331; --ok:#8fd1ae; --on-rust:#10201f; color-scheme:dark; }
+}
+*,*::before,*::after { box-sizing:border-box }
+[hidden] { display:none!important }
+body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.65 var(--sans); -webkit-font-smoothing:antialiased }
+a { color:inherit; text-underline-offset:4px; text-decoration-thickness:1px }
+a:hover { color:var(--rust) }
+:focus-visible { outline:2px solid var(--rust); outline-offset:2px }
+.shell { width:min(1180px,100% - 32px); margin-inline:auto }
+.skip-link { position:absolute; left:-999px; top:8px; background:var(--ink); color:var(--paper); padding:.5rem .8rem; z-index:10 }
+.skip-link:focus { left:16px }
+.visually-hidden { position:absolute!important; width:1px; height:1px; margin:-1px; padding:0; border:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap }
+
+.top { border-bottom:1px solid var(--line) }
+.top-inner { display:flex; flex-wrap:wrap; gap:.5rem 1.5rem; align-items:center; justify-content:space-between; padding:1rem 0 }
+.wordmark { font:1.15rem var(--serif); text-decoration:none }
+.wordmark span { color:var(--rust) }
+.top nav { display:flex; flex-wrap:wrap; gap:.25rem 1.2rem; font-size:.88rem }
+.top nav a { text-decoration:none; padding:.2rem 0 }
+.top nav a[aria-current] { color:var(--rust); border-bottom:1px solid currentColor }
+
+h1,h2,h3 { font-family:var(--serif); font-weight:400; line-height:1.15; margin:0 }
+h1 { font-size:clamp(2.2rem,6vw,3.6rem) }
+h2 { font-size:1.6rem; margin:2.4rem 0 .9rem }
+h3 { font-size:1.25rem; margin-bottom:.2rem }
+.eyebrow { font:600 .7rem var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--rust); margin:0 0 .6rem }
+.intro { padding:2.6rem 0 1.4rem; max-width:70ch }
+.intro p:last-child { color:var(--muted) }
+.muted { color:var(--muted); font-size:.9rem }
+code,.mono { font-family:var(--mono); font-size:.88em }
+
+/* ------------------------------------------------------------------ forms */
+.controls { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1rem 1.2rem; background:var(--card);
+  border:1px solid var(--line); border-radius:10px; padding:1.3rem; margin:0 0 1rem }
+.controls > h2, .controls > .panel-title { grid-column:1/-1; margin:0; font-size:1.25rem }
+fieldset.controls { min-width:0 }
+fieldset.controls > legend { float:left; grid-column:1/-1; width:100%; padding:0; margin:0; font:1.25rem var(--serif) }
+.field { display:flex; flex-direction:column; gap:.3rem; min-width:0 }
+.field.wide { grid-column:span 2 }
+.field.full { grid-column:1/-1 }
+.sub-grid { grid-column:1/-1; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1rem 1.2rem }
+.sub-grid[hidden],.field[hidden] { display:none }
+label,.label { font-size:.78rem; font-weight:600; color:var(--muted) }
+.hint { font-size:.76rem; color:var(--muted); margin:0 }
+input,select,textarea { font:inherit; font-size:.95rem; color:var(--ink); background:var(--paper); border:1px solid var(--line);
+  border-radius:6px; padding:.5rem .6rem; min-height:44px; width:100% }
+textarea { font-family:var(--mono); font-size:.85rem; line-height:1.5; resize:vertical; min-height:9rem }
+input[aria-invalid="true"],textarea[aria-invalid="true"] { border-color:var(--rust); box-shadow:0 0 0 1px var(--rust) }
+.field.check { flex-direction:row; align-items:center; gap:.5rem; align-self:end; min-height:44px }
+.field.check input { width:22px; height:22px; min-height:0; margin:0; flex:none }
+.field.check label { font-size:.9rem; color:var(--ink); font-weight:400 }
+.choices { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:.4rem .6rem; border:0; padding:0; margin:0; min-width:0 }
+.choices legend { font-size:.78rem; font-weight:600; color:var(--muted); padding:0; margin-bottom:.3rem; width:100% }
+.choice { display:flex; align-items:center; gap:.5rem; min-height:44px; padding:.35rem .8rem; border:1px solid var(--line);
+  border-radius:6px; background:var(--paper); cursor:pointer; font-size:.9rem; color:var(--ink); font-weight:400 }
+.choice input { width:20px; height:20px; min-height:0; margin:0; accent-color:var(--rust) }
+.choice:has(input:checked) { border-color:var(--rust); box-shadow:inset 0 0 0 1px var(--rust) }
+.actions { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:.7rem; align-items:center }
+.button { display:inline-flex; align-items:center; justify-content:center; font:600 .9rem var(--sans); background:var(--night);
+  color:#f4f1ea; border:1px solid var(--night); border-radius:6px; padding:.65rem 1.1rem; min-height:44px; cursor:pointer; text-decoration:none }
+.button:hover { background:var(--rust); border-color:var(--rust); color:var(--on-rust) }
+.button-quiet { background:transparent; color:var(--ink); border-color:var(--line) }
+.button:disabled { opacity:.55; cursor:not-allowed }
+.button:disabled:hover { background:transparent; border-color:var(--line); color:var(--ink) }
+.status { min-height:1.6em; margin:.2rem 0 0; color:var(--rust); font-size:.9rem }
+.status.ok { color:var(--ok) }
+details.more { grid-column:1/-1; border-top:1px solid var(--line); padding-top:.6rem }
+details.more > summary { cursor:pointer; font-weight:600; font-size:.9rem; min-height:44px; display:flex; align-items:center }
+details.more > .sub-grid { margin-top:.6rem }
+
+/* ------------------------------------------------------------------ results */
+.facts { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,10.5rem),1fr)); margin:0 0 .6rem;
+  border-top:1px solid var(--line); border-left:1px solid var(--line) }
+.facts div { background:var(--card); padding:.75rem 1rem; min-width:0; border-right:1px solid var(--line); border-bottom:1px solid var(--line) }
+.facts dt { font:600 .66rem var(--mono); text-transform:uppercase; letter-spacing:.06em; color:var(--muted) }
+.facts dd { margin:.2rem 0 0; font:1.2rem var(--serif); overflow-wrap:anywhere }
+.facts dd small { display:block; font:.8rem var(--sans) }
+.headline { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--rust); border-radius:8px; padding:1rem 1.2rem; margin:0 0 1rem }
+.headline p { margin:0 }
+.headline .big { font:clamp(1.8rem,5vw,2.6rem)/1.15 var(--serif) }
+.warn { color:var(--rust); font-weight:600 }
+
+.table-wrap { position:relative; overflow-x:auto; border:1px solid var(--line); border-radius:8px; background:var(--card); max-width:100% }
+table { border-collapse:collapse; width:100%; font-size:.88rem }
+th,td { text-align:left; padding:.5rem .7rem; border-bottom:1px solid var(--line); white-space:nowrap }
+td.num,th.num { text-align:right; font-variant-numeric:tabular-nums }
+thead th { font:600 .68rem var(--mono); text-transform:uppercase; letter-spacing:.05em; color:var(--muted); background:var(--paper-deep); position:sticky; top:0 }
+tbody th { font-weight:600 }
+tr.bad td { color:var(--rust); white-space:normal }
+small { color:var(--muted) }
+
+.chart svg { display:block; width:100%; max-width:760px; height:auto; background:var(--card); border:1px solid var(--line); border-radius:8px; margin-top:.6rem }
+.chart text { font:12px var(--sans); fill:var(--muted) }
+.chart .grid { stroke:var(--line); stroke-width:1 }
+.chart .axis { stroke:var(--muted) }
+.chart .curve { fill:none; stroke:var(--target); stroke-width:2.4 }
+.chart .goal { stroke:var(--moon); stroke-dasharray:5 4; stroke-width:1.4 }
+.chart .marker { fill:var(--target); stroke:var(--card); stroke-width:2 }
+
+/* ------------------------------------------------------------------ tool list */
+.tool-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,16rem),1fr)); gap:1px; background:var(--line); border:1px solid var(--line); margin:0 0 2rem }
+.tool-card { padding:1.6rem; background:var(--card); text-decoration:none; display:flex; flex-direction:column; align-items:flex-start; min-height:100% }
+.tool-card:hover { background:var(--paper-deep); color:var(--ink) }
+.tool-mark { font:2.1rem var(--serif); color:var(--rust); margin-bottom:1.2rem; line-height:1 }
+.tool-card .mono { font-size:.66rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+.tool-card h2 { font-size:1.45rem; margin:.4rem 0 0 }
+.tool-card p { font-size:.88rem; color:var(--muted); margin:.7rem 0 1.4rem }
+.tool-action { font-size:.8rem; font-weight:600; margin-top:auto }
+
+/* ------------------------------------------------------------------ finder chart */
+.finder-layout { display:grid; grid-template-columns:minmax(0,1fr); gap:1rem }
+.chart-figure { margin:0; max-width:760px }
+.chart-frame { position:relative; width:100%; aspect-ratio:1/1; background:#000; border:1px solid var(--line); border-radius:6px; overflow:hidden }
+.chart-frame img[hidden] { display:none }
+.chart-frame img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block }
+.chart-frame svg { position:absolute; inset:0; width:100%; height:100% }
+.chart-frame .placeholder[hidden] { display:none }
+.chart-frame .placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:1.5rem; color:#d9d6cc; font-size:.95rem }
+.overlay line,.overlay path,.overlay circle,.overlay rect { fill:none; stroke:var(--overlay); stroke-width:3; vector-effect:non-scaling-stroke }
+.overlay .arrowhead { fill:var(--overlay); stroke:none }
+.overlay text { fill:var(--overlay); font:600 36px var(--sans); paint-order:stroke; stroke:#000; stroke-width:5px; stroke-linejoin:round }
+.overlay .offset { stroke:var(--overlay-2) }
+.overlay text.offset { fill:var(--overlay-2); stroke:#000 }
+.chart-figure.is-inverted .chart-frame { background:#fff }
+.chart-figure.is-inverted img { filter:grayscale(1) invert(1) }
+.chart-figure.is-inverted .overlay line,.chart-figure.is-inverted .overlay path,.chart-figure.is-inverted .overlay circle,
+.chart-figure.is-inverted .overlay rect { stroke:#000 }
+.chart-figure.is-inverted .overlay .arrowhead { fill:#000 }
+.chart-figure.is-inverted .overlay text { fill:#000; stroke:#fff }
+.chart-figure.is-inverted .overlay .offset { stroke:#0050a0 }
+.chart-figure.is-inverted .overlay text.offset { fill:#0050a0; stroke:#fff }
+.chart-figure figcaption { margin-top:.6rem; font-size:.88rem; line-height:1.5 }
+.chart-figure figcaption strong { font:1.15rem var(--serif) }
+.move { font:1.15rem var(--serif) }
+
+.notes { max-width:75ch; padding-bottom:2rem }
+.notes p,.notes li { color:var(--muted); font-size:.92rem }
+.notes h3 { margin-top:1.2rem; font-size:1.1rem }
+.foot { border-top:1px solid var(--line); padding:1.2rem 0; font-size:.85rem; color:var(--muted) }
+
+@media (max-width:900px) {
+  .controls,.sub-grid { grid-template-columns:repeat(2,minmax(0,1fr)) }
+}
+@media (max-width:560px) {
+  .controls,.sub-grid { grid-template-columns:1fr }
+  .field.wide { grid-column:auto }
+  .actions .button { flex:1 1 100% }
+  .controls { padding:1rem }
+}
+@media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important } }
+
+/* ------------------------------------------------------------------ print: the chart alone, black on white */
+@media print {
+  @page { margin:12mm }
+  :root { --paper:#fff; --card:#fff; --ink:#000; --muted:#222; --line:#999; color-scheme:light }
+  body { background:#fff; color:#000; font-size:11pt }
+  .top,.skip-link,.intro,.no-print,.controls,.status,.notes,.foot { display:none!important }
+  main.shell { width:100%; margin:0 }
+  .chart-figure { max-width:none; width:min(100%,180mm); margin:0 auto; break-inside:avoid }
+  .chart-frame { background:#fff; border:1px solid #000; border-radius:0 }
+  .chart-frame img { filter:grayscale(1) invert(1) }
+  .overlay line,.overlay path,.overlay circle,.overlay rect { stroke:#000!important }
+  .overlay .arrowhead { fill:#000!important }
+  .overlay text { fill:#000!important; stroke:#fff!important }
+  .overlay rect.offset { stroke:#000!important; stroke-dasharray:8 6 }
+  .overlay line.offset { stroke:#000!important }
+  .overlay text.offset { fill:#000!important; stroke:#fff!important }
+  .chart-figure figcaption { color:#000; font-size:10.5pt }
+}

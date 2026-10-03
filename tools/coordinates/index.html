@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coordinate &amp; time converter | Jack McGuire</title>
+<meta name="description" content="Convert RA/Dec between sexagesimal and decimal degrees, to Galactic and ecliptic coordinates, and UTC to JD and MJD. Get local sidereal time, altitude, azimuth and airmass from an observatory, for one target or a pasted list.">
+<meta name="theme-color" content="#f4f1ea">
+<link rel="canonical" href="https://jackmcguireastro.github.io/tools/coordinates/">
+<link rel="stylesheet" href="../tools.css?v=20261003">
+<script type="module" src="coordinates.js?v=20261003"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="top"><div class="shell top-inner">
+  <a class="wordmark" href="../../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
+  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../" aria-current="true">Tools</a></nav>
+</div></header>
+<main id="main" class="shell">
+  <section class="intro">
+    <p class="eyebrow">Tools / Coordinates</p>
+    <h1>Coordinate &amp; time converter</h1>
+    <p>Type a target’s right ascension and declination in any common format. The page gives them back in both formats, in Galactic and ecliptic coordinates, and names the constellation. Pick a time and an observatory to get Julian Dates, sidereal time, and where the target is in the sky. You can also paste a whole target list and download the table. Everything is worked out in your browser. Nothing you type is stored or sent anywhere.</p>
+  </section>
+
+  <form id="coord-form" novalidate aria-describedby="coord-status">
+    <fieldset class="controls">
+      <legend>Target</legend>
+      <div class="field"><label for="name">Name <span class="hint">(optional)</span></label><input id="name" type="text" autocomplete="off" spellcheck="false"></div>
+      <div class="field"><label for="ra">Right ascension</label><input id="ra" type="text" inputmode="text" autocomplete="off" spellcheck="false" required aria-describedby="ra-hint"><p class="hint" id="ra-hint">00 42 44.3, 00:42:44.3, 00h42m44.3s or 10.6846 (degrees)</p></div>
+      <div class="field"><label for="dec">Declination</label><input id="dec" type="text" autocomplete="off" spellcheck="false" required aria-describedby="dec-hint"><p class="hint" id="dec-hint">+41 16 09, −05:23:28 or 41.2692 (degrees)</p></div>
+      <div class="field"><label for="equinox">Equinox (Julian year)</label><input id="equinox" type="number" step="any" min="1800" max="2200" value="2000" aria-describedby="equinox-hint"><p class="hint" id="equinox-hint">2000 = J2000/ICRS. Other years are precessed to J2000 first.</p></div>
+    </fieldset>
+    <fieldset class="controls">
+      <legend>Time and site</legend>
+      <div class="field"><label for="utc">Date and time (UTC)</label><input id="utc" type="datetime-local" step="1"></div>
+      <div class="field"><label for="jd">Julian Date</label><input id="jd" type="text" inputmode="decimal" autocomplete="off" spellcheck="false"></div>
+      <div class="field"><label for="mjd">Modified Julian Date</label><input id="mjd" type="text" inputmode="decimal" autocomplete="off" spellcheck="false"></div>
+      <div class="field"><span class="label" aria-hidden="true">&nbsp;</span><button type="button" id="now" class="button button-quiet">Set to now</button></div>
+      <div class="field wide"><label for="site">Observatory</label><select id="site"></select></div>
+      <div id="custom" class="sub-grid" hidden>
+        <div class="field"><label for="lat">Latitude (°N)</label><input id="lat" type="number" step="any" min="-90" max="90" value="41.3114"></div>
+        <div class="field"><label for="lon">Longitude (°E, west is negative)</label><input id="lon" type="number" step="any" min="-180" max="360" value="-105.5911"></div>
+      </div>
+      <div class="actions"><button type="submit" class="button">Convert</button><a id="finder-link" class="button button-quiet" href="../finder/">Finder chart for this target</a></div>
+    </fieldset>
+  </form>
+  <p id="coord-status" class="status" role="status" aria-live="polite"></p>
+
+  <section aria-labelledby="pos-title"><h2 id="pos-title">Position</h2><div id="position"><p class="muted">Enter a right ascension and declination above.</p></div></section>
+  <section aria-labelledby="time-title"><h2 id="time-title">Time</h2><div id="time"></div></section>
+  <section aria-labelledby="sky-title"><h2 id="sky-title">In the sky from the observatory</h2><div id="sky"><p class="muted">Needs a target, a time and a site.</p></div></section>
+
+  <section aria-labelledby="batch-title">
+    <h2 id="batch-title">Many targets at once</h2>
+    <form id="batch-form" class="controls" novalidate>
+      <div class="field full"><label for="batch">One target per line: name, RA, Dec</label>
+        <textarea id="batch" rows="7" spellcheck="false" aria-describedby="batch-hint" placeholder="M 31 00 42 44.3 +41 16 09&#10;SN 2026abc 187.25 -12.5&#10;Vega,18:36:56.3,+38:47:01"></textarea>
+        <p class="hint" id="batch-hint">Separate fields with spaces, commas or tabs. A name may contain spaces. If a line is ambiguous, put a sign on the Dec or use commas. Lines starting with # are skipped. Altitude, azimuth and airmass use the time and site above.</p></div>
+      <div class="actions"><button type="submit" class="button">Convert list</button><button type="button" id="csv" class="button button-quiet" disabled>Download CSV</button></div>
+    </form>
+    <p id="batch-status" class="status" role="status" aria-live="polite"></p>
+    <div id="batch-results"></div>
+  </section>
+
+  <section class="notes" aria-labelledby="notes-title">
+    <h2 id="notes-title">How this is worked out</h2>
+    <p><strong>Formats.</strong> A single number is read as decimal degrees (add <code>h</code>, as in <code>12.5h</code>, for decimal hours of RA). Two or three numbers, separated by spaces, colons or <code>h m s</code>/<code>d ′ ″</code> marks, are read as hours, minutes and seconds for RA and degrees, minutes and seconds for Dec. A minus sign anywhere at the front of the Dec applies to the whole angle, so <code>−00 30 00</code> is −0.5°.</p>
+    <p><strong>Galactic coordinates</strong> use the IAU-defined rotation as given for the ICRS by the Hipparcos catalogue (ESA 1997, vol. 1, eq. 1.5.11). <strong>Ecliptic coordinates</strong> are on the mean ecliptic and equinox of J2000 (IAU 2006: frame bias, then the mean obliquity 84381.406″). Both agree with astropy to better than 0.0001°. The <strong>constellation</strong> comes from the official IAU boundaries (Roman 1987), after precessing the position to the boundaries’ equinox, B1875. Positions within a few arcseconds of a boundary can land on either side.</p>
+    <p><strong>Other equinoxes.</strong> If you enter coordinates for an equinox other than 2000, they are precessed to J2000 with the IAU 1976 model (Lieske et al. 1977). This handles “coordinates of date” or J1950-style mean positions. It is not a full FK4/B1950 conversion, which would also remove the E-terms of aberration. Proper motion is not applied.</p>
+    <p><strong>Time.</strong> The Julian Date is on the UTC scale: JD = Unix time ÷ 86400 s + 2440587.5, and MJD = JD − 2400000.5. Leap seconds are not counted. Mean sidereal time uses the IAU 1982 formula, the same one Tonight’s sky uses. Apparent sidereal time adds the equation of the equinoxes. UT1 is taken to equal UTC. The difference is always under 0.9 s, so sidereal time can be off by up to about 0.9 s. With UT1 set equal to UTC, it agrees with astropy to within 0.02 s in the test cases.</p>
+    <p><strong>Altitude and azimuth.</strong> The J2000 position is moved to its apparent place on the date: annual aberration, IAU 1976 precession and the four largest nutation terms. Then it goes through the hour angle from the apparent local sidereal time. Azimuth is measured from north through east. The altitude has no atmospheric refraction, so it is the airless value. It matches astropy to within 0.05°, and in the test cases to within one arcsecond. The refracted altitude shown beside it uses Sæmundsson’s (1986) formula for 1010 hPa and 10 °C. Airmass uses Kasten &amp; Young (1989), like Tonight’s sky. Diurnal aberration, polar motion, light bending by the Sun and the site’s height are ignored. Each one is under an arcsecond.</p>
+    <p>These numbers are good for planning, logs and finder charts. For pointing a telescope, use the observatory’s own control system.</p>
+  </section>
+</main>
+<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../../index.html">Home</a> · <a href="../../worldsindex/">WorldsIndex</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../tonight/">Tonight</a> · <a href="../">Tools</a></p></div></footer>
+</body>
+</html>
