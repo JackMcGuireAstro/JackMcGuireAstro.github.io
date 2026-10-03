@@ -88,6 +88,10 @@ printf '%s\n' "$PUBLISH_OUT" | grep -q '^published ' && PUBLISHED=1
 
 # ------------------------------------------------------------------ 4. save
 stop_collector
+# Per-source counts for the last day go to the job summary, so a source that quietly
+# fails on every request (e.g. a rejected key) shows up on the run page. Report only.
+python3 "$SITE/scripts/ctas_source_health.py" --db "$DATA/soc.db" >"$LOGS/source-health.md" 2>&1 \
+  && grep -m1 '^\*\*Needs attention' "$LOGS/source-health.md" | sed 's/^/source health: /' || true
 # Keep derived bookkeeping bounded (the Mac ran this daily; without it the database
 # grew ~165 MB a day): newest analysis run per candidate and type, last 3 days, and
 # anything a reference file cites. Source data is never touched.
