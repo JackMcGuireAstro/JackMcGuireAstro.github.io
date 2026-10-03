@@ -1,0 +1,32 @@
+/* Barium dwarf census: page-specific additions to ../../tools/tools.css */
+:root { --ba:#a3432e; --wd:#2c6f8f; }
+@media (prefers-color-scheme:dark) { :root { --ba:#f09a7c; --wd:#7fc4e6; } }
+.status-note { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--rust); border-radius:6px; padding:.7rem .9rem; color:var(--ink)!important }
+.panel { margin:2.2rem 0 }
+.panel h2 { font:400 1.6rem/1.2 var(--serif); margin:0 0 .5rem }
+.panel h3 { font:400 1.2rem var(--serif); margin:1.6rem 0 .6rem }
+.choices { margin:.8rem 0 }
+.key { display:inline-block; width:12px; height:12px; border-radius:50% }
+.key-ba { background:var(--ba) }
+.key-wd { background:transparent; border:2px solid var(--wd); width:11px; height:11px }
+.chart svg { width:100%; height:auto; background:var(--card); border:1px solid var(--line); border-radius:8px; display:block }
+.chart text { font:11px var(--sans); fill:var(--muted) }
+.chart .axis-title { font-size:12px; fill:var(--ink) }
+.chart .grid { stroke:var(--line); stroke-width:1 }
+.chart .pt-ba { fill:var(--ba); stroke:var(--card); stroke-width:.8; cursor:pointer }
+.chart .pt-wd { fill:transparent; stroke:var(--wd); stroke-width:1.6; cursor:pointer }
+.chart .pt-ba:focus-visible, .chart .pt-wd:focus-visible, .chart .is-picked { stroke:var(--ink); stroke-width:2.5 }
+.chart .bar-ba { fill:var(--ba); opacity:.85 }
+.chart .bar-wd { fill:var(--wd); opacity:.55 }
+.picked { min-height:1.6em; font-size:.92rem; margin:.5rem 0 0 }
+.table-wrap { position:relative; overflow-x:auto; border:1px solid var(--line); border-radius:8px; background:var(--card) }
+table { border-collapse:collapse; width:100%; font-size:.88rem }
+th,td { text-align:left; padding:.5rem .7rem; border-bottom:1px solid var(--line); white-space:nowrap }
+thead th { font:600 .7rem var(--mono); text-transform:uppercase; letter-spacing:.04em; color:var(--muted); background:var(--paper-deep) }
+thead th button { font:inherit; color:inherit; text-transform:inherit; letter-spacing:inherit; background:none; border:0; padding:.3rem 0; min-height:32px; cursor:pointer }
+thead th button[aria-sort]::after { content:" ↕"; opacity:.5 }
+thead th[aria-sort="ascending"] button::after { content:" ↑"; opacity:1 }
+thead th[aria-sort="descending"] button::after { content:" ↓"; opacity:1 }
+td.num { font-variant-numeric:tabular-nums }
+.notes { max-width:75ch; padding-bottom:2rem }
+.notes p { color:var(--muted); font-size:.92rem }

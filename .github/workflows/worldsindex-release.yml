@@ -95,6 +95,8 @@ jobs:
           node scripts/test_tools_coordinates.mjs
           node scripts/test_tools_exposure.mjs
           node scripts/test_tools_finder.mjs
+          node --check research/barium-dwarfs/census.js
+          node scripts/test_research_census.mjs
       - name: CTAS static release
         # Fixture commits can start detached Git maintenance that outlives the
         # test and races temporary-directory cleanup. Limit this to CI checks.
@@ -137,6 +139,7 @@ jobs:
           python3 scripts/test_ctas_browser.py 2>&1 | tail -40 || status=1
           python3 scripts/test_tonight_browser.py 2>&1 | tail -10 || status=1
           python3 scripts/test_tools_browser.py 2>&1 | tail -15 || status=1
+          python3 scripts/test_research_browser.py 2>&1 | tail -10 || status=1
           python3 scripts/test_worldsindex_lightcurves_browser.py 2>&1 | tail -10 || status=1
           if [ "$status" -eq 0 ]; then
             echo "CTAS browser and evidence-schema checks: passed" >> "$GITHUB_STEP_SUMMARY"
