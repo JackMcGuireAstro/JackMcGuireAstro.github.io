@@ -439,7 +439,9 @@
     }).join("");
     var html = "<ul class=\"ctas-live__sources\">" + list + "</ul>";
     if (rows.length && render.photometrySvg) {
-      html += render.photometrySvg(rows.sort(function (a, b) { return a.observed_at < b.observed_at ? -1 : 1; })) +
+      var candidate = result.candidate || {};
+      html += render.photometrySvg(rows.sort(function (a, b) { return a.observed_at < b.observed_at ? -1 : 1; }),
+        {discovery: candidate.discovery_time, key: "live-" + String(candidate.event_id || "").slice(0, 8), name: (candidate.name || "this candidate") + " (live provider data)"}) +
         '<button type="button" data-live-csv>Download these live measurements (CSV)</button>';
     }
     (result.spectra || []).forEach(function (item, index) {

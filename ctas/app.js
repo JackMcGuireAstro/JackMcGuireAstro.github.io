@@ -38,7 +38,7 @@
     coneRa: null, coneDec: null, coneRadius: null,
     shown: PAGE, skyDays: 7, skyPoints: [], skySelected: null,
     hoveredEventId: null, focusedEventId: null, linkedHighlightId: null,
-    skyKeyboardIndex: -1, photBand: {}, activeOpener: null,
+    skyKeyboardIndex: -1, photBand: {}, lcLog: {}, activeOpener: null,
     autoRefreshPaused: false, exportBusy: false, refreshError: null, polling: false
   };
 
@@ -550,54 +550,200 @@
       }).join("") + "</ol></details>";
   }
 
-  function photometrySvg(rows) {
-    var numeric = rows.filter(function (row) {
-      return parseDate(row.observed_at) && (finiteNumber(row.magnitude) || finiteNumber(row.limiting_magnitude));
+  // ---------------------------------------------------------------- light curves
+  // One combined plot per dossier: magnitude (brighter upward) against days since
+  // discovery, coloured by band, detections with error bars, upper limits as downward
+  // triangles, forced photometry as squares; arithmetic lives in ctas/lightcurve-summary.js.
+  // Band colours keep the usual astronomical associations (g green, r red, ATLAS o amber and
+  // c blue); identity never rests on colour alone (legend, direct labels, table, band menu).
+  var BAND_COLOURS = {g: "#199e70", r: "#e66767", o: "#b38600", c: "#3987e5", i: "#9085e9", z: "#d55181", y: "#d95926", u: "#8ad5df", G: "#c3c2b7"};
+  var OTHER_BAND_COLOUR = "#a3acb9";
+  var lcPlots = {};
+  function bandColour(band) { return BAND_COLOURS[band] || OTHER_BAND_COLOUR; }
+  function dayText(days) { var value = Number(days); return (value > 0 ? "+" : value < 0 ? "−" : "") + Math.abs(value).toFixed(Math.abs(value) >= 100 ? 0 : 1); }
+  function lightcurveSvg(plot) {
+    var lib = window.CTASLightcurve, prepared = plot.prepared, all = prepared.points;
+    var cap = 1500, detections = all.filter(function (p) { return p.kind === "detection"; }), limits = all.filter(function (p) { return p.kind === "limit"; });
+    var budget = Math.max(0, cap - detections.length);
+    var keptLimits = limits.length <= budget ? limits : Array.from({length: budget}, function (_, index) { return limits[Math.floor(index * limits.length / budget)]; });
+    var drawn = detections.concat(keptLimits);
+    plot.drawnCount = drawn.length;
+    var logAxis = Boolean(plot.logAxis), tx = logAxis ? lib.symlog : function (days) { return days; };
+    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    drawn.forEach(function (p) {
+      var at = tx(p.days), err = p.error || 0;
+      minX = Math.min(minX, at); maxX = Math.max(maxX, at);
+      minY = Math.min(minY, p.magnitude - err); maxY = Math.max(maxY, p.magnitude + err);
     });
-    if (!numeric.length) return '<p class="ctas-link-empty">No plottable magnitude and time pairs are retained.</p>';
-    var cap = 600;
-    var plotted = numeric.length <= cap ? numeric : Array.from({length: cap}, function (_, index) {
-      return numeric[Math.floor(index * numeric.length / cap)];
-    });
-    var times = numeric.map(function (row) { return parseDate(row.observed_at).getTime(); });
-    var mags = numeric.map(function (row) { return Number(finiteNumber(row.magnitude) ? row.magnitude : row.limiting_magnitude); });
-    var minT = Math.min.apply(null, times), maxT = Math.max.apply(null, times);
-    var minM = Math.min.apply(null, mags) - 0.35, maxM = Math.max.apply(null, mags) + 0.35;
-    if (minT === maxT) { minT -= 43200000; maxT += 43200000; }
-    if (minM === maxM) { minM -= 0.5; maxM += 0.5; }
-    var width = 820, height = 330, left = 62, right = 18, top = 18, bottom = 46;
-    function x(row) { return left + (parseDate(row.observed_at).getTime() - minT) / (maxT - minT) * (width - left - right); }
-    function y(row) {
-      var magnitude = Number(finiteNumber(row.magnitude) ? row.magnitude : row.limiting_magnitude);
-      return top + (magnitude - minM) / (maxM - minM) * (height - top - bottom);
-    }
-    var colors = {g: "#60d394", r: "#ff6b6b", i: "#d4a74f", z: "#a78bfa", u: "#63b3ed", y: "#f6e05e"};
-    var points = plotted.map(function (row) {
-      var upper = !finiteNumber(row.magnitude);
-      var title = [absolute(row.observed_at), row.band || "band unavailable",
-        upper ? "limit " + num(row.limiting_magnitude, 3) : num(row.magnitude, 3) + " ± " + num(row.magnitude_error, 3),
-        row.magnitude_system, row.provider].filter(Boolean).join(" · ");
-      var color = colors[text(row.band).toLowerCase()] || "#8ad5df";
-      return upper
-        ? '<path d="M ' + num(x(row), 1) + " " + num(y(row) - 5, 1) + " l -4 -6 m 4 6 l 4 -6 m -4 6 v 7" +
-          '" stroke="' + color + '" fill="none"><title>' + esc(title) + "</title></path>"
-        : '<circle cx="' + num(x(row), 1) + '" cy="' + num(y(row), 1) + '" r="3.2" fill="' + color +
-          '" fill-opacity=".82"><title>' + esc(title) + "</title></circle>";
+    var zero = tx(0);
+    if (zero >= minX - (maxX - minX) * 0.1 && zero <= maxX + (maxX - minX) * 0.1) { minX = Math.min(minX, zero); maxX = Math.max(maxX, zero); }
+    if (maxX - minX < (logAxis ? 0.2 : 1)) { var middle = (minX + maxX) / 2; minX = middle - (logAxis ? 0.1 : 0.5); maxX = middle + (logAxis ? 0.1 : 0.5); }
+    var padX = (maxX - minX) * 0.03; minX -= padX; maxX += padX;
+    if (maxY - minY < 0.6) { var mid = (minY + maxY) / 2; minY = mid - 0.3; maxY = mid + 0.3; }
+    minY -= 0.25; maxY += 0.25;
+    var narrow = narrowPlot(), width = narrow ? 380 : 820, height = narrow ? 320 : 360, left = narrow ? 46 : 56, right = 14, top = 18, bottom = 50;
+    function x(p) { return left + (tx(typeof p === "number" ? p : p.days) - minX) / (maxX - minX) * (width - left - right); }
+    function y(magnitude) { return top + (magnitude - minY) / (maxY - minY) * (height - top - bottom); }
+    var clipId = "ctas-" + plot.key + "-clip", titleId = "ctas-" + plot.key + "-title", descId = "ctas-" + plot.key + "-desc";
+    var magTicks = lib.niceTicks(minY, maxY, narrow ? 5 : 7);
+    var dayTicks = lib.dayTicks(logAxis ? lib.symlogInverse(minX) : minX, logAxis ? lib.symlogInverse(maxX) : maxX, logAxis, narrow ? 4 : 7);
+    var grid = magTicks.map(function (value) {
+      return '<line x1="' + left + '" x2="' + (width - right) + '" y1="' + num(y(value), 1) + '" y2="' + num(y(value), 1) + '" class="ctas-plot-grid"/>' +
+        '<text x="' + (left - 7) + '" y="' + num(y(value) + 4, 1) + '" text-anchor="end" class="ctas-axis-label">' + esc(Number(value.toFixed(2)).toString()) + "</text>";
     }).join("");
-    var date0 = new Date(minT).toISOString().slice(0, 10), date1 = new Date(maxT).toISOString().slice(0, 10);
-    return '<div class="ctas-lightcurve"><svg viewBox="0 0 ' + width + " " + height + '" role="img" aria-label="Light curve with magnitude increasing downward">' +
-      '<rect x="' + left + '" y="' + top + '" width="' + (width - left - right) + '" height="' + (height - top - bottom) + '" class="ctas-plot-bg"/>' +
+    var xAxis = dayTicks.map(function (value) {
+      var at = num(x(value), 1);
+      return '<line x1="' + at + '" x2="' + at + '" y1="' + (height - bottom) + '" y2="' + (height - bottom + 5) + '" class="ctas-axis"/>' +
+        '<text x="' + at + '" y="' + (height - bottom + 18) + '" text-anchor="middle" class="ctas-axis-label">' + esc(value === 0 ? "0" : dayText(value).replace(/\.0$/, "")) + "</text>";
+    }).join("");
+    var zeroLine = zero >= minX && zero <= maxX ? '<line x1="' + num(x(0), 1) + '" x2="' + num(x(0), 1) + '" y1="' + top + '" y2="' + (height - bottom) + '" class="ctas-lc-zero"/>' : "";
+    var marks = drawn.slice().sort(function (a, b) { return (a.kind === "limit" ? 0 : 1) - (b.kind === "limit" ? 0 : 1) || a.time - b.time; }).map(function (p) {
+      var cx = x(p), cy = y(p.magnitude), colour = bandColour(p.band), shape;
+      var label = [dayText(p.days) + " d", absolute(new Date(p.time).toISOString()), p.band + " band",
+        p.kind === "limit" ? "upper limit: fainter than " + num(p.magnitude, 2) : num(p.magnitude, 2) + (p.error !== null ? " ± " + num(p.error, 2) : "") + " mag",
+        p.forced ? "forced photometry" : "", p.converted ? "converted from flux" : "", p.system, p.provider].filter(Boolean).join(" · ");
+      if (p.kind === "limit") {
+        shape = '<path d="M' + num(cx - 5, 1) + " " + num(cy - 4, 1) + "h10l-5 8z" + '" class="ctas-lc-limit' + (p.forced ? " is-forced" : "") + '" stroke="' + colour + '"' +
+          (p.forced ? ' fill="' + colour + '"' : "") + "/>";
+      } else {
+        var bar = p.error ? '<line x1="' + num(cx, 1) + '" x2="' + num(cx, 1) + '" y1="' + num(y(p.magnitude - p.error), 1) + '" y2="' + num(y(p.magnitude + p.error), 1) + '" stroke="' + colour + '" class="ctas-lc-error"/>' : "";
+        shape = bar + (p.forced
+          ? '<rect x="' + num(cx - 4, 1) + '" y="' + num(cy - 4, 1) + '" width="8" height="8" fill="' + colour + '" class="ctas-lc-point"/>'
+          : '<circle cx="' + num(cx, 1) + '" cy="' + num(cy, 1) + '" r="4.2" fill="' + colour + '" class="ctas-lc-point"/>');
+      }
+      return "<g><title>" + esc(label) + "</title>" + shape + "</g>";
+    }).join("");
+    var summary = plot.summary, labelled = summary.bands.filter(function (band) { return band.peak; });
+    var direct = labelled.length <= 4 ? labelled.map(function (band) {
+      var peakDays = band.peak.days;
+      return '<text x="' + num(x(peakDays) + 7, 1) + '" y="' + num(y(band.peak.magnitude) - 7, 1) + '" class="ctas-lc-direct">' + esc(band.band) + "</text>";
+    }).join("") : "";
+    var reference = prepared.reference, axisName = "Days since " + (reference.basis === "discovery" ? "discovery" : reference.basis) +
+      (reference.iso ? " (" + reference.iso.slice(0, 10) + ")" : "") + (logAxis ? ", logarithmic" : "");
+    var bandsText = summary.bands.map(function (band) { return band.band; }).join(", ");
+    var description = detections.length.toLocaleString() + " detections and " + limits.length.toLocaleString() + " upper limits in " +
+      (summary.bands.length === 1 ? "band " : "bands ") + bandsText + ", from day " + dayText(all[0].days) + " to day " + dayText(all[all.length - 1].days) +
+      (summary.peak ? "; brightest detection " + num(summary.peak.magnitude, 2) + " mag in " + summary.peak.band + " on day " + dayText(summary.peak.days) : "") +
+      ". Magnitude increases downward. The plotted values are in the table after the plot.";
+    return '<svg viewBox="0 0 ' + width + " " + height + '"' + (narrow ? ' class="is-narrow"' : "") + ' role="img" aria-labelledby="' + titleId + " " + descId + '">' +
+      '<title id="' + titleId + '">Light curve of ' + esc(plot.name) + "</title><desc id=\"" + descId + '">' + esc(description) + "</desc>" +
+      '<defs><clipPath id="' + clipId + '"><rect x="' + (left - 6) + '" y="' + (top - 6) + '" width="' + (width - left - right + 12) + '" height="' + (height - top - bottom + 12) + '"/></clipPath></defs>' +
+      '<rect x="' + left + '" y="' + top + '" width="' + (width - left - right) + '" height="' + (height - top - bottom) + '" class="ctas-plot-bg"/>' + grid + zeroLine +
+      '<g clip-path="url(#' + clipId + ')">' + marks + direct + "</g>" +
       '<line x1="' + left + '" y1="' + top + '" x2="' + left + '" y2="' + (height - bottom) + '" class="ctas-axis"/>' +
-      '<line x1="' + left + '" y1="' + (height - bottom) + '" x2="' + (width - right) + '" y2="' + (height - bottom) + '" class="ctas-axis"/>' +
-      '<text x="12" y="' + (height / 2) + '" transform="rotate(-90 12 ' + (height / 2) + ')" class="ctas-axis-label">Magnitude (brighter upward)</text>' +
-      '<text x="' + left + '" y="' + (height - 15) + '" class="ctas-axis-label">' + esc(date0) + '</text><text x="' + (width - right) + '" y="' + (height - 15) + '" text-anchor="end" class="ctas-axis-label">' + esc(date1) + "</text>" +
-      '<text x="' + (left - 8) + '" y="' + (top + 5) + '" text-anchor="end" class="ctas-axis-label">' + esc(num(minM, 1)) + '</text><text x="' + (left - 8) + '" y="' + (height - bottom) + '" text-anchor="end" class="ctas-axis-label">' + esc(num(maxM, 1)) + "</text>" +
-      points + "</svg><p>" + esc(plotted.length.toLocaleString()) + " of " + esc(numeric.length.toLocaleString()) +
-      " plottable rows shown. Hover a point for the retained source values; downward arrows mark limits.</p></div>";
+      '<line x1="' + left + '" y1="' + (height - bottom) + '" x2="' + (width - right) + '" y2="' + (height - bottom) + '" class="ctas-axis"/>' + xAxis +
+      '<text x="' + ((left + width - right) / 2) + '" y="' + (height - 10) + '" text-anchor="middle" class="ctas-axis-label">' + esc(axisName) + "</text>" +
+      '<text x="13" y="' + ((top + height - bottom) / 2) + '" transform="rotate(-90 13 ' + ((top + height - bottom) / 2) + ')" text-anchor="middle" class="ctas-axis-label">Magnitude (brighter up)</text></svg>';
+  }
+  function photometrySvg(rows, options) {
+    options = options || {};
+    var lib = window.CTASLightcurve;
+    if (!lib) return '<p class="ctas-link-empty">The light-curve module did not load.</p>';
+    var prepared = lib.toPoints(rows, {discovery: options.discovery});
+    if (!prepared.points.length) return '<p class="ctas-link-empty">No plottable magnitude and time pairs are retained.</p>';
+    var key = "lc-" + text(options.key || "plot").replace(/[^a-z0-9-]/gi, "");
+    var first = prepared.points[0].days, last = prepared.points[prepared.points.length - 1].days;
+    var wide = last - first > 60;
+    var plot = lcPlots[key] = {key: key, prepared: prepared, summary: lib.summarise(rows, {discovery: options.discovery}), name: options.name || "this candidate",
+      logAxis: options.logAxis === undefined ? last - first > 400 : Boolean(options.logAxis) && wide, onLogChange: options.onLogChange};
+    var svg = lightcurveSvg(plot);
+    var counts = plot.summary.counts;
+    var perBand = {}, bandOrder = [];
+    prepared.points.forEach(function (p) {
+      if (!perBand[p.band]) { perBand[p.band] = {detections: 0, limits: 0}; bandOrder.push(p.band); }
+      perBand[p.band][p.kind === "limit" ? "limits" : "detections"] += 1;
+    });
+    bandOrder.sort(function (a, b) { return perBand[b].detections - perBand[a].detections || perBand[b].limits - perBand[a].limits || (a < b ? -1 : 1); });
+    var legend = '<ul class="ctas-lc-legend" aria-label="Bands">' + bandOrder.map(function (band) {
+      return '<li><span class="ctas-lc-swatch" style="background:' + bandColour(band) + '" aria-hidden="true"></span><strong>' + esc(band) + "</strong> <small>" +
+        esc(perBand[band].detections + " det" + (perBand[band].limits ? " · " + perBand[band].limits + " lim" : "")) + "</small></li>";
+    }).join("") + '</ul><ul class="ctas-lc-key" aria-label="Marker shapes"><li><span aria-hidden="true">●</span> detection</li><li><span aria-hidden="true">■</span> forced-photometry detection</li>' +
+      '<li><span aria-hidden="true">▽</span> upper limit</li><li><span aria-hidden="true">▼</span> forced upper limit</li><li><span aria-hidden="true">┃</span> ±1σ error</li></ul>';
+    var toggle = wide ? '<label class="ctas-lc-log"><input type="checkbox" data-lc-log="' + key + '"' + (plot.logAxis ? " checked" : "") + "> Logarithmic time axis</label>" : "";
+    var notes = [];
+    if (counts.duplicates) notes.push(counts.duplicates + " detection" + (counts.duplicates === 1 ? "" : "s") + " reported by two brokers drawn twice");
+    if (counts.superseded) notes.push(counts.superseded + " superseded revision" + (counts.superseded === 1 ? "" : "s") + " left out");
+    if (counts.converted) notes.push(counts.converted + " converted from positive flux to AB magnitude");
+    if (counts.unplottable) notes.push(counts.unplottable + " row" + (counts.unplottable === 1 ? "" : "s") + " without a usable magnitude or limit not drawn");
+    if (plot.drawnCount < prepared.points.length) notes.push((prepared.points.length - plot.drawnCount).toLocaleString() + " upper limits thinned for drawing (all are in the tables)");
+    var tableRows = prepared.points.map(function (p) {
+      return "<tr><td>" + esc(dayText(p.days)) + "</td><td>" + esc(absolute(new Date(p.time).toISOString())) + "</td><td>" + esc(p.band) + "</td><td>" +
+        esc((p.kind === "limit" ? "upper limit" : "detection") + (p.forced ? " (forced)" : "")) + "</td><td>" +
+        esc(p.kind === "limit" ? "> " + num(p.magnitude, 2) : num(p.magnitude, 2) + (p.error !== null ? " ± " + num(p.error, 2) : "")) + "</td><td>" + esc(p.provider || "—") + "</td></tr>";
+    }).join("");
+    return '<figure class="ctas-lightcurve" data-lc-figure="' + key + '"><div class="ctas-lc-head">' + legend + toggle + "</div>" +
+      '<div class="ctas-lc-svg" data-lc-svg="' + key + '">' + svg + "</div><figcaption>" +
+      esc(prepared.points.length.toLocaleString() + " points: " + counts.detections.toLocaleString() + " distinct detections and " + counts.limits.toLocaleString() + " upper limits" +
+        (counts.forced ? ", " + counts.forced.toLocaleString() + " from forced photometry" : "") + ". Day 0 is the " +
+        (prepared.reference.basis === "discovery" ? "reported discovery time" : prepared.reference.basis) + (prepared.reference.iso ? " (" + absolute(prepared.reference.iso) + ")" : "") + ". " +
+        (notes.length ? notes.join("; ") + ". " : "") + "Hover or focus a point for its values.") + "</figcaption>" +
+      '<details class="ctas-lc-table"><summary>Show the plotted points as a table (' + prepared.points.length.toLocaleString() + ")</summary>" +
+      '<div class="ctas-evidence-table-wrap ctas-evidence-table-wrap--tall" role="region" aria-label="Plotted light-curve points" tabindex="0"><table class="ctas-evidence-table">' +
+      "<caption>Every plotted point, in time order; days are relative to day 0 above.</caption><thead><tr><th scope=\"col\">Day</th><th scope=\"col\">Time (UTC)</th><th scope=\"col\">Band</th>" +
+      '<th scope="col">Type</th><th scope="col">Magnitude</th><th scope="col">Provider</th></tr></thead><tbody>' + tableRows + "</tbody></table></div></details></figure>";
+  }
+  function updateLightcurvePlot(control) {
+    var key = control.getAttribute("data-lc-log"), plot = lcPlots[key], holder = plot && document.querySelector('[data-lc-svg="' + key + '"]');
+    if (!holder) return;
+    plot.logAxis = control.checked;
+    if (plot.onLogChange) plot.onLogChange(plot.logAxis);
+    holder.innerHTML = lightcurveSvg(plot);
+  }
+  // Rough numbers from the retained points (ctas/lightcurve-summary.js), labelled as such.
+  function renderLightcurveEstimates(candidate, rows) {
+    var lib = window.CTASLightcurve;
+    if (!lib) return "";
+    var summary = lib.summarise(rows, {discovery: candidate.discovery_time}), id = "ctas-lc-estimates-" + text(candidate.event_id).slice(0, 8);
+    var dayName = summary.reference.basis === "discovery" ? "discovery" : summary.reference.basis;
+    var head = '<section class="ctas-lc-estimates" aria-labelledby="' + id + '"><h5 id="' + id + '">Simple estimates <small>rough numbers from the retained points, not model fits</small></h5>';
+    if (!summary.counts.detections) {
+      return head + "<p>No retained detections" + (summary.counts.limits ? " (" + summary.counts.limits.toLocaleString() + " upper limits only)" : "") + ", so there is nothing to estimate.</p></section>";
+    }
+    var peaks = '<div class="ctas-evidence-table-wrap" role="region" aria-label="Brightest detection per band" tabindex="0"><table class="ctas-evidence-table ctas-lc-peaks">' +
+      "<caption>Peak = brightest retained detection in each band that another detection within " + lib.SUPPORT_DAYS + " days and " + lib.SUPPORT_MAG +
+      " mag backs up (“single point” where none does); day counted from " + esc(dayName) + ".</caption><thead><tr><th scope=\"col\">Band</th><th scope=\"col\">Peak mag</th><th scope=\"col\">Date (UTC)</th>" +
+      '<th scope="col">Day</th><th scope="col">Detections</th></tr></thead><tbody>' +
+      summary.bands.filter(function (band) { return band.peak; }).map(function (band) {
+        return '<tr><th scope="row"><span class="ctas-lc-swatch" style="background:' + bandColour(band.band) + '" aria-hidden="true"></span>' + esc(band.band) + "</th><td>" +
+          esc(num(band.peak.magnitude, 2) + (band.peak.error !== null ? " ± " + num(band.peak.error, 2) : "") + (band.peak.confirmed ? "" : " (single point)")) + "</td><td>" + esc(band.peak.iso.slice(0, 16).replace("T", " ")) + "</td><td>" +
+          esc(dayText(band.peak.days)) + "</td><td>" + band.detections.toLocaleString() + "</td></tr>";
+      }).join("") + "</tbody></table></div>";
+    var skipped = summary.bands.filter(function (band) { return band.unconfirmedBrighter; }).map(function (band) {
+      return "a brighter lone " + band.band + " point on day " + dayText(band.unconfirmedBrighter.days) + " (" + num(band.unconfirmedBrighter.magnitude, 2) + " mag)";
+    });
+    if (skipped.length) peaks += "<p><small>Not used as a peak, because no other detection backs it up: " + esc(skipped.join("; ")) + ". It is still plotted.</small></p>";
+    var rise = summary.rise, riseText;
+    if (rise.detections < 2) riseText = "Not measurable: only one detection in " + rise.band + ".";
+    else if (rise.peakIsFirst) riseText = "Not observed: the brightest " + rise.band + " detection came within a night of the first (day " + dayText(rise.first.days) + "), so the object was found at or after its peak.";
+    else riseText = (rise.peakIsLast ? "At least " : "About ") + num(rise.days, 1) + " days in " + rise.band + ", from the first detection (day " + dayText(rise.first.days) +
+      ") to the brightest (day " + dayText(rise.peak.days) + ")" + (rise.peakIsLast ? "; still brightening at the last retained detection" : "") + ".";
+    if (rise.lastLimitBefore) {
+      var gapDays = rise.lastLimitBefore.daysBeforeFirst;
+      riseText += " The last " + rise.band + " upper limit before that detection was " + (gapDays < 1 ? Math.max(1, Math.round(gapDays * 24)) + " hour" + (Math.round(gapDays * 24) > 1 ? "s" : "") : num(gapDays, 1) + " days") +
+        " earlier (fainter than " + num(rise.lastLimitBefore.magnitude, 2) + ").";
+    }
+    var declineText = summary.decline.length ? summary.decline.map(function (item) {
+      return item.band + ": " + (item.rate >= 0 ? "fading " : "brightening ") + num(Math.abs(item.rate), 3) + (item.rateError !== null ? " ± " + num(item.rateError, 3) : "") +
+        " mag/day over " + num(item.spanDays, 1) + " days (" + item.points + " detections)";
+    }).join("; ") + "." : "Not enough points: this needs at least three detections spanning a day or more within " + lib.DECLINE_WINDOW_DAYS + " days after a band’s peak.";
+    var colour = summary.colour;
+    var colourText = colour ? (colour.value >= 0 ? "+" : "−") + num(Math.abs(colour.value), 2) + (colour.error !== null ? " ± " + num(colour.error, 2) : "") + " mag, from g and r " +
+      num(colour.separationDays * 24, 1) + " hours apart, " + num(Math.abs(colour.offsetDays), 1) + " days " + (colour.offsetDays >= 0 ? "after" : "before") + " the " + colour.referenceBand + "-band peak."
+      : "No g and r detections within " + lib.COLOUR_PAIR_DAYS + " day of each other within ±" + lib.COLOUR_NEAR_PEAK_DAYS + " days of the peak.";
+    var episode = summary.episode;
+    var episodeText = episode && episode.leftOut ? " These use the " + episode.detections.toLocaleString() + " detections from day " + dayText(episode.fromDays) + " to day " + dayText(episode.toDays) +
+      " around " + (summary.reference.basis === "discovery" ? "discovery" : "the best-sampled stretch") + "; " + episode.leftOut.toLocaleString() + " detection" + (episode.leftOut === 1 ? "" : "s") +
+      " more than " + lib.EPISODE_GAP_DAYS + " days away (for example earlier activity at this position) " + (episode.leftOut === 1 ? "is" : "are") + " plotted but left out." : "";
+    return head + "<p>Day 0 is the " + (summary.reference.basis === "discovery" ? "reported discovery time" : esc(summary.reference.basis)) + " (" + esc(absolute(summary.reference.iso)) + "). " +
+      "Magnitudes are as the sources report them, band by band" + (summary.counts.duplicates ? "; the same alert received through two brokers counts once" : "") + "." + esc(episodeText) + "</p>" + peaks +
+      '<dl class="ctas-lc-estimates__facts"><div><dt>Observed rise</dt><dd>' + esc(riseText) + "</dd></div>" +
+      "<div><dt>Early decline <small>straight line, first " + lib.DECLINE_WINDOW_DAYS + " days after peak</small></dt><dd>" + esc(declineText) + "</dd></div>" +
+      "<div><dt>g − r near peak</dt><dd>" + esc(colourText) + "</dd></div></dl>" +
+      "<p><small>Gaps in coverage, limits and the brightest point being a noisy outlier all bias these numbers; treat them as a first look, not measurements.</small></p></section>";
   }
 
   // Shared with ctas/live-sources.js so live provider data is drawn exactly like retained data.
-  window.CTASRender = {photometrySvg: function (rows) { return photometrySvg(rows); }, spectrumSvg: function (row, points, index) { return spectrumSvg(row, points, index); },
+  window.CTASRender = {photometrySvg: function (rows, options) { return photometrySvg(rows, options); }, spectrumSvg: function (row, points, index) { return spectrumSvg(row, points, index); },
     liveSpectrum: function (row, parsed, candidate, index, fetchedAt) { return liveSpectrumFigure(row, parsed, candidate, spectrumKey(candidate, index, "live"), fetchedAt); }};
 
   function renderPhotometry(candidate) {
@@ -612,7 +758,9 @@
         return '<option value="' + esc(band) + '"' + (selected === band ? " selected" : "") + ">" + esc(band) + "</option>";
       }).join("") + '</select></label><button type="button" data-download-evidence="observations" data-format="csv">Download CSV</button>' +
       '<button type="button" data-download-evidence="observations" data-format="json">Download JSON</button></div>' +
-      photometrySvg(filtered) + renderReferences(rows) +
+      photometrySvg(filtered, {discovery: candidate.discovery_time, key: text(candidate.event_id).slice(0, 8), name: candidate.name,
+        logAxis: state.lcLog[candidate.event_id], onLogChange: function (on) { state.lcLog[candidate.event_id] = on; }}) +
+      renderLightcurveEstimates(candidate, rows) + renderReferences(rows) +
       '<div class="ctas-evidence-table-wrap ctas-evidence-table-wrap--tall" role="region" aria-label="Complete source-native photometry table" tabindex="0"><table class="ctas-evidence-table"><caption>All ' + filtered.length.toLocaleString() +
       " matching rows are inspectable here" + (selected === "*" ? "." : "; the candidate retains " + rows.length.toLocaleString() + " rows across all bands.") +
       '</caption><thead><tr><th scope="col">Observed</th><th scope="col">Band</th><th scope="col">Detection / limit</th><th scope="col">Source-native value</th><th scope="col">System · method</th><th scope="col">Facility</th><th scope="col">Assertion / source</th></tr></thead><tbody>' +
@@ -2264,6 +2412,7 @@
     });
     document.addEventListener("change", function (event) {
       if (event.target.matches("[data-spectrum-frame], [data-spectrum-lines]")) { updateSpectrumPlot(event.target); return; }
+      if (event.target.matches("[data-lc-log]")) { updateLightcurvePlot(event.target); return; }
       if (!event.target.matches("[data-phot-band]") || !state.activeDetail) return;
       state.photBand[state.activeDetail.event_id] = event.target.value;
       updateDossierRoute("photometry", event.target.value);

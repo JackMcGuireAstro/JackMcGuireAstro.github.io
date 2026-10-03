@@ -807,11 +807,47 @@ select:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .ctas-evidence-tools label { display: inline-flex; align-items: center; gap: .45rem; color: var(--ink-3); font-size: .78rem; }
 .ctas-evidence-tools select { min-height: 42px; padding: .4rem .6rem; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--surface-2); color: var(--ink); }
 .ctas-lightcurve { margin: .8rem 0; }
-.ctas-lightcurve svg { display: block; width: 100%; height: auto; min-height: 240px; border: 1px solid var(--border); background: #07101d; }
+.ctas-lightcurve svg { display: block; width: 100%; height: auto; border: 1px solid var(--border); background: #07101d; }
 .ctas-plot-bg { fill: rgba(255,255,255,.018); }
 .ctas-axis { stroke: rgba(184,200,223,.55); stroke-width: 1; }
 .ctas-axis-label { fill: #aeb8c6; font: 12px var(--font-mono); }
-.ctas-lightcurve p { margin: .45rem 0 0; color: var(--ink-3); font-size: .75rem; }
+.ctas-lightcurve p,
+.ctas-lightcurve figcaption { margin: .45rem 0 0; color: var(--ink-3); font-size: .75rem; }
+/* Combined light curve: legend and marker key above, table view below. */
+.ctas-lc-head { display: flex; flex-wrap: wrap; gap: .35rem 1.2rem; align-items: center; margin-bottom: .45rem; }
+.ctas-lc-legend,
+.ctas-lc-key { display: flex; flex-wrap: wrap; gap: .25rem .9rem; margin: 0; padding: 0; list-style: none; color: var(--ink-2); font-size: .78rem; }
+.ctas-lc-key { color: var(--ink-3); font-size: .74rem; }
+.ctas-lc-legend li,
+.ctas-lc-key li { display: inline-flex; align-items: center; gap: .3rem; margin: 0; padding: 0; }
+.ctas-lc-legend small { color: var(--ink-3); }
+.ctas-lc-swatch { display: inline-block; flex: none; width: .72rem; height: .72rem; border-radius: 50%; }
+.ctas-lc-log { display: inline-flex; gap: .35rem; align-items: center; color: var(--ink-2); font-size: .8rem; cursor: pointer; }
+.ctas-lc-point { stroke: #07101d; stroke-width: 1.5; }
+.ctas-lc-error { stroke-width: 1.2; opacity: .8; }
+.ctas-lc-limit { fill: none; stroke-width: 1.4; stroke-linejoin: round; }
+.ctas-lc-limit.is-forced { fill-opacity: .35; }
+.ctas-lc-zero { stroke: rgba(184,200,223,.45); stroke-dasharray: 3 4; }
+.ctas-lc-direct { fill: #eaf0fb; font: 700 12px var(--font-mono); paint-order: stroke; stroke: #07101d; stroke-width: 3px; }
+svg.is-narrow .ctas-lc-direct { font-size: 14px; }
+.ctas-lc-table { margin-top: .5rem; border-top: 1px solid var(--border); }
+.ctas-lc-table > summary { min-height: 38px; padding: .45rem 0; cursor: pointer; color: var(--ink-2); font-size: .74rem; font-weight: 700; }
+.ctas-lc-estimates { margin: .9rem 0; padding: .8rem .9rem; border: 1px solid var(--border); background: rgba(255,255,255,.025); }
+.ctas-lc-estimates h5 { margin: 0 0 .4rem; font-size: .95rem; }
+.ctas-lc-estimates h5 small { display: block; margin-top: .1rem; color: var(--ink-3); font-size: .75rem; font-weight: 400; }
+.ctas-lc-estimates p { margin: .35rem 0; color: var(--ink-2); font-size: .8rem; }
+.ctas-lc-estimates .ctas-evidence-table-wrap { margin-top: .5rem; }
+.ctas-evidence-table.ctas-lc-peaks { min-width: 0; }
+.ctas-evidence-table.ctas-lc-peaks th, .ctas-evidence-table.ctas-lc-peaks td { padding: .4rem .4rem; }
+.ctas-lc-peaks .ctas-lc-swatch { margin-right: .4rem; vertical-align: -1px; }
+.ctas-lc-estimates__facts { display: grid; gap: .55rem; margin: .7rem 0 .3rem; }
+.ctas-lc-estimates__facts dt { color: var(--ink); font-size: .82rem; font-weight: 700; }
+.ctas-lc-estimates__facts dt small { color: var(--ink-3); font-weight: 400; }
+.ctas-lc-estimates__facts dd { margin: .1rem 0 0; color: var(--ink-2); font-size: .82rem; }
+@media (forced-colors: active) {
+  .ctas-lightcurve svg text { fill: CanvasText; }
+  .ctas-lc-swatch { forced-color-adjust: none; }
+}
 .ctas-evidence-table-wrap { max-width: 100%; overflow-x: auto; margin-top: .8rem; border: 1px solid var(--border); }
 .ctas-evidence-table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: .78rem; }
 .ctas-evidence-table caption { padding: .65rem; text-align: left; color: var(--ink-3); }
@@ -870,7 +906,6 @@ table.ctas-table { min-width: 1080px; }
   .ctas-window { margin: .75rem 0; }
   .ctas-presets { flex-wrap: wrap; overflow: visible; }
   .ctas-filter-state { align-items: start; flex-direction: column; }
-  .ctas-lightcurve svg { min-height: 190px; }
 }
 
 @media (max-width: 460px) {

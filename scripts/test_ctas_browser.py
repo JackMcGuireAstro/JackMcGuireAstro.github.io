@@ -354,6 +354,75 @@ class BrowserTests(unittest.TestCase):
                 self.assertLessEqual(overflow, 1)
         self.assertEqual(self._axe_violations(), [])
 
+    # ------------------------------------------------------------ light curves
+    def _photometry_dossier(self):
+        def rich(row):
+            outcomes = row.get("photometry_outcomes") or {}
+            return (outcomes.get("detections") or 0) >= 8 and (outcomes.get("forced") or 0) > 0 and (outcomes.get("limits") or 0) > 0
+        candidate = _published_dossier(rich, lambda c: bool((c.get("follow_up") or {}).get("observations")))
+        if candidate is None:
+            self.skipTest("this release has no dossier with detections, limits and forced photometry")
+        return candidate
+
+    def _open_photometry(self, candidate, page=None):
+        page = page or self.page
+        self._open_dossier(candidate["event_id"], page)
+        page.evaluate("() => { document.querySelector('[data-phot-panel]').open = true; }")
+        page.wait_for_selector("[data-phot-panel] .ctas-lightcurve svg", timeout=30000)
+
+    def test_dossier_light_curve_is_one_accessible_combined_plot(self):
+        candidate = self._photometry_dossier()
+        self._open_photometry(candidate)
+        panel = self.page.locator("[data-phot-panel]")
+        self.assertEqual(panel.locator(".ctas-lightcurve svg").count(), 1, "one combined plot")
+        svg = panel.locator(".ctas-lightcurve svg")
+        self.assertEqual(svg.get_attribute("role"), "img")
+        title_id, desc_id = svg.get_attribute("aria-labelledby").split()
+        self.assertIn("Light curve of " + candidate["name"], self.page.locator(f"#{title_id}").text_content())
+        self.assertRegex(self.page.locator(f"#{desc_id}").text_content(), r"[\d,]+ detections and [\d,]+ upper limits")
+        self.assertIn("Days since", svg.text_content())
+        self.assertGreater(svg.locator("circle.ctas-lc-point, rect.ctas-lc-point").count(), 0, "detections are filled points")
+        self.assertGreater(svg.locator("rect.ctas-lc-point").count(), 0, "forced photometry is drawn as squares")
+        self.assertGreater(svg.locator("path.ctas-lc-limit").count(), 0, "limits are downward triangles")
+        self.assertGreater(panel.locator(".ctas-lc-legend li").count(), 0, "a band legend")
+        self.assertIn("forced-photometry detection", panel.locator(".ctas-lc-key").inner_text())
+        table = panel.locator(".ctas-lc-table")
+        self.assertIn("Show the plotted points as a table", table.locator("summary").inner_text())
+        table.locator("summary").click()
+        self.assertGreater(table.locator("tbody tr").count(), 8)
+        estimates = panel.locator(".ctas-lc-estimates")
+        self.assertIn("Simple estimates", estimates.inner_text())
+        self.assertIn("not model fits", estimates.inner_text())
+        for label in ("Observed rise", "Early decline", "g − r near peak"):
+            self.assertIn(label, estimates.inner_text())
+        self.assertGreater(estimates.locator(".ctas-lc-peaks tbody tr").count(), 0, "a peak per band with detections")
+        toggle = panel.locator("[data-lc-log]")
+        if toggle.count():
+            before = toggle.is_checked()
+            toggle.click()
+            label = panel.locator(".ctas-lightcurve svg").text_content()
+            self.assertEqual("logarithmic" in label, not before, "the time axis switches scale")
+            # the choice survives the band filter re-rendering the panel
+            self.page.locator("[data-phot-band]").select_option(index=1)
+            self.page.wait_for_selector("[data-phot-panel] .ctas-lightcurve svg", timeout=10000)
+            rebuilt = self.page.locator("[data-phot-panel] [data-lc-log]")
+            if rebuilt.count():
+                self.assertEqual(rebuilt.is_checked(), not before)
+
+    def test_light_curve_and_estimates_fit_a_phone_and_pass_axe(self):
+        candidate = self._photometry_dossier()
+        for width, height in ((320, 568), (390, 844)):
+            with self.subTest(viewport=f"{width}x{height}"):
+                self.page.set_viewport_size({"width": width, "height": height})
+                self._open_photometry(candidate)
+                self.page.evaluate("() => document.querySelector('.ctas-lc-table').open = true")
+                self.page.wait_for_timeout(300)
+                overflow = self.page.evaluate(
+                    "() => document.documentElement.scrollWidth - document.documentElement.clientWidth")
+                self.assertLessEqual(overflow, 1)
+                self.assertEqual(self.page.locator(".ctas-lightcurve svg.is-narrow").count(), 1, "phone-width drawing")
+        self.assertEqual(self._axe_violations(), [])
+
     def _axe_violations(self, page=None):
         page = page or self.page
         axe = next(
