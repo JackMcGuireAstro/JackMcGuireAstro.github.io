@@ -75,10 +75,18 @@ jobs:
       - name: Collector settings and git identity
         env:
           BACKEND_ENV: ${{ secrets.CTAS_BACKEND_ENV }}
+          # Optional single-key overrides, so one key can be renewed without rewriting the
+          # whole settings secret (which GitHub never shows again once saved).
+          AAVSO_AID_API_TOKEN_OVERRIDE: ${{ secrets.AAVSO_AID_API_TOKEN }}
           PUSH_TOKEN: ${{ github.token }}
         run: |
           umask 077
           printf '%s\n' "$BACKEND_ENV" > backend/.env
+          if [ -n "$AAVSO_AID_API_TOKEN_OVERRIDE" ]; then
+            grep -v '^AAVSO_AID_API_TOKEN=' backend/.env > backend/.env.new || true
+            printf 'AAVSO_AID_API_TOKEN=%s\n' "$AAVSO_AID_API_TOKEN_OVERRIDE" >> backend/.env.new
+            mv backend/.env.new backend/.env
+          fi
           # Hide every settings value from this run's public log.
           while IFS= read -r line; do
             case "$line" in ''|'#'*) continue ;; esac
