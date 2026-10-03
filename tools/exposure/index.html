@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exposure-time calculator | Jack McGuire</title>
+<meta name="description" content="Work out the signal-to-noise ratio of a CCD exposure, the exposure time for a target S/N, or the limiting magnitude, with the CCD equation. Presets for WIRO 2.3 m and Red Buttes 0.6 m, UBVRI and ugriz, and every value editable.">
+<meta name="theme-color" content="#f4f1ea">
+<link rel="canonical" href="https://jackmcguireastro.github.io/tools/exposure/">
+<link rel="stylesheet" href="../tools.css?v=20261003">
+<script type="module" src="exposure.js?v=20261003"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="top"><div class="shell top-inner">
+  <a class="wordmark" href="../../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
+  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../" aria-current="true">Tools</a></nav>
+</div></header>
+<main id="main" class="shell">
+  <section class="intro">
+    <p class="eyebrow">Tools / Exposure time</p>
+    <h1>Exposure-time calculator</h1>
+    <p>How long do you need to expose to measure a star well? Choose a telescope, a filter and the sky conditions. The page then works out the signal-to-noise ratio (S/N) for an exposure time, the time you need for a target S/N, or the faintest star you can measure. It uses the standard CCD equation, and you can change every number. Everything is worked out in your browser. Nothing is stored or sent anywhere.</p>
+  </section>
+
+  <form id="etc-form" novalidate aria-describedby="etc-status">
+    <fieldset class="controls">
+      <legend>What do you want to know?</legend>
+      <fieldset class="choices">
+        <legend>Calculate</legend>
+        <label class="choice"><input type="radio" name="mode" value="snr" checked> S/N for an exposure time</label>
+        <label class="choice"><input type="radio" name="mode" value="time"> Exposure time for a S/N</label>
+        <label class="choice"><input type="radio" name="mode" value="maglim"> Limiting magnitude</label>
+      </fieldset>
+      <div class="field" data-modes="snr time"><label for="mag">Source magnitude</label><input id="mag" type="number" step="any" value="18" aria-describedby="mag-hint"><p class="hint" id="mag-hint">Vega for UBVRI, AB for ugriz</p></div>
+      <div class="field" data-modes="snr maglim"><label for="exptime">Exposure time (s)</label><input id="exptime" type="number" step="any" min="0" value="300"></div>
+      <div class="field" data-modes="time maglim"><label for="snr">Target S/N</label><input id="snr" type="number" step="any" min="0" value="50"></div>
+      <div class="field"><label for="filter">Filter</label><select id="filter"></select></div>
+      <div class="field"><label for="airmass">Airmass</label><input id="airmass" type="number" step="any" min="1" value="1.2" aria-describedby="airmass-hint"><p class="hint" id="airmass-hint">1 at the zenith, 2 at 30° altitude</p></div>
+      <div class="field"><label for="skyPreset">Moon</label><select id="skyPreset"><option value="dark">Dark (new Moon)</option><option value="grey">Grey (about 7 days from new)</option><option value="bright">Bright (full Moon)</option><option value="custom">Custom sky brightness</option></select></div>
+      <div class="field"><label for="sky">Sky brightness (mag/arcsec²)</label><input id="sky" type="number" step="any"></div>
+      <div class="actions"><button type="submit" class="button">Calculate</button></div>
+    </fieldset>
+    <p id="etc-status" class="status" role="status" aria-live="polite"></p>
+
+    <section aria-labelledby="result-title"><h2 id="result-title">Result</h2><div id="result" aria-live="polite"></div></section>
+    <section aria-labelledby="curve-title" class="chart"><h2 id="curve-title">S/N against exposure time</h2><div id="curve"></div></section>
+
+    <h2 id="setup-title">Telescope and detector</h2>
+
+    <fieldset class="controls" aria-labelledby="setup-title">
+      <div class="field wide"><label for="telescope">Preset</label><select id="telescope" aria-describedby="placeholder-note"></select></div>
+      <p class="hint field wide" id="placeholder-note"><strong class="warn">Placeholder values.</strong> Only the mirror sizes are real. The other WIRO and Red Buttes numbers (detector, throughput, seeing, extinction) are typical values for telescopes of this kind. They are not taken from the instrument manuals yet, and I will replace them once I have checked them. Until then, edit any field to match your own setup. Changing a field switches the preset to Custom.</p>
+      <div class="field"><label for="diameter">Mirror diameter (m)</label><input id="diameter" type="number" step="any" min="0"></div>
+      <div class="field"><label for="obstruction">Central obstruction (m)</label><input id="obstruction" type="number" step="any" min="0"></div>
+      <div class="field"><label for="throughput">Total throughput (0–1)</label><input id="throughput" type="number" step="any" min="0" max="1" aria-describedby="throughput-hint"><p class="hint" id="throughput-hint">Optics × filter × detector QE, for this filter</p></div>
+      <div class="field"><label for="extinction">Extinction k (mag/airmass)</label><input id="extinction" type="number" step="any" min="0"></div>
+      <div class="field"><label for="plateScale">Plate scale (″/pixel)</label><input id="plateScale" type="number" step="any" min="0"></div>
+      <div class="field"><label for="seeing">Seeing FWHM (″)</label><input id="seeing" type="number" step="any" min="0"></div>
+      <div class="field"><label for="apertureFactor">Aperture radius (× FWHM)</label><input id="apertureFactor" type="number" step="any" min="0" value="1"></div>
+      <div class="field"><label for="gain">Gain (e⁻/ADU)</label><input id="gain" type="number" step="any" min="0"></div>
+      <div class="field"><label for="readNoise">Read noise (e⁻)</label><input id="readNoise" type="number" step="any" min="0"></div>
+      <div class="field"><label for="dark">Dark current (e⁻/s/pixel)</label><input id="dark" type="number" step="any" min="0"></div>
+      <div class="field"><label for="fullWell">Full well (e⁻)</label><input id="fullWell" type="number" step="any" min="0"></div>
+      <div class="field"><label for="zeroPoint">Photons from a 0 mag star (s⁻¹ cm⁻²)</label><input id="zeroPoint" type="number" step="any" min="0" aria-describedby="zp-hint"><p class="hint" id="zp-hint"></p></div>
+      <div class="actions"><button type="button" id="reset" class="button button-quiet">Reset to the preset</button></div>
+    </fieldset>
+  </form>
+
+  <section class="notes" aria-labelledby="notes-title">
+    <h2 id="notes-title">How this is worked out</h2>
+    <p><strong>The CCD equation.</strong> S/N = S·t / √(S·t + n<sub>pix</sub>·(B<sub>sky</sub>·t + D·t + R²)). Here S is the star’s electrons per second inside the aperture and t is the exposure time. B<sub>sky</sub> is the sky’s electrons per second per pixel, D is the dark current and R is the read noise. n<sub>pix</sub> is the number of pixels in the aperture. The exposure time for a target S/N and the limiting magnitude are exact solutions of the same equation (both are quadratics), not approximations.</p>
+    <p><strong>From magnitude to electrons.</strong> S = F<sub>0</sub> × A × τ × 10<sup>−0.4(m + kX)</sup> × f<sub>ap</sub>. F<sub>0</sub> is the number of photons per second per cm² from a magnitude-0 star across the filter. For UBVRI it comes from the Vega fluxes of Bessell, Castelli &amp; Plez (1998) times the filter width. For ugriz it comes from the AB definition (3631 Jy) with the filter widths of Fukugita et al. (1996). A is the mirror area minus the central obstruction. τ is the whole system’s throughput (optics, filter and detector quantum efficiency). k is the extinction per airmass and X is the airmass. f<sub>ap</sub> is the fraction of a Gaussian star image inside the aperture: 1 − exp(−r²/2σ²), with σ = FWHM/2.355. That is 94% for a radius of one FWHM.</p>
+    <p><strong>Sky and aperture.</strong> The sky’s electrons per pixel use the same F<sub>0</sub>, A and τ, with the sky brightness in mag/arcsec² times the pixel area. The sky is taken as given and does not get brighter with airmass. The dark, grey and bright presets are typical dark-site values (the CTIO table of Walker 1987 for UBVRI and Apache Point values for ugriz). Sites near towns, such as Red Buttes near Laramie, have brighter skies. n<sub>pix</sub> = π r² / (plate scale)².</p>
+    <p><strong>What is left out.</strong> This calculation leaves out scintillation, flat-field errors, digitisation noise, the bias level and the noise of the sky annulus. Very bright stars are limited by these effects, so treat S/N above a few hundred as an upper bound. The peak-pixel estimate assumes the star is centred on a pixel. It warns when that pixel passes 80% of the full well or of the 16-bit converter range (65,535 ADU).</p>
+    <p><strong>How accurate is it?</strong> The equations are exact, but the answer is only as good as the inputs. Seeing, throughput and sky brightness change from night to night, so expect the S/N to be right within a few tens of percent, and the limiting magnitude within a few tenths. The instrumental zero point shown with the result is the magnitude that gives 1 e⁻/s above the atmosphere. Compare it with a zero point measured from real frames to calibrate the throughput.</p>
+  </section>
+</main>
+<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../../index.html">Home</a> · <a href="../../worldsindex/">WorldsIndex</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../tonight/">Tonight</a> · <a href="../">Tools</a></p></div></footer>
+</body>
+</html>
