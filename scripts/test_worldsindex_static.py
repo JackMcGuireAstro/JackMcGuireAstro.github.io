@@ -102,6 +102,17 @@ def main() -> None:
                 packaged_records.setdefault(record["sourceRecordId"], record)
     assert detail_object_count == manifest["objectCount"]
 
+    # NASA context attached by exact NASA keys (optional; present when the builder produced it).
+    contributions = manifest.get("sourceContributions")
+    if contributions:
+        assert contributions["schemaVersion"] == "worldsindex-source-contributions.v1"
+        indexed = {item["objectId"]: item for item in catalog_index["objects"]}
+        assert "HIP 108859" in indexed["object-hd-209458-b"].get("aliases", []), "NASA aliases must be searchable"
+        for entry in registry["sources"]["entries"]:
+            summary = contributions["sources"].get(entry["id"])
+            if summary and summary["state"] == "FROZEN_SNAPSHOT" and summary["attachedRows"] > 0:
+                assert entry["state"] == "INGESTED" and entry["release"] == summary["snapshotId"], entry["id"]
+
     packaged_sources = {"nasa-pscomppars", "nasa-toi", "nasa-koi", "nasa-k2", "exoplanet-eu"}
     for detection in atlas["detections"]:
         for value in detection.get("population", {}).values():

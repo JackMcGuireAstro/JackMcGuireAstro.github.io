@@ -25,13 +25,15 @@ say "restoring WorldsIndex's working data from the state repository"
 GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/worldsindex_cloud_state.py" restore "$SOURCE" \
   || { say "FAIL  could not restore the working data"; exit 1; }
 
-# One-time, reviewed identity-rule upgrade (2026-10-03): the builder re-links exoplanet.eu
-# rows under the v2 identity rule only if the result matches the reviewed, pinned list
-# committed with its code; once accepted this is a no-op. Its files are inside the saved
-# working data, so the save below keeps the acceptance.
+# Reviewed identity-rule upgrades (v1 -> v2 2026-10-02, v2 -> v3 2026-10-03): the builder
+# re-links exoplanet.eu rows under newer identity rules only if the result matches the
+# reviewed, pinned list committed with its code; once accepted this is a no-op. A pin made
+# for an older snapshot changes nothing (REIDENTIFY_PIN_STALE) and the release keeps its
+# reviewed rules. Its files are inside the saved working data, so the save below keeps it.
 say "checking the reviewed identity rules"
 (cd "$SOURCE" && npm run --silent exoplanet-eu:reidentify -- --accept-reviewed) >"$LOGS/reidentify.log" 2>&1 \
   || { tail -20 "$LOGS/reidentify.log"; say "FAIL  the identity re-linking did not match the reviewed list; nothing published or saved"; exit 1; }
+say "identity rules: $(grep -m1 -o '"outcome": "[A-Z_]*"' "$LOGS/reidentify.log" || echo 'outcome not recorded')"
 
 ARGS=(--full)
 [ "$DRY_RUN" = "1" ] && ARGS+=(--dry-run)

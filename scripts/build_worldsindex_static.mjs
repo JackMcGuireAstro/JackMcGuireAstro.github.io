@@ -196,6 +196,16 @@ function countBy(items) {
   return counts;
 }
 
+// NASA context the builder attached by exact NASA keys (ExoNexus scripts/build-source-contributions.ts):
+// provider-stated aliases plus stellar-host, transit, microlensing and spectrum rows. Optional, so a
+// builder without it still produces a valid release.
+const loadedContributions = await readFile(join(sourceRoot, 'public/data/source-contributions.json.gz'))
+  .then((bytes) => JSON.parse(gunzipSync(bytes).toString('utf8')))
+  .catch((error) => { if (error.code === 'ENOENT') return null; throw error; });
+// A file left over from another atlas projection (or an unknown schema) is ignored, never half-applied.
+const contributions = loadedContributions && loadedContributions.schemaVersion === 'worldsindex-source-contributions.v1' && loadedContributions.atlasProjectionId === atlas.projectionId ? loadedContributions : null;
+if (loadedContributions && !contributions) console.warn('source-contributions.json.gz ignored: built for another atlas projection or schema');
+const contributedAliases = (objectId) => [...new Set((contributions?.objects?.[objectId]?.aliases ?? []).map((alias) => alias.value))];
 const catalogObjects = atlas.detections.map((detection) => ({
   objectId: detection.objectId,
   sourceObjectIds: detection.sourceObjectIds,
@@ -213,6 +223,7 @@ const catalogObjects = atlas.detections.map((detection) => ({
   primarySourceId: detection.primarySourceId,
   sourceIds: detection.sourceIds,
   sourceRecordCount: detection.sourceRecordCount,
+  ...(contributedAliases(detection.objectId).length ? { aliases: contributedAliases(detection.objectId) } : {}),
 }));
 const primaryMethodCounts = countBy(catalogObjects.map((object) => object.methodCode).filter(Boolean));
 const claimMethodCounts = countBy(catalogObjects.flatMap((object) => object.methodCodes));
@@ -272,6 +283,13 @@ for (const row of exoplanetEu) {
   attachByName(row.name, { sourceId: 'exoplanet-eu', sourceRecordId, recordType: 'catalog row', name: row.name, values: selected(row, euFields) }, `object-${sourceRecordId}`);
 }
 
+for (const [objectId, contribution] of Object.entries(contributions?.objects ?? {})) {
+  const detail = details.get(objectId);
+  if (!detail) throw new Error(`source contributions name an object absent from the atlas: ${objectId}`);
+  if (contribution.aliases?.length) detail.aliases = contribution.aliases;
+  for (const record of contribution.records ?? []) detail.records.push(record);
+}
+
 // Materialize every bucket on every release. This prevents a removed record
 // from leaving an obsolete shard behind in the static site checkout.
 const buckets = new Map(Array.from({ length: 256 }, (_, index) => [index.toString(16).padStart(2, '0'), {}]));
@@ -291,8 +309,10 @@ const { artifact: transitEphemerides, stats: transitStats } = extractTransitEphe
 });
 await writeFile(join(outputRoot, 'transit-ephemerides.json.gz'), gzipSync(JSON.stringify(transitEphemerides), { level: 9 }));
 
-const registryCode = `import { SOURCE_REGISTRY, SOURCE_UNIVERSE_VERSION, sourceStateCounts } from './packages/exonexus/archive/source-registry.ts'; import { DETECTION_METHODS, DETECTION_METHOD_REGISTRY_VERSION } from './packages/exonexus/methods/registry.ts'; console.log(JSON.stringify({sources:{version:SOURCE_UNIVERSE_VERSION,stateCounts:sourceStateCounts(),entries:SOURCE_REGISTRY},methods:{version:DETECTION_METHOD_REGISTRY_VERSION,entries:DETECTION_METHODS}}));`;
-const registry = JSON.parse(execFileSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', registryCode], { cwd: sourceRoot, encoding: 'utf8', maxBuffer: 20_000_000 }));
+// A context source whose frozen snapshot attached rows in this release is presented as INGESTED
+// (releaseSourceRegistry); builders without that helper keep the declared registry.
+const registryCode = `import * as sourceRegistry from './packages/exonexus/archive/source-registry.ts'; import { DETECTION_METHODS, DETECTION_METHOD_REGISTRY_VERSION } from './packages/exonexus/methods/registry.ts'; const contributionSources = JSON.parse(process.env.WORLDSINDEX_CONTRIBUTION_SOURCES || 'null'); const entries = typeof sourceRegistry.releaseSourceRegistry === 'function' ? sourceRegistry.releaseSourceRegistry(sourceRegistry.SOURCE_REGISTRY, contributionSources) : sourceRegistry.SOURCE_REGISTRY; const stateCounts = Object.fromEntries([...new Set(entries.map((entry) => entry.state))].sort().map((state) => [state, entries.filter((entry) => entry.state === state).length])); console.log(JSON.stringify({sources:{version:sourceRegistry.SOURCE_UNIVERSE_VERSION,stateCounts,entries},methods:{version:DETECTION_METHOD_REGISTRY_VERSION,entries:DETECTION_METHODS}}));`;
+const registry = JSON.parse(execFileSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', registryCode], { cwd: sourceRoot, encoding: 'utf8', maxBuffer: 20_000_000, env: { ...process.env, WORLDSINDEX_CONTRIBUTION_SOURCES: JSON.stringify(contributions?.sources ?? null) } }));
 await writeFile(join(outputRoot, 'registry.json.gz'), gzipSync(JSON.stringify(registry), { level: 9 }));
 
 async function describeArtifact(relativePath) {
@@ -353,6 +373,7 @@ const manifest = {
     path: 'transit-ephemerides.json.gz', schemaVersion: TRANSIT_EPHEMERIDES_SCHEMA, count: transitEphemerides.count,
     referenceBjd: transitEphemerides.referenceBjd, bySource: transitStats.bySource, crossMatchedToi: transitStats.crossMatchedToi,
   },
+  sourceContributions: contributions ? { schemaVersion: contributions.schemaVersion, generatedAt: contributions.generatedAt, boundary: contributions.boundary, sources: contributions.sources } : null,
   artifacts,
   scientificBoundary: 'Static public catalog projection. Source membership is not independent confirmation; source-composite values are not self-consistent publication solutions; catalog projections are not completeness-corrected populations.',
 };
