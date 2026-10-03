@@ -228,7 +228,55 @@ class ScoreModelTests(unittest.TestCase):
             self.term(early, "recency_points")["points"],
             self.term(late, "recency_points")["points"],
         )
-        self.assertGreater(late["score_as_of"], early["score_as_of"])
+        self.assertEqual(early["score_clock"], EXPORTER.SCORE_CLOCK_REFERENCE)
+        self.assertEqual(late["score_clock"], EXPORTER.SCORE_CLOCK_REFERENCE)
+        self.assertEqual(self.term(late, "recency_points")["reference_time"], "2026-09-02T12:00:00Z")
+
+    def test_a_record_whose_score_did_not_change_keeps_identical_bytes(self):
+        """The release clock lives once per release, so unchanged records do not churn.
+
+        Every release used to rewrite all 4096 detail roots because each record
+        restated the clock and ticking ages ("473.07 h before this release").
+        """
+        candidate = event(
+            discovery_time="2026-08-01T06:00:00Z", discovery_magnitude=19.5,
+            follow_up={"observations": [{"observed_at": "2026-08-10T00:00:00Z", "detection": True}]},
+            follow_up_counts={"observations": 1, "spectra": 0, "messenger_signals": 0},
+        )
+        candidate["record_role"], candidate["ranking_channel"] = EXPORTER.record_role_for(candidate)
+        clocks = [datetime(2026, 9, 3, 0, 0, tzinfo=timezone.utc),
+                  datetime(2026, 9, 3, 0, 30, tzinfo=timezone.utc),
+                  datetime(2026, 9, 9, 17, 5, tzinfo=timezone.utc)]
+        models = [EXPORTER.score_model_for(candidate, clock) for clock in clocks]
+        encoded = {json.dumps(model, sort_keys=True) for model in models}
+        self.assertEqual(len(encoded), 1, "an unchanged record must serialize identically")
+        model = models[0]
+        self.assertTrue(model["inside_follow_up_window"])
+        self.assertEqual(model["newest_evidence_at"], "2026-08-10T00:00:00Z")
+        self.assertIn("No retained observation since 2026-08-10.", model["why_now"])
+        self.assertNotIn("before this release", json.dumps(model))
+        for retired in ("score_as_of", "valid_until", "evidence_age_days"):
+            self.assertNotIn(retired, model)
+        # The release clocks themselves still differ, once, in the release manifest.
+        self.assertNotEqual(EXPORTER.score_clock_for(clocks[0]), EXPORTER.score_clock_for(clocks[1]))
+
+    def test_an_archival_record_is_stable_and_states_the_date_it_left_the_window(self):
+        candidate = event(discovery_time="2021-03-01T00:00:00Z")
+        candidate["record_role"], candidate["ranking_channel"] = EXPORTER.record_role_for(candidate)
+        first = EXPORTER.score_model_for(candidate, datetime(2026, 9, 3, tzinfo=timezone.utc))
+        later = EXPORTER.score_model_for(candidate, datetime(2026, 10, 3, tzinfo=timezone.utc))
+        self.assertEqual(first, later)
+        self.assertFalse(first["inside_follow_up_window"])
+        self.assertIn("Archival: newest retained evidence dates from 2021-03-01.", first["why_now"])
+        reasons = {row["reason"] for row in first["not_applicable"]}
+        self.assertTrue(any("dates from 2021-03-01" in reason for reason in reasons))
+
+    def test_a_young_record_still_rescores_at_every_release(self):
+        candidate = event(discovery_time="2026-09-02T23:00:00Z")
+        candidate["record_role"], candidate["ranking_channel"] = EXPORTER.record_role_for(candidate)
+        first = EXPORTER.score_model_for(candidate, datetime(2026, 9, 3, 0, 0, tzinfo=timezone.utc))
+        later = EXPORTER.score_model_for(candidate, datetime(2026, 9, 3, 0, 30, tzinfo=timezone.utc))
+        self.assertGreater(first["final_score"], later["final_score"])
 
     def test_an_august_discovery_cannot_keep_its_august_recency_in_september(self):
         """The audited failure: AT2026wtb held +19.65 recency a month later."""
@@ -310,11 +358,13 @@ class ScoreModelTests(unittest.TestCase):
 
     def test_compact_score_metadata_matches_the_dossier(self):
         candidate = self.scored(ctas_score=12.34)
-        row = dict(zip(EXPORTER.CATALOG_CANDIDATE_COLUMNS, EXPORTER.compact_candidate_row(candidate)))
+        clock = EXPORTER.score_clock_for(self.RELEASE)
+        row = dict(zip(EXPORTER.CATALOG_CANDIDATE_COLUMNS, EXPORTER.compact_candidate_row(candidate, clock)))
         model = candidate["score_model"]
         self.assertEqual(model["recorded_score_at_ingest"], 12.34)
-        self.assertEqual(row["score_as_of"], model["score_as_of"])
-        self.assertEqual(row["score_valid_until"], model["valid_until"])
+        self.assertEqual(model["score_clock"], EXPORTER.SCORE_CLOCK_REFERENCE)
+        self.assertEqual(row["score_as_of"], clock["score_as_of"])
+        self.assertEqual(row["score_valid_until"], clock["valid_until"])
         self.assertEqual(row["score_method_version"], model["method_version"])
         self.assertEqual(row["score_applicable_terms"], model["applicable_terms"])
         code = (ROOT / "scripts/export_ctas_snapshot.py").read_text()
@@ -382,8 +432,12 @@ class ScoreModelTests(unittest.TestCase):
 
     def test_the_score_is_published_with_the_clock_it_was_computed_for(self):
         model = self.scored()["score_model"]
-        self.assertEqual(model["score_as_of"], "2026-09-03T00:00:00Z")
-        self.assertEqual(model["valid_until"], "2026-09-03T00:30:00Z")
+        clock = EXPORTER.score_clock_for(self.RELEASE)
+        self.assertEqual(model["score_clock"], EXPORTER.SCORE_CLOCK_REFERENCE)
+        self.assertEqual(clock["schema"], EXPORTER.SCORE_CLOCK_SCHEMA)
+        self.assertEqual(clock["score_as_of"], "2026-09-03T00:00:00Z")
+        self.assertEqual(clock["valid_until"], "2026-09-03T00:30:00Z")
+        self.assertEqual(clock["method_version"], EXPORTER.SCORE_METHOD_VERSION)
         self.assertEqual(model["method_version"], EXPORTER.SCORE_METHOD_VERSION)
         self.assertIn("not a probability", model["claim_boundary"])
 
@@ -786,6 +840,38 @@ class CertificateAndArtifactTests(unittest.TestCase):
             EXPORTER.source_universe_contract_checksum(second),
         )
 
+    def test_source_universe_definition_ignores_operational_state(self):
+        """Each dossier names this version; polling state must not rewrite every dossier."""
+        first = {
+            "schema": EXPORTER.SOURCE_UNIVERSE_SCHEMA,
+            "generated_at": "2026-08-23T18:00:00Z",
+            "sources": [{"source_key": "tns", "contract_version": "1.0.0",
+                         "last_attempt_at": "2026-08-23T17:58:00Z", "operational_state": "searched-no-match",
+                         "public_disposition_counts": {"searched-no-match": 10},
+                         "public_record_counts": {}, "contract_checksum_sha256": "a" * 64}],
+        }
+        second = deepcopy(first)
+        second["generated_at"] = "2026-08-23T18:30:00Z"
+        second["sources"][0].update({
+            "last_attempt_at": "2026-08-23T18:27:00Z", "operational_state": "searched-with-data",
+            "public_disposition_counts": {"searched-no-match": 11},
+            "public_record_counts": {"aliases": 1}, "contract_checksum_sha256": "b" * 64,
+        })
+        self.assertEqual(
+            EXPORTER.source_universe_definition_checksum(first),
+            EXPORTER.source_universe_definition_checksum(second),
+        )
+        self.assertNotEqual(
+            EXPORTER.source_universe_contract_checksum(first),
+            EXPORTER.source_universe_contract_checksum(second),
+            "the operational state stays checksum-bound in source-universe.json",
+        )
+        second["sources"][0]["contract_version"] = "1.0.1"
+        self.assertNotEqual(
+            EXPORTER.source_universe_definition_checksum(first),
+            EXPORTER.source_universe_definition_checksum(second),
+        )
+
     def test_certificate_checksum_and_status_are_self_consistent(self):
         report = deepcopy(self.certificate)
         checksum = report.pop("report_checksum_sha256")
@@ -1081,8 +1167,40 @@ class CertificateAndArtifactTests(unittest.TestCase):
             self.assertEqual(len(row["unreadable_event_ids"]), row["unreadable_event_count"])
 
     def test_every_published_score_carries_one_release_clock(self):
-        stamps = {candidate["score_model"]["score_as_of"] for candidate in self.snapshot["candidates"]}
-        self.assertEqual(len(stamps), 1, "one release computes one score clock")
+        references = {candidate["score_model"]["score_clock"] for candidate in self.snapshot["candidates"]}
+        self.assertEqual(references, {EXPORTER.SCORE_CLOCK_REFERENCE}, "records refer to the release clock")
+        clock = self.manifest["score_clock"]
+        self.assertEqual(clock["schema"], EXPORTER.SCORE_CLOCK_SCHEMA)
+        self.assertEqual(clock["method_version"], EXPORTER.SCORE_METHOD_VERSION)
+        self.assertEqual(clock["score_as_of"], self.certificate["generated_at"])
+        self.assertEqual(
+            clock, EXPORTER.score_clock_for(EXPORTER.parse_utc(self.certificate["generated_at"])),
+        )
+        stamps = {(row["score_as_of"], row["score_valid_until"]) for row in self.index_candidates}
+        self.assertEqual(stamps, {(clock["score_as_of"], clock["valid_until"])},
+                         "one release computes one score clock")
+        for candidate in self.snapshot["candidates"][:200]:
+            for retired in ("score_as_of", "valid_until", "evidence_age_days"):
+                self.assertNotIn(retired, candidate["score_model"])
+
+    def test_every_dossier_names_the_source_universe_definition(self):
+        expected = (
+            f"{EXPORTER.SOURCE_UNIVERSE_SCHEMA}+sha256:"
+            f"{self.universe['definition_checksum_sha256'][:16]}"
+        )
+        self.assertEqual(
+            self.universe["definition_checksum_sha256"],
+            EXPORTER.source_universe_definition_checksum(self.universe),
+        )
+        self.assertEqual(
+            self.universe["contract_set_checksum_sha256"],
+            EXPORTER.source_universe_contract_checksum(self.universe),
+            "both published checksums reproduce from the published file",
+        )
+        self.assertEqual(
+            {candidate["astro_evidence"]["sourceUniverseVersion"] for candidate in self.snapshot["candidates"]},
+            {expected},
+        )
 
     def test_no_non_target_record_reaches_the_published_leaderboard(self):
         by_id = {row["event_id"]: row for row in self.index_candidates}

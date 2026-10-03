@@ -64,12 +64,25 @@ except ModuleNotFoundError:
 
 SCHEMA_VERSION = 2
 
-SOURCE_UNIVERSE_SCHEMA = "ctas.public-source-universe@1.0.0"
+# 1.1.0 adds definition_checksum_sha256 (the contracts without operational state).
+SOURCE_UNIVERSE_SCHEMA = "ctas.public-source-universe@1.1.0"
+# Per-source fields that report this cycle's operation rather than define the
+# contract. They change with nearly every poll.
+SOURCE_UNIVERSE_OPERATIONAL_FIELDS = frozenset({
+    "operational_state", "last_successful_response", "last_successful_at",
+    "last_attempt_at", "public_record_counts", "public_disposition_counts",
+    "contract_checksum_sha256",
+})
 CATALOG_INDEX_SCHEMA = "ctas.public-catalog-index@1.1.0"
 ALIAS_INDEX_SCHEMA = "ctas.public-alias-index@1.0.0"
 RESEARCH_TABLE_MANIFEST_SCHEMA = "ctas.research-table-manifest@1.0.0"
 CANDIDATE_CHUNK_SCHEMA = "ctas.public-candidate-chunk@1.0.0"
-CANDIDATE_DOWNLOAD_MANIFEST_SCHEMA = "ctas.public-complete-catalog-manifest@1.0.0"
+# 1.1.0 adds score_clock: the release clock every chunk record's score refers to.
+CANDIDATE_DOWNLOAD_MANIFEST_SCHEMA = "ctas.public-complete-catalog-manifest@1.1.0"
+# Earlier releases stay readable as a release-history comparison base.
+CANDIDATE_MANIFEST_READABLE_SCHEMAS = frozenset({
+    "ctas.public-complete-catalog-manifest@1.0.0", CANDIDATE_DOWNLOAD_MANIFEST_SCHEMA,
+})
 # Compatibility name used by existing tests/importers.  The one manifest is now
 # both the lazy-detail index and the authoritative complete-catalog download.
 CANDIDATE_MANIFEST_SCHEMA = CANDIDATE_DOWNLOAD_MANIFEST_SCHEMA
@@ -880,9 +893,18 @@ def score_explanation_for(candidate: dict[str, Any]) -> str:
     return sentence
 
 
-SCORE_METHOD_VERSION = "ctas.follow-up-score@2.0.1"
+# 3.0.0: the arithmetic is unchanged from 2.0.1. The per-record copies of the
+# release clock (score_as_of, valid_until) and the ticking descriptions ("473.07 h
+# before this release", evidence_age_days, "No retained observation for 18 days")
+# left the record: every dossier carried them, so every release rewrote all 4096
+# detail roots (about 700 MB) even when no event changed. A record now names the
+# clock inputs as timestamps and refers to the release's one score clock
+# (SCORE_CLOCK_REFERENCE), so its bytes change only when its score does.
+SCORE_METHOD_VERSION = "ctas.follow-up-score@3.0.0"
 SCORE_BASELINE = 35.0
 SCORE_VALIDITY_MINUTES = 30
+SCORE_CLOCK_SCHEMA = "ctas.score-clock@1.0.0"
+SCORE_CLOCK_REFERENCE = "ctas/data/candidate-chunks/manifest.json#/score_clock"
 # Spectroscopy is a meaningful gap only where a spectrum of *this* source is the
 # observation a follow-up programme would take.  A neutrino track, a fast radio
 # burst, a raw detector trigger, a terrestrial flash and a solar flare have no
@@ -906,7 +928,7 @@ UNCLASSIFIED_LABELS = frozenset({"", "unclassified", "unknown", "at", "candidate
 
 def _score_term(
     code: str, label: str, points: float, basis: str, applicable: bool,
-    reason: str | None = None,
+    reason: str | None = None, reference_time: str | None = None,
 ) -> dict[str, Any]:
     row: dict[str, Any] = {
         "code": code,
@@ -915,9 +937,38 @@ def _score_term(
         "basis": basis,
         "applicable": bool(applicable),
     }
+    if reference_time is not None:
+        # The retained clock this term was evaluated from. Its age is taken at
+        # the release score clock, which is published once per release rather
+        # than restated (and rewritten) in every record.
+        row["reference_time"] = reference_time
     if not applicable:
         row["not_applicable_because"] = reason or "This term does not apply to this kind of record."
     return row
+
+
+def _utc_text(value: datetime) -> str:
+    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
+def score_clock_for(as_of: datetime) -> dict[str, Any]:
+    """The one clock every score in a release was computed against."""
+
+    return {
+        "schema": SCORE_CLOCK_SCHEMA,
+        "method_version": SCORE_METHOD_VERSION,
+        "score_as_of": as_of.replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "valid_until": (
+            (as_of + timedelta(minutes=SCORE_VALIDITY_MINUTES))
+            .replace(microsecond=0).isoformat().replace("+00:00", "Z")
+        ),
+        "statement": (
+            "Every score_model in this release was recomputed against score_as_of; its "
+            "time-dependent terms name the retained clock they used (reference_time). "
+            "Records do not repeat this clock, so an unchanged record keeps identical "
+            "bytes from one release to the next."
+        ),
+    }
 
 
 def _active_classification_labels(candidate: dict[str, Any]) -> list[str]:
@@ -1007,7 +1058,10 @@ def score_model_for(candidate: dict[str, Any], as_of: datetime) -> dict[str, Any
     discovered on 2 August still carried its full first-day recency weight a
     month later, and the audited Top 100 had a median discovery age of about
     18 days.  A score is only meaningful with the clock it was computed for, so
-    it is published with ``score_as_of`` and a validity window.
+    it is published against the release's one score clock
+    (``score_clock_for``): the record refers to it rather than restating it,
+    and states its own clock inputs as timestamps, so a record whose score did
+    not change keeps identical bytes between releases.
     """
 
     role = str(candidate.get("record_role") or "")
@@ -1028,11 +1082,12 @@ def score_model_for(candidate: dict[str, Any], as_of: datetime) -> dict[str, Any
         else max(0.0, (as_of - newest_evidence).total_seconds() / 86400.0)
     )
     followable = evidence_age_days is not None and evidence_age_days <= FOLLOW_UP_WINDOW_DAYS
+    newest_evidence_at = None if newest_evidence is None else _utc_text(newest_evidence)
     stale_reason = (
-        f"The newest retained evidence for this record is {evidence_age_days:.0f} days old, "
-        f"beyond the {FOLLOW_UP_WINDOW_DAYS:.0f}-day follow-up window, so a follow-up gap is "
-        "not a reason to observe it tonight."
-        if evidence_age_days is not None else
+        f"The newest retained evidence for this record dates from {newest_evidence_at[:10]}, "
+        f"more than {FOLLOW_UP_WINDOW_DAYS:.0f} days (the follow-up window) before the release "
+        "score clock, so a follow-up gap is not a reason to observe it tonight."
+        if newest_evidence_at is not None else
         "No retained clock places this record inside the follow-up window."
     )
 
@@ -1049,8 +1104,8 @@ def score_model_for(candidate: dict[str, Any], as_of: datetime) -> dict[str, Any
         terms.append(_score_term(
             "recency_points", "Recency",
             max(0.0, 24.0 - min(24.0, age_hours / 3.0)),
-            f"source-reported discovery time, {age_hours:.2f} h before this release",
-            True,
+            f"source-reported discovery time {_utc_text(discovered)}, aged at the release score clock",
+            True, reference_time=_utc_text(discovered),
         ))
 
     # --- reported discovery brightness -----------------------------------
@@ -1153,7 +1208,8 @@ def score_model_for(candidate: dict[str, Any], as_of: datetime) -> dict[str, Any
         gap_hours = max(0.0, (as_of - latest_observation).total_seconds() / 3600.0)
         terms.append(_score_term(
             "observation_gap_points", "Observation age", min(10.0, gap_hours / 12.0),
-            f"latest retained observation, {gap_hours:.2f} h before this release", True,
+            f"latest retained observation {_utc_text(latest_observation)}, aged at the release score clock",
+            True, reference_time=_utc_text(latest_observation),
         ))
 
     # --- messenger diversity ----------------------------------------------
@@ -1189,8 +1245,8 @@ def score_model_for(candidate: dict[str, Any], as_of: datetime) -> dict[str, Any
     else:
         if not followable:
             why_now.append(
-                f"Archival: newest retained evidence is {evidence_age_days:.0f} days old."
-                if evidence_age_days is not None else
+                f"Archival: newest retained evidence dates from {newest_evidence_at[:10]}."
+                if newest_evidence_at is not None else
                 "Archival: no retained clock places this record in the follow-up window."
             )
         if age_hours is not None and age_hours <= 72.0:
@@ -1206,7 +1262,9 @@ def score_model_for(candidate: dict[str, Any], as_of: datetime) -> dict[str, Any
         if messenger_bonus:
             why_now.append("More than one messenger channel is retained.")
         if gap_hours is not None and gap_hours >= 48.0:
-            why_now.append(f"No retained observation for {gap_hours / 24.0:.0f} days.")
+            # A date, not "for N days": the count would tick over every day for
+            # every such record although nothing about it changed.
+            why_now.append(f"No retained observation since {_utc_text(latest_observation)[:10]}.")
     why_now = why_now[:3]
 
     return {
@@ -1215,13 +1273,9 @@ def score_model_for(candidate: dict[str, Any], as_of: datetime) -> dict[str, Any
         "record_role": role,
         "ranking_channel": channel,
         "follow_up_window_days": FOLLOW_UP_WINDOW_DAYS,
-        "evidence_age_days": None if evidence_age_days is None else round(evidence_age_days, 2),
+        "newest_evidence_at": newest_evidence_at,
         "inside_follow_up_window": bool(followable),
-        "score_as_of": as_of.replace(microsecond=0).isoformat().replace("+00:00", "Z"),
-        "valid_until": (
-            (as_of + timedelta(minutes=SCORE_VALIDITY_MINUTES))
-            .replace(microsecond=0).isoformat().replace("+00:00", "Z")
-        ),
+        "score_clock": SCORE_CLOCK_REFERENCE,
         "validity": "valid-for-this-release",
         "default_leaderboard_eligible": bool(candidate.get("default_leaderboard_eligible")),
         "baseline": baseline,
@@ -2581,8 +2635,16 @@ def photometry_outcomes(rows: list[dict[str, Any]]) -> dict[str, int]:
         "forced": sum("forced" in str(row.get("photometry_method") or row.get("pipeline") or "").lower() for row in active)}
 
 
-def compact_candidate_row(candidate: dict[str, Any]) -> list[Any]:
-    """Return one positional bootstrap row; complete evidence remains in a shard."""
+def compact_candidate_row(
+    candidate: dict[str, Any], score_clock: dict[str, Any] | None = None,
+) -> list[Any]:
+    """Return one positional bootstrap row; complete evidence remains in a shard.
+
+    The compact tables change with every score anyway, so each row restates the
+    release score clock (``score_clock_for``) for table readers. The complete
+    dossier record refers to it instead, which keeps unchanged records
+    byte-identical between releases.
+    """
 
     counts = candidate.get("follow_up_counts") or {}
     completeness = candidate.get("record_completeness") or {}
@@ -2591,8 +2653,8 @@ def compact_candidate_row(candidate: dict[str, Any]) -> list[Any]:
     primary = next((row for row in links if row.get("source_key") == "tns"), links[0] if links else {})
     values: dict[str, Any] = {
         **{key: candidate.get(key) for key in CATALOG_CANDIDATE_COLUMNS},
-        "score_as_of": (candidate.get("score_model") or {}).get("score_as_of"),
-        "score_valid_until": (candidate.get("score_model") or {}).get("valid_until"),
+        "score_as_of": (score_clock or {}).get("score_as_of"),
+        "score_valid_until": (score_clock or {}).get("valid_until"),
         "score_method_version": (candidate.get("score_model") or {}).get("method_version"),
         "score_applicable_terms": (candidate.get("score_model") or {}).get("applicable_terms"),
         "score_detected_messengers": (candidate.get("score_model") or {}).get("detected_physical_messengers"),
@@ -2981,6 +3043,7 @@ def complete_catalog_manifest_artifact(
     chunk_raw: dict[str, bytes],
     catalog_content_checksum_sha256: str,
     part_raw: dict[str, bytes] | None = None,
+    score_clock: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], bytes]:
     """Build the deterministic, exact complete-catalog reconstruction contract."""
 
@@ -2997,6 +3060,8 @@ def complete_catalog_manifest_artifact(
         "catalog_content_checksum_sha256": catalog_content_checksum_sha256,
         "candidate_count": len(candidates),
         "chunk_count": len(chunk_raw),
+        # Every score_model in the chunks refers here (SCORE_CLOCK_REFERENCE).
+        "score_clock": score_clock,
         "catalog_index": {
             "path": "ctas/data/catalog-index.json",
             "candidate_count": len(index_candidates),
@@ -3068,7 +3133,7 @@ def git_catalog_document(repo: Path, ref: str) -> dict[str, Any] | None:
         manifest = json.loads(manifest_raw)
     except (TypeError, json.JSONDecodeError):
         return None
-    if (not isinstance(manifest, dict) or manifest.get("schema") != CANDIDATE_MANIFEST_SCHEMA
+    if (not isinstance(manifest, dict) or manifest.get("schema") not in CANDIDATE_MANIFEST_READABLE_SCHEMAS
             or not isinstance(manifest.get("chunks"), list)
             or type(manifest.get("chunk_count")) is not int
             or manifest["chunk_count"] != len(manifest["chunks"])
@@ -3291,8 +3356,38 @@ def source_universe_contract_checksum(source_universe: dict[str, Any]) -> str:
         key: value for key, value in source_universe.items()
         if key not in {
             "generated_at", "artifact_checksum_sha256", "contract_set_checksum_sha256",
+            "definition_checksum_sha256",
         }
     }
+    return hashlib.sha256(
+        json.dumps(semantic, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def source_universe_definition_checksum(source_universe: dict[str, Any]) -> str:
+    """Hash what the source contracts define, without this cycle's operation.
+
+    Every dossier names the source-universe version its projection used
+    (AstroEvidence ``sourceUniverseVersion``). Taken from the contract-set
+    checksum, which also covers each source's last attempt time and running
+    disposition counts, that one label changed in all records at every release
+    and rewrote every detail file. The definitions (endpoints, contracts, data
+    types, rights, limitations, vocabularies) are what a projection depends on;
+    the operational state stays published and checksum-bound in
+    source-universe.json itself.
+    """
+
+    semantic = {
+        key: value for key, value in source_universe.items()
+        if key not in {
+            "generated_at", "artifact_checksum_sha256", "contract_set_checksum_sha256",
+            "definition_checksum_sha256",
+        }
+    }
+    semantic["sources"] = [
+        {key: value for key, value in row.items() if key not in SOURCE_UNIVERSE_OPERATIONAL_FIELDS}
+        for row in source_universe.get("sources", [])
+    ]
     return hashlib.sha256(
         json.dumps(semantic, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
@@ -3481,6 +3576,7 @@ def main() -> int:
     # view is produced.  This also applies the documented terminal-state repair
     # to legacy rows that predate the ingestion-order fix.
     generated_dt = datetime.now(UTC).replace(microsecond=0)
+    score_clock = score_clock_for(generated_dt)
     for candidate in candidates:
         candidate["score_model"] = score_model_for(candidate, generated_dt)
         candidate["ctas_score"] = candidate["score_model"]["final_score"]
@@ -3504,6 +3600,7 @@ def main() -> int:
         "cadence": "about every 2 minutes",
         "candidate_count": len(candidates),
         "degraded": False,
+        "score_clock": score_clock,
         "candidates": candidates,
     }
 
@@ -3751,6 +3848,9 @@ def main() -> int:
     source_universe["contract_set_checksum_sha256"] = (
         source_universe_contract_checksum(source_universe)
     )
+    source_universe["definition_checksum_sha256"] = (
+        source_universe_definition_checksum(source_universe)
+    )
     source_universe_canonical = (json.dumps(source_universe, sort_keys=True, separators=(",", ":")) + "\n").encode()
     source_universe["artifact_checksum_sha256"] = hashlib.sha256(source_universe_canonical).hexdigest()
     payload["source_universe"] = {
@@ -3772,7 +3872,7 @@ def main() -> int:
     payload["surveys"] = counts["surveys"]
 
     source_universe_version = (
-        f"{SOURCE_UNIVERSE_SCHEMA}+sha256:{source_universe['contract_set_checksum_sha256'][:16]}"
+        f"{SOURCE_UNIVERSE_SCHEMA}+sha256:{source_universe['definition_checksum_sha256'][:16]}"
     )
     accounting_totals = {
         "declaredSources": len(source_universe_rows),
@@ -3856,7 +3956,7 @@ def main() -> int:
     payload["statistics"]["source_accounting"] = accounting_totals
     payload["catalog_content_checksum_sha256"] = catalog_semantic_checksum(candidates)
 
-    candidate_rows = [compact_candidate_row(candidate) for candidate in candidates]
+    candidate_rows = [compact_candidate_row(candidate, score_clock) for candidate in candidates]
 
     bucket_rows, chunk_raw, part_raw = candidate_chunk_artifacts(candidates)
 
@@ -4203,6 +4303,7 @@ def main() -> int:
         chunk_raw,
         payload["catalog_content_checksum_sha256"],
         part_raw,
+        score_clock,
     )
 
     problems = validate(payload) + projection_problems
@@ -4542,6 +4643,11 @@ def main() -> int:
         source_universe.get("source_count") == len(source_universe_rows) and
         len(source_keys) == len(source_universe_rows) and required_sources <= source_keys and
         universe_checksum == reproduced_universe_checksum and
+        source_universe.get("definition_checksum_sha256") == source_universe_definition_checksum(source_universe) and
+        all(
+            (candidate.get("astro_evidence") or {}).get("sourceUniverseVersion") == source_universe_version
+            for candidate in candidates
+        ) and
         all(row.get("operational_state") in SOURCE_STATE_VOCABULARY for row in source_universe_rows) and
         all(row.get("implementation_state") in IMPLEMENTATION_STATE_VOCABULARY for row in source_universe_rows) and
         all(row.get("representation_state") in REPRESENTATION_STATE_VOCABULARY for row in source_universe_rows)
@@ -4745,12 +4851,38 @@ def main() -> int:
         return (
             abs(round(final, 2) - float(model.get("final_score") or 0.0)) <= 0.01
             and abs(float(candidate.get("ctas_score") or 0.0) - float(model.get("final_score") or 0.0)) <= 0.01
-            and model.get("score_as_of") == payload["generated_at"]
+            and model.get("score_clock") == SCORE_CLOCK_REFERENCE
             and (str(candidate.get("status") or "").lower() not in {"retracted", "bogus"}
                  or float(candidate.get("ctas_score") or 0.0) == 0.0)
         )
 
-    score_reconciliation = all(_score_reproduces(candidate) for candidate in candidates)
+    def _score_is_for_this_clock(candidate: dict[str, Any]) -> bool:
+        # Records no longer carry their own copy of the clock, so prove instead
+        # that each published model is exactly what the release clock yields.
+        # recorded_score_at_ingest is the one input-provenance field that cannot
+        # be recomputed here: ctas_score already holds the release score.
+        published = dict(candidate.get("score_model") or {})
+        fresh = score_model_for(candidate, generated_dt)
+        published.pop("recorded_score_at_ingest", None)
+        fresh.pop("recorded_score_at_ingest", None)
+        return published == fresh
+
+    # One clock per release, declared once beside the chunks it governs and
+    # restated in every compact row; it is the export clock itself.
+    score_clock_integrity = (
+        score_clock == score_clock_for(generated_dt)
+        and score_clock["score_as_of"] == payload["generated_at"]
+        and candidate_manifest.get("score_clock") == score_clock
+        and all(
+            row[CATALOG_CANDIDATE_COLUMNS.index("score_as_of")] == score_clock["score_as_of"]
+            and row[CATALOG_CANDIDATE_COLUMNS.index("score_valid_until")] == score_clock["valid_until"]
+            for row in candidate_rows
+        )
+    )
+    score_reconciliation = score_clock_integrity and all(
+        _score_reproduces(candidate) and _score_is_for_this_clock(candidate)
+        for candidate in candidates
+    )
     score_applicability = all(
         all(
             term["code"] != "spectroscopy_gap_points" or term["applicable"] is False
@@ -4866,7 +4998,7 @@ def main() -> int:
             )
         ), f"{len(LOCAL_STORE_READ_FAILURES)} unreadable local-store range(s) are declared in the public status rather than published as an absence of evidence"),
         gate("score-term-applicability", score_applicability, "missing-spectrum points are confined to optical follow-up target candidates and a messenger-diversity bonus requires two independently retained channels"),
-        gate("score-arithmetic-reconciliation", score_reconciliation, f"{len(candidates)} scores recomputed against this release clock ({payload['generated_at']}) and reproduced exactly from their applicable terms"),
+        gate("score-arithmetic-reconciliation", score_reconciliation, f"{len(candidates)} scores recomputed against this release's one score clock ({score_clock['score_as_of']}, declared in the complete-catalog manifest), identical to the published models, and reproduced exactly from their applicable terms"),
         gate("candidate-science-brief-integrity", science_brief_integrity, f"{len(candidates)} deterministic known, uncertain, missing, and recent-change summaries"),
         gate("evidence-replay-no-future-leakage", replay_integrity, "historical availability uses provider-publication or CTAS-receipt clocks, never observation time alone"),
         gate("source-matrix-round-trip-integrity", source_matrix_round_trip, f"{len(candidates)} source matrices reproduce exactly from {len(source_matrix_patterns)} shared no-evidence patterns"),
@@ -4883,7 +5015,7 @@ def main() -> int:
         gate("public-export-safety", not problems, "recursive allowlist safety check across public candidate and source artifacts"),
         gate("snapshot-freshness", freshness, f"generated {payload['generated_at']}; valid until {payload['valid_until']}"),
         gate("two-minute-publication-contract", cadence_contract, "120-second mirror contract and current export heartbeat"),
-        gate("source-universe-schema", universe_structure, f"{len(source_universe_rows)} unique versioned source contracts"),
+        gate("source-universe-schema", universe_structure, f"{len(source_universe_rows)} unique versioned source contracts; every dossier names the definition checksum {source_universe_version}"),
         gate("source-and-survey-closure", provider_closure and survey_closure, f"providers={len(published_provider_stats)}; surveys={len(published_surveys)}"),
         gate("candidate-source-dispositions", disposition_integrity, "controlled dispositions and integer retained-record counts"),
         gate("record-completeness-reproducibility", completeness_integrity, "public components recompute independently of CTAS priority"),

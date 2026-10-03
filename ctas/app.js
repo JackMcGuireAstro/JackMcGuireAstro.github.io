@@ -296,6 +296,19 @@
     })).join("\n") + "\n";
   }
 
+  // A dossier record refers to its release's one score clock instead of carrying a
+  // copy (so unchanged records keep identical bytes between releases). The compact
+  // row and the complete-catalog manifest both state it.
+  function scoreClockFor(candidate) {
+    var summary = candidateSummaryById(candidate.event_id) || {};
+    return summary.score_as_of || ((state.catalogManifest || {}).score_clock || {}).score_as_of || "";
+  }
+  function scoreTermBasis(row, clock) {
+    var basis = text(row.basis);
+    var from = parseDate(row.reference_time), at = parseDate(clock);
+    if (!from || !at) return basis;
+    return basis + " (" + Math.max(0, (at.getTime() - from.getTime()) / 3600000).toFixed(2) + " h before the score clock)";
+  }
   function renderScoreFactors(candidate) {
     var labels = {
       recency_points: "Recency", brightness_points: "Reported-brightness term",
@@ -312,6 +325,8 @@
     }).map(function (key) {
       return {code: key, label: labels[key], points: (key === "coverage_reduction" ? -1 : 1) * Number(factors[key] || 0), basis: "persisted score factor"};
     });
+    var clock = scoreClockFor(candidate);
+    terms = terms.map(function (row) { return Object.assign({}, row, {basis: scoreTermBasis(row, clock)}); });
     var visualRows = [{code: "baseline", label: "Baseline", points: Number(model.baseline === undefined ? 35 : model.baseline), basis: "CTAS score model"}].concat(terms);
     if (Number(model.multimessenger_bonus || 0)) visualRows.push({code: "multimessenger_bonus", label: "Messenger diversity", points: Number(model.multimessenger_bonus), basis: "retained messenger channels"});
     if (Number(model.persisted_factor_rounding_residual || 0)) visualRows.push({code: "persisted_factor_rounding_residual", label: "Persisted-factor rounding", points: Number(model.persisted_factor_rounding_residual), basis: "explicit ≤0.01 residual from independently rounded persisted terms"});
@@ -328,6 +343,7 @@
     }).join("") + '</div><p>Scenario result: <output data-score-sandbox-output>' + esc(num(candidate.ctas_score, 2)) + '</output></p><button type="button" data-reset-score-sandbox>Reset scenario</button></details>';
     return '<details class="ctas-score-factors" data-dossier-view="score"><summary>Why this candidate has this CTAS score <small>' + (model.reconciled ? "arithmetic reconciled" : "reconciliation unavailable") + '</small></summary><p>' +
       esc(candidate.score_explanation || "The displayed terms reproduce the public follow-up ordering score.") +
+      (clock ? " Computed for this release's score clock, " + esc(absolute(clock)) + "." : "") +
       '</p><p class="ctas-claim-boundary">Operational follow-up ordering aid only—not probability, confidence, or scientific importance.</p><div class="ctas-score-waterfall" aria-label="CTAS score waterfall">' + bars + arithmetic + '</div><details><summary>Exact score arithmetic table</summary><div class="ctas-evidence-table-wrap"><table class="ctas-evidence-table"><caption>Signed persisted terms in evaluation order; any ≤0.01 factor-rounding residual, clipping, and terminal override are explicit.</caption><thead><tr><th>Term</th><th>Code</th><th>Points</th><th>Basis</th></tr></thead><tbody>' + tableRows + '</tbody></table></div></details>' + sandbox + '</details>';
   }
 

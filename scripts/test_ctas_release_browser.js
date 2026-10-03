@@ -15,6 +15,7 @@ const now = new Date("2026-09-05T12:00:00Z");
 const ids = [1, 2, 3, 4].map(n => `abcdef00-0000-4000-8000-${String(n).padStart(12, "0")}`);
 const digest = value => crypto.createHash("sha256").update(value).digest("hex");
 const raw = value => JSON.stringify(value) + "\n";
+const scoreClock = {schema: "ctas.score-clock@1.0.0", score_as_of: "2026-09-05T11:55:00Z", valid_until: "2026-09-05T12:25:00Z"};
 const chunkPath = id => "candidate-chunks/" + (parseInt(digest(id).slice(0, 8), 16) % 4096).toString(16).padStart(3, "0") + ".json";
 function fixture(version) {
   const checksum = version.repeat(64), documents = {};
@@ -27,9 +28,15 @@ function fixture(version) {
     updated_at: "2026-09-05T11:00:00Z", discovery_magnitude: 18, ctas_score: 60 - i,
     discovery_survey: "Fixture", detail_chunk: chunkPath(id), status: "active", links: [],
     follow_up: {}, follow_up_counts: {}, follow_up_total: 0, designations: [], source_matrix: [],
-    record_completeness: {label: "Event record only"}, source_coverage: []
+    record_completeness: {label: "Event record only"}, source_coverage: [],
+    // Records refer to the release score clock instead of carrying a copy of it.
+    score_as_of: scoreClock.score_as_of,
+    score_model: {baseline: 35, score_clock: "ctas/data/candidate-chunks/manifest.json#/score_clock", reconciled: true,
+      terms: [{code: "recency_points", label: "Recency", points: 0, applicable: true,
+        reference_time: ["2026-09-05T00:00:00Z", "2026-09-03T00:00:00Z", "2025-09-05T00:00:00Z", "2026-09-05T06:00:00Z"][i],
+        basis: "source-reported discovery time, aged at the release score clock"}]}
   }));
-  const cols = ["event_id", "name", "event_type", "primary_messenger", "classification", "ra_deg", "dec_deg", "discovery_time", "updated_at", "discovery_magnitude", "ctas_score", "detail_chunk", "status", "discovery_survey", "record_role"];
+  const cols = ["event_id", "name", "event_type", "primary_messenger", "classification", "ra_deg", "dec_deg", "discovery_time", "updated_at", "discovery_magnitude", "ctas_score", "score_as_of", "detail_chunk", "status", "discovery_survey", "record_role"];
   const rows = cs => cs.map(c => cols.map(k => c[k]));
   const skyCols = ["event_id", "name", "ra_deg", "dec_deg", "discovery_magnitude", "discovery_time", "ctas_score", "classification", "record_role"];
   const skyCandidates = candidates.filter((_, i) => i !== 2);
@@ -64,7 +71,7 @@ function fixture(version) {
     documents[c.detail_chunk] = body;
     return {path: "ctas/data/" + c.detail_chunk, bytes: Buffer.byteLength(body), sha256: digest(body), candidate_count: 1};
   });
-  put("candidate-chunks/manifest.json", {catalog_content_checksum_sha256: checksum, candidate_count: candidates.length, chunk_count: 4096, chunks, parts});
+  put("candidate-chunks/manifest.json", {catalog_content_checksum_sha256: checksum, candidate_count: candidates.length, chunk_count: 4096, score_clock: scoreClock, chunks, parts});
   const pages = [candidates.slice(0, 2), candidates.slice(2)].map((cs, i) => {
     const body = put("catalog-pages/" + String(i).padStart(4, "0") + ".json", {candidate_rows: rows(cs)});
     return {page: i, bytes: Buffer.byteLength(body), sha256: digest(body)};
@@ -142,6 +149,18 @@ async function main() {
     assert(!control.requests.some(n => n.startsWith("catalog-pages/")));
     assert.equal(await page.evaluate(() => CTASApp.getCandidates().length), 1);
     assert.deepEqual(control.errors, []); await page.close();
+  });
+  await test("dossier ages score terms at the release score clock", async () => {
+    for (const [id, hours] of [[ids[0], "11.92"], [ids[2], "8771.92"]]) {
+      // ids[0] is a first-screen row (clock from its compact row); ids[2] is resolved
+      // off-summary through the manifest (clock from manifest.score_clock).
+      const {page, control} = await session("?event=" + id + "#dossier");
+      await page.waitForSelector("#ctas-dossier-title");
+      const score = await page.locator(".ctas-score-factors").evaluate(el => el.textContent);
+      assert.match(score, new RegExp(hours.replace(".", "\\.") + " h before the score clock"));
+      assert.match(score, /Computed for this release's score clock, 2026-09-05 11:55:00 UTC\./);
+      assert.deepEqual(control.errors, []); await page.close();
+    }
   });
   await test("multipart dossier fetches every fragment and exposes all complete-catalog files", async () => {
     const {page, control} = await session("?event=" + ids[2] + "#dossier");
@@ -291,7 +310,7 @@ async function main() {
     }
     assert.deepEqual(errors, []); await page.close();
   });
-  console.log("11 release browser regressions passed in installed Chrome; real-release smoke " + (process.env.CTAS_REAL_BROWSER_SMOKE === "1" ? "passed" : "not requested") + ".");
+  console.log("12 release browser regressions passed in installed Chrome; real-release smoke " + (process.env.CTAS_REAL_BROWSER_SMOKE === "1" ? "passed" : "not requested") + ".");
 }
 main().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   if (browser) await browser.close(); server.close();

@@ -424,7 +424,10 @@ def load_partitioned_catalog(index_path: Path, manifest_path: Path) -> dict[str,
 
     manifest_raw = manifest_path.read_bytes()
     manifest = json.loads(manifest_raw)
-    if manifest.get("schema") != "ctas.public-complete-catalog-manifest@1.0.0":
+    if manifest.get("schema") not in {
+        "ctas.public-complete-catalog-manifest@1.0.0",
+        "ctas.public-complete-catalog-manifest@1.1.0",
+    }:
         raise ValueError("unsupported complete-catalog manifest schema")
     index_meta = manifest.get("catalog_index") or {}
     declared_index = public_artifact_path(manifest_path, str(index_meta.get("path") or ""))
