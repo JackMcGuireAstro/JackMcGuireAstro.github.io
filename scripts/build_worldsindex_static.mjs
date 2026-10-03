@@ -226,8 +226,12 @@ for (const detection of atlas.detections) {
     objectIdsByName.get(key).add(detection.objectId);
   }
 }
-function attachByName(name, record) {
-  for (const id of objectIdsByName.get(normalized(name)) ?? []) details.get(id)?.records.push(record);
+function attachByName(name, record, alsoObjectAlias = null) {
+  const ids = new Set(objectIdsByName.get(normalized(name)) ?? []);
+  // A row the builder linked under another name (e.g. an exoplanet.eu row resolved to its
+  // NASA planet) is found through the builder's own source-object id for it.
+  if (alsoObjectAlias) for (const id of objectIdsByName.get(normalized(alsoObjectAlias)) ?? []) ids.add(id);
+  for (const id of ids) details.get(id)?.records.push(record);
 }
 for (const [index, record] of psRecords.entries()) {
   const sourceRecordId = `source-ps-${String(index + 1).padStart(6, '0')}-${createHash('sha256').update(record.rawPayload).digest('hex').slice(0, 16)}`;
@@ -249,7 +253,7 @@ const euFields = ['planet_status','mass','mass_error_min','mass_error_max','mass
 for (const row of exoplanetEu) {
   const slug = row.name.normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const sourceRecordId = `exoplanet-eu-${slug}-${createHash('sha256').update(JSON.stringify(row)).digest('hex').slice(0, 12)}`;
-  attachByName(row.name, { sourceId: 'exoplanet-eu', sourceRecordId, recordType: 'catalog row', name: row.name, values: selected(row, euFields) });
+  attachByName(row.name, { sourceId: 'exoplanet-eu', sourceRecordId, recordType: 'catalog row', name: row.name, values: selected(row, euFields) }, `object-${sourceRecordId}`);
 }
 
 // Materialize every bucket on every release. This prevents a removed record
