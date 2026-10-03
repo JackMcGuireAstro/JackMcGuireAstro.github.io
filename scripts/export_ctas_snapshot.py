@@ -189,7 +189,7 @@ SOURCE_FAMILY_MAP = {
         "dsa110-gcn", "integral-gcn", "km3net-gcn", "moa-gcn",
     )},
     **{key: "spectroscopy" for key in ("tns-public-reports", "aavso", "wiserep")},
-    **{key: "photometric-follow-up" for key in ("ztf-irsa", "aavso-aid")},
+    **{key: "photometric-follow-up" for key in ("ztf-irsa", "ztf-alerce", "aavso-aid")},
     **{key: "archives" for key in (
         "ivoa", "mast", "heasarc", "eso-archive", "gemini-archive",
         "noirlab-archive", "cadc",
