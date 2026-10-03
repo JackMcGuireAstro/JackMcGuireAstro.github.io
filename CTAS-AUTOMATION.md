@@ -287,4 +287,8 @@ Lasair (Rubin light curve and Sherlock host context) and NASA ADS papers through
 pass-through relay in `relay/` (address in `/live-config.json`; Lasair and ADS use
 free keys stored only as relay secrets). Nothing
 is stored by CTAS or on the publishing computer, and these values are labelled as
-live provider data outside the checksum-verified snapshot.
+live provider data outside the checksum-verified snapshot. In the Spectra panel, each
+record with a public TNS text file also has a "Plot spectrum" control that fetches just
+that file through the same relay on request; `ctas/spectrum-ascii.js` reads the common
+ASCII dialects (tested by `scripts/test_ctas_spectrum_ascii.js` with the samples in
+`tests/fixtures/spectra/`). FITS files are named as not yet supported.

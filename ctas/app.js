@@ -597,7 +597,8 @@
   }
 
   // Shared with ctas/live-sources.js so live provider data is drawn exactly like retained data.
-  window.CTASRender = {photometrySvg: function (rows) { return photometrySvg(rows); }, spectrumSvg: function (row, points, index) { return spectrumSvg(row, points, index); }};
+  window.CTASRender = {photometrySvg: function (rows) { return photometrySvg(rows); }, spectrumSvg: function (row, points, index) { return spectrumSvg(row, points, index); },
+    liveSpectrum: function (row, parsed, candidate, index, fetchedAt) { return liveSpectrumFigure(row, parsed, candidate, spectrumKey(candidate, index, "live"), fetchedAt); }};
 
   function renderPhotometry(candidate) {
     var rows = (candidate.follow_up || {}).observations || [];
@@ -701,12 +702,162 @@
           '</td><td>' + esc(spectrumNumber(point.flux)) + '</td></tr>';
       }).join("") + '</tbody></table></div></details>';
   }
+  // ---------------------------------------------------------------- live TNS spectrum plots
+  // A public TNS spectrum file is fetched through the live-data relay only when the reader
+  // presses "Plot spectrum" (ctas/live-sources.js), read by ctas/spectrum-ascii.js and kept
+  // in memory for the open page only; nothing is stored or added to the snapshot.
+  var spectrumPlots = {};
+  function candidateRedshift(candidate) {
+    var values = [candidate && candidate.redshift, candidate && candidate.host_redshift];
+    for (var i = 0; i < values.length; i += 1) {
+      if (finiteNumber(values[i]) && Number(values[i]) >= 0 && Number(values[i]) < 10) return Number(values[i]);
+    }
+    return null;
+  }
+  function spectrumKey(candidate, index, prefix) {
+    return "sp-" + (prefix ? prefix + "-" : "") + text(candidate && candidate.event_id).replace(/[^a-z0-9]/gi, "").slice(0, 8) + "-" + text(index).replace(/[^a-z0-9]/gi, "");
+  }
+  // Phone-width plots use a narrower drawing so their labels stay readable when scaled.
+  function narrowPlot() { return Boolean(window.matchMedia && window.matchMedia("(max-width: 640px)").matches); }
+  function wavelengthText(value) { return String(Math.round(Number(value))); }
+  function fluxText(value) { return Number(Number(value).toPrecision(3)).toString(); }
+  function spectrumLiveSvg(plot) {
+    var lib = window.CTASSpectrum, z = plot.z, frame = plot.frame === "rest" && z > 0 ? "rest" : "observed";
+    if (!plot.normal) plot.normal = lib.normalise(plot.parsed.points);
+    var points = lib.toFrame(plot.normal.points, z, frame), drawn = lib.decimate(points, 1600);
+    var minX = points[0].wavelength, maxX = points[points.length - 1].wavelength;
+    if (maxX === minX) { minX -= 1; maxX += 1; }
+    var yRange = lib.robustRange(points.map(function (point) { return point.flux; })), minY = yRange[0], maxY = yRange[1];
+    var narrow = narrowPlot(), width = narrow ? 360 : 820, height = narrow ? 300 : 350, left = narrow ? 50 : 58, right = 14, top = 62, bottom = 52;
+    var charWidth = narrow ? 7.8 : 6.6, rowHeight = narrow ? 15 : 14;
+    function x(value) { return left + (value - minX) / (maxX - minX) * (width - left - right); }
+    function y(value) { return top + (maxY - value) / (maxY - minY) * (height - top - bottom); }
+    var clipId = "ctas-" + plot.key + "-clip", titleId = "ctas-" + plot.key + "-title", descId = "ctas-" + plot.key + "-desc";
+    var line = drawn.map(function (point, index) { return (index ? "L" : "M") + num(x(point.wavelength), 1) + " " + num(y(point.flux), 1); }).join(" ");
+    var band = "";
+    if (plot.parsed.hasError) {
+      var withError = drawn.filter(function (point) { return point.error !== null; });
+      if (withError.length > 1) {
+        band = '<path class="ctas-spectrum-error" d="' + withError.map(function (point, index) {
+          return (index ? "L" : "M") + num(x(point.wavelength), 1) + " " + num(y(point.flux + point.error), 1);
+        }).join(" ") + " " + withError.slice().reverse().map(function (point) {
+          return "L" + num(x(point.wavelength), 1) + " " + num(y(point.flux - point.error), 1);
+        }).join(" ") + ' Z"/>';
+      }
+    }
+    var grid = lib.ticks(minY, maxY, 4).map(function (value) {
+      return '<line x1="' + left + '" x2="' + (width - right) + '" y1="' + num(y(value), 1) + '" y2="' + num(y(value), 1) + '" class="ctas-plot-grid"/>' +
+        '<text x="' + (left - 8) + '" y="' + num(y(value) + 4, 1) + '" text-anchor="end" class="ctas-axis-label">' + esc(fluxText(value)) + "</text>";
+    }).join("");
+    var xTicks = lib.ticks(minX, maxX, narrow ? 3 : 6).map(function (value) {
+      return '<line x1="' + num(x(value), 1) + '" x2="' + num(x(value), 1) + '" y1="' + (height - bottom) + '" y2="' + (height - bottom + 5) + '" class="ctas-axis"/>' +
+        '<text x="' + num(x(value), 1) + '" y="' + (height - bottom + 18) + '" text-anchor="middle" class="ctas-axis-label">' + esc(wavelengthText(value)) + "</text>";
+    }).join("");
+    var markers = plot.lines ? lib.lineMarkers(minX, maxX, z || 0, frame) : [];
+    var rows = lib.labelRows(markers, x, 8, charWidth, width - right);
+    // Labels that would need a fourth row are left off (the marker keeps its tooltip).
+    var markerSvg = markers.map(function (marker, index) {
+      var row = rows[index].row, labelX = rows[index].x;
+      return '<g class="ctas-spectrum-marker"><title>' + esc(marker.label + " " + marker.rest.join(", ") + " Å rest" + (frame === "observed" && z > 0 ? " (shown at z = " + z + ")" : "")) + "</title>" +
+        marker.positions.map(function (position) {
+          return '<line x1="' + num(x(position), 1) + '" x2="' + num(x(position), 1) + '" y1="' + (top - 4) + '" y2="' + (height - bottom) + '"/>';
+        }).join("") + (row > 2 ? "" : '<text x="' + num(labelX, 1) + '" y="' + (16 + row * rowHeight) + '">' + esc(marker.label) + "</text>") + "</g>";
+    }).join("");
+    var axisName = frame === "rest" ? "Rest-frame wavelength (Å, z = " + z + ")" : "Observed wavelength (Å)";
+    var description = points.length.toLocaleString() + " points of normalised flux (median 1) against " + axisName.toLowerCase() +
+      " from " + wavelengthText(minX) + " to " + wavelengthText(maxX) + " Å" +
+      (markers.length ? "; dashed markers for " + markers.map(function (marker) { return marker.label; }).join(", ") : "") +
+      ". The binned values are in the table after the plot.";
+    return '<svg viewBox="0 0 ' + width + " " + height + '"' + (narrow ? ' class="is-narrow"' : "") + ' role="img" aria-labelledby="' + titleId + " " + descId + '">' +
+      '<title id="' + titleId + '">Spectrum ' + esc(plot.fileName) + " of " + esc(plot.name) + "</title><desc id=\"" + descId + '">' + esc(description) + "</desc>" +
+      '<defs><clipPath id="' + clipId + '"><rect x="' + left + '" y="' + (top - 4) + '" width="' + (width - left - right) + '" height="' + (height - top - bottom + 4) + '"/></clipPath></defs>' +
+      '<rect x="' + left + '" y="' + (top - 4) + '" width="' + (width - left - right) + '" height="' + (height - top - bottom + 4) + '" class="ctas-plot-bg"/>' + grid +
+      '<g clip-path="url(#' + clipId + ')">' + band + '<path d="' + line + '" class="ctas-spectrum-line"/></g>' + markerSvg +
+      '<line x1="' + left + '" y1="' + (top - 4) + '" x2="' + left + '" y2="' + (height - bottom) + '" class="ctas-axis"/>' +
+      '<line x1="' + left + '" y1="' + (height - bottom) + '" x2="' + (width - right) + '" y2="' + (height - bottom) + '" class="ctas-axis"/>' + xTicks +
+      '<text x="' + ((left + width - right) / 2) + '" y="' + (height - 10) + '" text-anchor="middle" class="ctas-axis-label">' + esc(axisName) + "</text>" +
+      '<text x="14" y="' + ((top + height - bottom) / 2) + '" transform="rotate(-90 14 ' + ((top + height - bottom) / 2) + ')" text-anchor="middle" class="ctas-axis-label">Normalised flux</text></svg>';
+  }
+  function liveSpectrumFigure(row, parsed, candidate, key, fetchedAt) {
+    var lib = window.CTASSpectrum, file = lib.tnsFile(row.public_download_url) || {url: row.public_download_url, fileName: row.file_name || "spectrum file"};
+    var z = candidateRedshift(candidate);
+    var plot = spectrumPlots[key] = {key: key, row: row, parsed: parsed, z: z, frame: "observed", lines: true,
+      name: candidate && candidate.name || "this candidate", fileName: file.fileName};
+    var frameControls = z > 0 ? '<fieldset class="ctas-spectrum-frame"><legend>Wavelength axis</legend>' +
+      '<label><input type="radio" name="' + key + '-frame" value="observed" data-spectrum-frame="' + key + '" checked> Observed</label>' +
+      '<label><input type="radio" name="' + key + '-frame" value="rest" data-spectrum-frame="' + key + '"> Rest frame (z = ' + esc(z) + ")</label></fieldset>" : "";
+    var unitText = parsed.unit === "Å" ? (parsed.unitBasis === "header" ? "in Å, as the file header says" : "in Å (judged from the values)")
+      : "converted to Å from " + parsed.unit + (parsed.unitBasis === "header" ? " (as the file header says)" : " (judged from the values)");
+    var markerText = z > 0 ? "Markers show common lines at their rest wavelengths, moved to the reported redshift z = " + z + " on the observed axis"
+      : z === 0 ? "Markers show common lines at their rest wavelengths (reported redshift 0)"
+      : "No redshift is reported, so markers sit at rest wavelengths on the observed axis";
+    var binned = lib.bin(plot.normal ? plot.normal.points : (plot.normal = lib.normalise(parsed.points)).points, 150);
+    return '<figure class="ctas-spectrum-live__figure" data-spectrum-figure="' + key + '"><div class="ctas-spectrum-controls">' + frameControls +
+      '<label class="ctas-spectrum-lines"><input type="checkbox" data-spectrum-lines="' + key + '" checked> Mark common lines</label></div>' +
+      '<div class="ctas-spectrum-live__svg" data-spectrum-svg="' + key + '">' + spectrumLiveSvg(plot) + "</div>" +
+      "<figcaption>Fetched from TNS through the site’s live-data relay at " + esc(absolute(fetchedAt)) + "; nothing is stored and this plot is <strong>not part of the verified snapshot</strong>. " +
+      esc(parsed.points.length.toLocaleString() + " rows read" + (parsed.skipped ? " (" + parsed.skipped + " non-numeric or non-finite rows ignored)" : "") +
+        "; wavelengths " + unitText + "; flux divided by its median, because the file’s flux units are not assumed" + (parsed.hasError ? "; the shaded band is the file’s error column" : "") + ". " +
+        markerText + ". Supernova absorption minima usually sit blueward of these markers because the ejecta move toward us.") +
+      ' <a href="' + esc(file.url) + '" target="_blank" rel="noopener">Open the original file at TNS<span class="sr-only"> (opens in a new tab)</span></a></figcaption>' +
+      '<details class="ctas-spectrum-points"><summary>Show the plotted spectrum as a table (' + binned.length.toLocaleString() + " binned values)</summary>" +
+      '<div class="ctas-evidence-table-wrap ctas-evidence-table-wrap--tall" role="region" aria-label="Binned values of the plotted spectrum" tabindex="0"><table class="ctas-evidence-table ctas-spectrum-table">' +
+      "<caption>Mean normalised flux in " + binned.length.toLocaleString() + " consecutive wavelength bins of the fetched file.</caption><thead><tr><th scope=\"col\">Observed wavelength (Å)</th>" +
+      (z > 0 ? '<th scope="col">Rest-frame wavelength (Å)</th>' : "") + '<th scope="col">Normalised flux</th></tr></thead><tbody>' +
+      binned.map(function (point) {
+        return "<tr><td>" + esc(num(point.wavelength, 1)) + "</td>" + (z > 0 ? "<td>" + esc(num(point.wavelength / (1 + z), 1)) + "</td>" : "") +
+          "<td>" + esc(fluxText(point.flux)) + "</td></tr>";
+      }).join("") + "</tbody></table></div></details></figure>";
+  }
+  function renderSpectrumLive(candidate, row, index) {
+    var lib = window.CTASSpectrum, file = lib && lib.tnsFile(row.public_download_url);
+    if (!file) return "";
+    var link = '<a href="' + esc(file.url) + '" target="_blank" rel="noopener">Open the original file at TNS<span class="sr-only"> (opens in a new tab)</span></a>';
+    if (file.format === "fits") return '<div class="ctas-spectrum-live"><p>This spectrum is a FITS file. Plotting FITS spectra isn’t supported here yet. ' + link + "</p></div>";
+    if (file.format !== "ascii") return '<div class="ctas-spectrum-live"><p>This TNS file is a ' + (file.format === "archive" ? "compressed archive" : "document or image") +
+      ", not a spectrum table, so it is not plotted here. " + link + "</p></div>";
+    return '<div class="ctas-spectrum-live" data-spectrum-live="' + spectrumKey(candidate, index) + '"><div class="ctas-evidence-tools">' +
+      '<button type="button" data-plot-spectrum="' + index + '">Plot spectrum</button>' + link + "</div>" +
+      '<p class="ctas-spectrum-live__status" data-spectrum-status role="status" aria-live="polite">The public TNS file is fetched through the site’s live-data relay only when you ask; nothing is stored.</p>' +
+      '<div data-spectrum-plot></div></div>';
+  }
+  function plotSpectrum(button, candidate) {
+    var lib = window.CTASSpectrum, live = window.CTASLive, box = button.closest("[data-spectrum-live]");
+    var index = Number(button.getAttribute("data-plot-spectrum"));
+    var row = ((candidate.follow_up || {}).spectra || [])[index], file = row && lib && lib.tnsFile(row.public_download_url);
+    if (!box || !file) return;
+    var status = box.querySelector("[data-spectrum-status]"), target = box.querySelector("[data-spectrum-plot]");
+    function say(message, problem) { status.textContent = message; status.classList.toggle("is-problem", Boolean(problem)); }
+    if (!live || !live.fetchViaRelay) { say(lib.failureMessage({kind: "no-relay"}), true); return; }
+    button.disabled = true;
+    say("Fetching " + file.fileName + " from TNS through the relay…");
+    live.fetchViaRelay(file.url).then(function (response) {
+      var parsed = lib.parse(response.text);
+      if (!parsed.ok) throw parsed;
+      if (state.activeDetail !== candidate || !document.body.contains(box)) return;
+      target.innerHTML = liveSpectrumFigure(row, parsed, candidate, box.getAttribute("data-spectrum-live"), new Date().toISOString());
+      say("Plotted " + parsed.points.length.toLocaleString() + " points from " + file.fileName + ".");
+      button.textContent = "Fetch again";
+    }).catch(function (problem) {
+      say(problem && (problem.kind || problem.reason) ? lib.failureMessage(problem)
+        : "The spectrum could not be plotted (" + text(problem && problem.message || problem) + "). Open the original file at TNS.", true);
+    }).then(function () { button.disabled = false; });
+  }
+  function updateSpectrumPlot(control) {
+    var key = control.getAttribute("data-spectrum-frame") || control.getAttribute("data-spectrum-lines"), plot = spectrumPlots[key];
+    var holder = plot && document.querySelector('[data-spectrum-svg="' + key + '"]');
+    if (!holder) return;
+    if (control.hasAttribute("data-spectrum-frame")) plot.frame = control.value;
+    else plot.lines = control.checked;
+    holder.innerHTML = spectrumLiveSvg(plot);
+  }
+
   function renderSpectra(candidate) {
     var rows = (candidate.follow_up || {}).spectra || [];
     if (!rows.length) return "";
     return '<details class="ctas-evidence-panel" data-dossier-view="spectra"><summary>Spectra <small>' + rows.length +
       " public record" + (rows.length === 1 ? "" : "s") +
-      '</small></summary><div class="ctas-evidence-panel__body"><p>Numerical previews appear only when rights-cleared wavelength and flux pairs are retained. Metadata-only records remain explicit, and provider record links are distinct from downloadable artifacts.</p>' +
+      '</small></summary><div class="ctas-evidence-panel__body"><p>Numerical previews appear only when rights-cleared wavelength and flux pairs are retained. Metadata-only records remain explicit, and provider record links are distinct from downloadable artifacts. A record with a public TNS text file can also be plotted on request with “Plot spectrum”, which fetches the file live through the site’s relay.</p>' +
       '<div class="ctas-evidence-tools"><button type="button" data-download-evidence="spectra" data-format="json">Download all spectra JSON</button></div><ul class="ctas-record-list ctas-spectrum-list">' +
       rows.map(function (row, index) {
         return '<li><details class="ctas-spectrum-record"><summary><span><strong>' + esc(row.file_name || row.provider_spectrum_id || "Spectrum") + '</strong><small>' +
@@ -714,6 +865,7 @@
             row.wavelength_unit, row.calibration_state].filter(Boolean).join(" · ")) + '</small></span></summary><div class="ctas-spectrum-record__body">' +
           (row.file_checksum || row.checksum_sha256 ? "<p><strong>File SHA-256:</strong> <code>" + esc(row.file_checksum || row.checksum_sha256) + "</code></p>" : "") +
           renderReferences([row], [["source_url", null], ["public_download_url", "Download source artifact"]]) +
+          renderSpectrumLive(candidate, row, index) +
           renderSpectrumPreview(row, index) + retainedRecordDetails("Inspect complete retained spectrum record", row) + '</div></details></li>';
       }).join("") + "</ul></div></details>";
   }
@@ -2065,6 +2217,8 @@
       if (event.target.closest("[data-download-candidate]") && state.activeDetail) {
         downloadBlob(state.activeDetail.name + "-ctas.json", JSON.stringify(state.activeDetail, null, 2) + "\n", "application/json"); return;
       }
+      var plotButton = event.target.closest("[data-plot-spectrum]");
+      if (plotButton && state.activeDetail) { plotSpectrum(plotButton, state.activeDetail); return; }
       var spectrumButton = event.target.closest("[data-download-spectrum]");
       if (spectrumButton && state.activeDetail) {
         var spectrumIndex = Number(spectrumButton.getAttribute("data-download-spectrum"));
@@ -2109,6 +2263,7 @@
       }, 0);
     });
     document.addEventListener("change", function (event) {
+      if (event.target.matches("[data-spectrum-frame], [data-spectrum-lines]")) { updateSpectrumPlot(event.target); return; }
       if (!event.target.matches("[data-phot-band]") || !state.activeDetail) return;
       state.photBand[state.activeDetail.event_id] = event.target.value;
       updateDossierRoute("photometry", event.target.value);

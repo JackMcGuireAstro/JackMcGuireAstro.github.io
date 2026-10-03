@@ -1050,6 +1050,31 @@ table.ctas-table { min-width: 1080px; }
 .ctas-spectrum-line { fill: none; stroke: #8ad5df; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .ctas-spectrum-preview figcaption { margin-top: .4rem; color: var(--ink-3); font-size: .75rem; }
 .ctas-spectrum-table { min-width: 540px; }
+/* Live TNS spectrum plots ("Plot spectrum"): fetched on request, never stored. */
+.ctas-spectrum-live { margin: .8rem 0; padding: .7rem .8rem; border: 1px solid rgba(138,213,223,.22); background: rgba(138,213,223,.035); }
+.ctas-spectrum-live .ctas-evidence-tools { align-items: center; margin: 0; }
+.ctas-spectrum-live > p { margin: 0; color: var(--ink-2); font-size: .82rem; }
+.ctas-spectrum-live__status { margin: .45rem 0 0; color: var(--ink-2); font-size: .8rem; }
+.ctas-spectrum-live__status.is-problem { color: #ffd8a8; font-weight: 600; }
+.ctas-spectrum-live__figure { margin: .7rem 0 0; }
+.ctas-spectrum-live__svg svg { display: block; width: 100%; height: auto; border: 1px solid var(--border); background: #07101d; }
+.ctas-spectrum-live__figure figcaption { margin-top: .45rem; color: var(--ink-3); font-size: .75rem; overflow-wrap: anywhere; }
+.ctas-spectrum-controls { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; align-items: center; margin-bottom: .5rem; color: var(--ink-2); font-size: .82rem; }
+.ctas-spectrum-controls label { display: inline-flex; gap: .35rem; align-items: center; cursor: pointer; }
+.ctas-spectrum-frame { display: flex; flex-wrap: wrap; gap: .3rem .9rem; align-items: center; min-width: 0; margin: 0; padding: 0; border: 0; }
+.ctas-spectrum-frame legend { float: left; margin-right: .3rem; padding: 0; color: var(--ink); font-weight: 700; }
+.ctas-plot-grid { stroke: rgba(184,200,223,.12); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.ctas-spectrum-error { fill: rgba(138,213,223,.16); stroke: none; }
+.ctas-spectrum-marker line { stroke: rgba(240,196,110,.62); stroke-width: 1; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+.ctas-spectrum-marker text { fill: #d8dee8; font: 11px var(--font-mono); }
+/* phone-width drawings (narrower viewBox) get larger type so it stays legible when scaled */
+svg.is-narrow .ctas-axis-label { font-size: 14px; }
+svg.is-narrow .ctas-spectrum-marker text { font-size: 13px; }
+@media (forced-colors: active) {
+  .ctas-spectrum-live__svg .ctas-spectrum-line { stroke: CanvasText; }
+  .ctas-spectrum-marker line { stroke: Highlight; }
+  .ctas-spectrum-live__svg text { fill: CanvasText; }
+}
 .ctas-messenger-table { min-width: 1280px; }
 .ctas-messenger-table td > small,
 .ctas-messenger-table th > small,

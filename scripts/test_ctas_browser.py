@@ -19,17 +19,64 @@ from __future__ import annotations
 import contextlib
 import functools
 import http.server
+import json
+import re
 import socket
+import sys
 import threading
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "ctas" / "data"
+SPECTRUM_FIXTURES = ROOT / "tests" / "fixtures" / "spectra"
+TNS_TEXT_FILE = re.compile(r"^https://www\.wis-tns\.org/system/files/uploaded/[A-Za-z0-9_\-./%+]+$")
 VIEWPORTS = ((320, 568), (390, 844), (768, 1024), (1280, 720), (1440, 900))
 # Requests to hosts the page does not own must never decide whether the page
 # works; a blocked analytics beacon is not a CTAS defect.
 THIRD_PARTY_HOSTS = ("googletagmanager.com", "google-analytics.com")
+
+
+@functools.lru_cache(maxsize=None)
+def _catalog_rows() -> tuple[dict, ...]:
+    index = json.loads((DATA / "catalog-index.json").read_text())
+    columns = index["candidate_columns"]
+    return tuple(dict(zip(columns, row)) for row in index["candidate_rows"])
+
+
+@functools.lru_cache(maxsize=64)
+def _detail_chunk(path: str) -> tuple[dict, ...]:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from ctas_chunks import decode_chunk  # noqa: PLC0415 - only needed by dossier tests
+    root = ROOT / "ctas" / "data" / path
+    document = decode_chunk(root.read_bytes(), lambda relative: (ROOT / relative).read_bytes())
+    return tuple(document["candidates"])
+
+
+def _published_dossier(row_filter, detail_filter, limit=40):
+    """The first published dossier whose compact row and full record both qualify.
+
+    The release changes every half hour, so tests pick a qualifying record from the
+    data they run against instead of naming one."""
+    checked = 0
+    for row in _catalog_rows():
+        if not row_filter(row):
+            continue
+        for candidate in _detail_chunk(row["detail_chunk"]):
+            if candidate["event_id"] == row["event_id"] and detail_filter(candidate):
+                return candidate
+        checked += 1
+        if checked >= limit:
+            break
+    return None
+
+
+def _tns_text_spectrum(candidate):
+    for index, spectrum in enumerate((candidate.get("follow_up") or {}).get("spectra") or []):
+        url = spectrum.get("public_download_url") or ""
+        if TNS_TEXT_FILE.match(url) and not re.search(r"\.(fits?|fts|fz|gz|zip|tar|pdf|png|jpe?g)$", url, re.I):
+            return index, spectrum
+    return None
 
 
 def _free_port() -> int:
@@ -185,6 +232,144 @@ class BrowserTests(unittest.TestCase):
         self.assertIn("relay", results, "relay-only sources say they need the relay rather than failing silently")
         self.assertTrue(calls, "providers are contacted after the request")
         self.assertTrue(all(u.startswith(("https://api.alerce.online/", "https://api.lsst.fink-portal.org/")) for u in calls))
+
+    # ------------------------------------------------------------ live TNS spectra
+    def _open_dossier(self, event_id, page=None):
+        page = page or self.page
+        page.goto(self.url + "?event=" + event_id, wait_until="networkidle", timeout=60000)
+        page.wait_for_selector("#candidate-workspace #dossier", state="attached", timeout=60000)
+
+    def _spectrum_dossier(self):
+        candidate = _published_dossier(lambda row: (row.get("n_spectra") or 0) > 0,
+                                       lambda c: _tns_text_spectrum(c) is not None)
+        if candidate is None:
+            self.skipTest("this release has no dossier with a public TNS text spectrum")
+        return candidate
+
+    def _route_relay(self, answer, page=None):
+        """Point live-config.json at a test relay and answer its requests with `answer`."""
+        page = page or self.page
+        calls = []
+        page.route("**/live-config.json", lambda route: route.fulfill(
+            status=200, content_type="application/json", body=json.dumps({"relay": "https://relay.test"})))
+
+        def relay(route):
+            calls.append(route.request.url)
+            answer(route)
+        page.route("https://relay.test/**", relay)
+        return calls
+
+    def _plot_first_spectrum(self, page=None):
+        page = page or self.page
+        page.evaluate("""() => { const panel = document.querySelector('[data-dossier-view="spectra"]'); panel.open = true;
+          panel.querySelectorAll('details.ctas-spectrum-record').forEach((d) => { d.open = true; }); }""")
+        button = page.locator("[data-plot-spectrum]").first
+        button.scroll_into_view_if_needed()
+        button.click()
+
+    def test_tns_spectrum_is_plotted_on_request_through_the_relay(self):
+        candidate = self._spectrum_dossier()
+        index, spectrum = _tns_text_spectrum(candidate)
+        fixture = (SPECTRUM_FIXTURES / "sedm-ztf.ascii").read_text()
+        calls = self._route_relay(lambda route: route.fulfill(
+            status=200, content_type="text/plain", body=fixture, headers={"Access-Control-Allow-Origin": "*"}))
+        self._open_dossier(candidate["event_id"])
+        self.assertEqual(calls, [], "opening a dossier must not fetch spectrum files")
+        live = self.page.locator(f"[data-spectrum-live] [data-plot-spectrum='{index}']")
+        self.assertEqual(live.count(), 1)
+        self._plot_first_spectrum()
+        self.page.wait_for_selector("[data-spectrum-svg] svg", timeout=30000)
+        from urllib.parse import quote
+        self.assertEqual(calls, ["https://relay.test/?url=" + quote(spectrum["public_download_url"], safe="")])
+        status = self.page.locator("[data-spectrum-status]").first.inner_text()
+        self.assertIn("Plotted 137 points", status)
+        svg = self.page.locator("[data-spectrum-svg] svg").first
+        self.assertEqual(svg.get_attribute("role"), "img")
+        title_id, desc_id = svg.get_attribute("aria-labelledby").split()
+        self.assertIn("Spectrum", self.page.locator(f"#{title_id}").text_content())
+        self.assertIn("normalised flux", self.page.locator(f"#{desc_id}").text_content())
+        figure = self.page.locator(".ctas-spectrum-live__figure").first
+        self.assertEqual(figure.locator("figcaption a").get_attribute("href"), spectrum["public_download_url"])
+        self.assertIn("not part of the verified snapshot", figure.locator("figcaption").inner_text())
+        self.assertGreater(figure.locator(".ctas-spectrum-marker").count(), 3, "common line markers are drawn")
+        self.assertIn("Observed wavelength", svg.text_content())
+        redshift = candidate.get("redshift")
+        if isinstance(redshift, (int, float)) and redshift > 0:
+            figure.locator("[data-spectrum-frame][value='rest']").check()
+            self.assertIn("Rest-frame wavelength", figure.locator("[data-spectrum-svg] svg").text_content())
+        figure.locator("[data-spectrum-lines]").uncheck()
+        self.assertEqual(figure.locator(".ctas-spectrum-marker").count(), 0, "markers can be hidden")
+        self.assertGreater(figure.locator(".ctas-spectrum-table tbody tr").count(), 10, "a table view of the plot exists")
+
+    def test_spectrum_problems_are_explained_in_plain_words(self):
+        candidate = self._spectrum_dossier()
+        cases = (
+            (lambda route: route.fulfill(status=404, body="Not Found", headers={"Access-Control-Allow-Origin": "*"}),
+             "no file at this address"),
+            (lambda route: route.fulfill(status=200, content_type="text/html", headers={"Access-Control-Allow-Origin": "*"},
+                                         body="<!DOCTYPE html><html><body>Please log in</body></html>"),
+             "web page instead of the data file"),
+            (lambda route: route.fulfill(status=200, content_type="text/plain", body="4000 1\n4001 2\n",
+                                         headers={"Access-Control-Allow-Origin": "*"}),
+             "too few to plot"),
+            (lambda route: route.abort("connectionrefused"), "could not be reached"),
+        )
+        for answer, expected in cases:
+            with self.subTest(expected=expected):
+                page = self.browser.new_page(viewport={"width": 1280, "height": 900})
+                try:
+                    self._route_relay(answer, page)
+                    self._open_dossier(candidate["event_id"], page)
+                    self._plot_first_spectrum(page)
+                    page.wait_for_function(
+                        "() => document.querySelector('[data-spectrum-status].is-problem')", timeout=30000)
+                    self.assertIn(expected, page.locator("[data-spectrum-status]").first.inner_text())
+                    self.assertEqual(page.locator("[data-spectrum-svg] svg").count(), 0)
+                finally:
+                    page.close()
+
+    def test_spectrum_without_a_relay_says_so(self):
+        candidate = self._spectrum_dossier()
+        self.page.route("**/live-config.json", lambda route: route.fulfill(
+            status=200, content_type="application/json", body="{}"))
+        self._open_dossier(candidate["event_id"])
+        self._plot_first_spectrum()
+        self.page.wait_for_function("() => document.querySelector('[data-spectrum-status].is-problem')", timeout=30000)
+        self.assertIn("relay is not configured", self.page.locator("[data-spectrum-status]").first.inner_text())
+
+    def test_plotted_spectrum_is_accessible_and_fits_a_phone(self):
+        candidate = self._spectrum_dossier()
+        fixture = (SPECTRUM_FIXTURES / "longslit-nm.dat").read_text()
+        self._route_relay(lambda route: route.fulfill(
+            status=200, content_type="text/plain", body=fixture, headers={"Access-Control-Allow-Origin": "*"}))
+        for width, height in ((320, 568), (390, 844)):
+            with self.subTest(viewport=f"{width}x{height}"):
+                self.page.set_viewport_size({"width": width, "height": height})
+                self._open_dossier(candidate["event_id"])
+                self._plot_first_spectrum()
+                self.page.wait_for_selector("[data-spectrum-svg] svg", timeout=30000)
+                self.page.wait_for_timeout(300)
+                overflow = self.page.evaluate(
+                    "() => document.documentElement.scrollWidth - document.documentElement.clientWidth")
+                self.assertLessEqual(overflow, 1)
+        self.assertEqual(self._axe_violations(), [])
+
+    def _axe_violations(self, page=None):
+        page = page or self.page
+        axe = next(
+            (path for path in (ROOT / "node_modules" / "axe-core" / "axe.min.js",
+                               ROOT.parent / "node_modules" / "axe-core" / "axe.min.js")
+             if path.exists()),
+            None,
+        )
+        if axe is None:
+            self.skipTest("axe-core is not installed; run: npm install axe-core")
+        page.add_script_tag(content=axe.read_text())
+        result = page.evaluate(
+            "async () => await axe.run(document, {runOnly: {type: 'tag',"
+            " values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']}})"
+        )
+        return [f"{v['id']} ({len(v['nodes'])} nodes): {v['help']}" for v in result["violations"]]
 
     def test_complete_catalog_arrives_only_on_request(self):
         self.page.locator("#ctas-load-complete").click()

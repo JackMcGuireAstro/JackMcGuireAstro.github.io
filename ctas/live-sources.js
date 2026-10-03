@@ -113,7 +113,18 @@
     });
     return rows;
   }
+  // ctas/spectrum-ascii.js reads the many TNS / WISeREP dialects (headers, separators,
+  // nm or micron wavelengths, error columns); this simple reader is the fallback.
+  function spectrumLib() {
+    if (root.CTASSpectrum) return root.CTASSpectrum;
+    try { return typeof require === "function" ? require("./spectrum-ascii.js") : null; } catch (_) { return null; }
+  }
   function parseAsciiSpectrum(textValue) {
+    var lib = spectrumLib();
+    if (lib) {
+      var parsed = lib.parse(textValue);
+      return parsed.ok ? parsed.points.map(function (point, index) { return {index: index + 1, wavelength: point.wavelength, flux: point.flux}; }) : [];
+    }
     var points = [];
     String(textValue || "").split(/\r?\n/).forEach(function (line) {
       var trimmed = line.trim();
@@ -238,6 +249,29 @@
     }
     return configPromise;
   }
+  function relayFrom(config) {
+    return config && typeof config.relay === "string" && /^https:\/\//.test(config.relay) ? config.relay : "";
+  }
+  // One public file through the relay, on request (the "Plot spectrum" control). Resolves
+  // with the text; rejects with an Error whose `kind` is no-relay, timeout, network or
+  // http (with `status`), so the page can say what went wrong in plain words.
+  function relayProblem(kind, status) {
+    var error = new Error(kind + (status ? " " + status : ""));
+    error.kind = kind; error.status = status || 0;
+    return error;
+  }
+  function fetchViaRelay(target) {
+    return loadConfig().then(function (config) {
+      var relay = relayFrom(config);
+      if (!relay) throw relayProblem("no-relay");
+      return timed(relayUrl(relay, target)).then(function (r) {
+        if (!r.ok) throw relayProblem("http", r.status);
+        return r.text().then(function (body) {
+          return {text: body, status: r.status, relay: relay, contentType: (r.headers && r.headers.get("Content-Type")) || ""};
+        });
+      }, function (error) { throw relayProblem(error && error.name === "AbortError" ? "timeout" : "network"); });
+    });
+  }
 
   function ztf(candidate) {
     var oid = findName(candidate, /^ZTF\d{2}[a-z]{7}$/);
@@ -293,18 +327,25 @@
     });
   }
   function spectra(candidate, relay) {
+    var lib = spectrumLib();
     var rows = ((candidate.follow_up || {}).spectra || []).filter(function (row) {
-      return /^https:\/\/www\.wis-tns\.org\/system\/files\/uploaded\//.test(row.public_download_url || "") &&
-        /\.(dat|txt|ascii|asc|csv|flm)$/i.test(row.public_download_url);
+      var file = lib ? lib.tnsFile(row.public_download_url) : null;
+      return file ? file.format === "ascii" : /^https:\/\/www\.wis-tns\.org\/system\/files\/uploaded\//.test(row.public_download_url || "") &&
+        /\.(dat|txt|ascii|asci|asc|csv|flm|spec)$/i.test(row.public_download_url);
     });
     if (!rows.length) return Promise.resolve([]);
     if (!relay) return Promise.resolve(rows.map(function (row) { return {row: row, points: [], note: "Needs the live-data relay"}; }));
     return Promise.all(rows.slice(0, 8).map(function (row) {
-      return timed(relayUrl(relay, row.public_download_url)).then(function (r) { return r.ok ? r.text() : ""; })
-        .then(function (body) {
-          var points = parseAsciiSpectrum(body);
-          return {row: row, points: points, note: points.length ? "" : "File could not be read as a two-column spectrum"};
-        }).catch(function (error) { return {row: row, points: [], note: "Unavailable: " + error.message}; });
+      return timed(relayUrl(relay, row.public_download_url)).then(function (r) {
+        if (!r.ok) throw relayProblem("http", r.status);
+        return r.text();
+      }).then(function (body) {
+        var parsed = lib ? lib.parse(body) : null, points = parsed ? (parsed.ok ? parsed.points : []) : parseAsciiSpectrum(body);
+        return {row: row, points: points, parsed: parsed,
+          note: points.length ? "" : parsed ? lib.failureMessage(parsed) : "File could not be read as a two-column spectrum"};
+      }).catch(function (error) {
+        return {row: row, points: [], note: lib && error.kind ? lib.failureMessage(error) : "Unavailable: " + error.message};
+      });
     }));
   }
 
@@ -349,7 +390,7 @@
   }
   function load(candidate) {
     return loadConfig().then(function (config) {
-      var relay = config && typeof config.relay === "string" && /^https:\/\//.test(config.relay) ? config.relay : "";
+      var relay = relayFrom(config);
       return Promise.all([
         settle(ztf(candidate), "ZTF via ALeRCE"), settle(rubin(candidate), "Rubin via Fink"),
         settle(gaia(candidate, relay), "Gaia Science Alerts"), settle(panstarrs(candidate, relay), "Pan-STARRS1 DR2"),
@@ -357,7 +398,8 @@
         spectra(candidate, relay).catch(function () { return []; }),
         papers(candidate, relay),
       ]).then(function (results) {
-        return {fetchedAt: new Date().toISOString(), relay: relay, photometry: results.slice(0, 5).filter(Boolean), spectra: results[5], papers: results[6]};
+        return {fetchedAt: new Date().toISOString(), relay: relay, photometry: results.slice(0, 5).filter(Boolean), spectra: results[5], papers: results[6],
+          candidate: candidate};
       });
     });
   }
@@ -403,7 +445,8 @@
     (result.spectra || []).forEach(function (item, index) {
       var label = item.row.file_name || item.row.provider_spectrum_id || "TNS spectrum";
       html += "<h5>Spectrum: " + esc(label) + " <small>(TNS public file" + (item.row.instrument ? ", " + esc(item.row.instrument) : "") + ")</small></h5>" +
-        (item.points.length && render.spectrumSvg ? render.spectrumSvg(item.row, item.points, "live-" + index) : "<p>" + esc(item.note) + "</p>");
+        (item.parsed && item.parsed.ok && render.liveSpectrum ? render.liveSpectrum(item.row, item.parsed, result.candidate, "live-" + index, result.fetchedAt)
+          : item.points.length && render.spectrumSvg ? render.spectrumSvg(item.row, item.points, "live-" + index) : "<p>" + esc(item.note) + "</p>");
     });
     if (result.papers) {
       var p = result.papers;
@@ -447,7 +490,7 @@
 
   var api = {panel: panel, load: load, parseAlerceLightcurve: parseAlerceLightcurve, nearestAlerceObject: nearestAlerceObject,
     parseFinkSources: parseFinkSources, parseGaiaCsv: parseGaiaCsv, parsePanstarrs: parsePanstarrs,
-    parseAsciiSpectrum: parseAsciiSpectrum, parseLasairObject: parseLasairObject, parseLasairText: parseLasairText, lasairNearest: lasairNearest,
+    parseAsciiSpectrum: parseAsciiSpectrum, fetchViaRelay: fetchViaRelay, parseLasairObject: parseLasairObject, parseLasairText: parseLasairText, lasairNearest: lasairNearest,
     sherlockSummary: sherlockSummary, adsQuery: adsQuery, parseAds: parseAds, separationArcsec: separationArcsec, mjdToIso: mjdToIso, relayUrl: relayUrl, csv: csv};
   root.CTASLive = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

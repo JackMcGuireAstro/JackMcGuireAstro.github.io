@@ -4502,7 +4502,7 @@ def main() -> int:
 
     code_paths = (
         "ctas.html", "ctas/app.js", "ctas/chunk-loader.js", "ctas/presentation.js", "ctas/catalog-model.js", "ctas/astro-evidence.js",
-        "ctas/workbench.js", "ctas/observability.js", "ctas/live-sources.js", "ctas/ctas.css",
+        "ctas/workbench.js", "ctas/observability.js", "ctas/live-sources.js", "ctas/spectrum-ascii.js", "ctas/ctas.css",
         "ctas/data/observatories.json",
         "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
         "ctas/schema/astro-evidence-core-0.1.0.schema.json",
@@ -4513,6 +4513,7 @@ def main() -> int:
         "scripts/test_ctas_static.py", "scripts/test_ctas_catalog_model.js",
         "scripts/test_ctas_links.py", "scripts/test_ctas_astro_evidence.py",
         "scripts/test_ctas_identity.py", "scripts/test_ctas_browser.py", "scripts/test_ctas_release_browser.js",
+        "scripts/test_ctas_spectrum_ascii.js",
         "scripts/test_ctas_ingest_provenance.py",
         "scripts/ctas_node.py",
         "scripts/mirror_loop.sh", "scripts/publish_ctas.sh", "scripts/ctas_launchd_runner.sh",
