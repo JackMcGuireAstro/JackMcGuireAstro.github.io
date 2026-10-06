@@ -97,7 +97,8 @@ export function transitsTonight(ephemerides, { grid, latDeg, lonDeg, altLimit })
       });
     }
   }
-  return out.sort((a, b) => a.midMs - b.midMs || a.name.localeCompare(b.name));
+  // Fully observable transits first, in time order; then partial ones, most-seen first.
+  return out.sort((a, b) => (b.full ? 1 : 0) - (a.full ? 1 : 0) || (a.full ? a.midMs - b.midMs : b.fraction - a.fraction) || a.midMs - b.midMs || a.name.localeCompare(b.name));
 }
 
 async function loadCtas() {
@@ -205,7 +206,7 @@ function renderTransitTable(s, { considered, overlapping, noDuration }) {
   $("#results").innerHTML = `<p class="muted">${state.rows.length.toLocaleString()} transit${state.rows.length === 1 ? "" : "s"} overlap the dark hours with the planet’s star above ${s.altLimit}°` +
     `${filtered ? `; ${filtered.toLocaleString()} more are hidden by the ${s.fullOnly ? "full-transit and " : ""}timing-uncertainty filter${s.fullOnly ? "s" : ""}` : ""}` +
     ` (from ${considered.toLocaleString()} ${s.candidates ? "confirmed and candidate" : "confirmed"} planets with an ephemeris${noDuration ? `; ${noDuration.toLocaleString()} have no catalog duration and cannot be placed` : ""})` +
-    `${state.rows.length > 300 ? ". Showing the first 300" : ""}. Times in ${esc(tz)}; altitudes in brackets. Select a row for its altitude curve with the transit shaded.</p>` +
+    `${state.rows.length > 300 ? ". Showing the first 300" : ""}. Fully observable transits come first, in time order, then partial ones by how much is seen. Times in ${esc(tz)}; altitudes in brackets. Select a row for its altitude curve with the transit shaded.</p>` +
     `<p class="muted bjd-note">Catalog ephemerides count time at the solar-system barycentre (BJD<sub>TDB</sub>). Seen from Earth a transit happens up to about 8 minutes earlier or later, depending on where Earth is in its orbit relative to the star, plus 69 seconds of TT−UTC. This page applies that correction for each star, accurate to a few seconds.</p>` +
     (shown.length ? `<div class="table-wrap" role="region" aria-label="Transits tonight" tabindex="0"><table><caption class="visually-hidden">Planet transits observable tonight</caption><thead><tr>` +
     `<th scope="col">Planet</th><th scope="col">Star</th><th scope="col">Ingress</th><th scope="col">Mid-transit</th><th scope="col">Egress</th><th scope="col">Seen</th>` +

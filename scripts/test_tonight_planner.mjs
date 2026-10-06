@@ -215,3 +215,17 @@ if (existsSync("worldsindex/data/transit-ephemerides.json.gz")) {
   });
 }
 console.log(`${passed} planner checks passed`);
+
+test("transits tonight lists fully observable transits first, then partial ones by fraction seen", () => {
+  const site = SITES[0];
+  const g = nightGrid({ noonUtcMs: localNoonUtc("2026-10-03", site.tz), latDeg: site.lat, lonDeg: site.lon, twilightDeg: -12 });
+  const fixture = JSON.parse(readFileSync(new URL("../tests/fixtures/tonight-transits.json", import.meta.url)));
+  const rows = transitsTonight(fixture.transits.map((t) => t.ephemeris), { grid: g, latDeg: site.lat, lonDeg: site.lon, altLimit: 30 });
+  if (rows.length < 2) return;
+  for (let i = 1; i < rows.length; i++) {
+    const a = rows[i - 1], b = rows[i];
+    if (a.full && b.full) assert.ok(a.midMs <= b.midMs);
+    else if (a.full !== b.full) assert.ok(a.full, "a full transit must not follow a partial one");
+    else assert.ok(a.fraction >= b.fraction);
+  }
+});
