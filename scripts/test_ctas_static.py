@@ -118,6 +118,18 @@ class DispositionAndLinkTests(unittest.TestCase):
         self.assertEqual(EXPORTER.public_attempt_disposition("indeterminate"), "incomplete-result")
         self.assertEqual(EXPORTER.public_attempt_disposition("unavailable", "TNS_IDENTITY_UNAVAILABLE"), "not-searched")
 
+    def test_evidence_provider_labels_fold_into_registry_sources(self):
+        # The IRSA ZTF adapter labels its data-release photometry "ztf-irsa-release"; the
+        # registry source that retrieved it is "ztf-irsa". Every alias must name a source the
+        # exporter already knows, or the closure gates would refuse the release.
+        self.assertEqual(EXPORTER.provider_source_key("ztf-irsa-release"), "ztf-irsa")
+        self.assertEqual(EXPORTER.provider_source_key(" ZTF-IRSA-Release "), "ztf-irsa")
+        self.assertEqual(EXPORTER.provider_source_key("rubin-fink"), "rubin-fink")
+        self.assertEqual(EXPORTER.provider_source_key(None), "")
+        for alias, source_key in EXPORTER.PROVIDER_SOURCE_ALIASES.items():
+            self.assertNotEqual(alias, source_key)
+            self.assertIn(source_key, EXPORTER.SOURCE_FAMILY_MAP)
+
     def test_valid_and_invalid_tns_designations(self):
         self.assertEqual(EXPORTER.tns_object_id("SN2026abc"), "2026abc")
         self.assertEqual(EXPORTER.tns_object_id("AT2026abc"), "2026abc")

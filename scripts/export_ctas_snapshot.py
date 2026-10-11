@@ -229,6 +229,25 @@ SECONDARY_SOURCE_FAMILIES = {
     "authorized-file-drop": ["spectroscopy", "photometric-follow-up"],
 }
 
+# Evidence rows name the pipeline that produced them, which is not always the registry
+# source that was queried.  The IRSA ZTF light-curve adapter (source "ztf-irsa") labels its
+# public data-release PSF photometry "ztf-irsa-release" so the records read as release-catalog
+# measurements rather than alerts.  For source coverage, provider statistics and the closure
+# gates every such label must fold into the registry source that retrieved it; an unmapped
+# label would publish a coverage row for a source the universe does not know and fail the
+# release (as happened on 2026-10-10 when the first release-catalog rows were retained).
+PROVIDER_SOURCE_ALIASES = {
+    "ztf-irsa-release": "ztf-irsa",
+}
+
+
+def provider_source_key(provider: Any) -> str:
+    """Return the registry source key for an evidence row's provider label."""
+
+    key = str(provider or "").strip().lower()
+    return PROVIDER_SOURCE_ALIASES.get(key, key)
+
+
 REPRESENTED_THROUGH = {
     "ztf": ["rubin-fink"],
     "rubin-lsst": ["rubin-fink", "rubin-fink-crossmatch"],
@@ -2170,7 +2189,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         evidence_by_provider: dict[str, dict[str, Any]] = {}
         for evidence_type, evidence_rows in follow_up.items():
             for evidence_row in evidence_rows:
-                provider = str(evidence_row.get("provider") or "").strip().lower()
+                provider = provider_source_key(evidence_row.get("provider"))
                 if not provider:
                     continue
                 ledger = evidence_by_provider.setdefault(provider, {"count": 0, "types": {}, "url": None})
@@ -2432,7 +2451,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             survey_counts[survey] = survey_counts.get(survey, 0) + 1
         for evidence_type, rows_for_type in candidate.get("follow_up", {}).items():
             for row in rows_for_type:
-                provider = str(row.get("provider") or "").strip().lower()
+                provider = provider_source_key(row.get("provider"))
                 if provider:
                     provider_counts.setdefault(provider, {})[evidence_type] = (
                         provider_counts.setdefault(provider, {}).get(evidence_type, 0) + 1
@@ -4607,7 +4626,7 @@ def main() -> int:
             survey_reproduced[str(survey)] = survey_reproduced.get(str(survey), 0) + 1
         for evidence_type, evidence_rows in candidate.get("follow_up", {}).items():
             for evidence_row in evidence_rows:
-                provider = str(evidence_row.get("provider") or "").strip().lower()
+                provider = provider_source_key(evidence_row.get("provider"))
                 if provider:
                     provider_reproduced.setdefault(provider, {})[evidence_type] = (
                         provider_reproduced.setdefault(provider, {}).get(evidence_type, 0) + 1
@@ -4665,6 +4684,27 @@ def main() -> int:
         isinstance(row.get("retained_record_count"), int) and row["retained_record_count"] >= 0 and
         row.get("source_id") in source_keys
         for candidate in candidates for row in candidate.get("source_coverage", [])
+    )
+    # Name what a closure or disposition failure is about, so a refused release can be
+    # diagnosed from the publish log rather than by replaying the database.
+    unknown_providers = sorted(set(published_provider_stats) - source_keys)[:8]
+    unknown_surveys = sorted(
+        survey for survey in published_surveys
+        if survey not in SURVEY_SOURCE_ALIASES and
+        ("represented-survey-" + re.sub(r"[^a-z0-9]+", "-", survey.lower()).strip("-")) not in source_keys
+    )[:8]
+    coverage_problems = sorted({
+        f"{row.get('source_id')}:{row.get('disposition')}"
+        for candidate in candidates for row in candidate.get("source_coverage", [])
+        if row.get("disposition") not in SOURCE_STATE_VOCABULARY or
+        not isinstance(row.get("retained_record_count"), int) or row["retained_record_count"] < 0 or
+        row.get("source_id") not in source_keys
+    })[:8]
+    closure_evidence = f"providers={len(published_provider_stats)}; surveys={len(published_surveys)}" + (
+        f"; providers not in the source universe: {', '.join(unknown_providers)}" if unknown_providers else ""
+    ) + (f"; surveys not in the source universe: {', '.join(unknown_surveys)}" if unknown_surveys else "")
+    disposition_evidence = "controlled dispositions and integer retained-record counts" + (
+        f"; offending source:disposition rows: {', '.join(coverage_problems)}" if coverage_problems else ""
     )
     completeness_integrity = all(
         candidate.get("record_completeness") == completeness_for(candidate) and
@@ -5018,8 +5058,8 @@ def main() -> int:
         gate("snapshot-freshness", freshness, f"generated {payload['generated_at']}; valid until {payload['valid_until']}"),
         gate("two-minute-publication-contract", cadence_contract, "120-second mirror contract and current export heartbeat"),
         gate("source-universe-schema", universe_structure, f"{len(source_universe_rows)} unique versioned source contracts; every dossier names the definition checksum {source_universe_version}"),
-        gate("source-and-survey-closure", provider_closure and survey_closure, f"providers={len(published_provider_stats)}; surveys={len(published_surveys)}"),
-        gate("candidate-source-dispositions", disposition_integrity, "controlled dispositions and integer retained-record counts"),
+        gate("source-and-survey-closure", provider_closure and survey_closure, closure_evidence),
+        gate("candidate-source-dispositions", disposition_integrity, disposition_evidence),
         gate("record-completeness-reproducibility", completeness_integrity, "public components recompute independently of CTAS priority"),
         gate("unified-timeline-integrity", timeline_integrity, "retained timeline entries reproduce with distinct scientific, publication, and CTAS clocks"),
         gate("tns-link-structure", tns_structure, f"{len(tns_links)} canonical object-specific TNS links"),
