@@ -25,6 +25,7 @@ records are excluded by construction.
 from __future__ import annotations
 
 import argparse
+import atexit
 import csv
 import hashlib
 import io
@@ -2566,13 +2567,66 @@ def recursive_safety_problems(value: Any, path: str = "root") -> list[str]:
     return problems
 
 
+_BLOB_READERS: dict[Path, subprocess.Popen] = {}
+
+
+def _close_blob_readers() -> None:
+    for reader in _BLOB_READERS.values():
+        try:
+            reader.stdin.close()
+            reader.wait(timeout=5)
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            reader.kill()
+    _BLOB_READERS.clear()
+
+
+atexit.register(_close_blob_readers)
+
+
 def git_blob(repo: Path, ref: str, path: str) -> bytes | None:
-    try:
-        return subprocess.check_output(
-            ["git", "show", f"{ref}:{path}"], cwd=repo, stderr=subprocess.DEVNULL,
-        )
-    except (OSError, subprocess.CalledProcessError):
+    """Return the blob at ``ref:path`` in ``repo``, or None when there is none.
+
+    One ``git cat-file --batch`` process per repository serves every read. A
+    release reads the previous release's 4,096 detail chunks to write its history
+    entry, and one ``git show`` process per blob was a process spawn per chunk.
+    A name git cannot resolve, or that is not a blob (a tree), reads as None.
+    """
+
+    if "\n" in ref or "\n" in path or any(char.isspace() for char in ref):
         return None
+    reader = _BLOB_READERS.get(repo)
+    try:
+        if reader is None or reader.poll() is not None:
+            reader = subprocess.Popen(
+                ["git", "cat-file", "--batch"], cwd=repo, stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            )
+            _BLOB_READERS[repo] = reader
+        assert reader.stdin is not None and reader.stdout is not None
+        reader.stdin.write(f"{ref}:{path}\n".encode())
+        reader.stdin.flush()
+        header = reader.stdout.readline()
+        if not header:
+            raise OSError("git cat-file ended")
+        fields = header.split()
+        if len(fields) != 3:  # "<name> missing" / "<name> ambiguous"
+            return None
+        size = int(fields[2])
+        raw = reader.stdout.read(size)
+        reader.stdout.read(1)  # the newline git writes after the object
+        if len(raw) != size:
+            raise OSError("git cat-file returned a short object")
+        return raw if fields[1] == b"blob" else None
+    except (OSError, ValueError):
+        _BLOB_READERS.pop(repo, None)
+        if reader is not None:
+            reader.kill()
+        try:
+            return subprocess.check_output(
+                ["git", "show", f"{ref}:{path}"], cwd=repo, stderr=subprocess.DEVNULL,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            return None
 
 
 def git_ref(repo: Path, ref: str) -> str | None:
