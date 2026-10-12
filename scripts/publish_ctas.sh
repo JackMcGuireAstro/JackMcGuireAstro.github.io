@@ -155,6 +155,11 @@ DATA_TIP=$(bash scripts/data_branch.sh sync "$DATA_STORE" "$DATA_BRANCH") \
   || die "could not read the published $DATA_BRANCH release: $DATA_TIP"
 git clean -fdqX -- ctas/data || die "could not clear the previous generated files"
 
+# Each phase's duration goes to the log, so a slow release can be read from the
+# publish log instead of being guessed at.
+PHASE_STARTED=$(date +%s)
+phase_done() { say "phase  $1 took $(( $(date +%s) - PHASE_STARTED ))s"; PHASE_STARTED=$(date +%s); }
+
 # Freeze one transactionally consistent SQLite view for the whole release.
 # The live pipeline may continue writing to the canonical database while link
 # checks and assurance artifacts are generated, but no publication mixes two
@@ -313,15 +318,18 @@ then
   die "could not create a complete pinned database snapshot; nothing exported or committed"
 fi
 [ -s "$PUBLISH_DB" ] || die "database snapshot is empty"
+phase_done freeze-database
 
 # ----------------------------------------------------------------- export
 with_release python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
   --release-base-ref "$DATA_TIP" >>"$LOG" 2>&1 \
   || die "export failed; nothing committed"
+phase_done export
 python3 scripts/check_ctas_links.py --catalog-index ctas/data/catalog-index.json \
   --candidate-manifest ctas/data/candidate-chunks/manifest.json \
   --source-universe ctas/data/source-universe.json --output ctas/data/link-health.json >>"$LOG" 2>&1 \
   || die "public link validation failed; nothing committed"
+phase_done link-check
 # Bind the link-health artifact into the verification report. The link checker reads
 # the exported catalog, so it can only run after the export; the report used to be
 # rebuilt by a complete second export for this one binding. The rebind re-reads every
@@ -330,6 +338,7 @@ python3 scripts/check_ctas_links.py --catalog-index ctas/data/catalog-index.json
 # report and status checksums. The release is the first export's bytes.
 python3 scripts/export_ctas_snapshot.py --rebind-link-health --output-dir ctas/data >>"$LOG" 2>&1 \
   || die "verification-report link-health binding failed; nothing committed"
+phase_done bind-link-health
 # Atom feed of strong new follow-up targets, from the final first-screen summary.
 python3 scripts/ctas_feed.py --summary ctas/data/live-summary.json --output ctas/data/feed.xml >>"$LOG" 2>&1 \
   || die "new-target feed failed; nothing committed"
@@ -513,14 +522,17 @@ fi
 # A release may not be committed on the strength of its own report alone. The
 # suites below read the artifacts that were just written, so they run after the
 # export and before anything is staged.
+phase_done validate-detail-pages-and-retirement
 for suite in scripts/test_ctas_static.py scripts/test_ctas_links.py scripts/test_ctas_identity.py \
              scripts/test_ctas_astro_evidence.py scripts/test_ctas_browser.py \
              scripts/test_ctas_chunks.py scripts/test_ctas_publisher_recovery.py; do
   python3 "$suite" >>"$LOG" 2>&1 || die "$suite failed against the generated release; nothing committed"
+  phase_done "$(basename "$suite")"
 done
 # Compare every exported ingest score/factor record with this cycle's frozen DB.
 python3 scripts/test_ctas_ingest_provenance.py --database "$PUBLISH_DB" --data-dir ctas/data >>"$LOG" 2>&1 \
   || die "ingest-score provenance differs from the frozen database; nothing committed"
+phase_done test_ctas_ingest_provenance.py
 # The catalog model is the browser's copy of the reader-facing rules, so it is
 # checked in a JavaScript runtime. A publisher without one is reported rather
 # than blocked: the Python suites above already cover the published artifacts,
@@ -531,6 +543,7 @@ if [ -n "$NODE" ]; then
     || die "catalog-model assertions failed against the generated release; nothing committed"
   "$NODE" scripts/test_ctas_chunk_loader.js >>"$LOG" 2>&1 \
     || die "detail-part loader assertions failed; nothing committed"
+  phase_done javascript-tests
 else
   say "no JavaScript runtime on this publisher; catalog-model assertions were not run"
 fi
@@ -632,6 +645,7 @@ PUBLISH_OUTPUT=$(bash scripts/data_branch.sh publish "$DATA_STORE" "$DATA_BRANCH
   "CTAS data: $COUNT candidates ($(date -u '+%Y-%m-%d %H:%M UTC'))" "$RELEASE_LIST")
 PUBLISH_STATUS=$?
 rm -f "$RELEASE_LIST"
+phase_done publish-data-branch
 case "$PUBLISH_STATUS" in
   0)
     date +%s >"$STAMP"

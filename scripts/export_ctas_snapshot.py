@@ -35,6 +35,7 @@ import re
 import sqlite3
 import subprocess
 import sys
+import time
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -3324,6 +3325,26 @@ def atomic_write(path: Path, raw: bytes) -> None:
     os.replace(temporary, path)
 
 
+class PhaseClock:
+    """Wall time per export phase, printed at the end so the publish log says where a
+    release's minutes went instead of leaving it to be guessed."""
+
+    def __init__(self) -> None:
+        self.started = time.monotonic()
+        self.mark = self.started
+        self.phases: list[tuple[str, float]] = []
+
+    def done(self, phase: str) -> None:
+        now = time.monotonic()
+        self.phases.append((phase, now - self.mark))
+        self.mark = now
+
+    def report(self) -> str:
+        lines = [f"timing          : {phase} {seconds:.1f}s" for phase, seconds in self.phases]
+        lines.append(f"timing          : total {time.monotonic() - self.started:.1f}s")
+        return "\n".join(lines)
+
+
 def output_path_for_public_artifact(output_dir: Path, public_path: str) -> Path:
     """Map a published ``ctas/data`` path into the caller-selected output root.
 
@@ -3803,11 +3824,13 @@ def main() -> int:
         print(f"error: database not found: {db}", file=sys.stderr)
         return 2
 
+    clock = PhaseClock()
     try:
         candidates, counts = export(db, args.limit)
     except sqlite3.Error as exc:
         print(f"error: could not read the database read-only: {exc}", file=sys.stderr)
         return 1
+    clock.done("read-database")
 
     # Reconstruct derived ranking arithmetic before any aggregate or recent
     # view is produced.  This also applies the documented terminal-state repair
@@ -3819,6 +3842,7 @@ def main() -> int:
         candidate["ctas_score"] = candidate["score_model"]["final_score"]
         candidate["score_explanation"] = score_explanation_for(candidate)
 
+    clock.done("score")
     generated_at = generated_dt.isoformat().replace("+00:00", "Z")
     payload = {
         "schema_version": SCHEMA_VERSION,
@@ -4192,10 +4216,12 @@ def main() -> int:
     payload["source_accounting"] = accounting_totals
     payload["statistics"]["source_accounting"] = accounting_totals
     payload["catalog_content_checksum_sha256"] = catalog_semantic_checksum(candidates)
+    clock.done("project-evidence")
 
     candidate_rows = [compact_candidate_row(candidate, score_clock) for candidate in candidates]
 
     bucket_rows, chunk_raw, part_raw = candidate_chunk_artifacts(candidates)
+    clock.done("serialize-chunks")
 
     catalog_index = {
         "schema": CATALOG_INDEX_SCHEMA,
@@ -4543,6 +4569,7 @@ def main() -> int:
         score_clock,
     )
 
+    clock.done("serialize-indexes")
     problems = validate(payload) + projection_problems
     problems.extend(recursive_safety_problems(source_universe, "source-universe"))
     problems.extend(recursive_safety_problems(catalog_index, "catalog-index"))
@@ -4660,7 +4687,9 @@ def main() -> int:
     if release_history.get("schema") != RELEASE_HISTORY_SCHEMA or not isinstance(release_history.get("entries"), list):
         release_history = {"schema": RELEASE_HISTORY_SCHEMA, "entries": []}
 
+    clock.done("validate")
     previous_snapshot = git_catalog_document(site_root, args.release_base_ref)
+    clock.done("read-previous-release")
     previous_checksum = (
         catalog_semantic_checksum(previous_snapshot.get("candidates", []))
         if previous_snapshot else None
@@ -4752,6 +4781,7 @@ def main() -> int:
         head_code.get(path) is not None and head_code.get(path) == origin_code.get(path)
         for path in code_paths
     )
+    clock.done("release-history-and-code-binding")
     bound_files = {
         # Bind the exact working bytes that generated this report. Separate
         # gates below honestly fail while those bytes differ from HEAD/origin.
@@ -5247,6 +5277,7 @@ def main() -> int:
         gate("certification-publication-contract", True, "checksum-bound report is written to ctas/data/certification.json and included by the explicit publisher allowlist"),
         gate("exact-claim-boundary", CERTIFICATE_CLAIM.endswith("deployment claim."), CERTIFICATE_CLAIM),
     ]
+    clock.done("verification-gates")
     release_id = hashlib.sha256(
         b"".join(name.encode() + b"\0" + raw for name, raw in sorted(bound_files.items()))
     ).hexdigest()
@@ -5326,6 +5357,8 @@ def main() -> int:
     print(f"first screen    : {len(live_summary_raw)} bytes live-summary.json ({len(summary_ids)} records)")
     print(f"complete catalog: {len(catalog_index_raw)} bytes across {len(catalog_pages)} pages")
     print(f"\nwrote compact bootstrap/index, alias index, research tables, complete-catalog manifest, {len(chunk_raw)} checksum-bound detail chunks with {len(part_raw)} supplemental parts, status, source universe, history, and verification report")
+    clock.done("write-files")
+    print(clock.report())
     print(f"snapshot verification: {certificate['status']} ({sum(g['passed'] for g in gates)}/{len(gates)} checks)")
     return 0
 
