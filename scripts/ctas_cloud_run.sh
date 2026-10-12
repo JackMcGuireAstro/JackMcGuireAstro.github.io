@@ -79,8 +79,10 @@ PUBLISH_ARGS=()
 say "building the release${PUBLISH_ARGS:+ (dry run)}"
 # CTAS_SNAPSHOT_METHOD is left unset: "auto" already takes a full backup on Linux (no
 # clonefile), and setting it would leak into the publisher's own snapshot tests.
+# DATA_BRANCH_COMPACT=0: this runner's data store lives for one run, so repacking the
+# whole release after the push would only delay the save and the next cycle.
 PUBLISH_OUT=$(CTAS_SITE="$SITE" CTAS_DB="$DATA/soc.db" CTAS_LOG_DIR="$LOGS/publish" \
-  DATA_BRANCH_DISPATCHER=0 bash "$SITE/scripts/publish_ctas.sh" "${PUBLISH_ARGS[@]}" 2>&1)
+  DATA_BRANCH_DISPATCHER=0 DATA_BRANCH_COMPACT=0 bash "$SITE/scripts/publish_ctas.sh" "${PUBLISH_ARGS[@]}" 2>&1)
 PUBLISH_STATUS=$?
 printf '%s\n' "$PUBLISH_OUT" | tail -20
 PUBLISHED=0

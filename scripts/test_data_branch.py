@@ -111,6 +111,25 @@ class DataBranchTests(unittest.TestCase):
         files = set(self.origin_git("ls-tree", "-r", "--name-only", "ctas-data").splitlines())
         self.assertEqual(files, set(paths))
 
+    def test_cloud_publish_can_skip_the_store_repack(self):
+        # A cloud runner's store is discarded with the run; the published release is the same.
+        paths = self.write_release(1)
+        result = run(["bash", str(SCRIPT), "publish", str(self.store), "ctas-data", "CTAS data: cloud", str(self.list)],
+                     self.site, check=False, DATA_BRANCH_DISPATCHER="0", DATA_BRANCH_COMPACT="0")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout.split()[0], "published")
+        files = set(self.origin_git("ls-tree", "-r", "--name-only", "ctas-data").splitlines())
+        self.assertEqual(files, set(paths))
+        self.assertEqual(self.origin_git("rev-list", "--count", "ctas-data"), "1")
+        # the second release still replaces the first and is still compared as a tree
+        self.write_release(2)
+        second = run(["bash", str(SCRIPT), "publish", str(self.store), "ctas-data", "CTAS data: cloud", str(self.list)],
+                     self.site, check=False, DATA_BRANCH_DISPATCHER="0", DATA_BRANCH_COMPACT="0")
+        self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
+        self.assertEqual(self.origin_git("rev-list", "--count", "ctas-data"), "1")
+        self.assertNotEqual(result.stdout.split()[1], second.stdout.split()[1])
+        self.assertEqual(self.origin_git("rev-parse", "ctas-data"), second.stdout.split()[1])
+
     def test_unchanged_release_is_not_republished(self):
         self.write_release(1)
         first = self.publish()

@@ -24,6 +24,10 @@
 #       DATA_BRANCH_DISPATCHER=0 leaves that workflow file out: GitHub refuses a push
 #       of workflow files made with an Actions workflow token, and such a push would
 #       not start a deploy anyway, so the cloud publisher requests the deploy itself.
+#       DATA_BRANCH_COMPACT=0 skips repacking the store after a successful push. The
+#       repack keeps a long-lived store (the Mac) at one release's size; a cloud
+#       runner's store is created for one run and discarded with it, so repacking the
+#       whole release there is work nobody benefits from.
 #       Prints `published <sha>` (exit 0), `unchanged <sha>` (exit 10) when the tree
 #       equals the current release, or keeps the commit as `refs/pending/<branch>`
 #       and exits 1 when the push fails.
@@ -58,6 +62,7 @@ ensure_store() {
 
 # Keep only what the current release (and a pending commit, if any) needs.
 compact() {
+  [ "${DATA_BRANCH_COMPACT:-1}" != "0" ] || return 0
   store reflog expire --expire=now --all 2>/dev/null || true
   store repack -a -d -q --window=0 2>/dev/null || true
   store prune --expire=now 2>/dev/null || true
