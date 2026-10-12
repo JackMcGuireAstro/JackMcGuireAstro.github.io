@@ -2,7 +2,8 @@
 
 A tiny Cloudflare Worker that lets the CTAS and WorldsIndex pages read public
 astronomy data from archives that do not allow other websites to read them
-directly (TNS public spectrum files, Gaia Science Alerts light curves, Pan-STARRS
+directly (TNS public spectrum files, ASCII or FITS; WISeREP public-spectra listings
+and the public files they name; Gaia Science Alerts light curves, Pan-STARRS
 detections at MAST, TESS/Kepler/K2 light-curve files at MAST (mission files and the
 TESS-SPOC full-frame light curves), IRSA ZTF light
 curves, ExoFOP-TESS, the NASA Exoplanet Archive's TAP service and spectrum files,
@@ -12,7 +13,13 @@ an identical response for up to an hour so providers are not asked twice.
 
 Rules (see `worker.js`): GET only; only the listed hosts and paths; only requests
 from pages on jackmcguireastro.github.io (or a local preview on port 8000); no
-cookies or credentials either way; responses over 40 MB are refused.
+cookies or credentials either way; responses over 40 MB are refused. Files pass
+through byte for byte; a `.fits` file is labelled `application/fits` (a `.fits.gz`
+`application/gzip`) when the source labels it as text or not at all. WISeREP is
+asked only for its public listing (`/search/spectra?…&public=yes&format=json|tsv|csv`)
+and for files under `/system/files/uploaded/`; a proprietary spectrum comes back as a
+sign-in page or a 401/403, which the CTAS page reports as proprietary. No WISeREP
+account is used or asked for.
 
 Deploy (free Cloudflare account, from this folder):
 

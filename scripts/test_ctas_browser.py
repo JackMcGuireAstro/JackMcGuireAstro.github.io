@@ -31,6 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "ctas" / "data"
 SPECTRUM_FIXTURES = ROOT / "tests" / "fixtures" / "spectra"
 TNS_TEXT_FILE = re.compile(r"^https://www\.wis-tns\.org/system/files/uploaded/[A-Za-z0-9_\-./%+]+$")
+WISEREP_LISTING = re.compile(r"^https://www\.wiserep\.org/search/spectra\?(?=.*(?:^|&)public=yes(?:&|$))(?=.*(?:^|&)format=(?:json|tsv|csv)(?:&|$))[A-Za-z0-9_\-=&.%+]*$")
 VIEWPORTS = ((320, 568), (390, 844), (768, 1024), (1280, 720), (1440, 900))
 # Requests to hosts the page does not own must never decide whether the page
 # works; a blocked analytics beacon is not a CTAS defect.
@@ -75,6 +76,15 @@ def _tns_text_spectrum(candidate):
     for index, spectrum in enumerate((candidate.get("follow_up") or {}).get("spectra") or []):
         url = spectrum.get("public_download_url") or ""
         if TNS_TEXT_FILE.match(url) and not re.search(r"\.(fits?|fts|fz|gz|zip|tar|pdf|png|jpe?g)$", url, re.I):
+            return index, spectrum
+    return None
+
+
+def _wiserep_spectrum(candidate):
+    """A WISeREP record: its public listing address, record page, spectrum id and file name."""
+    for index, spectrum in enumerate((candidate.get("follow_up") or {}).get("spectra") or []):
+        url = spectrum.get("public_download_url") or ""
+        if WISEREP_LISTING.match(url) and spectrum.get("file_name"):
             return index, spectrum
     return None
 
@@ -259,13 +269,16 @@ class BrowserTests(unittest.TestCase):
         page.route("https://relay.test/**", relay)
         return calls
 
-    def _plot_first_spectrum(self, page=None):
+    def _plot_first_spectrum(self, page=None, index=None):
         page = page or self.page
         page.evaluate("""() => { const panel = document.querySelector('[data-dossier-view="spectra"]'); panel.open = true;
           panel.querySelectorAll('details.ctas-spectrum-record').forEach((d) => { d.open = true; }); }""")
-        button = page.locator("[data-plot-spectrum]").first
+        button = page.locator("[data-plot-spectrum]" if index is None else f"[data-plot-spectrum='{index}']").first
         button.scroll_into_view_if_needed()
         button.click()
+
+    def _status_of(self, page, index):
+        return page.locator(f"[data-spectrum-live]:has([data-plot-spectrum='{index}']) [data-spectrum-status]").first
 
     def test_tns_spectrum_is_plotted_on_request_through_the_relay(self):
         candidate = self._spectrum_dossier()
@@ -277,11 +290,11 @@ class BrowserTests(unittest.TestCase):
         self.assertEqual(calls, [], "opening a dossier must not fetch spectrum files")
         live = self.page.locator(f"[data-spectrum-live] [data-plot-spectrum='{index}']")
         self.assertEqual(live.count(), 1)
-        self._plot_first_spectrum()
+        self._plot_first_spectrum(index=index)
         self.page.wait_for_selector("[data-spectrum-svg] svg", timeout=30000)
         from urllib.parse import quote
         self.assertEqual(calls, ["https://relay.test/?url=" + quote(spectrum["public_download_url"], safe="")])
-        status = self.page.locator("[data-spectrum-status]").first.inner_text()
+        status = self._status_of(self.page, index).inner_text()
         self.assertIn("Plotted 137 points", status)
         svg = self.page.locator("[data-spectrum-svg] svg").first
         self.assertEqual(svg.get_attribute("role"), "img")
@@ -301,8 +314,117 @@ class BrowserTests(unittest.TestCase):
         self.assertEqual(figure.locator(".ctas-spectrum-marker").count(), 0, "markers can be hidden")
         self.assertGreater(figure.locator(".ctas-spectrum-table tbody tr").count(), 10, "a table view of the plot exists")
 
+    def test_fits_spectrum_is_plotted_with_its_header_keywords(self):
+        candidate = self._spectrum_dossier()
+        index, spectrum = _tns_text_spectrum(candidate)
+        fixture = (SPECTRUM_FIXTURES / "linear-1d.fits").read_bytes()
+        calls = self._route_relay(lambda route: route.fulfill(
+            status=200, content_type="application/fits", body=fixture, headers={"Access-Control-Allow-Origin": "*"}))
+        self._open_dossier(candidate["event_id"])
+        self._plot_first_spectrum(index=index)
+        self.page.wait_for_selector("[data-spectrum-svg] svg", timeout=30000)
+        self.assertEqual(len(calls), 1)
+        status = self._status_of(self.page, index).inner_text()
+        self.assertIn("Plotted 398 points", status)
+        self.assertIn("(FITS)", status)
+        figure = self.page.locator(".ctas-spectrum-live__figure").first
+        self.assertGreater(figure.locator(".ctas-spectrum-marker").count(), 3, "the same line markers as an ASCII plot")
+        facts = figure.locator(".ctas-spectrum-fits").inner_text()
+        for keyword, value in (("OBJECT", "SN 2026fit"), ("DATE-OBS", "2026-09-12T10:29:45"), ("TELESCOP", "P60"),
+                               ("INSTRUME", "SEDM"), ("EXPTIME", "2700"), ("BUNIT", "erg/cm2/s/A")):
+            self.assertIn(keyword, facts)
+            self.assertIn(value, facts)
+        self.assertIn("Air", facts, "air wavelengths are labelled, not converted")
+        caption = figure.locator("figcaption").inner_text()
+        self.assertIn("FITS file read from the primary HDU", caption)
+        self.assertIn("398 pixels read (2 blank or non-finite pixels ignored)", caption)
+        self.assertIn("not part of the verified snapshot", caption)
+        self.assertEqual(figure.locator("figcaption a").first.get_attribute("href"), spectrum["public_download_url"])
+        self.assertEqual(self._axe_violations(), [], "the header-keyword list and plot pass axe")
+
+    def _wiserep_dossier(self):
+        candidate = _published_dossier(lambda row: (row.get("n_spectra") or 0) > 0,
+                                       lambda c: _wiserep_spectrum(c) is not None)
+        if candidate is None:
+            self.skipTest("this release has no dossier with a WISeREP spectrum record")
+        return candidate
+
+    def test_wiserep_public_file_is_found_through_the_listing_and_plotted(self):
+        candidate = self._wiserep_dossier()
+        index, spectrum = _wiserep_spectrum(candidate)
+        from urllib.parse import quote, unquote
+        file_url = "https://www.wiserep.org/system/files/uploaded/TNS/" + quote(spectrum["file_name"])
+        listing = json.dumps([{"Spec. ID": str(spectrum.get("provider_spectrum_id") or ""), "Obj. Name": candidate["name"],
+                               "Ascii file": spectrum["file_name"], "FITS file": "", "Groups": "TNS", "WL Medium": "Air", "Public": "Yes"}])
+        fixture = (SPECTRUM_FIXTURES / "sedm-ztf.ascii").read_text()
+
+        def answer(route):
+            target = unquote(route.request.url.split("?url=", 1)[1])
+            if target == spectrum["public_download_url"]:
+                route.fulfill(status=200, content_type="application/json", body=listing, headers={"Access-Control-Allow-Origin": "*"})
+            else:
+                route.fulfill(status=200, content_type="text/plain", body=fixture, headers={"Access-Control-Allow-Origin": "*"})
+        calls = self._route_relay(answer)
+        self._open_dossier(candidate["event_id"])
+        self.assertEqual(calls, [], "opening a dossier asks WISeREP nothing")
+        box = self.page.locator(f"[data-spectrum-live][data-spectrum-provider='WISeREP']:has([data-plot-spectrum='{index}'])")
+        self.assertEqual(box.count(), 1)
+        self.assertIn("proprietary", self._status_of(self.page, index).text_content(), "the control says proprietary files are not fetched")
+        self._plot_first_spectrum(index=index)
+        self.page.wait_for_selector("[data-spectrum-svg] svg", timeout=30000)
+        self.assertEqual(calls, ["https://relay.test/?url=" + quote(spectrum["public_download_url"], safe=""),
+                                 "https://relay.test/?url=" + quote(file_url, safe="")],
+                         "the public listing first, then exactly the file it names")
+        self.assertIn("Plotted 137 points", self._status_of(self.page, index).inner_text())
+        figure = box.locator(".ctas-spectrum-live__figure").first
+        self.assertIn("Fetched from WISeREP", figure.locator("figcaption").inner_text())
+        self.assertEqual(figure.locator("figcaption a").first.get_attribute("href"), file_url)
+        self.assertEqual(figure.locator("figcaption a").nth(1).get_attribute("href"), spectrum.get("source_url") or spectrum["public_download_url"])
+        self.assertTrue(all("password" not in url.lower() and "token" not in url.lower() for url in calls))
+
+    def test_wiserep_proprietary_spectrum_is_reported_not_fetched(self):
+        candidate = self._wiserep_dossier()
+        index, spectrum = _wiserep_spectrum(candidate)
+        from urllib.parse import unquote
+        listing = json.dumps([{"Spec. ID": str(spectrum.get("provider_spectrum_id") or ""), "Ascii file": spectrum["file_name"], "Groups": "TNS", "Public": "Yes"}])
+        login = "<!DOCTYPE html><html><head><title>WISeREP | Log in</title></head><body><form><input name='pass' type='password'></form></body></html>"
+
+        def listing_is_login(route):
+            route.fulfill(status=200, content_type="text/html", body=login, headers={"Access-Control-Allow-Origin": "*"})
+
+        def file_is_refused(route):
+            target = unquote(route.request.url.split("?url=", 1)[1])
+            if target == spectrum["public_download_url"]:
+                route.fulfill(status=200, content_type="application/json", body=listing, headers={"Access-Control-Allow-Origin": "*"})
+            else:
+                route.fulfill(status=403, content_type="text/plain", body="Forbidden", headers={"Access-Control-Allow-Origin": "*"})
+
+        def file_is_login(route):
+            target = unquote(route.request.url.split("?url=", 1)[1])
+            if target == spectrum["public_download_url"]:
+                route.fulfill(status=200, content_type="application/json", body=listing, headers={"Access-Control-Allow-Origin": "*"})
+            else:
+                route.fulfill(status=200, content_type="text/html", body=login, headers={"Access-Control-Allow-Origin": "*"})
+        for answer in (listing_is_login, file_is_refused, file_is_login):
+            with self.subTest(case=answer.__name__):
+                page = self.browser.new_page(viewport={"width": 1280, "height": 900})
+                try:
+                    calls = self._route_relay(answer, page)
+                    self._open_dossier(candidate["event_id"], page)
+                    self._plot_first_spectrum(page, index=index)
+                    page.wait_for_function(
+                        "() => document.querySelector('[data-spectrum-live].is-proprietary [data-spectrum-status].is-problem')", timeout=30000)
+                    status = self._status_of(page, index).inner_text()
+                    self.assertIn("proprietary on WISeREP", status)
+                    self.assertIn("request access", status)
+                    self.assertEqual(page.locator("[data-spectrum-svg] svg").count(), 0)
+                    self.assertLessEqual(len(calls), 2, "nothing is retried or asked for with credentials")
+                finally:
+                    page.close()
+
     def test_spectrum_problems_are_explained_in_plain_words(self):
         candidate = self._spectrum_dossier()
+        index, _spectrum = _tns_text_spectrum(candidate)
         cases = (
             (lambda route: route.fulfill(status=404, body="Not Found", headers={"Access-Control-Allow-Origin": "*"}),
              "no file at this address"),
@@ -320,10 +442,10 @@ class BrowserTests(unittest.TestCase):
                 try:
                     self._route_relay(answer, page)
                     self._open_dossier(candidate["event_id"], page)
-                    self._plot_first_spectrum(page)
+                    self._plot_first_spectrum(page, index=index)
                     page.wait_for_function(
                         "() => document.querySelector('[data-spectrum-status].is-problem')", timeout=30000)
-                    self.assertIn(expected, page.locator("[data-spectrum-status]").first.inner_text())
+                    self.assertIn(expected, self._status_of(page, index).inner_text())
                     self.assertEqual(page.locator("[data-spectrum-svg] svg").count(), 0)
                 finally:
                     page.close()
@@ -332,21 +454,23 @@ class BrowserTests(unittest.TestCase):
         candidate = self._spectrum_dossier()
         self.page.route("**/live-config.json", lambda route: route.fulfill(
             status=200, content_type="application/json", body="{}"))
+        index, _spectrum = _tns_text_spectrum(candidate)
         self._open_dossier(candidate["event_id"])
-        self._plot_first_spectrum()
+        self._plot_first_spectrum(index=index)
         self.page.wait_for_function("() => document.querySelector('[data-spectrum-status].is-problem')", timeout=30000)
-        self.assertIn("relay is not configured", self.page.locator("[data-spectrum-status]").first.inner_text())
+        self.assertIn("relay is not configured", self._status_of(self.page, index).inner_text())
 
     def test_plotted_spectrum_is_accessible_and_fits_a_phone(self):
         candidate = self._spectrum_dossier()
         fixture = (SPECTRUM_FIXTURES / "longslit-nm.dat").read_text()
         self._route_relay(lambda route: route.fulfill(
             status=200, content_type="text/plain", body=fixture, headers={"Access-Control-Allow-Origin": "*"}))
+        index, _spectrum = _tns_text_spectrum(candidate)
         for width, height in ((320, 568), (390, 844)):
             with self.subTest(viewport=f"{width}x{height}"):
                 self.page.set_viewport_size({"width": width, "height": height})
                 self._open_dossier(candidate["event_id"])
-                self._plot_first_spectrum()
+                self._plot_first_spectrum(index=index)
                 self.page.wait_for_selector("[data-spectrum-svg] svg", timeout=30000)
                 self.page.wait_for_timeout(300)
                 overflow = self.page.evaluate(

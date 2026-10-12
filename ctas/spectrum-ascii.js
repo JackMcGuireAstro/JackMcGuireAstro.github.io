@@ -9,7 +9,10 @@
  * columns (wavelength, flux, optional error or variance), Fortran 'D' exponents, NaN
  * and Inf placeholders, descending order, Windows line endings. Wavelengths are
  * returned in Angstrom; nm and micron files are recognised from the header or, failing
- * that, from the range of the values.
+ * that, from the range of the values. FITS files are read by ctas/spectrum-fits.js,
+ * which hands its rows to assemble() here so both formats get the same treatment.
+ * Also here: which TNS and WISeREP records can be fetched (tnsFile, wiserepRecord) and
+ * how a WISeREP file address is read from the site's public listing (wiserepFile).
  */
 (function (root) {
   "use strict";
@@ -34,15 +37,104 @@
   var UNIT_FACTOR = {"Å": 1, "nm": 10, "µm": 10000};
 
   // ------------------------------------------------------------------ files
+  function fileFormat(name) {
+    return /\.(fits?|fts|fz)(\.gz)?$/i.test(name) ? "fits"
+      : /\.(gz|zip|tar|tgz|bz2|xz|7z|rar)$/i.test(name) ? "archive"
+      : /\.(jpe?g|png|gif|pdf|ps|eps|docx?)$/i.test(name) ? "document" : "ascii";
+  }
+  function lastSegment(url) {
+    var last = String(url || "").split("?")[0].split("/").pop() || "";
+    try { return decodeURIComponent(last); } catch (_) { return last; }
+  }
   function tnsFile(url) {
     var value = String(url || "");
     if (!TNS_FILE.test(value)) return null;
-    var last = value.split("/").pop() || "", name = last;
-    try { name = decodeURIComponent(last); } catch (_) { name = last; }
-    var format = /\.(fits?|fts|fz)(\.gz)?$/i.test(name) ? "fits"
-      : /\.(gz|zip|tar|tgz|bz2|xz|7z|rar)$/i.test(name) ? "archive"
-      : /\.(jpe?g|png|gif|pdf|ps|eps|docx?)$/i.test(name) ? "document" : "ascii";
-    return {url: value, fileName: name, format: format};
+    var name = lastSegment(value);
+    return {url: value, fileName: name, format: fileFormat(name), provider: "TNS"};
+  }
+
+  // WISeREP records in the CTAS data carry the object's public-spectra listing
+  // (public_download_url: /search/spectra?name=…&public=yes&format=json…), the record
+  // page (source_url: /form-edit/spectrum/<id>), the spectrum id and the file name. The
+  // listing is fetched first and the file's own address is read from it (wiserepFile).
+  var WISEREP_LISTING = /^https:\/\/www\.wiserep\.org\/search\/spectra\?(?=.*(?:^|&)public=yes(?:&|$))(?=.*(?:^|&)format=(?:json|tsv|csv)(?:&|$))[A-Za-z0-9_\-=&.%+]*$/;
+  var WISEREP_FILE = /^https:\/\/www\.wiserep\.org\/system\/files\/uploaded\/[A-Za-z0-9_\-./%+]+$/;
+  function wiserepRecord(row) {
+    row = row || {};
+    var listing = String(row.public_download_url || "");
+    if (!WISEREP_LISTING.test(listing)) return null;
+    var name = String(row.file_name || "").trim();
+    var id = String(row.provider_spectrum_id || "").trim();
+    var record = /^https:\/\/www\.wiserep\.org\/form-edit\/spectrum\/\d+\/?$/.test(String(row.source_url || "")) ? String(row.source_url) : "";
+    return {provider: "WISeREP", listingUrl: listing, recordUrl: record, spectrumId: id, fileName: name, format: name ? fileFormat(name) : "ascii"};
+  }
+  // The file address for one record, read from the listing WISeREP answered with. The
+  // listing is JSON (an object or array of rows) or TSV/CSV; its rows name the file in
+  // an "Ascii file" / "FITS file" field and the owning group in a "Group(s)" field. An
+  // absolute https://www.wiserep.org/… address on the row is used as given; a bare file
+  // name is joined to WISeREP's uploads path with the row's group, the same layout TNS
+  // uses for its uploads. Returns {url, fileName, group, medium, fluxUnit, public} or a
+  // problem {reason: "proprietary" | "not-listed" | "html" | "no-file" | "listing-unreadable"}.
+  function wiserepFile(listingText, record) {
+    var body = String(listingText === null || listingText === undefined ? "" : listingText).replace(/^﻿/, "").trim();
+    record = record || {};
+    if (!body) return {ok: false, reason: "not-listed"};
+    if (/^\s*(<!doctype\s+html|<html|<head|<body)/i.test(body.slice(0, 500)) || /<html[\s>]/i.test(body.slice(0, 3000))) return {ok: false, reason: /log\s*-?in|sign\s*-?in|password/i.test(body) ? "proprietary" : "html"};
+    var rows = listingRows(body);
+    if (!rows) return {ok: false, reason: "listing-unreadable"};
+    var wanted = rows.filter(function (row) { return rowMatchesRecord(row, record); });
+    if (!wanted.length && rows.length === 1 && !record.spectrumId && !record.fileName) wanted = rows;
+    if (!wanted.length) return {ok: false, reason: "not-listed"};
+    var row = wanted[0], fileName = "", group = "", url = "", medium = "", fluxUnit = "", isPublic = null;
+    Object.keys(row).forEach(function (key) {
+      var value = row[key] === null || row[key] === undefined ? "" : String(row[key]).trim(), label = key.toLowerCase();
+      if (!value) return;
+      if (WISEREP_FILE.test(value) && (!record.fileName || lastSegment(value) === record.fileName || /file/.test(label))) { if (!url || lastSegment(value) === record.fileName) url = value; }
+      else if (/file/.test(label) && !/related|size|type/.test(label) && !/^https?:/i.test(value)) {
+        if (!fileName || value === record.fileName || (!record.fileName && /ascii/.test(label))) fileName = value;
+      }
+      if (/^groups?$/.test(label) && !group) group = value.split(/[,;]/)[0].trim();
+      if (/medium|air|vac/.test(label)) medium = /vac/i.test(value) ? "vacuum" : /air/i.test(value) ? "air" : "";
+      if (/flux\s*unit/.test(label)) fluxUnit = value;
+      if (/^public$/.test(label)) isPublic = /^(y|yes|1|true|public)$/i.test(value) ? true : /^(n|no|0|false|private|proprietary)$/i.test(value) ? false : null;
+    });
+    if (isPublic === false) return {ok: false, reason: "proprietary"};
+    if (!url && fileName && group && /^[A-Za-z0-9_\-. +]+$/.test(group) && /^[^/\\]+$/.test(fileName)) {
+      url = "https://www.wiserep.org/system/files/uploaded/" + encodeURIComponent(group) + "/" + encodeURIComponent(fileName);
+    }
+    if (!url || !WISEREP_FILE.test(url)) return {ok: false, reason: "no-file", fileName: fileName, group: group};
+    return {ok: true, url: url, fileName: fileName || lastSegment(url), group: group, medium: medium, fluxUnit: fluxUnit, public: isPublic, format: fileFormat(fileName || lastSegment(url))};
+  }
+  function listingRows(body) {
+    var rows = null;
+    if (/^[[{]/.test(body)) {
+      try { rows = JSON.parse(body); } catch (_) { return null; }
+      if (rows && !Array.isArray(rows) && typeof rows === "object") {
+        if (Array.isArray(rows.data)) rows = rows.data;
+        else if (rows.data && typeof rows.data === "object") rows = Object.keys(rows.data).map(function (key) { return rows.data[key]; });
+        else rows = Object.keys(rows).map(function (key) { return rows[key]; });
+      }
+      return Array.isArray(rows) ? rows.filter(function (row) { return row && typeof row === "object"; }) : null;
+    }
+    var lines = body.split(/\r\n|\r|\n/).filter(function (line) { return line.trim(); });
+    if (lines.length < 2) return [];
+    var separator = lines[0].indexOf("\t") !== -1 ? "\t" : ",";
+    var cells = function (line) { return line.split(separator).map(function (cell) { return cell.trim().replace(/^"|"$/g, ""); }); };
+    var names = cells(lines[0]);
+    return lines.slice(1).map(function (line) {
+      var values = cells(line), row = {};
+      names.forEach(function (name, index) { row[name] = values[index] === undefined ? "" : values[index]; });
+      return row;
+    });
+  }
+  function rowMatchesRecord(row, record) {
+    var byId = false, byName = false;
+    Object.keys(row).forEach(function (key) {
+      var value = row[key] === null || row[key] === undefined ? "" : String(row[key]).trim(), label = key.toLowerCase();
+      if (record.spectrumId && /spec.*id|^id$|spectrum/.test(label) && value === record.spectrumId) byId = true;
+      if (record.fileName && /file/.test(label) && (value === record.fileName || lastSegment(value) === record.fileName)) byName = true;
+    });
+    return byId || byName;
   }
 
   // ------------------------------------------------------------------ parsing
@@ -175,12 +267,28 @@
     if (raw.length < MIN_POINTS) return {ok: false, reason: "too-few", count: raw.length};
     if (columns.error >= 0 && !columns.named && !errorsLookReal(raw)) raw.forEach(function (point) { point.error = null; });
 
-    var wavelengths = raw.map(function (point) { return point.wavelength; });
     var headerText = unitLines.join(" \n ");
-    var logScale = /log.{0,12}(wave|lambda)|(wave|lambda).{0,12}\blog/i.test(headerText) &&
-      Math.max.apply(null, wavelengths) < 6 && Math.min.apply(null, wavelengths) > 2;
+    var assembled = assemble(raw, {unit: wavelengthUnit(unitLines), logHint: /log.{0,12}(wave|lambda)|(wave|lambda).{0,12}\blog/i.test(headerText)});
+    if (!assembled.ok) return assembled;
+    assembled.format = "ascii"; assembled.columns = width; assembled.columnNames = columns.named ? names : null;
+    assembled.errorFromVariance = columns.variance; assembled.skipped = skipped; assembled.comments = comments; assembled.headers = headers;
+    return assembled;
+  }
+
+  // The steps every reader shares once it has raw {wavelength, flux, error} rows in the
+  // file's own units: log10 wavelengths (declared by `logHint`, or `logWavelength: true`
+  // when the format states it), the wavelength unit (`unit` as the header says, checked
+  // against the values; otherwise judged from the values), conversion to Å, a
+  // plausibility check and ascending order. `hints.unit` is "Å", "nm", "µm" or "".
+  function assemble(raw, hints) {
+    hints = hints || {};
+    if (!raw.length) return failure("no-numbers");
+    if (raw.length < MIN_POINTS) return {ok: false, reason: "too-few", count: raw.length};
+    var wavelengths = raw.map(function (point) { return point.wavelength; });
+    var logScale = hints.logWavelength === true ||
+      (Boolean(hints.logHint) && Math.max.apply(null, wavelengths) < 6 && Math.min.apply(null, wavelengths) > 2);
     if (logScale) wavelengths = wavelengths.map(function (value) { return Math.pow(10, value); });
-    var unit = logScale ? "Å" : wavelengthUnit(unitLines), basis = unit ? "header" : "values";
+    var unit = logScale && !hints.unit ? "Å" : (UNIT_FACTOR[hints.unit] ? hints.unit : ""), basis = unit ? "header" : "values";
     if (unit && !plausible(wavelengths.map(function (value) { return value * UNIT_FACTOR[unit]; }), 800, 30000)) { unit = ""; basis = "values"; }
     if (!unit) unit = unitFromValues(wavelengths);
     var factor = UNIT_FACTOR[unit];
@@ -195,8 +303,7 @@
     if (!sorted) points.sort(function (a, b) { return a.wavelength - b.wavelength; });
     return {
       ok: true, points: points, unit: unit, unitBasis: basis, logWavelength: logScale,
-      columns: width, columnNames: columns.named ? names : null, hasError: points.some(function (point) { return point.error !== null; }),
-      errorFromVariance: columns.variance, skipped: skipped, comments: comments, headers: headers, reordered: !sorted,
+      hasError: points.some(function (point) { return point.error !== null; }), reordered: !sorted, skipped: 0,
     };
   }
 
@@ -290,33 +397,48 @@
   }
 
   // ------------------------------------------------------------------ plain-words problems
+  // `problem.provider` names the site the file lives on ("TNS" unless told otherwise;
+  // "WISeREP" for its records), so the advice points at the right place.
   function failureMessage(problem) {
     problem = problem || {};
-    var status = Number(problem.status || 0);
-    if (problem.kind === "no-relay") return "This site’s live-data relay is not configured, so the file cannot be fetched from here. Use the link to open the original file at TNS.";
-    if (problem.kind === "timeout") return "The live-data relay did not answer in time. TNS or the relay may be slow or down; try again later, or open the original file at TNS.";
-    if (problem.kind === "network") return "The live-data relay could not be reached (it may be down, or a network or browser extension blocked it). Try again later, or open the original file at TNS.";
+    var status = Number(problem.status || 0), site = problem.provider === "WISeREP" ? "WISeREP" : "TNS";
+    var open = site === "WISeREP" ? "open its record at WISeREP" : "open the original file at TNS";
+    var Open = open.charAt(0).toUpperCase() + open.slice(1);
+    var proprietary = "This spectrum is proprietary on WISeREP (only its owners can download it), so it cannot be fetched or plotted here. " +
+      "Its public metadata stays on this page; " + open + " to request access.";
+    if (problem.kind === "no-relay") return "This site’s live-data relay is not configured, so the file cannot be fetched from here. Use the link to " + open + ".";
+    if (problem.kind === "timeout") return "The live-data relay did not answer in time. " + site + " or the relay may be slow or down; try again later, or " + open + ".";
+    if (problem.kind === "network") return "The live-data relay could not be reached (it may be down, or a network or browser extension blocked it). Try again later, or " + open + ".";
     if (problem.kind === "http") {
-      if (status === 400) return "The relay does not accept this file address, so it cannot be fetched from here. Open the original file at TNS instead.";
-      if (status === 401 || status === 403) return "TNS refused the file (HTTP " + status + "). It is probably not public; open it at TNS, signed in if you have an account.";
-      if (status === 404 || status === 410) return "TNS has no file at this address any more (HTTP " + status + "). It may have been renamed, moved or withdrawn.";
-      if (status === 413) return "The file is larger than the relay’s 40 MB limit, so it is not plotted here. Open the original file at TNS.";
-      if (status === 429) return "TNS is limiting requests right now (HTTP 429). Try again in a few minutes.";
-      if (status >= 500) return "TNS or the relay had a problem (HTTP " + status + "). Try again later, or open the original file at TNS.";
-      return "The file could not be fetched (HTTP " + (status || "error") + "). Open the original file at TNS.";
+      if (status === 400) return "The relay does not accept this file address, so it cannot be fetched from here. " + Open + " instead.";
+      if (status === 401 || status === 403) return site === "WISeREP" ? proprietary + " (HTTP " + status + ".)"
+        : "TNS refused the file (HTTP " + status + "). It is probably not public; open it at TNS, signed in if you have an account.";
+      if (status === 404 || status === 410) return site + " has no file at this address any more (HTTP " + status + "). It may have been renamed, moved or withdrawn.";
+      if (status === 413) return "The file is larger than the relay’s 40 MB limit, so it is not plotted here. " + Open + ".";
+      if (status === 429) return site + " is limiting requests right now (HTTP 429). Try again in a few minutes.";
+      if (status >= 500) return site + " or the relay had a problem (HTTP " + status + "). Try again later, or " + open + ".";
+      return "The file could not be fetched (HTTP " + (status || "error") + "). " + Open + ".";
     }
     var reason = problem.reason;
-    if (reason === "html") return "TNS sent back a web page instead of the data file, which usually means the file is not public (or TNS asked for a sign-in).";
-    if (reason === "fits") return "This is a FITS file. Plotting FITS spectra isn’t supported here yet; open the original file at TNS.";
-    if (reason === "binary") return "The file is binary (perhaps compressed or FITS), not a text table, so it cannot be plotted here yet.";
+    if (reason === "proprietary") return proprietary;
+    if (reason === "html") return site === "WISeREP" ? proprietary + " (WISeREP answered with a web page instead of the file.)"
+      : "TNS sent back a web page instead of the data file, which usually means the file is not public (or TNS asked for a sign-in).";
+    if (reason === "not-listed") return "WISeREP’s public listing for this object no longer names this spectrum, so its file cannot be found. It may have been withdrawn or made proprietary; " + open + ".";
+    if (reason === "no-file") return "WISeREP’s public listing names this spectrum but gives no downloadable file address, so it is not plotted here. " + Open + ".";
+    if (reason === "listing-unreadable") return "WISeREP’s public listing could not be read (it was not the JSON or table expected), so the file cannot be located from here. " + Open + ".";
+    if (reason === "fits") return "This is a FITS file whose contents could not be read as a spectrum; " + open + ".";
+    if (typeof reason === "string" && reason.indexOf("fits-") === 0) return (problem.message || "This FITS file could not be read as a spectrum.") + " " + Open + ".";
+    if (reason === "gzip") return "The file is gzip-compressed and this browser cannot decompress it here. " + Open + ".";
+    if (reason === "binary") return "The file is binary (perhaps a compressed archive or an image), not a text table or a FITS spectrum, so it cannot be plotted here.";
     if (reason === "empty") return "The file arrived empty, so there is nothing to plot.";
     if (reason === "too-few") return "The file was read, but only " + (problem.count || "a few") + " wavelength–flux rows were found, too few to plot.";
-    if (reason === "implausible") return "The first column does not look like wavelengths in Å, nm or µm, so the file is not plotted.";
+    if (reason === "implausible") return "The wavelengths do not look like Å, nm or µm, so the file is not plotted.";
     return "The file arrived but could not be read as an ASCII spectrum: no rows of wavelength and flux numbers were found.";
   }
 
   var api = {
-    LINES: LINES, MIN_POINTS: MIN_POINTS, tnsFile: tnsFile, parse: parse, normalise: normalise, toFrame: toFrame,
+    LINES: LINES, MIN_POINTS: MIN_POINTS, tnsFile: tnsFile, wiserepRecord: wiserepRecord, wiserepFile: wiserepFile, fileFormat: fileFormat,
+    parse: parse, assemble: assemble, normalise: normalise, toFrame: toFrame,
     decimate: decimate, bin: bin, robustRange: robustRange, ticks: ticks, lineMarkers: lineMarkers, labelRows: labelRows,
     failureMessage: failureMessage, median: median,
   };

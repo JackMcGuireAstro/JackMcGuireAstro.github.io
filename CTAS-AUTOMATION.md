@@ -288,7 +288,15 @@ pass-through relay in `relay/` (address in `/live-config.json`; Lasair and ADS u
 free keys stored only as relay secrets). Nothing
 is stored by CTAS or on the publishing computer, and these values are labelled as
 live provider data outside the checksum-verified snapshot. In the Spectra panel, each
-record with a public TNS text file also has a "Plot spectrum" control that fetches just
-that file through the same relay on request; `ctas/spectrum-ascii.js` reads the common
-ASCII dialects (tested by `scripts/test_ctas_spectrum_ascii.js` with the samples in
-`tests/fixtures/spectra/`). FITS files are named as not yet supported.
+record with a public TNS file, or a WISeREP record, also has a "Plot spectrum" control
+that fetches just that file through the same relay on request; `ctas/spectrum-ascii.js`
+reads the common ASCII dialects (tested by `scripts/test_ctas_spectrum_ascii.js` with the
+samples in `tests/fixtures/spectra/`) and `ctas/spectrum-fits.js` reads FITS spectra
+(1-D images with linear or log WCS keywords, IRAF multispec arrays taking the first
+spectrum, binary tables with wavelength/flux columns including SDSS loglam/ivar; tested by
+`scripts/test_ctas_spectrum_fits.js` with files written by
+`scripts/make_spectrum_fits_fixtures.py`). gzip-compressed files are inflated in the
+browser. For a WISeREP record the page first fetches the object's public listing that the
+record names (`public_download_url`), reads the file's address from it, then fetches the
+file; a 401/403 or a sign-in page instead of a file is shown as "proprietary on WISeREP".
+No credentials are asked for or stored.

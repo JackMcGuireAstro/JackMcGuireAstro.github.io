@@ -10,6 +10,7 @@
  * Request:  GET https://<worker>/?url=<encoded https URL>
  * Only GET, only the hosts and paths below, only from the site's own pages, no
  * visitor cookies or credentials in either direction, responses capped at 40 MB.
+ * Files (ASCII or FITS spectra, light-curve FITS) pass through byte for byte.
  *
  * Two sources need a free access key (ADS papers, Lasair for Rubin alerts). Those
  * keys are stored as Worker secrets (`npx wrangler secret put ADS_TOKEN`,
@@ -27,8 +28,21 @@ export const CACHE_SECONDS = 3600;
 
 // Each rule: exact host, a path pattern, and an optional check on the query string.
 export const ROUTES = [
-  { // TNS public uploads: spectra and reports attached to public object pages
+  { // TNS public uploads: spectra (ASCII or FITS) and reports attached to public object pages
     host: "www.wis-tns.org",
+    path: /^\/system\/files\/uploaded\/[A-Za-z0-9_\-./%+]+$/,
+    query: (q) => q.toString() === "",
+  },
+  { // WISeREP public-spectra listing for one object (the address CTAS records carry):
+    // only the public=yes, machine-readable form, so nothing proprietary is listed
+    host: "www.wiserep.org",
+    path: /^\/search\/spectra$/,
+    query: (q) => q.get("public") === "yes" && ["json", "tsv", "csv"].includes(q.get("format") || "")
+      && /^[A-Za-z0-9 _.+\-]{1,80}$/.test(q.get("name") || "")
+      && [...q.keys()].every((k) => ["name", "public", "format", "files_type", "num_page", "page", "inserted_period_value", "inserted_period_units"].includes(k)),
+  },
+  { // WISeREP uploaded files, at the address its public listing gives (same layout as TNS)
+    host: "www.wiserep.org",
     path: /^\/system\/files\/uploaded\/[A-Za-z0-9_\-./%+]+$/,
     query: (q) => q.toString() === "",
   },
@@ -103,6 +117,15 @@ export async function resolveSpectrum(url, init, fetcher = fetch) {
   const found = page.ok ? WORKSPACE.exec(await page.text()) : null;
   if (!found) throw new Error("the archive's atmospheres page did not open a workspace");
   return url.origin + found[1] + "/atmospheres/tab1/data/" + url.searchParams.get("spec_path");
+}
+
+// The type to send for a FITS file, or null to keep the source's own.
+export function fitsContentType(pathname, declared) {
+  const name = decodeURIComponent(pathname || "").toLowerCase();
+  const type = (declared || "").toLowerCase();
+  if (/\.(fits?|fts|fz)\.gz$/.test(name)) return type.startsWith("application/gzip") || type.startsWith("application/x-gzip") ? null : "application/gzip";
+  if (/\.(fits?|fts|fz)$/.test(name)) return type.startsWith("application/fits") || type.startsWith("image/fits") || type.startsWith("application/octet-stream") ? null : "application/fits";
+  return null;
 }
 
 export function findRoute(target) {
@@ -248,6 +271,10 @@ export default {
       const value = response.headers.get(name);
       if (value) headers.set(name, value);
     }
+    // FITS and gzipped files pass through byte for byte; a source that labels them as text
+    // (or not at all) gets a binary type so nothing downstream re-encodes them.
+    const fitsType = fitsContentType(upstream.pathname, headers.get("Content-Type"));
+    if (fitsType) headers.set("Content-Type", fitsType);
     headers.set("Access-Control-Allow-Origin", origin);
     headers.set("Access-Control-Expose-Headers", "X-Relay-Source, Content-Length");
     headers.set("Vary", "Origin");

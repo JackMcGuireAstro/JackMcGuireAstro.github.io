@@ -850,10 +850,11 @@
           '</td><td>' + esc(spectrumNumber(point.flux)) + '</td></tr>';
       }).join("") + '</tbody></table></div></details>';
   }
-  // ---------------------------------------------------------------- live TNS spectrum plots
-  // A public TNS spectrum file is fetched through the live-data relay only when the reader
-  // presses "Plot spectrum" (ctas/live-sources.js), read by ctas/spectrum-ascii.js and kept
-  // in memory for the open page only; nothing is stored or added to the snapshot.
+  // ---------------------------------------------------------------- live spectrum plots
+  // A public TNS or WISeREP spectrum file is fetched through the live-data relay only when
+  // the reader presses "Plot spectrum" (ctas/live-sources.js), read by ctas/spectrum-ascii.js
+  // or ctas/spectrum-fits.js and kept in memory for the open page only; nothing is stored
+  // or added to the snapshot.
   var spectrumPlots = {};
   function candidateRedshift(candidate) {
     var values = [candidate && candidate.redshift, candidate && candidate.host_redshift];
@@ -926,9 +927,48 @@
       '<text x="' + ((left + width - right) / 2) + '" y="' + (height - 10) + '" text-anchor="middle" class="ctas-axis-label">' + esc(axisName) + "</text>" +
       '<text x="14" y="' + ((top + height - bottom) / 2) + '" transform="rotate(-90 14 ' + ((top + height - bottom) / 2) + ')" text-anchor="middle" class="ctas-axis-label">Normalised flux</text></svg>';
   }
-  function liveSpectrumFigure(row, parsed, candidate, key, fetchedAt) {
-    var lib = window.CTASSpectrum, file = lib.tnsFile(row.public_download_url) || {url: row.public_download_url, fileName: row.file_name || "spectrum file"};
-    var z = candidateRedshift(candidate);
+  // Where a spectrum record's file lives and how it is reached: a public TNS upload is
+  // fetched by its address; a WISeREP record names the object's public listing, from
+  // which the file's address is read first (ctas/spectrum-ascii.js wiserepFile). Only
+  // public files are fetched; nothing asks for or stores WISeREP credentials.
+  function spectrumSource(row) {
+    var lib = window.CTASSpectrum;
+    if (!lib || !row) return null;
+    var file = lib.tnsFile(row.public_download_url);
+    if (file) return {provider: "TNS", url: file.url, fileName: file.fileName, format: file.format, recordUrl: "", listingUrl: ""};
+    var record = lib.wiserepRecord(row);
+    if (record) {
+      return {provider: "WISeREP", url: "", fileName: record.fileName || ("WISeREP spectrum " + record.spectrumId), format: record.format,
+        recordUrl: record.recordUrl || record.listingUrl, listingUrl: record.listingUrl, record: record};
+    }
+    return null;
+  }
+  function sourceLinks(source) {
+    if (source.provider === "WISeREP") {
+      return (source.url ? '<a href="' + esc(source.url) + '" target="_blank" rel="noopener">Download the file from WISeREP<span class="sr-only"> (opens in a new tab)</span></a> ' : "") +
+        '<a href="' + esc(source.recordUrl) + '" target="_blank" rel="noopener">Open the record at WISeREP<span class="sr-only"> (opens in a new tab)</span></a>';
+    }
+    return '<a href="' + esc(source.url) + '" target="_blank" rel="noopener">Open the original file at TNS<span class="sr-only"> (opens in a new tab)</span></a>';
+  }
+  function fitsFacts(parsed) {
+    var header = parsed.header || {}, medium = parsed.medium;
+    var exptime = typeof header.exptime === "number" ? num(header.exptime, 1) + " s" : header.exptime;
+    return '<dl class="ctas-detail__facts ctas-spectrum-fits">' + fact("OBJECT", header.object) + fact("DATE-OBS", header.dateObs) +
+      fact("TELESCOP", header.telescope) + fact("INSTRUME", header.instrument) + fact("EXPTIME", exptime) + fact("BUNIT", header.bunit) +
+      fact("Wavelengths", (medium === "air" ? "Air" : medium === "vacuum" ? "Vacuum" : "Air or vacuum not stated") + " (as labelled; not converted)") + "</dl>";
+  }
+  function fitsLayoutText(parsed) {
+    var hdu = parsed.hdu || {}, where = hdu.index ? "extension " + hdu.index + (hdu.name ? " (" + hdu.name + ")" : "") : "the primary HDU";
+    var layout = parsed.layout === "image-1d" ? "a 1-D image with linear wavelength keywords" : parsed.layout === "bintable-rows" ? "a binary table with one row per pixel"
+      : parsed.layout === "bintable-vector" ? "a binary table of vector columns" : "a " + String(parsed.layout).replace("image-", "") + " image array";
+    return "FITS file read from " + where + ": " + layout + (parsed.columnNames ? " (columns " + parsed.columnNames.join(", ") + ")" : "") +
+      (parsed.notes && parsed.notes.length ? "; " + parsed.notes.join("; ") : "") + ".";
+  }
+  function liveSpectrumFigure(row, parsed, candidate, key, fetchedAt, source) {
+    var lib = window.CTASSpectrum;
+    source = source || spectrumSource(row) || {provider: "TNS", url: row.public_download_url, fileName: row.file_name || "spectrum file", format: "ascii"};
+    var file = {url: source.url || source.recordUrl, fileName: source.fileName};
+    var z = candidateRedshift(candidate), isFits = parsed.format === "fits";
     var plot = spectrumPlots[key] = {key: key, row: row, parsed: parsed, z: z, frame: "observed", lines: true,
       name: candidate && candidate.name || "this candidate", fileName: file.fileName};
     var frameControls = z > 0 ? '<fieldset class="ctas-spectrum-frame"><legend>Wavelength axis</legend>' +
@@ -940,14 +980,16 @@
       : z === 0 ? "Markers show common lines at their rest wavelengths (reported redshift 0)"
       : "No redshift is reported, so markers sit at rest wavelengths on the observed axis";
     var binned = lib.bin(plot.normal ? plot.normal.points : (plot.normal = lib.normalise(parsed.points)).points, 150);
+    var readText = isFits ? parsed.points.length.toLocaleString() + " pixels read" + (parsed.skipped ? " (" + parsed.skipped + " blank or non-finite pixels ignored)" : "") + ". " + fitsLayoutText(parsed)
+      : parsed.points.length.toLocaleString() + " rows read" + (parsed.skipped ? " (" + parsed.skipped + " non-numeric or non-finite rows ignored)" : "");
+    var fluxNote = isFits && parsed.header && parsed.header.bunit ? "flux divided by its median (the file’s BUNIT is " + parsed.header.bunit + ")" : "flux divided by its median, because the file’s flux units are not assumed";
     return '<figure class="ctas-spectrum-live__figure" data-spectrum-figure="' + key + '"><div class="ctas-spectrum-controls">' + frameControls +
       '<label class="ctas-spectrum-lines"><input type="checkbox" data-spectrum-lines="' + key + '" checked> Mark common lines</label></div>' +
-      '<div class="ctas-spectrum-live__svg" data-spectrum-svg="' + key + '">' + spectrumLiveSvg(plot) + "</div>" +
-      "<figcaption>Fetched from TNS through the site’s live-data relay at " + esc(absolute(fetchedAt)) + "; nothing is stored and this plot is <strong>not part of the verified snapshot</strong>. " +
-      esc(parsed.points.length.toLocaleString() + " rows read" + (parsed.skipped ? " (" + parsed.skipped + " non-numeric or non-finite rows ignored)" : "") +
-        "; wavelengths " + unitText + "; flux divided by its median, because the file’s flux units are not assumed" + (parsed.hasError ? "; the shaded band is the file’s error column" : "") + ". " +
+      '<div class="ctas-spectrum-live__svg" data-spectrum-svg="' + key + '">' + spectrumLiveSvg(plot) + "</div>" + (isFits ? fitsFacts(parsed) : "") +
+      "<figcaption>Fetched from " + esc(source.provider) + " through the site’s live-data relay at " + esc(absolute(fetchedAt)) + "; nothing is stored and this plot is <strong>not part of the verified snapshot</strong>. " +
+      esc(readText + "; wavelengths " + unitText + "; " + fluxNote + (parsed.hasError ? "; the shaded band is the file’s error " + (isFits ? "data" : "column") : "") + ". " +
         markerText + ". Supernova absorption minima usually sit blueward of these markers because the ejecta move toward us.") +
-      ' <a href="' + esc(file.url) + '" target="_blank" rel="noopener">Open the original file at TNS<span class="sr-only"> (opens in a new tab)</span></a></figcaption>' +
+      " " + sourceLinks(source) + "</figcaption>" +
       '<details class="ctas-spectrum-points"><summary>Show the plotted spectrum as a table (' + binned.length.toLocaleString() + " binned values)</summary>" +
       '<div class="ctas-evidence-table-wrap ctas-evidence-table-wrap--tall" role="region" aria-label="Binned values of the plotted spectrum" tabindex="0"><table class="ctas-evidence-table ctas-spectrum-table">' +
       "<caption>Mean normalised flux in " + binned.length.toLocaleString() + " consecutive wavelength bins of the fetched file.</caption><thead><tr><th scope=\"col\">Observed wavelength (Å)</th>" +
@@ -958,37 +1000,59 @@
       }).join("") + "</tbody></table></div></details></figure>";
   }
   function renderSpectrumLive(candidate, row, index) {
-    var lib = window.CTASSpectrum, file = lib && lib.tnsFile(row.public_download_url);
-    if (!file) return "";
-    var link = '<a href="' + esc(file.url) + '" target="_blank" rel="noopener">Open the original file at TNS<span class="sr-only"> (opens in a new tab)</span></a>';
-    if (file.format === "fits") return '<div class="ctas-spectrum-live"><p>This spectrum is a FITS file. Plotting FITS spectra isn’t supported here yet. ' + link + "</p></div>";
-    if (file.format !== "ascii") return '<div class="ctas-spectrum-live"><p>This TNS file is a ' + (file.format === "archive" ? "compressed archive" : "document or image") +
-      ", not a spectrum table, so it is not plotted here. " + link + "</p></div>";
-    return '<div class="ctas-spectrum-live" data-spectrum-live="' + spectrumKey(candidate, index) + '"><div class="ctas-evidence-tools">' +
+    var source = spectrumSource(row);
+    if (!source) return "";
+    var link = sourceLinks(source);
+    if (source.format === "archive" || source.format === "document") {
+      return '<div class="ctas-spectrum-live"><p>This ' + esc(source.provider) + " file is a " + (source.format === "archive" ? "compressed archive" : "document or image") +
+        ", not a spectrum table or FITS spectrum, so it is not plotted here. " + link + "</p></div>";
+    }
+    var kind = source.format === "fits" ? "FITS file" : "text file";
+    var note = source.provider === "WISeREP"
+      ? "WISeREP’s public listing for this object, then the public " + kind + " it names, are fetched through the site’s live-data relay only when you ask; nothing is stored. Spectra that WISeREP keeps proprietary cannot be fetched and are reported as such."
+      : "The public TNS " + kind + " is fetched through the site’s live-data relay only when you ask; nothing is stored.";
+    return '<div class="ctas-spectrum-live" data-spectrum-live="' + spectrumKey(candidate, index) + '" data-spectrum-provider="' + esc(source.provider) + '"><div class="ctas-evidence-tools">' +
       '<button type="button" data-plot-spectrum="' + index + '">Plot spectrum</button>' + link + "</div>" +
-      '<p class="ctas-spectrum-live__status" data-spectrum-status role="status" aria-live="polite">The public TNS file is fetched through the site’s live-data relay only when you ask; nothing is stored.</p>' +
+      '<p class="ctas-spectrum-live__status" data-spectrum-status role="status" aria-live="polite">' + esc(note) + "</p>" +
       '<div data-spectrum-plot></div></div>';
   }
   function plotSpectrum(button, candidate) {
     var lib = window.CTASSpectrum, live = window.CTASLive, box = button.closest("[data-spectrum-live]");
     var index = Number(button.getAttribute("data-plot-spectrum"));
-    var row = ((candidate.follow_up || {}).spectra || [])[index], file = row && lib && lib.tnsFile(row.public_download_url);
-    if (!box || !file) return;
+    var row = ((candidate.follow_up || {}).spectra || [])[index], source = row && spectrumSource(row);
+    if (!box || !source) return;
     var status = box.querySelector("[data-spectrum-status]"), target = box.querySelector("[data-spectrum-plot]");
-    function say(message, problem) { status.textContent = message; status.classList.toggle("is-problem", Boolean(problem)); }
-    if (!live || !live.fetchViaRelay) { say(lib.failureMessage({kind: "no-relay"}), true); return; }
+    function say(message, problem) { status.textContent = message; status.classList.toggle("is-problem", Boolean(problem)); box.classList.toggle("is-proprietary", problem === "proprietary"); }
+    if (!live || !live.fetchSpectrumFile) { say(lib.failureMessage({kind: "no-relay", provider: source.provider}), true); return; }
     button.disabled = true;
-    say("Fetching " + file.fileName + " from TNS through the relay…");
-    live.fetchViaRelay(file.url).then(function (response) {
-      var parsed = lib.parse(response.text);
-      if (!parsed.ok) throw parsed;
+    var fetched;
+    if (source.provider === "WISeREP") {
+      say("Asking WISeREP’s public listing where " + source.fileName + " is…");
+      fetched = live.fetchViaRelay(source.listingUrl).then(function (listing) {
+        var found = lib.wiserepFile(listing.text, source.record);
+        if (!found.ok) throw found;
+        source.url = found.url; source.fileName = found.fileName || source.fileName; source.format = found.format;
+        say("Fetching " + source.fileName + " from WISeREP through the relay…");
+        return live.fetchSpectrumFile(found.url);
+      });
+    } else {
+      say("Fetching " + source.fileName + " from TNS through the relay…");
+      fetched = live.fetchSpectrumFile(source.url);
+    }
+    fetched.then(function (parsed) {
       if (state.activeDetail !== candidate || !document.body.contains(box)) return;
-      target.innerHTML = liveSpectrumFigure(row, parsed, candidate, box.getAttribute("data-spectrum-live"), new Date().toISOString());
-      say("Plotted " + parsed.points.length.toLocaleString() + " points from " + file.fileName + ".");
+      target.innerHTML = liveSpectrumFigure(row, parsed, candidate, box.getAttribute("data-spectrum-live"), new Date().toISOString(), source);
+      say("Plotted " + parsed.points.length.toLocaleString() + " points from " + source.fileName + (parsed.format === "fits" ? " (FITS)." : "."));
       button.textContent = "Fetch again";
     }).catch(function (problem) {
-      say(problem && (problem.kind || problem.reason) ? lib.failureMessage(problem)
-        : "The spectrum could not be plotted (" + text(problem && problem.message || problem) + "). Open the original file at TNS.", true);
+      var known = problem && (problem.kind || problem.reason);
+      if (known) problem.provider = source.provider;
+      // a web page or a refusal from WISeREP instead of a file means the spectrum is proprietary there
+      var proprietary = source.provider === "WISeREP" && known && (problem.reason === "proprietary" || problem.reason === "html" ||
+        (problem.kind === "http" && (problem.status === 401 || problem.status === 403)));
+      say(known ? lib.failureMessage(problem)
+        : "The spectrum could not be plotted (" + text(problem && problem.message || problem) + "). " + (source.provider === "WISeREP" ? "Open the record at WISeREP." : "Open the original file at TNS."),
+        proprietary ? "proprietary" : true);
     }).then(function () { button.disabled = false; });
   }
   function updateSpectrumPlot(control) {
@@ -1005,7 +1069,7 @@
     if (!rows.length) return "";
     return '<details class="ctas-evidence-panel" data-dossier-view="spectra"><summary>Spectra <small>' + rows.length +
       " public record" + (rows.length === 1 ? "" : "s") +
-      '</small></summary><div class="ctas-evidence-panel__body"><p>Numerical previews appear only when rights-cleared wavelength and flux pairs are retained. Metadata-only records remain explicit, and provider record links are distinct from downloadable artifacts. A record with a public TNS text file can also be plotted on request with “Plot spectrum”, which fetches the file live through the site’s relay.</p>' +
+      '</small></summary><div class="ctas-evidence-panel__body"><p>Numerical previews appear only when rights-cleared wavelength and flux pairs are retained. Metadata-only records remain explicit, and provider record links are distinct from downloadable artifacts. A record with a public TNS file (text or FITS), or a public WISeREP file, can also be plotted on request with “Plot spectrum”, which fetches the file live through the site’s relay; spectra that WISeREP keeps proprietary are reported as such and never fetched.</p>' +
       '<div class="ctas-evidence-tools"><button type="button" data-download-evidence="spectra" data-format="json">Download all spectra JSON</button></div><ul class="ctas-record-list ctas-spectrum-list">' +
       rows.map(function (row, index) {
         return '<li><details class="ctas-spectrum-record"><summary><span><strong>' + esc(row.file_name || row.provider_spectrum_id || "Spectrum") + '</strong><small>' +

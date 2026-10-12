@@ -143,12 +143,66 @@ assert.match(spectrum.failureMessage({kind: "http", status: 404}), /no file at t
 assert.match(spectrum.failureMessage({kind: "http", status: 400}), /does not accept this file address/);
 assert.match(spectrum.failureMessage({kind: "http", status: 413}), /40 MB/);
 assert.match(spectrum.failureMessage({kind: "http", status: 502}), /HTTP 502/);
-assert.match(spectrum.failureMessage({reason: "fits"}), /isn’t supported here yet/);
+assert.match(spectrum.failureMessage({reason: "fits"}), /FITS file whose contents could not be read/);
+// the same problems on a WISeREP record point at WISeREP, and a refusal there means proprietary
+assert.match(spectrum.failureMessage({kind: "http", status: 404, provider: "WISeREP"}), /WISeREP has no file/);
+assert.match(spectrum.failureMessage({kind: "network", provider: "WISeREP"}), /open its record at WISeREP/);
+for (const problem of [{kind: "http", status: 403}, {kind: "http", status: 401}, {reason: "html"}, {reason: "proprietary"}]) {
+  problem.provider = "WISeREP";
+  assert.match(spectrum.failureMessage(problem), /proprietary on WISeREP/);
+  assert.doesNotMatch(spectrum.failureMessage(problem), /TNS/);
+}
+assert.match(spectrum.failureMessage({reason: "not-listed", provider: "WISeREP"}), /no longer names this spectrum/);
+assert.match(spectrum.failureMessage({reason: "no-file", provider: "WISeREP"}), /no downloadable file address/);
+assert.match(spectrum.failureMessage({reason: "listing-unreadable", provider: "WISeREP"}), /could not be read/);
+assert.match(spectrum.failureMessage({reason: "gzip"}), /gzip-compressed/);
+
+// --- WISeREP records: the listing the record names, then the file the listing names ----
+{
+  const row = {provider: "wiserep", provider_spectrum_id: "92931", file_name: "SN2026abht_2026-09-12_10-29-45_P60_SEDM_TNS.ascii",
+    public_download_url: "https://www.wiserep.org/search/spectra?name=2026abht&public=yes&format=json&files_type=ascii&num_page=25&page=0",
+    source_url: "https://www.wiserep.org/form-edit/spectrum/92931"};
+  const record = spectrum.wiserepRecord(row);
+  assert.deepEqual(record, {provider: "WISeREP", listingUrl: row.public_download_url, recordUrl: row.source_url, spectrumId: "92931",
+    fileName: row.file_name, format: "ascii"});
+  assert.equal(spectrum.wiserepRecord({public_download_url: "https://www.wiserep.org/search/spectra?name=2026abht&format=json"}), null, "only the public listing is used");
+  assert.equal(spectrum.wiserepRecord({public_download_url: "https://www.wiserep.org/search/spectra?name=2026abht&public=yes&format=html"}), null);
+  assert.equal(spectrum.wiserepRecord({public_download_url: "https://www.wis-tns.org/system/files/uploaded/ZTF/x.dat"}), null);
+  assert.equal(spectrum.wiserepRecord({provider: "wiserep", file_name: "a.fits", public_download_url: "https://www.wiserep.org/search/spectra?name=a&public=yes&format=tsv"}).format, "fits");
+  const fileUrl = "https://www.wiserep.org/system/files/uploaded/TNS/SN2026abht_2026-09-12_10-29-45_P60_SEDM_TNS.ascii";
+  // JSON object keyed by position, bare file name plus group → the uploads address
+  const json = JSON.stringify({0: {"Spec. ID": "92930", "Ascii file": "other.ascii", "Groups": "ePESSTO+"},
+    1: {"Spec. ID": "92931", "Obj. Name": "SN2026abht", "Ascii file": row.file_name, "FITS file": "", "Groups": "TNS", "WL Medium": "Air", "Flux Unit": "erg cm(-2) sec(-1) Ang(-1)", "Public": "Yes"}});
+  let found = spectrum.wiserepFile(json, record);
+  assert.deepEqual(found, {ok: true, url: fileUrl, fileName: row.file_name, group: "TNS", medium: "air", fluxUnit: "erg cm(-2) sec(-1) Ang(-1)", public: true, format: "ascii"});
+  // a listing that already gives absolute addresses uses them as given
+  found = spectrum.wiserepFile(JSON.stringify([{"Spec. ID": "92931", "Ascii file": fileUrl, "FITS file": "https://www.wiserep.org/system/files/uploaded/TNS/x.fits"}]), record);
+  assert.equal(found.url, fileUrl, "the address whose name matches the record is chosen");
+  // TSV output, matched by file name when the id column is missing; groups may be a list
+  const tsv = "Obj. Name\tAscii file\tFITS file\tGroups\tWL Medium\nSN2026abht\t" + row.file_name + "\t\tTNS, ZTF\tVacuum\nSN2026abht\tanother.dat\t\tTNS\tAir\n";
+  found = spectrum.wiserepFile(tsv, record);
+  assert.equal(found.url, fileUrl);
+  assert.equal(found.medium, "vacuum");
+  // proprietary: a sign-in page instead of the listing, or Public = No
+  assert.equal(spectrum.wiserepFile("<!DOCTYPE html><html><head><title>WISeREP | Log in</title></head><body><form>Password</form></body></html>", record).reason, "proprietary");
+  assert.equal(spectrum.wiserepFile("<html><body>maintenance</body></html>", record).reason, "html");
+  assert.equal(spectrum.wiserepFile(JSON.stringify([{"Spec. ID": "92931", "Ascii file": row.file_name, "Groups": "TNS", "Public": "No"}]), record).reason, "proprietary");
+  // not in the public listing any more, no file address, unreadable listing, empty listing
+  assert.equal(spectrum.wiserepFile(JSON.stringify([{"Spec. ID": "1", "Ascii file": "x.ascii", "Groups": "TNS"}]), record).reason, "not-listed");
+  assert.equal(spectrum.wiserepFile(JSON.stringify([{"Spec. ID": "92931", "Ascii file": row.file_name}]), record).reason, "no-file", "a bare name with no group is not guessed");
+  assert.equal(spectrum.wiserepFile(JSON.stringify([{"Spec. ID": "92931", "Ascii file": "../../etc/passwd", "Groups": "TNS"}]), record).reason, "no-file", "path games are not followed");
+  assert.equal(spectrum.wiserepFile("{not json", record).reason, "listing-unreadable");
+  assert.equal(spectrum.wiserepFile("", record).reason, "not-listed");
+  assert.equal(spectrum.wiserepFile("[]", record).reason, "not-listed");
+  assert.equal(spectrum.wiserepFile(JSON.stringify([{"Spec. ID": "92931", "Ascii file": row.file_name, "Groups": "TNS"}]), record).url.indexOf("https://www.wiserep.org/system/files/uploaded/"), 0);
+  assert.equal(spectrum.wiserepFile(JSON.stringify([{"Spec. ID": "92931", "Ascii file": "name with space.ascii", "Groups": "Supernova Alliance"}]),
+    {spectrumId: "92931"}).url, "https://www.wiserep.org/system/files/uploaded/Supernova%20Alliance/name%20with%20space.ascii");
+}
 
 // --- which TNS files can be plotted ---------------------------------------------------
 const tns = "https://www.wis-tns.org/system/files/uploaded/";
 assert.deepEqual(spectrum.tnsFile(tns + "ePESSTO%2B/tns_2021zon_2021-10-04_EFOSC2-NTT_ePESSTO%2B.asci"),
-  {url: tns + "ePESSTO%2B/tns_2021zon_2021-10-04_EFOSC2-NTT_ePESSTO%2B.asci", fileName: "tns_2021zon_2021-10-04_EFOSC2-NTT_ePESSTO+.asci", format: "ascii"});
+  {url: tns + "ePESSTO%2B/tns_2021zon_2021-10-04_EFOSC2-NTT_ePESSTO%2B.asci", fileName: "tns_2021zon_2021-10-04_EFOSC2-NTT_ePESSTO+.asci", format: "ascii", provider: "TNS"});
 assert.equal(spectrum.tnsFile(tns + "ZTF/tns_2026abc_P60_SEDM_ZTF.fits").format, "fits");
 assert.equal(spectrum.tnsFile(tns + "ZTF/tns_2026abc.fits.gz").format, "fits");
 assert.equal(spectrum.tnsFile(tns + "ZTF/tns_2026abc.tar.gz").format, "archive");
@@ -229,5 +283,5 @@ assert.deepEqual(spectrum.ticks(0, 1.2, 4), [0, 0.5, 1]);
   await assert.rejects(fresh.fetchViaRelay(file), (error) => error.kind === "no-relay");
   // the older live-panel parser now reads the same dialects
   assert.equal(fresh.parseAsciiSpectrum(read("longslit-nm.dat")).length, 100);
-  console.log("Spectrum ASCII parsing (8 fixture dialects), units, errors, markers, plot arithmetic and relay fetch passed.");
+  console.log("Spectrum ASCII parsing (8 fixture dialects), units, errors, markers, plot arithmetic, WISeREP listing resolution and relay fetch passed.");
 })().catch((error) => { console.error(error); process.exit(1); });

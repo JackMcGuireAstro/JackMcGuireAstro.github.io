@@ -1,11 +1,23 @@
 // Tests for relay/worker.js with a stand-in for the network.
 import assert from "node:assert/strict";
-import worker, { matchRoute, SITE_ORIGINS, keep, KEEP } from "../relay/worker.js";
+import worker, { matchRoute, SITE_ORIGINS, keep, KEEP, fitsContentType } from "../relay/worker.js";
+
+// A minimal FITS file: one header block (SIMPLE, BITPIX -32, NAXIS 1) and one data block.
+const FITS_BYTES = (() => {
+  const card = (k, v) => (k.padEnd(8) + "= " + String(v).padStart(20)).padEnd(80);
+  const header = (card("SIMPLE", "T") + card("BITPIX", -32) + card("NAXIS", 1) + card("NAXIS1", 4) + "END".padEnd(80)).padEnd(2880);
+  const out = new Uint8Array(5760);
+  for (let i = 0; i < 2880; i += 1) out[i] = header.charCodeAt(i);
+  new DataView(out.buffer).setFloat32(2880, 1.5, false);
+  return out;
+})();
 
 let upstreamCalls = [];
 globalThis.fetch = async (url, init) => {
   upstreamCalls.push({ url, init });
   if (String(url).includes("big")) return new Response("x", { headers: { "Content-Length": String(50 * 1024 * 1024) } });
+  if (/\.fits$/.test(String(url))) return new Response(FITS_BYTES, { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  if (/\.fits\.gz$/.test(String(url))) return new Response(new Uint8Array([0x1f, 0x8b, 8, 0]), { status: 200, headers: {} });
   return new Response("1,2\n3,4\n", { status: 200, headers: { "Content-Type": "text/plain", "Set-Cookie": "a=b" } });
 };
 const call = (target, headers = { Origin: SITE_ORIGINS[0] }, method = "GET") =>
@@ -21,12 +33,24 @@ const allowed = [
   "https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:K2/url/missions/k2/lightcurves/c1/201300000/67000/ktwo201367065-c01_llc.fits",
   "https://irsa.ipac.caltech.edu/cgi-bin/ZTF/nph_light_curves?POS=CIRCLE%20250.29%2039.29%200.0004&FORMAT=csv",
   "https://exofop.ipac.caltech.edu/tess/target.php?id=261136679&json",
+  "https://www.wis-tns.org/system/files/uploaded/ZTF/tns_2026abc_P60_SEDM_ZTF.fits",
+  "https://www.wiserep.org/search/spectra?name=2026abht&public=yes&format=json&files_type=ascii&num_page=25&page=0",
+  "https://www.wiserep.org/search/spectra?name=2026abht&public=yes&format=tsv",
+  "https://www.wiserep.org/system/files/uploaded/TNS/SN2026abht_2026-09-12_10-29-45_P60_SEDM_TNS.ascii",
+  "https://www.wiserep.org/system/files/uploaded/ePESSTO%2B/SN2026abc_EFOSC2.fits",
 ];
 const refused = [
   "http://www.wis-tns.org/system/files/uploaded/a.dat",                       // not https
   "https://www.wis-tns.org/api/get/object",                                    // TNS API, not a public file
   "https://www.wis-tns.org/system/files/uploaded/a.dat?x=1",                   // extra query
   "https://evil.example/system/files/uploaded/a.dat",                          // other host
+  "https://www.wiserep.org/search/spectra?name=2026abht&format=json",          // WISeREP listing without public=yes
+  "https://www.wiserep.org/search/spectra?name=2026abht&public=no&format=json", // or asking for non-public rows
+  "https://www.wiserep.org/search/spectra?name=2026abht&public=yes&format=html", // or a web page
+  "https://www.wiserep.org/search/spectra?name=2026abht&public=yes&format=json&api_key=x", // or with extra parameters
+  "https://www.wiserep.org/form-edit/spectrum/92931",                          // WISeREP record pages (sign-in)
+  "https://www.wiserep.org/object/12345",                                      // WISeREP object pages
+  "https://www.wiserep.org/system/files/uploaded/TNS/a.ascii?download=1",      // a file with a query
   "https://catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr2/detection.json?ra=1&dec=2&radius=5", // huge cone
   "https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:HST/product/x_drz.fits", // not a light curve
   "https://mast.stsci.edu/api/v0.1/Download/file?uri=mast:HLSP/qlp/s0001/0000/0000/2515/5310/hlsp_qlp_tess_ffi_s0001-0000000025155310_tess_v01_llc.fits", // other HLSP
@@ -66,6 +90,31 @@ const calls = upstreamCalls.length;
 r = await call("https://gsaweb.ast.cam.ac.uk/alerts/alert/Gaia15big/lightcurve.csv");
 assert.equal(r.status, 413, "oversized responses are refused");
 assert.equal(upstreamCalls.length, calls + 1);
+
+// FITS files: bytes pass through untouched, labelled application/fits even when the
+// source calls them text; the same cache and size rules as every other file.
+r = await call("https://www.wis-tns.org/system/files/uploaded/ZTF/tns_2026abc_P60_SEDM_ZTF.fits");
+assert.equal(r.status, 200);
+assert.equal(r.headers.get("Content-Type"), "application/fits");
+assert.equal(r.headers.get("Cache-Control"), "public, max-age=3600");
+const fitsBack = new Uint8Array(await r.arrayBuffer());
+assert.equal(fitsBack.length, FITS_BYTES.length);
+assert.deepEqual(Array.from(fitsBack.slice(0, 9)), Array.from(FITS_BYTES.slice(0, 9)), "the FITS header starts as sent");
+assert.equal(new DataView(fitsBack.buffer).getFloat32(2880, false), 1.5, "the big-endian data is byte-identical");
+assert.deepEqual(upstreamCalls.at(-1).init.cf, { cacheTtl: 3600, cacheEverything: true });
+r = await call("https://www.wiserep.org/system/files/uploaded/TNS/SN2026abc_X.fits.gz");
+assert.equal(r.headers.get("Content-Type"), "application/gzip");
+assert.equal(fitsContentType("/system/files/uploaded/a/b.fits", "application/fits"), null, "a correct source label is kept");
+assert.equal(fitsContentType("/system/files/uploaded/a/b.fits", "image/fits"), null);
+assert.equal(fitsContentType("/system/files/uploaded/a/b.fits", "application/octet-stream"), null);
+assert.equal(fitsContentType("/system/files/uploaded/a/b.FIT", null), "application/fits");
+assert.equal(fitsContentType("/system/files/uploaded/a/b%2Bc.fts", "text/html"), "application/fits");
+assert.equal(fitsContentType("/system/files/uploaded/a/b.ascii", "text/plain"), null, "text files keep their type");
+// WISeREP: the listing and files are plain GETs with no credentials; a sign-in page
+// for a proprietary file is passed back as the source sent it (the page reads it as such)
+r = await call(allowed[allowed.length - 4]);
+assert.equal(r.status, 200);
+assert.ok(!("Authorization" in upstreamCalls.at(-1).init.headers) && !("cookie" in upstreamCalls.at(-1).init.headers), "no WISeREP credentials exist to send");
 // NASA Exoplanet Archive TAP: SELECT on public tables only
 const tap = (qy, fmt = "json") => "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=" + encodeURIComponent(qy) + "&format=" + fmt;
 assert.ok(matchRoute(tap("select pl_name,spec_type,spec_path from spectra where pl_name = 'WASP-18 b'")));

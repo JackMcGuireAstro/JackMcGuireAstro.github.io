@@ -4,9 +4,11 @@
  * with the provider it came from at the moment it was fetched.
  *
  * Sources that allow web pages to read them (ALeRCE for ZTF, Fink for Rubin) are
- * fetched directly. Sources that do not (TNS files, Gaia Alerts, Pan-STARRS at MAST)
- * go through a pass-through relay whose address is read from /live-config.json;
- * without it those sources are reported as unavailable, never guessed.
+ * fetched directly. Sources that do not (TNS and WISeREP files, Gaia Alerts, Pan-STARRS
+ * at MAST) go through a pass-through relay whose address is read from /live-config.json;
+ * without it those sources are reported as unavailable, never guessed. Spectrum files
+ * come back as bytes and are read as FITS (ctas/spectrum-fits.js) or text
+ * (ctas/spectrum-ascii.js), gzip inflated first (fetchSpectrumFile).
  */
 (function (root) {
   "use strict";
@@ -253,12 +255,30 @@
     return config && typeof config.relay === "string" && /^https:\/\//.test(config.relay) ? config.relay : "";
   }
   // One public file through the relay, on request (the "Plot spectrum" control). Resolves
-  // with the text; rejects with an Error whose `kind` is no-relay, timeout, network or
-  // http (with `status`), so the page can say what went wrong in plain words.
+  // with {bytes, text, …}: the raw bytes always, and the text unless the bytes are a FITS
+  // file or gzip (then text is ""). Rejects with an Error whose `kind` is no-relay,
+  // timeout, network or http (with `status`), so the page can say what went wrong.
   function relayProblem(kind, status) {
     var error = new Error(kind + (status ? " " + status : ""));
     error.kind = kind; error.status = status || 0;
     return error;
+  }
+  function fitsLib() {
+    if (root.CTASSpectrumFits) return root.CTASSpectrumFits;
+    try { return typeof require === "function" ? require("./spectrum-fits.js") : null; } catch (_) { return null; }
+  }
+  function looksBinary(bytes) {
+    var fits = fitsLib();
+    if (fits && (fits.isFits(bytes) || fits.isGzip(bytes))) return true;
+    var view = new Uint8Array(bytes), limit = Math.min(view.length, 4000);
+    for (var i = 0; i < limit; i += 1) if (view[i] === 0 || (view[i] < 9 && view[i] > 0) || (view[i] > 13 && view[i] < 32 && view[i] !== 27)) return true;
+    return false;
+  }
+  function decodeText(bytes) {
+    if (typeof TextDecoder !== "undefined") return new TextDecoder("utf-8").decode(bytes);
+    var view = new Uint8Array(bytes), out = "";
+    for (var i = 0; i < view.length; i += 1) out += String.fromCharCode(view[i]);
+    return out;
   }
   function fetchViaRelay(target) {
     return loadConfig().then(function (config) {
@@ -266,11 +286,38 @@
       if (!relay) throw relayProblem("no-relay");
       return timed(relayUrl(relay, target)).then(function (r) {
         if (!r.ok) throw relayProblem("http", r.status);
-        return r.text().then(function (body) {
-          return {text: body, status: r.status, relay: relay, contentType: (r.headers && r.headers.get("Content-Type")) || ""};
+        return r.arrayBuffer().then(function (bytes) {
+          var binary = looksBinary(bytes);
+          return {bytes: bytes, text: binary ? "" : decodeText(bytes), binary: binary, status: r.status, relay: relay,
+            contentType: (r.headers && r.headers.get("Content-Type")) || ""};
         });
       }, function (error) { throw relayProblem(error && error.name === "AbortError" ? "timeout" : "network"); });
     });
+  }
+  // gzip-compressed files (TNS accepts .fits.gz) are inflated in the browser when it can.
+  function inflate(bytes) {
+    if (typeof DecompressionStream === "undefined" || typeof Response === "undefined") return Promise.reject({reason: "gzip"});
+    try {
+      return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer()
+        .catch(function () { throw {reason: "gzip"}; });
+    } catch (_) { return Promise.reject({reason: "gzip"}); }
+  }
+  // Bytes from the relay → a parsed spectrum (ctas/spectrum-fits.js for FITS, else
+  // ctas/spectrum-ascii.js). Rejects with the reader's own problem object.
+  function readSpectrumBytes(response) {
+    var lib = spectrumLib(), fits = fitsLib(), bytes = response.bytes;
+    var ready = fits && fits.isGzip(bytes) ? inflate(bytes) : Promise.resolve(bytes);
+    return ready.then(function (plain) {
+      var parsed = fits && fits.isFits(plain) ? fits.parse(plain)
+        : lib ? lib.parse(plain === bytes && response.text !== "" ? response.text : decodeText(plain)) : null;
+      if (!parsed) throw {reason: "no-reader"};
+      if (!parsed.ok) throw parsed;
+      return parsed;
+    });
+  }
+  // The whole path for one provider file: fetch through the relay, inflate, read.
+  function fetchSpectrumFile(target) {
+    return fetchViaRelay(target).then(readSpectrumBytes);
   }
 
   function ztf(candidate) {
@@ -330,21 +377,16 @@
     var lib = spectrumLib();
     var rows = ((candidate.follow_up || {}).spectra || []).filter(function (row) {
       var file = lib ? lib.tnsFile(row.public_download_url) : null;
-      return file ? file.format === "ascii" : /^https:\/\/www\.wis-tns\.org\/system\/files\/uploaded\//.test(row.public_download_url || "") &&
+      return file ? file.format === "ascii" || file.format === "fits" : /^https:\/\/www\.wis-tns\.org\/system\/files\/uploaded\//.test(row.public_download_url || "") &&
         /\.(dat|txt|ascii|asci|asc|csv|flm|spec)$/i.test(row.public_download_url);
     });
     if (!rows.length) return Promise.resolve([]);
     if (!relay) return Promise.resolve(rows.map(function (row) { return {row: row, points: [], note: "Needs the live-data relay"}; }));
     return Promise.all(rows.slice(0, 8).map(function (row) {
-      return timed(relayUrl(relay, row.public_download_url)).then(function (r) {
-        if (!r.ok) throw relayProblem("http", r.status);
-        return r.text();
-      }).then(function (body) {
-        var parsed = lib ? lib.parse(body) : null, points = parsed ? (parsed.ok ? parsed.points : []) : parseAsciiSpectrum(body);
-        return {row: row, points: points, parsed: parsed,
-          note: points.length ? "" : parsed ? lib.failureMessage(parsed) : "File could not be read as a two-column spectrum"};
+      return fetchSpectrumFile(row.public_download_url).then(function (parsed) {
+        return {row: row, points: parsed.points, parsed: parsed, note: ""};
       }).catch(function (error) {
-        return {row: row, points: [], note: lib && error.kind ? lib.failureMessage(error) : "Unavailable: " + error.message};
+        return {row: row, points: [], note: lib && error && (error.kind || error.reason) ? lib.failureMessage(error) : "Unavailable: " + (error && error.message || error)};
       });
     }));
   }
@@ -446,7 +488,7 @@
     }
     (result.spectra || []).forEach(function (item, index) {
       var label = item.row.file_name || item.row.provider_spectrum_id || "TNS spectrum";
-      html += "<h5>Spectrum: " + esc(label) + " <small>(TNS public file" + (item.row.instrument ? ", " + esc(item.row.instrument) : "") + ")</small></h5>" +
+      html += "<h5>Spectrum: " + esc(label) + " <small>(TNS public " + (item.parsed && item.parsed.format === "fits" ? "FITS " : "") + "file" + (item.row.instrument ? ", " + esc(item.row.instrument) : "") + ")</small></h5>" +
         (item.parsed && item.parsed.ok && render.liveSpectrum ? render.liveSpectrum(item.row, item.parsed, result.candidate, "live-" + index, result.fetchedAt)
           : item.points.length && render.spectrumSvg ? render.spectrumSvg(item.row, item.points, "live-" + index) : "<p>" + esc(item.note) + "</p>");
     });
@@ -492,7 +534,7 @@
 
   var api = {panel: panel, load: load, parseAlerceLightcurve: parseAlerceLightcurve, nearestAlerceObject: nearestAlerceObject,
     parseFinkSources: parseFinkSources, parseGaiaCsv: parseGaiaCsv, parsePanstarrs: parsePanstarrs,
-    parseAsciiSpectrum: parseAsciiSpectrum, fetchViaRelay: fetchViaRelay, parseLasairObject: parseLasairObject, parseLasairText: parseLasairText, lasairNearest: lasairNearest,
+    parseAsciiSpectrum: parseAsciiSpectrum, fetchViaRelay: fetchViaRelay, fetchSpectrumFile: fetchSpectrumFile, readSpectrumBytes: readSpectrumBytes, parseLasairObject: parseLasairObject, parseLasairText: parseLasairText, lasairNearest: lasairNearest,
     sherlockSummary: sherlockSummary, adsQuery: adsQuery, parseAds: parseAds, separationArcsec: separationArcsec, mjdToIso: mjdToIso, relayUrl: relayUrl, csv: csv};
   root.CTASLive = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
