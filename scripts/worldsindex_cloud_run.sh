@@ -50,6 +50,16 @@ printf '%s\n' "$OUT" | grep -q '^published ' && PUBLISHED=1
 if [ "$DRY_RUN" = "1" ]; then
   say "dry run: working data not saved and nothing pushed"
 else
+  # Keep the saved state from growing without bound: promotion evidence keeps only the gzip
+  # copies of the atlas (verified byte-identical first) and probe artifacts older than 14 days
+  # that nothing references are dropped. Lossless for the audit trail; see
+  # scripts/compact-state.ts in the builder. A failure here is reported, not fatal.
+  say "compacting the working data before saving"
+  if (cd "$SOURCE" && npm run --silent state:compact -- --retain-sync-days 14 --summary-line) >"$LOGS/compact.json" 2>"$LOGS/compact.err"; then
+    say "compacted: $(tail -1 "$LOGS/compact.err" 2>/dev/null || echo done)"
+  else
+    say "WARN  compaction failed; saving the working data as it is ($(tail -1 "$LOGS/compact.err" 2>/dev/null))"
+  fi
   say "saving the working data to the state repository"
   GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/worldsindex_cloud_state.py" save "$SOURCE" \
     || { say "FAIL  could not save the working data; the previous state is kept"; exit 1; }
