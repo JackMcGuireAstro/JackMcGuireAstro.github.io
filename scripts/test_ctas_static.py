@@ -13,7 +13,7 @@ import unittest
 import uuid
 import xml.etree.ElementTree as ET
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -622,6 +622,191 @@ class TimelineTests(unittest.TestCase):
         kinds = [row["evidence_type"] for row in EXPORTER.timeline_for(candidate)]
         self.assertEqual(kinds.count("classification"), 2)
         self.assertIn("classification retraction", kinds)
+
+
+class LinkHealthRebindTests(unittest.TestCase):
+    """The publisher binds link-health.json into the report without a second export.
+
+    A synthetic export (a report, its status and the data files it binds) stands in
+    for the real one: the rebind must prove the bound bytes are unchanged, bind the
+    link-health artifact, flip only the gates whose inputs changed, and leave the
+    report self-consistent. Any altered byte must refuse the rebind.
+    """
+
+    CATALOG = "c" * 64
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="ctas-rebind-")
+        self.addCleanup(self.temporary.cleanup)
+        self.out = Path(self.temporary.name).resolve() / "data"
+        (self.out / "candidate-chunks").mkdir(parents=True)
+        self.site = Path(self.temporary.name).resolve() / "site"
+        self.site.mkdir()
+        self.data = {
+            "ctas/data/catalog-index.json": b'{"candidate_rows":[]}\n',
+            "ctas/data/candidate-chunks/000.json": b'{"bucket":"000"}\n',
+        }
+        for name, raw in self.data.items():
+            EXPORTER.write_output_artifact(self.out, name, raw)
+        self.write_report()
+
+    def write_report(self, gates=None):
+        now = datetime.now(timezone.utc).replace(microsecond=0)
+        stamp = lambda value: value.isoformat().replace("+00:00", "Z")
+        files = {name: {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)}
+                 for name, raw in sorted(self.data.items())}
+        gates = gates or [
+            {"id": EXPORTER.REQUIRED_ARTIFACTS_GATE_ID, "passed": False, "evidence": "required"},
+            {"id": "catalog-population", "passed": True, "evidence": "2 records"},
+            {"id": EXPORTER.FRESHNESS_GATE_ID, "passed": True, "evidence": "fresh"},
+            {"id": EXPORTER.LINK_HEALTH_GATE_ID, "passed": False, "evidence": "links"},
+        ]
+        certificate = {
+            "schema": EXPORTER.CERTIFICATE_SCHEMA,
+            "generated_at": stamp(now),
+            "valid_until": stamp(now + timedelta(minutes=EXPORTER.SNAPSHOT_VALIDITY_MINUTES)),
+            "status": EXPORTER.certificate_status(gates),
+            "catalog_content_checksum_sha256": self.CATALOG,
+            "content_release_id": hashlib.sha256(b"".join(
+                name.encode() + b"\0" + raw for name, raw in sorted(self.data.items())
+            )).hexdigest(),
+            "gates": gates,
+            "files": files,
+        }
+        certificate["report_checksum_sha256"] = hashlib.sha256(
+            EXPORTER.canonical_report_bytes(certificate)).hexdigest()
+        status = {
+            "catalog_content_checksum_sha256": self.CATALOG,
+            "static_snapshot_verification": EXPORTER.verification_summary(certificate),
+            "artifacts": {
+                "link_health": {"path": EXPORTER.LINK_HEALTH_PATH, "sha256": None},
+                "certification": {"path": "ctas/data/certification.json",
+                                  "report_checksum_sha256": certificate["report_checksum_sha256"]},
+            },
+        }
+        (self.out / "certification.json").write_text(json.dumps(certificate, indent=2, sort_keys=True) + "\n")
+        (self.out / "status.json").write_text(json.dumps(status, indent=2, sort_keys=True) + "\n")
+        return certificate
+
+    def write_link_health(self, **overrides):
+        report = {
+            "schema": EXPORTER.LINK_HEALTH_SCHEMA,
+            "catalog_content_checksum_sha256": self.CATALOG,
+            "structural_status": "passed",
+            "live_status": "degraded-provider-unavailable",
+            **overrides,
+        }
+        (self.out / "link-health.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+        return report
+
+    def rebind(self):
+        return EXPORTER.rebind_link_health(self.out, self.site)
+
+    def read(self, name):
+        return json.loads((self.out / name).read_text())
+
+    def test_binds_the_artifact_and_flips_only_the_link_gates(self):
+        self.write_link_health()
+        self.assertEqual(self.rebind(), 0)
+        certificate, status = self.read("certification.json"), self.read("status.json")
+        gates = {gate["id"]: gate for gate in certificate["gates"]}
+        self.assertTrue(gates[EXPORTER.LINK_HEALTH_GATE_ID]["passed"])
+        self.assertTrue(gates[EXPORTER.FRESHNESS_GATE_ID]["passed"])
+        self.assertTrue(gates["catalog-population"]["passed"])
+        self.assertEqual(gates[EXPORTER.LINK_HEALTH_GATE_ID]["evidence"], "links")
+        # the synthetic export binds no code, so the required-artifact set stays short
+        self.assertFalse(gates[EXPORTER.REQUIRED_ARTIFACTS_GATE_ID]["passed"])
+        link_raw = (self.out / "link-health.json").read_bytes()
+        self.assertEqual(certificate["files"][EXPORTER.LINK_HEALTH_PATH],
+                         {"sha256": hashlib.sha256(link_raw).hexdigest(), "bytes": len(link_raw)})
+        for name, raw in self.data.items():
+            self.assertEqual(certificate["files"][name]["sha256"], hashlib.sha256(raw).hexdigest())
+        bound = {**self.data, EXPORTER.LINK_HEALTH_PATH: link_raw}
+        self.assertEqual(certificate["content_release_id"], hashlib.sha256(b"".join(
+            name.encode() + b"\0" + raw for name, raw in sorted(bound.items()))).hexdigest())
+        self.assertEqual(certificate["report_checksum_sha256"], hashlib.sha256(
+            EXPORTER.canonical_report_bytes(certificate)).hexdigest())
+        self.assertEqual(status["static_snapshot_verification"], EXPORTER.verification_summary(certificate))
+        self.assertEqual(status["artifacts"]["link_health"]["sha256"], hashlib.sha256(link_raw).hexdigest())
+        self.assertEqual(status["artifacts"]["certification"]["report_checksum_sha256"],
+                         certificate["report_checksum_sha256"])
+        self.assertEqual(status["catalog_content_checksum_sha256"], self.CATALOG)
+
+    def test_rebind_is_idempotent(self):
+        self.write_link_health()
+        self.assertEqual(self.rebind(), 0)
+        first = (self.out / "certification.json").read_bytes(), (self.out / "status.json").read_bytes()
+        self.assertEqual(self.rebind(), 0)
+        self.assertEqual(first, ((self.out / "certification.json").read_bytes(), (self.out / "status.json").read_bytes()))
+
+    def test_stale_or_failed_link_health_keeps_the_gate_failed(self):
+        for overrides in ({"catalog_content_checksum_sha256": "d" * 64}, {"structural_status": "failed"},
+                          {"live_status": "failed-wrong-object"}, {"schema": "ctas.link-health@0.9.0"}):
+            with self.subTest(overrides=overrides):
+                self.write_report()
+                self.write_link_health(**overrides)
+                self.assertEqual(self.rebind(), 0)
+                certificate = self.read("certification.json")
+                gates = {gate["id"]: gate for gate in certificate["gates"]}
+                self.assertFalse(gates[EXPORTER.LINK_HEALTH_GATE_ID]["passed"])
+                self.assertEqual(certificate["status"], "verification-failed")
+
+    def test_any_altered_bound_byte_refuses_the_rebind(self):
+        self.write_link_health()
+        chunk = self.out / "candidate-chunks" / "000.json"
+        original = chunk.read_bytes()
+        chunk.write_bytes(original + b" ")
+        self.assertEqual(self.rebind(), 1)
+        chunk.write_bytes(original)
+        self.assertEqual(self.rebind(), 0)
+
+    def test_a_missing_bound_file_refuses_the_rebind(self):
+        self.write_link_health()
+        (self.out / "catalog-index.json").unlink()
+        self.assertEqual(self.rebind(), 1)
+
+    def test_an_altered_or_foreign_report_refuses_the_rebind(self):
+        self.write_link_health()
+        certificate = self.read("certification.json")
+        certificate["gates"][1]["passed"] = False  # edited after the export: checksum no longer reproduces
+        (self.out / "certification.json").write_text(json.dumps(certificate, indent=2, sort_keys=True) + "\n")
+        self.assertEqual(self.rebind(), 1)
+        self.write_report()
+        status = self.read("status.json")
+        status["catalog_content_checksum_sha256"] = "e" * 64
+        (self.out / "status.json").write_text(json.dumps(status, indent=2, sort_keys=True) + "\n")
+        self.assertEqual(self.rebind(), 1)
+        self.write_report(gates=[{"id": "catalog-population", "passed": True, "evidence": "2 records"}])
+        self.assertEqual(self.rebind(), 1, "a report without the re-evaluated gates is refused")
+
+    def test_missing_or_invalid_link_health_refuses_the_rebind(self):
+        self.assertEqual(self.rebind(), 1)
+        (self.out / "link-health.json").write_text("[]\n")
+        self.assertEqual(self.rebind(), 1)
+
+    def test_bound_link_health_bytes_are_the_published_bytes(self):
+        report = self.write_link_health()
+        (self.out / "link-health.json").write_text(json.dumps(report))  # compact, unlike the checker
+        self.assertEqual(self.rebind(), 0)
+        raw = (self.out / "link-health.json").read_bytes()
+        self.assertEqual(raw, (json.dumps(report, indent=2, sort_keys=True) + "\n").encode())
+        self.assertEqual(self.read("certification.json")["files"][EXPORTER.LINK_HEALTH_PATH]["sha256"],
+                         hashlib.sha256(raw).hexdigest())
+
+    def test_required_artifact_gate_recognises_the_bound_link_health(self):
+        """With every other required artifact bound, link-health completes the set."""
+        self.data = {path: b"x\n" for path in EXPORTER.REQUIRED_PUBLIC_ARTIFACTS
+                     if path != EXPORTER.LINK_HEALTH_PATH}
+        for name, raw in self.data.items():
+            target = self.site / name if name in EXPORTER.BOUND_CODE_PATHS else EXPORTER.output_path_for_public_artifact(self.out, name)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(raw)
+        self.write_report()
+        self.write_link_health()
+        self.assertEqual(self.rebind(), 0)
+        gates = {gate["id"]: gate for gate in self.read("certification.json")["gates"]}
+        self.assertTrue(gates[EXPORTER.REQUIRED_ARTIFACTS_GATE_ID]["passed"])
+        self.assertEqual(self.read("certification.json")["status"], "verified-static-snapshot")
 
 
 class PublisherPageAllowlistTests(unittest.TestCase):
@@ -1407,7 +1592,12 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn('frozen.execute("PRAGMA quick_check")', publisher)
         self.assertIn('SNAPSHOT_DIR="${CTAS_SNAPSHOT_DIR:-$SITE/.git}"', publisher)
         self.assertIn('source_path.as_uri() + "?mode=ro"', publisher)
-        self.assertEqual(publisher.count('export_ctas_snapshot.py --database "$PUBLISH_DB"'), 2)
+        # One export per release; the link-health artifact is bound afterwards by the
+        # rebind step instead of a complete second export.
+        self.assertEqual(publisher.count('export_ctas_snapshot.py --database "$PUBLISH_DB"'), 1)
+        self.assertIn('export_ctas_snapshot.py --rebind-link-health --output-dir ctas/data', publisher)
+        self.assertLess(publisher.index('check_ctas_links.py'), publisher.index('--rebind-link-health'))
+        self.assertLess(publisher.index('--rebind-link-health'), publisher.index('ctas_feed.py'))
         self.assertIn('test_ctas_ingest_provenance.py --database "$PUBLISH_DB"', publisher)
         for name in (
             "live-summary.json", "catalog-index.json", "alias-index.json",
@@ -1427,8 +1617,8 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn('for index in range(4096)', publisher)
         self.assertIn('used_parts != set(part_metadata)', publisher)
         self.assertIn('HEARTBEAT_INTERVAL="${CTAS_HEARTBEAT_INTERVAL:-900}"', publisher)
-        self.assertEqual(publisher.count('--release-base-ref "$DATA_TIP"'), 2)
-        self.assertEqual(publisher.count('with_release python3 scripts/export_ctas_snapshot.py'), 2)
+        self.assertEqual(publisher.count('--release-base-ref "$DATA_TIP"'), 1)
+        self.assertEqual(publisher.count('with_release python3 scripts/export_ctas_snapshot.py'), 1)
         self.assertIn('restore --source=HEAD --staged --worktree', publisher)
         self.assertIn('discard_generated_files() {', publisher)
         self.assertIn('clean -fdq -- ctas/data', publisher)

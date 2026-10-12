@@ -322,11 +322,14 @@ python3 scripts/check_ctas_links.py --catalog-index ctas/data/catalog-index.json
   --candidate-manifest ctas/data/candidate-chunks/manifest.json \
   --source-universe ctas/data/source-universe.json --output ctas/data/link-health.json >>"$LOG" 2>&1 \
   || die "public link validation failed; nothing committed"
-# Rebuild once so the verification report binds the current link-health artifact and
-# its catalog-content checksum. The exported scientific rows are deterministic.
-with_release python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
-  --release-base-ref "$DATA_TIP" >>"$LOG" 2>&1 \
-  || die "verification-report rebuild failed; nothing committed"
+# Bind the link-health artifact into the verification report. The link checker reads
+# the exported catalog, so it can only run after the export; the report used to be
+# rebuilt by a complete second export for this one binding. The rebind re-reads every
+# bound file, refuses if any byte differs from what the gates evaluated, re-evaluates
+# only the link-health, required-artifact and freshness gates, and rewrites the
+# report and status checksums. The release is the first export's bytes.
+python3 scripts/export_ctas_snapshot.py --rebind-link-health --output-dir ctas/data >>"$LOG" 2>&1 \
+  || die "verification-report link-health binding failed; nothing committed"
 # Atom feed of strong new follow-up targets, from the final first-screen summary.
 python3 scripts/ctas_feed.py --summary ctas/data/live-summary.json --output ctas/data/feed.xml >>"$LOG" 2>&1 \
   || die "new-target feed failed; nothing committed"

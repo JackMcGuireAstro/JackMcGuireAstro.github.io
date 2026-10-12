@@ -144,6 +144,50 @@ CATALOG_BOOTSTRAP_MAX_BYTES = 2 * 1024 * 1024
 # keep each download bounded without dropping measurements or source receipts.
 CANDIDATE_SHARD_TARGET_MAX_BYTES = 4 * 1024 * 1024
 GITHUB_MAX_BLOB_BYTES = 100 * 1024 * 1024
+CERTIFICATE_SCHEMA = "ctas.static-snapshot-verification@1.1.0"
+LINK_HEALTH_PATH = "ctas/data/link-health.json"
+LINK_HEALTH_SCHEMA = "ctas.link-health@1.0.0"
+LINK_HEALTH_GATE_ID = "recursive-link-structure-and-sampled-tns-health"
+REQUIRED_ARTIFACTS_GATE_ID = "required-public-artifacts"
+FRESHNESS_GATE_ID = "snapshot-freshness"
+# Every path the verification report must bind. The link-health artifact is the
+# one member the export itself cannot produce: scripts/check_ctas_links.py reads
+# the exported catalog, so it runs after the export and is bound afterwards by
+# --rebind-link-health (see rebind_link_health).
+REQUIRED_PUBLIC_ARTIFACTS = (
+    "ctas.html", "ctas/app.js", "ctas/presentation.js", "ctas/workbench.js", "ctas/observability.js",
+    "ctas/ctas.css", "ctas/data/observatories.json",
+    "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
+    "ctas/schema/astro-evidence-core-0.1.0.schema.json",
+    "ctas/data/live-summary.json", "ctas/data/catalog-pages/manifest.json", "ctas/data/catalog-index.json",
+    "ctas/data/alias-index.json", "ctas/data/research/manifest.json",
+    "ctas/data/research/events.vot", "ctas/data/research/tom-targets.csv",
+    "ctas/data/candidate-chunks/manifest.json",
+    "ctas/data/source-universe.json", LINK_HEALTH_PATH,
+    SOURCE_MATRIX_PATTERNS_PATH, "ctas/data/release-history.json",
+)
+# Code and fixed-input files the verification report binds beside the generated data.
+BOUND_CODE_PATHS = (
+    "ctas.html", "ctas/app.js", "ctas/chunk-loader.js", "ctas/presentation.js", "ctas/catalog-model.js", "ctas/astro-evidence.js",
+    "ctas/workbench.js", "ctas/observability.js", "ctas/live-sources.js", "ctas/spectrum-ascii.js",
+    "ctas/lightcurve-summary.js", "ctas/ctas.css",
+    "ctas/data/observatories.json",
+    "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
+    "ctas/schema/astro-evidence-core-0.1.0.schema.json",
+    "scripts/export_ctas_snapshot.py", "scripts/ctas_astro_evidence.py",
+    "scripts/ctas_chunks.py", "scripts/test_ctas_chunks.py", "scripts/test_ctas_chunk_loader.js",
+    "scripts/test_ctas_publisher_recovery.py",
+    "scripts/check_ctas_links.py", "scripts/rebuild_ctas_release_history.py",
+    "scripts/test_ctas_static.py", "scripts/test_ctas_catalog_model.js",
+    "scripts/test_ctas_links.py", "scripts/test_ctas_astro_evidence.py",
+    "scripts/test_ctas_identity.py", "scripts/test_ctas_browser.py", "scripts/test_ctas_release_browser.js",
+    "scripts/test_ctas_spectrum_ascii.js", "scripts/test_ctas_lightcurve_summary.js",
+    "scripts/test_ctas_ingest_provenance.py",
+    "scripts/ctas_node.py",
+    "scripts/mirror_loop.sh", "scripts/publish_ctas.sh", "scripts/ctas_launchd_runner.sh",
+    "scripts/install_ctas_mirror.sh", "scripts/diagnose_ctas_mirror.sh",
+    "scripts/io.github.jackmcguireastro.ctas-mirror.plist", "CTAS-AUTOMATION.md",
+)
 SOURCE_STATE_VOCABULARY = (
     "active-returning-data",
     "active-no-recent-messages",
@@ -3323,6 +3367,166 @@ def certificate_status(gates: list[dict[str, Any]]) -> str:
     return "verification-failed"
 
 
+def link_health_is_current(link_health: Any, catalog_checksum: str | None) -> bool:
+    """The one meaning of the link-health gate, shared by the export and the rebind."""
+
+    return bool(
+        isinstance(link_health, dict)
+        and link_health.get("schema") == LINK_HEALTH_SCHEMA
+        and link_health.get("catalog_content_checksum_sha256") == catalog_checksum
+        and link_health.get("structural_status") == "passed"
+        and link_health.get("live_status") in {"passed", "degraded-provider-unavailable"}
+    )
+
+
+def snapshot_is_fresh(generated_at: Any, valid_until: Any) -> bool:
+    generated = parse_utc(generated_at)
+    expiry = parse_utc(valid_until)
+    now = datetime.now(UTC)
+    return bool(
+        generated and expiry and generated <= now + timedelta(minutes=1)
+        and expiry >= now + timedelta(minutes=5)
+    )
+
+
+def canonical_report_bytes(certificate: dict[str, Any]) -> bytes:
+    unsigned = {key: value for key, value in certificate.items() if key != "report_checksum_sha256"}
+    return (json.dumps(unsigned, sort_keys=True, separators=(",", ":")) + "\n").encode()
+
+
+def verification_summary(certificate: dict[str, Any]) -> dict[str, Any]:
+    """status.json's copy of the verification outcome."""
+
+    gates = certificate["gates"]
+    return {
+        "status": certificate["status"],
+        "schema": certificate["schema"],
+        "passed_check_count": sum(gate["passed"] is True for gate in gates),
+        "check_count": len(gates),
+        "failed_gate_ids": [gate["id"] for gate in gates if gate["passed"] is not True],
+        "report_checksum_sha256": certificate["report_checksum_sha256"],
+        "valid_until": certificate["valid_until"],
+        "content_release_id": certificate["content_release_id"],
+    }
+
+
+def rebind_link_health(output_dir: Path, site_root: Path) -> int:
+    """Bind link-health.json into the verification report of the export in ``output_dir``.
+
+    The export writes every public artifact and evaluates every gate before the
+    link checker can run, because the checker reads the exported catalog. Until
+    October 2026 the publisher then rebuilt the whole release a second time only
+    so the report could bind the link-health artifact: a complete second export
+    (database read, scoring, projection, 4,096 chunks) per release. This step
+    replaces that rebuild without weakening the report:
+
+    * every file the report binds is re-read and must still have exactly the
+      bytes the gates were evaluated against (any difference refuses the rebind),
+      so the recorded gate results provably describe the published bytes;
+    * the link-health artifact is bound as the exact bytes on disk;
+    * only the gates whose inputs changed are re-evaluated, with the same code
+      the export uses: the required-artifact set (link-health is now present),
+      the link-health gate itself, and snapshot freshness at the clock of this
+      final step;
+    * the content release id, report checksum and status.json summary are
+      recomputed from the bound bytes.
+
+    The scientific rows, their checksums and the release clock are untouched:
+    the published release is the first export's bytes.
+    """
+
+    def refuse(reason: str) -> int:
+        print(f"error: cannot bind link health: {reason}", file=sys.stderr)
+        return 1
+
+    out = output_dir
+    try:
+        certificate = json.loads((out / "certification.json").read_bytes())
+        status = json.loads((out / "status.json").read_bytes())
+    except (OSError, json.JSONDecodeError) as exc:
+        return refuse(f"the export's report or status cannot be read ({exc})")
+    if (
+        not isinstance(certificate, dict) or certificate.get("schema") != CERTIFICATE_SCHEMA
+        or not isinstance(certificate.get("gates"), list) or not isinstance(certificate.get("files"), dict)
+        or not isinstance(status, dict) or not isinstance(status.get("artifacts"), dict)
+    ):
+        return refuse("the report is not a verification report this exporter writes")
+    recorded_checksum = certificate.get("report_checksum_sha256")
+    if hashlib.sha256(canonical_report_bytes(certificate)).hexdigest() != recorded_checksum:
+        return refuse("the report checksum does not reproduce; the report was altered after the export")
+    if (status.get("static_snapshot_verification") or {}).get("report_checksum_sha256") != recorded_checksum:
+        return refuse("status.json does not describe this report")
+    catalog_checksum = certificate.get("catalog_content_checksum_sha256")
+    if not catalog_checksum or status.get("catalog_content_checksum_sha256") != catalog_checksum:
+        return refuse("status.json and the report disagree about the catalog checksum")
+    gates = [dict(gate) for gate in certificate["gates"]]
+    by_id = {str(gate.get("id")): gate for gate in gates}
+    missing_gates = [
+        gate_id for gate_id in (REQUIRED_ARTIFACTS_GATE_ID, LINK_HEALTH_GATE_ID, FRESHNESS_GATE_ID)
+        if gate_id not in by_id
+    ]
+    if missing_gates or len(by_id) != len(gates):
+        return refuse("the report does not carry the gates this step re-evaluates")
+
+    link_health_path = out / "link-health.json"
+    try:
+        link_health = json.loads(link_health_path.read_bytes())
+    except (OSError, json.JSONDecodeError) as exc:
+        return refuse(f"{LINK_HEALTH_PATH} is missing or unreadable ({exc})")
+    if not isinstance(link_health, dict):
+        return refuse(f"{LINK_HEALTH_PATH} is not a JSON object")
+    link_health_raw = (json.dumps(link_health, indent=2, sort_keys=True) + "\n").encode()
+    if link_health_path.read_bytes() != link_health_raw:
+        # Bind exactly the bytes that are published.
+        atomic_write(link_health_path, link_health_raw)
+
+    files: dict[str, dict[str, Any]] = {}
+    release_hash = hashlib.sha256()
+    recorded_files = certificate["files"]
+    for name in sorted(set(recorded_files) | {LINK_HEALTH_PATH}):
+        if name == LINK_HEALTH_PATH:
+            raw = link_health_raw
+        else:
+            try:
+                target = (
+                    site_root / name if name in BOUND_CODE_PATHS
+                    else output_path_for_public_artifact(out, name)
+                )
+                raw = target.read_bytes()
+            except (OSError, ValueError) as exc:
+                return refuse(f"bound file {name} cannot be read ({exc})")
+            recorded = recorded_files.get(name) or {}
+            if recorded.get("sha256") != hashlib.sha256(raw).hexdigest() or recorded.get("bytes") != len(raw):
+                return refuse(f"{name} no longer holds the bytes the report evaluated")
+        files[name] = {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)}
+        release_hash.update(name.encode() + b"\0" + raw)
+
+    by_id[REQUIRED_ARTIFACTS_GATE_ID]["passed"] = all(path in files for path in REQUIRED_PUBLIC_ARTIFACTS)
+    by_id[LINK_HEALTH_GATE_ID]["passed"] = link_health_is_current(link_health, catalog_checksum)
+    by_id[FRESHNESS_GATE_ID]["passed"] = snapshot_is_fresh(certificate.get("generated_at"), certificate.get("valid_until"))
+    certificate["gates"] = gates
+    certificate["files"] = files
+    certificate["status"] = certificate_status(gates)
+    certificate["content_release_id"] = release_hash.hexdigest()
+    certificate.pop("report_checksum_sha256", None)
+    certificate["report_checksum_sha256"] = hashlib.sha256(canonical_report_bytes(certificate)).hexdigest()
+    status["static_snapshot_verification"] = verification_summary(certificate)
+    status["artifacts"]["link_health"] = {"path": LINK_HEALTH_PATH, "sha256": files[LINK_HEALTH_PATH]["sha256"]}
+    status["artifacts"]["certification"] = {
+        "path": "ctas/data/certification.json",
+        "report_checksum_sha256": certificate["report_checksum_sha256"],
+    }
+    status_raw = (json.dumps(status, indent=2, sort_keys=True) + "\n").encode()
+    certificate_raw = (json.dumps(certificate, indent=2, sort_keys=True) + "\n").encode()
+    if max(len(status_raw), len(certificate_raw)) >= GITHUB_MAX_BLOB_BYTES:
+        return refuse("status or report exceeds GitHub's single-object limit")
+    atomic_write(out / "status.json", status_raw)
+    atomic_write(out / "certification.json", certificate_raw)
+    print(f"bound {LINK_HEALTH_PATH} into the verification report of {len(files)} checksum-bound files")
+    print(f"snapshot verification: {certificate['status']} ({sum(g['passed'] for g in gates)}/{len(gates)} checks)")
+    return 0
+
+
 def semantic_catalog_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Return candidate content with polling-only source timestamps removed.
 
@@ -3567,7 +3771,7 @@ def projection_integrity_problems(projection: dict[str, Any]) -> list[str]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--database", required=True,
+    ap.add_argument("--database",
                     help="path to the CTAS SQLite database (opened read-only)")
     ap.add_argument("--output-dir", default="ctas/data")
     ap.add_argument("--limit", type=int, default=0,
@@ -3578,7 +3782,21 @@ def main() -> int:
     )
     ap.add_argument("--dry-run", action="store_true",
                     help="print a summary and sample; write nothing")
+    ap.add_argument(
+        "--rebind-link-health", action="store_true",
+        help="do not export; bind the link-health artifact beside an export already in "
+             "--output-dir into its verification report and status (see rebind_link_health)",
+    )
     args = ap.parse_args()
+
+    if args.rebind_link_health:
+        if args.database or args.limit or args.dry_run:
+            print("error: --rebind-link-health takes only --output-dir", file=sys.stderr)
+            return 2
+        return rebind_link_health(Path(args.output_dir), Path(__file__).resolve().parents[1])
+    if not args.database:
+        print("error: --database is required", file=sys.stderr)
+        return 2
 
     db = Path(os.path.expanduser(args.database)).resolve()
     if not db.exists():
@@ -4519,27 +4737,7 @@ def main() -> int:
         if isinstance(link_health, dict) else b""
     )
 
-    code_paths = (
-        "ctas.html", "ctas/app.js", "ctas/chunk-loader.js", "ctas/presentation.js", "ctas/catalog-model.js", "ctas/astro-evidence.js",
-        "ctas/workbench.js", "ctas/observability.js", "ctas/live-sources.js", "ctas/spectrum-ascii.js",
-        "ctas/lightcurve-summary.js", "ctas/ctas.css",
-        "ctas/data/observatories.json",
-        "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
-        "ctas/schema/astro-evidence-core-0.1.0.schema.json",
-        "scripts/export_ctas_snapshot.py", "scripts/ctas_astro_evidence.py",
-        "scripts/ctas_chunks.py", "scripts/test_ctas_chunks.py", "scripts/test_ctas_chunk_loader.js",
-        "scripts/test_ctas_publisher_recovery.py",
-        "scripts/check_ctas_links.py", "scripts/rebuild_ctas_release_history.py",
-        "scripts/test_ctas_static.py", "scripts/test_ctas_catalog_model.js",
-        "scripts/test_ctas_links.py", "scripts/test_ctas_astro_evidence.py",
-        "scripts/test_ctas_identity.py", "scripts/test_ctas_browser.py", "scripts/test_ctas_release_browser.js",
-        "scripts/test_ctas_spectrum_ascii.js", "scripts/test_ctas_lightcurve_summary.js",
-        "scripts/test_ctas_ingest_provenance.py",
-        "scripts/ctas_node.py",
-        "scripts/mirror_loop.sh", "scripts/publish_ctas.sh", "scripts/ctas_launchd_runner.sh",
-        "scripts/install_ctas_mirror.sh", "scripts/diagnose_ctas_mirror.sh",
-        "scripts/io.github.jackmcguireastro.ctas-mirror.plist", "CTAS-AUTOMATION.md",
-    )
+    code_paths = BOUND_CODE_PATHS
     working_code = {
         path: (site_root / path).read_bytes()
         for path in code_paths if (site_root / path).exists()
@@ -4573,7 +4771,7 @@ def main() -> int:
     }
 
     if link_health_raw:
-        bound_files["ctas/data/link-health.json"] = link_health_raw
+        bound_files[LINK_HEALTH_PATH] = link_health_raw
 
     def gate(gate_id: str, passed: bool, evidence: str) -> dict[str, Any]:
         return {"id": gate_id, "passed": bool(passed), "evidence": evidence}
@@ -4730,12 +4928,7 @@ def main() -> int:
         row.get("url") == "https://www.wis-tns.org/object/" + str(tns_object_id(str(row["designation"])))
         for row in tns_links
     )
-    generated = parse_utc(payload["generated_at"])
-    valid_until = parse_utc(payload["valid_until"])
-    freshness = bool(
-        generated and valid_until and generated <= datetime.now(UTC) + timedelta(minutes=1)
-        and valid_until >= datetime.now(UTC) + timedelta(minutes=5)
-    )
+    freshness = snapshot_is_fresh(payload["generated_at"], payload["valid_until"])
     public_ui_text = b"\n".join(
         working_code[path]
         for path in (
@@ -4771,13 +4964,7 @@ def main() -> int:
         "ctas_launchd_runner.sh" in publisher_text and
         "CTAS_HEARTBEAT_INTERVAL" in publisher_text
     )
-    link_health_current = bool(
-        isinstance(link_health, dict) and
-        link_health.get("schema") == "ctas.link-health@1.0.0" and
-        link_health.get("catalog_content_checksum_sha256") == payload["catalog_content_checksum_sha256"] and
-        link_health.get("structural_status") == "passed" and
-        link_health.get("live_status") in {"passed", "degraded-provider-unavailable"}
-    )
+    link_health_current = link_health_is_current(link_health, payload["catalog_content_checksum_sha256"])
     manifest_chunk_rows = [
         {
             "path": path,
@@ -5011,18 +5198,7 @@ def main() -> int:
     )
 
     gates = [
-        gate("required-public-artifacts", all(path in bound_files for path in (
-            "ctas.html", "ctas/app.js", "ctas/presentation.js", "ctas/workbench.js", "ctas/observability.js",
-            "ctas/ctas.css", "ctas/data/observatories.json",
-            "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
-            "ctas/schema/astro-evidence-core-0.1.0.schema.json",
-            LIVE_SUMMARY_PATH, CATALOG_PAGE_MANIFEST_PATH, "ctas/data/catalog-index.json",
-            "ctas/data/alias-index.json", "ctas/data/research/manifest.json",
-            "ctas/data/research/events.vot", "ctas/data/research/tom-targets.csv",
-            "ctas/data/candidate-chunks/manifest.json",
-            "ctas/data/source-universe.json", "ctas/data/link-health.json",
-            SOURCE_MATRIX_PATTERNS_PATH, "ctas/data/release-history.json",
-        )), "HTML, JavaScript, CSS, observatory definitions, research quickstart, frozen AstroEvidence schema, compact index, astronomy research exports, complete-catalog reconstruction manifest and chunks, source universe, history, and link-health artifact"),
+        gate(REQUIRED_ARTIFACTS_GATE_ID, all(path in bound_files for path in REQUIRED_PUBLIC_ARTIFACTS), "HTML, JavaScript, CSS, observatory definitions, research quickstart, frozen AstroEvidence schema, compact index, astronomy research exports, complete-catalog reconstruction manifest and chunks, source universe, history, and link-health artifact"),
         gate("catalog-population", bool(candidates) and not counts["catalog_truncated"] and len(candidates) == counts["eligible_public_events"] and len(names) == len(set(names)), f"{len(candidates)} complete eligible records; truncated={counts['catalog_truncated']}"),
         gate("candidate-public-contract", required_contract, f"{sum(bool(c.get('name')) and 'ctas_score' in c for c in candidates)}/{len(candidates)} identity and score records"),
         gate("complete-catalog-reconstruction-integrity", shard_integrity, f"{len(candidates)} complete records exactly once across {len(chunk_raw)} checksum-bound chunks in catalog-index UUID order"),
@@ -5055,7 +5231,7 @@ def main() -> int:
         gate("source-statistics-integrity", published_provider_stats == provider_reproduced, f"{len(published_provider_stats)} provider totals reproduced"),
         gate("survey-statistics-integrity", published_surveys == survey_reproduced, f"{len(published_surveys)} discovery-survey totals reproduced"),
         gate("public-export-safety", not problems, "recursive allowlist safety check across public candidate and source artifacts"),
-        gate("snapshot-freshness", freshness, f"generated {payload['generated_at']}; valid until {payload['valid_until']}"),
+        gate(FRESHNESS_GATE_ID, freshness, f"generated {payload['generated_at']}; valid until {payload['valid_until']}"),
         gate("two-minute-publication-contract", cadence_contract, "120-second mirror contract and current export heartbeat"),
         gate("source-universe-schema", universe_structure, f"{len(source_universe_rows)} unique versioned source contracts; every dossier names the definition checksum {source_universe_version}"),
         gate("source-and-survey-closure", provider_closure and survey_closure, closure_evidence),
@@ -5063,7 +5239,7 @@ def main() -> int:
         gate("record-completeness-reproducibility", completeness_integrity, "public components recompute independently of CTAS priority"),
         gate("unified-timeline-integrity", timeline_integrity, "retained timeline entries reproduce with distinct scientific, publication, and CTAS clocks"),
         gate("tns-link-structure", tns_structure, f"{len(tns_links)} canonical object-specific TNS links"),
-        gate("recursive-link-structure-and-sampled-tns-health", link_health_current, "all exported URLs are recursively classified and structurally checked; live health applies only to the explicitly sampled TNS object page"),
+        gate(LINK_HEALTH_GATE_ID, link_health_current, "all exported URLs are recursively classified and structurally checked; live health applies only to the explicitly sampled TNS object page"),
         gate("interpretation-and-limitations", all(token in public_ui_text for token in interpretation_tokens), "priority, completeness, discovery, and scientific-claim boundaries are public"),
         gate("browser-interaction-contract", all(token in public_ui_text for token in ui_tokens), "compact-index loading, lazy candidate shards, source universe, release history, weekly/monthly sky, full-record workspaces, filters, and keyboard interaction are present"),
         gate("deployed-code-binding", working_matches_head, "bound code bytes exactly match HEAD, not a dirty working tree"),
@@ -5075,7 +5251,7 @@ def main() -> int:
         b"".join(name.encode() + b"\0" + raw for name, raw in sorted(bound_files.items()))
     ).hexdigest()
     certificate = {
-        "schema": "ctas.static-snapshot-verification@1.1.0",
+        "schema": CERTIFICATE_SCHEMA,
         "generated_at": payload["generated_at"],
         "valid_until": payload["valid_until"],
         "architecture": "local-python-to-static-github-pages",
@@ -5093,18 +5269,8 @@ def main() -> int:
         "gates": gates,
         "files": {name: {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)} for name, raw in sorted(bound_files.items())},
     }
-    canonical = (json.dumps(certificate, sort_keys=True, separators=(",", ":")) + "\n").encode()
-    certificate["report_checksum_sha256"] = hashlib.sha256(canonical).hexdigest()
-    status["static_snapshot_verification"] = {
-        "status": certificate["status"],
-        "schema": certificate["schema"],
-        "passed_check_count": sum(gate["passed"] is True for gate in gates),
-        "check_count": len(gates),
-        "failed_gate_ids": [gate["id"] for gate in gates if gate["passed"] is not True],
-        "report_checksum_sha256": certificate["report_checksum_sha256"],
-        "valid_until": certificate["valid_until"],
-        "content_release_id": certificate["content_release_id"],
-    }
+    certificate["report_checksum_sha256"] = hashlib.sha256(canonical_report_bytes(certificate)).hexdigest()
+    status["static_snapshot_verification"] = verification_summary(certificate)
     status["artifacts"] = {
         "catalog_bootstrap": {"path": "ctas/data/catalog-bootstrap.json", "sha256": hashlib.sha256(catalog_index_raw).hexdigest()},
         "catalog_index": {"path": "ctas/data/catalog-index.json", "sha256": hashlib.sha256(catalog_index_raw).hexdigest()},
@@ -5114,7 +5280,7 @@ def main() -> int:
         "source_universe": {"path": "ctas/data/source-universe.json", "sha256": hashlib.sha256(source_universe_raw).hexdigest()},
         "source_matrix_patterns": {"path": SOURCE_MATRIX_PATTERNS_PATH, "sha256": hashlib.sha256(source_matrix_patterns_raw).hexdigest()},
         "release_history": {"path": "ctas/data/release-history.json", "sha256": hashlib.sha256(release_history_raw).hexdigest()},
-        "link_health": {"path": "ctas/data/link-health.json", "sha256": hashlib.sha256(link_health_raw).hexdigest() if link_health_raw else None},
+        "link_health": {"path": LINK_HEALTH_PATH, "sha256": hashlib.sha256(link_health_raw).hexdigest() if link_health_raw else None},
         "certification": {"path": "ctas/data/certification.json", "report_checksum_sha256": certificate["report_checksum_sha256"]},
     }
     status_raw = (json.dumps(status, indent=2, sort_keys=True) + "\n").encode()
