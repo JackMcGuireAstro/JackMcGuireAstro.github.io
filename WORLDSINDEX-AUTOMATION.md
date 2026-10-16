@@ -122,8 +122,12 @@ clears automatic recovery stash entries and collects Git garbage.
 `.github/workflows/freshness-watchdog.yml` checks the live `worldsindex/data/manifest.json`
 (and the CTAS status) hourly from GitHub Actions and keeps one `freshness-watchdog` issue open
 while either publisher has stalled, closing it on recovery. A WorldsIndex release older than
-30 h, or older than 3 h while CTAS is still publishing, raises the alert. See CTAS-AUTOMATION.md
-for the full description; the limits are in the workflow's `env:` block.
+6 h, or older than 3 h while CTAS is still publishing, raises the alert; so do three failed
+`worldsindex-cloud.yml` runs in a row (a run can publish and then fail saving its working
+state, as every run did from 2026-10-14) and a published `worldsindex/data/cloud-run.json`
+marker whose restored state is older than 6 h. See "Freshness watchdog" and "When an alert
+fires" in CTAS-AUTOMATION.md for the full description and what to do; the limits are in the
+workflow's `env:` block.
 
 ## Operations
 

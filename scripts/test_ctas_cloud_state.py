@@ -94,12 +94,20 @@ class CloudStateTests(unittest.TestCase):
             make_db(self.tmp / "x.db", rows)
             gz(self.release / name, self.tmp / "x.db")
             (self.tmp / "x.db").unlink()
-        result = self.cli("restore", str(self.data))
+        receipt = self.tmp / "state-restored.json"
+        result = self.cli("restore", str(self.data), STATE_RECEIPT=str(receipt))
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual((self.data / "benchmarks/labels.csv").read_text(), "label,value\n")
         count = sqlite3.connect(self.data / "soc.db").execute("SELECT COUNT(*) FROM events").fetchone()[0]
         self.assertEqual(count, 5)
         self.assertIn("soc-20261001T090000Z.db.gz", result.stdout)
+        # The receipt says which copy was restored and when it was saved (for the public marker).
+        import json
+        document = json.loads(receipt.read_text())
+        self.assertEqual(document["asset"], "soc-20261001T090000Z.db.gz")
+        self.assertEqual(document["saved_at"], "2026-10-01T09:00:00Z")
+        self.assertRegex(document["restored_at"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+        self.assertIsNone(state.stamp_to_iso("soc-garbage.db.gz", "soc-"))
 
     def test_restore_without_a_database_fails(self):
         self.put_static()

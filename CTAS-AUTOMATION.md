@@ -219,11 +219,76 @@ therefore runs hourly in GitHub Actions, independent of this Mac, reads the live
 issue labelled `freshness-watchdog`: opened (with an @mention) when a publisher has
 stalled, updated when the picture changes or every 12 hours while it persists,
 closed automatically on recovery. Its strongest signal is the cross-check: if
-WorldsIndex published within two hours but CTAS has not for three, the Mac is up
-and this publisher is stuck. Absolute limits (18 h for CTAS, 30 h for WorldsIndex)
-sit above the ~14 h a day the laptop is normally closed. Limits live in the workflow's `env:` block; the
-checks are `scripts/watchdog_freshness.py`, tested by
+WorldsIndex published within two hours but CTAS has not for three, the cloud runs
+work and this publisher is stuck. Absolute limits are 4 h for CTAS and 6 h for
+WorldsIndex (both publishers run in the cloud now). Limits live in the workflow's
+`env:` block; the checks are `scripts/watchdog_freshness.py`, tested by
 `scripts/test_watchdog_freshness.py` in the release validation.
+
+Since October 2026 it also reads what the data alone cannot show. The recent runs of
+`ctas-cloud.yml` and `worldsindex-cloud.yml` (`gh run list`, and `gh run view --json
+jobs` for the failed step's name): three failed completed runs in a row, or more than
+half of at least four completed runs in 24 h, is an alert even while the site is
+fresh (2026-10-14: every WorldsIndex run published and then failed saving its state).
+Each run also publishes a marker beside its release, `ctas/data/cloud-run.json` and
+`worldsindex/data/cloud-run.json` (`scripts/cloud_run_marker.py`): the state copy it
+restored and when that copy was saved, the run id, and whether GitHub accepted the
+`CTAS_STATE_TOKEN` key and when it expires (date only; the key never appears). The
+marker is not part of the certified snapshot: `status.json` stays exactly as the
+exporter writes it, the certificate binds an explicit file set, and the WorldsIndex
+static test leaves the marker out of its manifest comparison.
+
+### Where the alert arrives
+
+The issue (label `freshness-watchdog`) @-mentions the owner, which GitHub turns into an
+email; issue #5 (October 2026) showed that an email alone can go unseen for 40 hours.
+Optionally the same summary is also POSTed to one webhook when the issue opens, when
+the set of alerts changes, and when it closes (`scripts/watchdog_issue.sh`): plain text
+with a `Title` header for an ntfy.sh topic (the ntfy app on a phone shows it as a push
+notification), JSON `{"text", "content"}` for a Slack or Discord incoming webhook. Set
+it once from a checkout, and remove it the same way:
+
+```sh
+gh secret set WATCHDOG_NOTIFY_WEBHOOK --repo JackMcGuireAstro/JackMcGuireAstro.github.io \
+  --body "https://ntfy.sh/<a-long-private-topic-name>"
+gh secret delete WATCHDOG_NOTIFY_WEBHOOK --repo JackMcGuireAstro/JackMcGuireAstro.github.io
+```
+
+The format is guessed from the address (`ntfy` in it means text); the workflow's
+`WATCHDOG_NOTIFY_FORMAT` (`text` or `json`) overrides the guess for a self-hosted
+server. Nothing else is notified, and a failed delivery never stops the issue.
+
+### When an alert fires
+
+The issue's first line says what to do; the alert codes mean:
+
+- `ctas-runs-failing-after-publish`, `worldsindex-runs-failing-after-publish`,
+  `ctas-state-not-saved`, `worldsindex-state-not-saved`: the runs publish, then fail,
+  so every run restores an old working state (the collector re-collects the same
+  alerts; WorldsIndex re-runs the same promotions). Open the newest failed run named
+  in the issue, save its log and `ctas-publish-log` / `worldsindex-publish-log`
+  artifact (kept five days), and read the lines after "saving ... to the state
+  repository". A `gh release upload` refusal means the key lost write access to the
+  state repository or the release `state` is missing; a check failure (`quick_check`,
+  "holds no frozen snapshots") means the working data is damaged and the last good
+  copy was rightly kept.
+- `ctas-runs-failing`, `worldsindex-runs-failing`: the runs fail before publishing.
+  Open the newest failed run and read the failed step the issue names. A failure at
+  the private checkout or the restore means the key: run `Renew cloud key.command`.
+- `state-token-rejected`: GitHub answered 401 to the key. Run `Renew cloud key.command`
+  on the Mac (it copies a fresh `gh auth token` into the `CTAS_STATE_TOKEN` secret and
+  the relay's `GH_DISPATCH_TOKEN`), then start each cloud workflow by hand once.
+- `state-token-expiring`: the key expires within ten days (`gh auth token` keys from an
+  OAuth sign-in carry no date and never raise this). Run `Renew cloud key.command`
+  before the date in the issue.
+- `ctas-stale`, `worldsindex-stale`, `*-stalled-while-*-publishes`: nothing published
+  for too long. Open the newest run of the stalled workflow, save its log, and start
+  the workflow by hand (Actions -> Run workflow). If no run started at all, check the
+  relay's keeper (`relay/worker.js`) and its `GH_DISPATCH_TOKEN`.
+- `ctas-unavailable`, `worldsindex-unavailable`: the status file could not be read
+  from the site; look at the last "Validate and deploy site" run and GitHub's status.
+- `deploy-failed`: pushes land but the site is frozen at the previous green commit.
+  Open the failed deploy run, fix or revert the commit, or re-run the last green one.
 
 ## Public artifacts
 

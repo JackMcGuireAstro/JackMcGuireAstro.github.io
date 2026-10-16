@@ -205,6 +205,14 @@ const loadedContributions = await readFile(join(sourceRoot, 'public/data/source-
 // A file left over from another atlas projection (or an unknown schema) is ignored, never half-applied.
 const contributions = loadedContributions && loadedContributions.schemaVersion === 'worldsindex-source-contributions.v1' && loadedContributions.atlasProjectionId === atlas.projectionId ? loadedContributions : null;
 if (loadedContributions && !contributions) console.warn('source-contributions.json.gz ignored: built for another atlas projection or schema');
+// The builder's object × source coverage summary (ExoNexus packages/exonexus/archive/source-coverage.ts):
+// per source, objects eligible / attached / missing at the provider / blocked. Optional; published
+// beside the release so the gap between "could carry" and "carries" is visible over time.
+const loadedCoverage = await readFile(join(sourceRoot, 'public/data/source-coverage.json'))
+  .then((bytes) => JSON.parse(bytes.toString('utf8')))
+  .catch((error) => { if (error.code === 'ENOENT') return null; throw error; });
+const sourceCoverage = loadedCoverage && loadedCoverage.schemaVersion === 'worldsindex-source-coverage.v1' ? loadedCoverage : null;
+if (loadedCoverage && !sourceCoverage) console.warn('source-coverage.json ignored: unknown schema');
 const contributedAliases = (objectId) => [...new Set((contributions?.objects?.[objectId]?.aliases ?? []).map((alias) => alias.value))];
 const catalogObjects = atlas.detections.map((detection) => ({
   objectId: detection.objectId,
@@ -340,11 +348,17 @@ if (indexText !== null) {
   await copyFile(indexPath, join(outputRoot, 'lightcurves/index.json'));
   lightcurvePaths.push('lightcurves/index.json');
 }
+const coveragePaths = [];
+if (sourceCoverage) {
+  await writeFile(join(outputRoot, 'source-coverage.json'), `${JSON.stringify(sourceCoverage, null, 2)}\n`);
+  coveragePaths.push('source-coverage.json');
+}
 const artifactPaths = [
   'sky-detections.json.gz',
   'catalog-index.json.gz',
   'registry.json.gz',
   'transit-ephemerides.json.gz',
+  ...coveragePaths,
   ...lightcurvePaths,
   'source-monitor.json',
   ...[...buckets.keys()].sort().map((bucket) => `details/${bucket}.json.gz`),
@@ -374,6 +388,7 @@ const manifest = {
     referenceBjd: transitEphemerides.referenceBjd, bySource: transitStats.bySource, crossMatchedToi: transitStats.crossMatchedToi,
   },
   sourceContributions: contributions ? { schemaVersion: contributions.schemaVersion, generatedAt: contributions.generatedAt, boundary: contributions.boundary, sources: contributions.sources } : null,
+  sourceCoverage: sourceCoverage ? { path: 'source-coverage.json', schemaVersion: sourceCoverage.schemaVersion, generatedAt: sourceCoverage.generatedAt, sources: Object.keys(sourceCoverage.sources ?? {}).length } : null,
   artifacts,
   scientificBoundary: 'Static public catalog projection. Source membership is not independent confirmation; source-composite values are not self-consistent publication solutions; catalog projections are not completeness-corrected populations.',
 };

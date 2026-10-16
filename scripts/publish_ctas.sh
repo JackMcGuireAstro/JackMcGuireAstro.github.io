@@ -154,6 +154,13 @@ fi
 DATA_TIP=$(bash scripts/data_branch.sh sync "$DATA_STORE" "$DATA_BRANCH") \
   || die "could not read the published $DATA_BRANCH release: $DATA_TIP"
 git clean -fdqX -- ctas/data || die "could not clear the previous generated files"
+# The cloud run's public marker (scripts/cloud_run_marker.py: restored state, run id) is
+# published beside the release. It is not part of the certified snapshot: the exporter
+# binds an explicit file set, and status.json stays exactly as the exporter wrote it.
+if [ -n "${CTAS_CLOUD_RUN_MARKER:-}" ] && [ -f "$CTAS_CLOUD_RUN_MARKER" ]; then
+  cp "$CTAS_CLOUD_RUN_MARKER" ctas/data/cloud-run.json || die "could not place the cloud-run marker"
+  PUBLIC_FILES+=(ctas/data/cloud-run.json)
+fi
 
 # Each phase's duration goes to the log, so a slow release can be read from the
 # publish log instead of being guessed at.

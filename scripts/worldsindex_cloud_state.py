@@ -17,7 +17,9 @@ monitor receipts) is kept as release assets of the release tagged ``state``:
         the newest KEEP_RECENT and the newest of each of the previous KEEP_DAYS days.
         An archive that fails the check is never uploaded.
 
-GH_TOKEN must allow reading and writing the state repository's contents.
+GH_TOKEN must allow reading and writing the state repository's contents. When
+STATE_RECEIPT names a file, ``restore`` writes a small JSON receipt there (which
+archive was restored and when it was saved) for the run's public marker.
 """
 from __future__ import annotations
 
@@ -91,6 +93,24 @@ def safe_extract(archive: tarfile.TarFile, target: Path) -> None:
         archive.extractall(target)
 
 
+def stamp_to_iso(name: str) -> str | None:
+    """The UTC stamp in an archive name (``wi-state-20261016T061500Z.tar.gz``) as ISO-8601."""
+    try:
+        return datetime.strptime(name[len(PREFIX):len(PREFIX) + 16], "%Y%m%dT%H%M%SZ").strftime("%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        return None
+
+
+def write_receipt(asset: str) -> None:
+    """Record which archive was restored, when it was saved, and when (STATE_RECEIPT)."""
+    path = os.environ.get("STATE_RECEIPT")
+    if not path:
+        return
+    receipt = {"asset": asset, "saved_at": stamp_to_iso(asset),
+               "restored_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
+    Path(path).write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
 def restore(source: Path) -> None:
     states = state_assets(assets())
     if not states:
@@ -105,6 +125,7 @@ def restore(source: Path) -> None:
     with tarfile.open(work / chosen) as archive:
         safe_extract(archive, source)
     shutil.rmtree(work, ignore_errors=True)
+    write_receipt(chosen)
     print(f"restored {chosen}")
 
 

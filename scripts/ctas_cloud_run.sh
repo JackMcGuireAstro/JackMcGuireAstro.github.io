@@ -51,7 +51,14 @@ trap stop_collector EXIT
 
 # ------------------------------------------------------------------ 1. restore
 say "restoring the database from the state repository"
-GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/ctas_cloud_state.py" restore "$DATA" || fail "could not restore the state"
+STATE_RECEIPT="$WORK/state-restored.json" GH_TOKEN="$STATE_TOKEN" \
+  python3 "$SITE/scripts/ctas_cloud_state.py" restore "$DATA" || fail "could not restore the state"
+# Public marker of this run (which state copy it restored and when that was saved,
+# whether the state key still works and when it expires),
+# published beside the release as ctas/data/cloud-run.json for the freshness watchdog.
+MARKER="$WORK/cloud-run.json"
+GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/cloud_run_marker.py" --workflow ctas-cloud.yml \
+  --receipt "$WORK/state-restored.json" --output "$MARKER" --probe-token || { say "WARN  could not write the cloud-run marker"; MARKER=""; }
 
 # ------------------------------------------------------------------ 2. collect
 [ -f "$BACKEND/.env" ] || say "no .env for the collector; sources that need keys will be skipped"
@@ -81,7 +88,7 @@ say "building the release${PUBLISH_ARGS:+ (dry run)}"
 # clonefile), and setting it would leak into the publisher's own snapshot tests.
 # DATA_BRANCH_COMPACT=0: this runner's data store lives for one run, so repacking the
 # whole release after the push would only delay the save and the next cycle.
-PUBLISH_OUT=$(CTAS_SITE="$SITE" CTAS_DB="$DATA/soc.db" CTAS_LOG_DIR="$LOGS/publish" \
+PUBLISH_OUT=$(CTAS_SITE="$SITE" CTAS_DB="$DATA/soc.db" CTAS_LOG_DIR="$LOGS/publish" CTAS_CLOUD_RUN_MARKER="$MARKER" \
   DATA_BRANCH_DISPATCHER=0 DATA_BRANCH_COMPACT=0 bash "$SITE/scripts/publish_ctas.sh" "${PUBLISH_ARGS[@]}" 2>&1)
 PUBLISH_STATUS=$?
 printf '%s\n' "$PUBLISH_OUT" | tail -20

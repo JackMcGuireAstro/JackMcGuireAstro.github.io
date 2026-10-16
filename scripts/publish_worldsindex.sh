@@ -37,6 +37,7 @@ PUBLIC_FILES=(
   worldsindex/data/sky-detections.json.gz
   worldsindex/data/source-monitor.json
   worldsindex/data/transit-ephemerides.json.gz
+  worldsindex/data/source-coverage.json
 )
 for bucket_index in {0..255}; do
   printf -v bucket '%02x' "$bucket_index"
@@ -263,6 +264,13 @@ PY_OBSERVATIONS
 )
 (cd "$SITE" && python3 scripts/test_worldsindex_static.py && node --check worldsindex/assets/app.js && git diff --check) >>"$LOG" 2>&1 \
   || die "static release validation failed"
+# The cloud run's public marker (scripts/cloud_run_marker.py: restored state, run id) is
+# published beside the release. It is not a manifest artifact (the static test above and
+# scripts/test_worldsindex_static.py leave it out), but it is allowlisted like everything else.
+if [ -n "${WORLDSINDEX_CLOUD_RUN_MARKER:-}" ] && [ -f "$WORLDSINDEX_CLOUD_RUN_MARKER" ]; then
+  cp "$WORLDSINDEX_CLOUD_RUN_MARKER" "$SITE/worldsindex/data/cloud-run.json" || die "could not place the cloud-run marker"
+  PUBLIC_FILES+=(worldsindex/data/cloud-run.json)
+fi
 
 EXPECTED=$(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1])).get("detailShards",[])))' "$SITE/worldsindex/data/manifest.json" 2>/dev/null || echo 0)
 [ "$EXPECTED" = "256" ] || die "release manifest does not declare exactly 256 detail shards"

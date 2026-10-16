@@ -3,11 +3,12 @@ name: Publisher freshness watchdog
 # Both publishers run in GitHub Actions (ctas-cloud.yml, worldsindex-cloud.yml) and fail
 # closed: when one refuses a release it keeps
 # refusing, silently, and GitHub Pages keeps serving the last snapshot. This workflow
-# runs in the cloud, independent of the Mac, reads the public status files once an
-# hour and maintains one issue labelled `freshness-watchdog`: opened when a publisher
-# stalls (with an @mention, so it reaches email), updated when the picture changes or
-# every 12 hours while it persists, closed automatically on recovery. It changes
-# nothing on the site. See scripts/watchdog_freshness.py for the checks.
+# runs in the cloud, independent of the Mac, reads the public status files and the
+# recent run results once an hour and maintains one issue labelled
+# `freshness-watchdog`: opened when a publisher stalls or its runs keep failing (with
+# an @mention, so it reaches email), updated when the picture changes or every 12
+# hours while it persists, closed automatically on recovery. It changes nothing on
+# the site. See scripts/watchdog_freshness.py for the checks.
 #
 # Tune the limits below rather than the script. Both publishers now run in the cloud:
 # CTAS about every 30 minutes (each run starts the next) and WorldsIndex hourly, both
@@ -42,6 +43,17 @@ jobs:
       WORLDSINDEX_MAX_AGE_HOURS: "6"
       CROSS_CHECK_FRESH_HOURS: "2"
       CROSS_CHECK_STALE_HOURS: "3"
+      # Run results: this many failed completed runs in a row, or more than this share
+      # of the completed runs in the last 24 h, is an alert even while the data is fresh.
+      CONSECUTIVE_FAILURES: "3"
+      FAILURE_RATE_PERCENT: "50"
+      # State saves: each run's public marker (ctas/data/cloud-run.json,
+      # worldsindex/data/cloud-run.json) names the state copy it restored; a copy
+      # older than this while the marker is fresh means the saves are failing.
+      CTAS_STATE_MAX_AGE_HOURS: "3"
+      WORLDSINDEX_STATE_MAX_AGE_HOURS: "6"
+      # The CTAS_STATE_TOKEN key: warn this many days before the expiry the marker records.
+      TOKEN_WARN_DAYS: "10"
       WATCHDOG_REMIND_HOURS: "12"
     steps:
       - uses: actions/checkout@v5
@@ -53,15 +65,41 @@ jobs:
           gh run list --repo "$GITHUB_REPOSITORY" --workflow "Validate and deploy site" --branch main \
             --limit 20 --json conclusion,status,createdAt,headSha,url,displayTitle > deploy.json \
             || echo '[]' > deploy.json
+      - name: Results of the recent cloud runs
+        # A run can publish and then fail (saving its state, for example); the public
+        # data stays fresh, so only the run results show it. The newest failed runs'
+        # step results give the step that failed.
+        run: |
+          mkdir -p run-jobs
+          for workflow in ctas-cloud worldsindex-cloud; do
+            gh run list --repo "$GITHUB_REPOSITORY" --workflow "$workflow.yml" --limit 40 \
+              --json conclusion,status,createdAt,url,databaseId > "$workflow-runs.json" \
+              || echo '[]' > "$workflow-runs.json"
+            jq -r '[.[] | select(.status == "completed" and (.conclusion | IN("success", "cancelled", "skipped") | not))][:3][].databaseId' \
+              "$workflow-runs.json" | while read -r id; do
+                gh run view "$id" --repo "$GITHUB_REPOSITORY" --json jobs > "run-jobs/$id.json" || rm -f "run-jobs/$id.json"
+              done
+          done
       - name: Read the live CTAS and WorldsIndex releases
         run: |
           python3 scripts/watchdog_freshness.py \
             --base "$SITE_URL" --deploy-json deploy.json --mention "$WATCHDOG_MENTION" \
+            --ctas-runs-json ctas-cloud-runs.json --worldsindex-runs-json worldsindex-cloud-runs.json \
+            --run-jobs-dir run-jobs \
             --ctas-max-age-hours "$CTAS_MAX_AGE_HOURS" \
             --worldsindex-max-age-hours "$WORLDSINDEX_MAX_AGE_HOURS" \
             --cross-check-fresh-hours "$CROSS_CHECK_FRESH_HOURS" \
             --cross-check-stale-hours "$CROSS_CHECK_STALE_HOURS" \
+            --consecutive-failures "$CONSECUTIVE_FAILURES" \
+            --failure-rate-percent "$FAILURE_RATE_PERCENT" \
+            --ctas-state-max-age-hours "$CTAS_STATE_MAX_AGE_HOURS" \
+            --worldsindex-state-max-age-hours "$WORLDSINDEX_STATE_MAX_AGE_HOURS" \
+            --token-warn-days "$TOKEN_WARN_DAYS" \
             --report report.json --markdown report.md
           cat report.md >> "$GITHUB_STEP_SUMMARY"
       - name: Open, update or close the alert issue
+        env:
+          # Optional: a push/chat webhook (ntfy.sh, Slack, Discord) that also gets the
+          # summary when the issue opens, changes or closes; see CTAS-AUTOMATION.md.
+          WATCHDOG_NOTIFY_WEBHOOK: ${{ secrets.WATCHDOG_NOTIFY_WEBHOOK }}
         run: bash scripts/watchdog_issue.sh report.json report.md

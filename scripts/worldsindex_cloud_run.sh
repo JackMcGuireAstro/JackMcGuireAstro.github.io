@@ -22,8 +22,15 @@ mkdir -p "$LOGS"
 say() { printf '%s  %s\n' "$(date -u '+%H:%M:%S')" "$*"; }
 
 say "restoring WorldsIndex's working data from the state repository"
-GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/worldsindex_cloud_state.py" restore "$SOURCE" \
+STATE_RECEIPT="$WORK/state-restored.json" GH_TOKEN="$STATE_TOKEN" \
+  python3 "$SITE/scripts/worldsindex_cloud_state.py" restore "$SOURCE" \
   || { say "FAIL  could not restore the working data"; exit 1; }
+# Public marker of this run (which state archive it restored and when that was saved,
+# whether the state key still works and when it expires),
+# published beside the release as worldsindex/data/cloud-run.json for the freshness watchdog.
+MARKER="$WORK/cloud-run.json"
+GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/cloud_run_marker.py" --workflow worldsindex-cloud.yml \
+  --receipt "$WORK/state-restored.json" --output "$MARKER" --probe-token || { say "WARN  could not write the cloud-run marker"; MARKER=""; }
 
 # Reviewed identity-rule upgrades (v1 -> v2 2026-10-02, v2 -> v3 2026-10-03): the builder
 # re-links exoplanet.eu rows under newer identity rules only if the result matches the
@@ -39,6 +46,7 @@ ARGS=(--full)
 [ "$DRY_RUN" = "1" ] && ARGS+=(--dry-run)
 say "running the WorldsIndex publisher (full cycle)"
 OUT=$(WORLDSINDEX_SITE="$SITE" WORLDSINDEX_SOURCE="$SOURCE" WORLDSINDEX_LOG_DIR="$LOGS/publish" \
+  WORLDSINDEX_CLOUD_RUN_MARKER="$MARKER" \
   DATA_BRANCH_DISPATCHER=0 bash "$SITE/scripts/publish_worldsindex.sh" "${ARGS[@]}" 2>&1)
 STATUS=$?
 printf '%s\n' "$OUT" | tail -25

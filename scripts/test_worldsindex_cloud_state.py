@@ -61,10 +61,18 @@ class WorldsIndexStateTests(unittest.TestCase):
         fresh = self.tmp / "fresh"
         fresh.mkdir()
         (fresh / "data/snapshots/stale").mkdir(parents=True)
-        restored = self.cli("restore", str(fresh))
+        receipt = self.tmp / "state-restored.json"
+        restored = self.cli("restore", str(fresh), STATE_RECEIPT=str(receipt))
         self.assertEqual(restored.returncode, 0, restored.stderr)
         self.assertEqual((fresh / "data/snapshots/nasa/manifest.json").read_text(), "v1")
         self.assertFalse((fresh / "data/snapshots/stale").exists(), "restore replaces the state folders")
+        # The receipt names the restored archive and the time it was saved (for the public marker).
+        import json
+        document = json.loads(receipt.read_text())
+        self.assertEqual(document["asset"], archive.name)
+        self.assertEqual(document["saved_at"], state.stamp_to_iso(archive.name))
+        self.assertRegex(document["saved_at"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+        self.assertIsNone(state.stamp_to_iso("wi-state-latest.tar.gz"))
 
     def test_state_without_snapshots_is_never_uploaded(self):
         (self.source / "public/data").mkdir(parents=True)

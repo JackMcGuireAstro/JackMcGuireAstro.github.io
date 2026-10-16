@@ -157,6 +157,7 @@ jobs:
           GIT_CONFIG_VALUE_1: "0"
         run: |
           python3 scripts/test_watchdog_freshness.py
+          python3 scripts/test_cloud_run_marker.py
           python3 scripts/test_publisher_housekeeping.py
           python3 scripts/test_ctas_db_retention.py
           python3 scripts/test_data_branch.py

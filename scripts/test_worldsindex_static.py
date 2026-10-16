@@ -67,10 +67,13 @@ def main() -> None:
     )
     if sync_duplicates:
         print(f"warning: {len(sync_duplicates)} sync duplicate(s) under worldsindex/data are ignored: {sync_duplicates[:4]}")
+    # cloud-run.json is the publisher's run marker (scripts/cloud_run_marker.py), published
+    # beside the release for the freshness watchdog; the builder does not produce it.
     on_disk = sorted(
         path.relative_to(DATA).as_posix()
         for path in DATA.rglob("*")
-        if path.is_file() and path.name != "manifest.json" and not path.name.startswith(".") and not sync_duplicate.search(path.name)
+        if path.is_file() and path.name != "manifest.json" and path.relative_to(DATA).as_posix() != "cloud-run.json"
+        and not path.name.startswith(".") and not sync_duplicate.search(path.name)
     )
     assert sorted(artifacts) == on_disk, (
         f"manifest.artifacts and worldsindex/data disagree: "

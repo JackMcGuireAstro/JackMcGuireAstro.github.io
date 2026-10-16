@@ -12,6 +12,13 @@
 # read and write issues in this repository and nothing else. Every body carries a
 # hidden `watchdog-fingerprint` marker so the next run can tell whether anything
 # changed without keeping state of its own.
+#
+# Optional: when WATCHDOG_NOTIFY_WEBHOOK is set (repository secret, see
+# CTAS-AUTOMATION.md), the report's short summary is also POSTed there when the issue
+# is opened, when the set of alerts changes, and when it closes: plain text with a
+# Title header for ntfy.sh, JSON {"text", "content"} for Slack and Discord incoming
+# webhooks. WATCHDOG_NOTIFY_FORMAT=text|json overrides the guess made from the URL.
+# The issue remains the record; a failed notification is reported, never fatal.
 set -euo pipefail
 
 REPORT=${1:?report.json}
@@ -29,9 +36,24 @@ codes = [row["code"] for row in report["alerts"]]
 names = []
 if any(code.startswith("ctas") for code in codes): names.append("CTAS")
 if any(code.startswith("worldsindex") for code in codes): names.append("WorldsIndex")
+if any(code.startswith("state-token") for code in codes): names.append("state key")
 if "deploy-failed" in codes: names.append("deployment")
 print(", ".join(names) or "ok")
 ' "$REPORT")
+TEXT=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("summary", ""))' "$REPORT")
+
+# notify <event> <issue url>: POST the summary to WATCHDOG_NOTIFY_WEBHOOK, if set.
+notify() {
+  [ -n "${WATCHDOG_NOTIFY_WEBHOOK:-}" ] || return 0
+  local title="Publisher watchdog: $1 ($SUMMARY)" body="$TEXT"$'\n'"$2" format=${WATCHDOG_NOTIFY_FORMAT:-}
+  if [ -z "$format" ]; then case "$WATCHDOG_NOTIFY_WEBHOOK" in *ntfy*) format=text ;; *) format=json ;; esac; fi
+  if [ "$format" = "text" ]; then
+    curl -fsS -m 20 -H "Title: $title" -H "Priority: high" --data-binary "$body" "$WATCHDOG_NOTIFY_WEBHOOK" >/dev/null
+  else
+    python3 -c 'import json,sys; print(json.dumps({"text": sys.argv[1], "content": sys.argv[1][:1900]}))' "$title"$'\n'"$body" \
+      | curl -fsS -m 20 -H 'Content-Type: application/json' --data-binary @- "$WATCHDOG_NOTIFY_WEBHOOK" >/dev/null
+  fi && echo "notified the webhook ($1)" || echo "webhook notification failed ($1); the issue is the record"
+}
 
 gh label create "$LABEL" --repo "$REPO" --color D93F0B \
   --description "Opened automatically when a publisher stops updating the live site" >/dev/null 2>&1 || true
@@ -47,6 +69,7 @@ if [ "$OK" = "1" ]; then
     } > recovery.md
     gh issue close "$OPEN" --repo "$REPO" --comment "$(cat recovery.md)"
     echo "closed issue #$OPEN (recovered)"
+    notify "recovered" "https://github.com/$REPO/issues/$OPEN"
   else
     echo "both publishers current; no open alert issue"
   fi
@@ -60,8 +83,9 @@ fi
 
 if [ -z "$OPEN" ]; then
   URL=$(gh issue create --repo "$REPO" --label "$LABEL" \
-    --title "Publisher freshness alert: $SUMMARY" --body-file body.md)
+    --title "Publisher alert: $SUMMARY" --body-file body.md)
   echo "opened $URL ($FINGERPRINT)"
+  notify "opened" "$URL"
   exit 0
 fi
 
@@ -84,6 +108,7 @@ AGE_HOURS=$(( (NOW_EPOCH - LAST_EPOCH) / 3600 ))
 if [ "$LAST_FINGERPRINT" != "$FINGERPRINT" ] || [ "$AGE_HOURS" -ge "$REMIND_HOURS" ]; then
   gh issue comment "$OPEN" --repo "$REPO" --body-file body.md >/dev/null
   echo "updated issue #$OPEN ($LAST_FINGERPRINT -> $FINGERPRINT, last update ${AGE_HOURS}h ago)"
+  [ "$LAST_FINGERPRINT" = "$FINGERPRINT" ] || notify "changed" "https://github.com/$REPO/issues/$OPEN"
 else
   echo "issue #$OPEN unchanged ($FINGERPRINT, last update ${AGE_HOURS}h ago); no new comment"
 fi

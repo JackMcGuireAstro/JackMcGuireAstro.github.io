@@ -21,6 +21,9 @@ private state repository (default JackMcGuireAstro/ctas-state):
 
 The ``gh`` command line tool does the GitHub calls; GH_TOKEN must allow reading
 and writing the state repository's contents. Nothing here prints that token.
+
+When STATE_RECEIPT names a file, ``restore`` writes a small JSON receipt there
+(which copy was restored and when it was saved) for the run's public marker.
 """
 from __future__ import annotations
 
@@ -85,6 +88,25 @@ def to_delete(listing: list[dict]) -> list[dict]:
     return [a for a in newest if a["id"] not in keep]
 
 
+def stamp_to_iso(name: str, prefix: str) -> str | None:
+    """The UTC stamp in an asset name (``soc-20261016T061500Z.db.gz``) as ISO-8601."""
+    stamp = name[len(prefix):len(prefix) + 16]
+    try:
+        return datetime.strptime(stamp, "%Y%m%dT%H%M%SZ").strftime("%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        return None
+
+
+def write_receipt(asset: str, prefix: str) -> None:
+    """Record which state copy was restored, when it was saved, and when (STATE_RECEIPT)."""
+    path = os.environ.get("STATE_RECEIPT")
+    if not path:
+        return
+    receipt = {"asset": asset, "saved_at": stamp_to_iso(asset, prefix),
+               "restored_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
+    Path(path).write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
 def restore(data_dir: Path) -> None:
     data_dir.mkdir(parents=True, exist_ok=True)
     listing = assets()
@@ -117,6 +139,7 @@ def restore(data_dir: Path) -> None:
     with gzip.open(work / chosen, "rb") as source, open(target, "wb") as sink:
         shutil.copyfileobj(source, sink, 16 * 1024 * 1024)
     shutil.rmtree(work, ignore_errors=True)
+    write_receipt(chosen, DB_PREFIX)
     print(f"restored {chosen} ({target.stat().st_size / 1e9:.2f} GB)")
 
 
