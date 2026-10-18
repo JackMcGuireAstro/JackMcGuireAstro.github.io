@@ -105,6 +105,38 @@ class WorldsIndexStateTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertFalse((self.source.parent / "escape.txt").exists())
 
+    def test_hard_linked_duplicates_round_trip_and_outside_links_are_refused(self):
+        # The builder's compaction hard-links identical probe responses across runs.
+        self.write_state(self.source, "linked")
+        first = self.source / "outputs/sync/artifacts/sync-20261001000000-aaaaaaaa/exoplanet-eu-ab.response"
+        second = self.source / "outputs/sync/artifacts/sync-20261002000000-bbbbbbbb/exoplanet-eu-ab.response"
+        first.parent.mkdir(parents=True); second.parent.mkdir(parents=True)
+        first.write_bytes(b"x" * 50_000)
+        os.link(first, second)
+        result = self.cli("save", str(self.source))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        archive = next(p for p in self.release.iterdir() if p.name.startswith("wi-state-"))
+        with tarfile.open(archive) as handle:
+            types = {m.name: m.type for m in handle.getmembers()}
+        self.assertEqual(types[str(second.relative_to(self.source))], tarfile.LNKTYPE)
+        self.assertLess(archive.stat().st_size, 60_000, "the archive holds the payload once")
+        restored = self.tmp / "work" / "restored"
+        restored.mkdir(parents=True)
+        result = self.cli("restore", str(restored))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((restored / second.relative_to(self.source)).read_bytes(), b"x" * 50_000)
+        # A hard link whose target lies outside the archive tree is still refused.
+        bad = self.tmp / "evil-link.tar.gz"
+        with tarfile.open(bad, "w:gz") as handle:
+            handle.add(first, arcname="data/snapshots/nasa/manifest.json")
+            info = tarfile.TarInfo("outputs/sneaky.response"); info.type = tarfile.LNKTYPE; info.linkname = "../../etc/passwd"
+            handle.addfile(info)
+        for p in self.release.iterdir(): p.unlink()
+        shutil.copy(bad, self.release / "wi-state-20261003T000000Z.tar.gz")
+        result = self.cli("restore", str(restored))
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("hard link outside", result.stderr)
+
     def test_retention_rule(self):
         names = ["wi-state-20261002T020000Z.tar.gz", "wi-state-20261002T010000Z.tar.gz", "wi-state-20261002T000000Z.tar.gz",
                  "wi-state-20261001T230000Z.tar.gz", "wi-state-20260930T120000Z.tar.gz", "wi-state-20260929T120000Z.tar.gz"]

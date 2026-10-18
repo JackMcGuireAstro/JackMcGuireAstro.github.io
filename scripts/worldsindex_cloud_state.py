@@ -88,8 +88,15 @@ def safe_extract(archive: tarfile.TarFile, target: Path) -> None:
         dest = (target / member.name).resolve()
         if dest != root and not str(dest).startswith(str(root) + os.sep):
             raise RuntimeError(f"refusing archive member outside the source folder: {member.name}")
-        if member.issym() or member.islnk():
-            raise RuntimeError(f"refusing link in the state archive: {member.name}")
+        if member.issym():
+            raise RuntimeError(f"refusing symbolic link in the state archive: {member.name}")
+        if member.islnk():
+            # The builder's compaction hard-links identical probe responses across runs, and
+            # tar records every later copy as a hard link to the first. That is allowed only
+            # when the link stays inside the archive's own tree; anything else is refused.
+            link_target = (target / member.linkname).resolve()
+            if os.path.isabs(member.linkname) or not str(link_target).startswith(str(root) + os.sep):
+                raise RuntimeError(f"refusing hard link outside the state archive: {member.name} -> {member.linkname}")
     if hasattr(tarfile, "data_filter"):
         archive.extractall(target, filter="data")
     else:
