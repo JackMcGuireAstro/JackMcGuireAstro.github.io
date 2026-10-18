@@ -2,7 +2,7 @@
 // hand-computed cases, its limits, and the inversions (time for a S/N, limiting magnitude).
 import assert from "node:assert/strict";
 import { FILTERS, SKY, TELESCOPES, rates, snrFor, timeFor, sourceFor, magnitudeFor, noiseBudget, peakPixel, solve, erf, FWHM_PER_SIGMA } from "../tools/exposure/ccd.js";
-import { chartSvg, readParams } from "../tools/exposure/exposure.js";
+import { chartSvg, readParams, prefillFromQuery } from "../tools/exposure/exposure.js";
 
 let passed = 0;
 const test = (name, fn) => { fn(); passed += 1; console.log(`ok  ${name}`); };
@@ -146,6 +146,15 @@ test("readParams turns form strings into numbers and flags bad ones", () => {
   assert.equal(ok.errors.length, 0); assert.equal(ok.params.diameter, 2.3);
   const bad = readParams({ ...ok.raw, airmass: "0.5", obstruction: "3", throughput: "1.5" }, "snr");
   assert.deepEqual(bad.errors.map((e) => e.field).sort(), ["airmass", "obstruction", "throughput"]);
+});
+
+test("a CTAS dossier link prefills the calculator; unknown or out-of-range values are dropped", () => {
+  const full = prefillFromQuery(new URLSearchParams("telescope=wiro&filter=r&mode=time&snr=20&mag=19.79&airmass=1.34&sky=grey&target=AT2026abvo"));
+  assert.deepEqual(full, { telescope: "wiro", filter: "r", mode: "time", snr: 20, mag: 19.79, airmass: 1.34, sky: "grey", target: "AT2026abvo" });
+  const bad = prefillFromQuery(new URLSearchParams("telescope=keck&filter=Q&mode=magic&snr=-3&mag=99&airmass=0.2&exptime=abc&sky=moonless"));
+  assert.deepEqual(bad, {});
+  assert.deepEqual(prefillFromQuery(new URLSearchParams("")), {});
+  assert.equal(prefillFromQuery(new URLSearchParams("target=" + "x".repeat(200))).target.length, 80);
 });
 
 console.log(`\n${passed} exposure checks passed`);

@@ -1,6 +1,6 @@
-import {finite,phase,transitFlux,relativeFlux,publishedTransitParameters,foldPoints,binFolded,flattenPoints,foldedDepthPpt,inTransit,median} from './photometry.js?v=20261004';
-import {findLightcurves,loadLightcurve,relayAddress,hostIdentifiers,identifierLabel,lookupTicByName} from './live-mast.js?v=20261004';
-import {selectEphemeris,describeEphemeris,transitsBetween,propagate} from './ephemeris.js?v=20261004';
+import {finite,phase,transitFlux,relativeFlux,publishedTransitParameters,foldPoints,binFolded,flattenPoints,foldedDepthPpt,inTransit,median} from './photometry.js?v=20261017';
+import {findLightcurves,loadLightcurve,relayAddress,hostIdentifiers,identifierLabel,lookupTicByName} from './live-mast.js?v=20261017';
+import {selectEphemeris,describeEphemeris,transitsBetween,propagate} from './ephemeris.js?v=20261017';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let generation=0,resizeObserver;
 async function unpack(url){const r=await fetch(url);if(!r.ok)throw Error(`Data unavailable (${r.status})`);return JSON.parse(await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text());}

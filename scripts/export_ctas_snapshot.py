@@ -39,6 +39,7 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 from typing import Any
 
@@ -172,7 +173,7 @@ REQUIRED_PUBLIC_ARTIFACTS = (
 BOUND_CODE_PATHS = (
     "ctas.html", "ctas/app.js", "ctas/chunk-loader.js", "ctas/presentation.js", "ctas/catalog-model.js", "ctas/astro-evidence.js",
     "ctas/workbench.js", "ctas/observability.js", "ctas/live-sources.js", "ctas/spectrum-ascii.js",
-    "ctas/lightcurve-summary.js", "ctas/ctas.css",
+    "ctas/lightcurve-summary.js", "ctas/followup.js", "tools/exposure/ccd.js", "ctas/ctas.css",
     "ctas/data/observatories.json",
     "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
     "ctas/schema/astro-evidence-core-0.1.0.schema.json",
@@ -1525,6 +1526,220 @@ def science_brief_for(candidate: dict[str, Any]) -> dict[str, Any]:
             "A deterministic summary of this checksum-bound public record; it does not "
             "confirm discovery, class, counterpart, host, or scientific importance."
         ),
+    }
+
+
+# ---------------------------------------------------------------- suggested follow-up
+# A static, clock-free draft of what observation would close each public gap.
+# The browser (ctas/followup.js) adds tonight's windows, exposure estimates and
+# ages at viewing time; the exporter publishes only what the retained record
+# says, so an unchanged record keeps identical bytes between releases.
+SUGGESTED_FOLLOW_UP_SCHEMA = "ctas-suggested-follow-up.v1"
+SUGGESTED_FOLLOW_UP_CLAIM = (
+    "Heuristic draft from public evidence; not an exposure-time calculation or "
+    "observing request."
+)
+SUGGESTED_EVIDENCE_TYPES = {
+    "classification": "classification assertion",
+    "follow-up-photometry": "time-series photometry or limiting magnitude",
+    "spectrum": "rights-cleared spectrum or spectrum metadata",
+    "host-context": "explicit host-association assertion",
+    "catalog-context": "position-aware catalog query",
+    "messenger": "source-linked messenger notice",
+    "reports": "public report or publication",
+}
+FOLLOW_UP_CADENCES = {
+    "rapid": "Rapid: the first available window, then every 15-30 minutes while the target is above the altitude limit.",
+    "nightly": "Nightly while the record stays inside the follow-up window.",
+    "weekly": "Weekly photometric monitoring.",
+    "none": "No follow-up is suggested for this record.",
+}
+COUNTERPART_ROLES = frozenset({"follow-up-target-candidate", "localization-region-alert"})
+
+
+def _round_half_up(value: Any, places: int = 3) -> float:
+    """Round the exact binary value half-up, as JavaScript's toFixed does, so the
+    browser's fallback derivation (ctas/followup.js) prints the same number."""
+
+    return float(Decimal(float(value)).quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_UP))
+
+
+def latest_magnitude_for(candidate: dict[str, Any]) -> dict[str, Any]:
+    """The latest retained detection magnitude, else the discovery magnitude."""
+
+    best: dict[str, Any] | None = None
+    best_key: tuple[str, str] | None = None
+    for row in (candidate.get("follow_up") or {}).get("observations", []):
+        if row.get("superseded") or row.get("retracted") or row.get("detection") not in (True, 1):
+            continue
+        try:
+            magnitude = float(row.get("magnitude"))
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(magnitude) or not -5.0 < magnitude < 35.0:
+            continue
+        observed_at = iso(row.get("observed_at"))
+        if not observed_at:
+            continue
+        key = (observed_at, str(row.get("provider_observation_id") or row.get("assertion_id") or ""))
+        if best_key is None or key > best_key:
+            best, best_key = row, key
+    if best is not None:
+        return {
+            "value": _round_half_up(best["magnitude"]),
+            "band": clean(best.get("band")) or None,
+            "system": clean(best.get("magnitude_system")) or None,
+            "observed_at": best_key[0] if best_key else None,
+            "provider": clean(best.get("provider")) or None,
+            "basis": "latest-retained-detection",
+        }
+    magnitude = candidate.get("discovery_magnitude")
+    if magnitude is not None:
+        return {
+            "value": _round_half_up(magnitude),
+            "band": None,
+            "system": None,
+            "observed_at": iso(candidate.get("discovery_time")),
+            "provider": clean(candidate.get("discovery_survey")) or None,
+            "basis": "discovery-magnitude",
+        }
+    return {"value": None, "band": None, "system": None, "observed_at": None, "provider": None, "basis": None}
+
+
+def suggested_follow_up_for(candidate: dict[str, Any]) -> dict[str, Any]:
+    """Derive the public follow-up draft from retained evidence only.
+
+    Mirrors the collector's draft planner (objectives, cadence, magnitude gate)
+    but without a clock: ages, windows and exposure times are browser work.
+    ``ctas/followup.js`` reproduces these rules for releases that predate the
+    block, so the two must change together (scripts/test_ctas_static.py).
+    """
+
+    role = str(candidate.get("record_role") or "")
+    channel = str(candidate.get("ranking_channel") or "")
+    status = str(candidate.get("status") or "candidate").lower()
+    counts = candidate.get("follow_up_counts") or {}
+    held_out = status in {"retracted", "bogus"} or role == "retracted-event"
+    coordinates = candidate.get("ra_deg") is not None and candidate.get("dec_deg") is not None
+    classified = str(candidate.get("classification") or "").strip().casefold() not in UNCLASSIFIED_LABELS
+    conflict = _classifications_are_incompatible(_active_classification_labels(candidate))
+    has_spectrum = int(counts.get("spectra") or 0) > 0
+    observation_count = int(counts.get("observations") or 0)
+    detections = int((candidate.get("photometry_outcomes") or photometry_outcomes(
+        (candidate.get("follow_up") or {}).get("observations", []))).get("detections") or 0)
+    latest_observation = _latest_retained_observation(candidate)
+    discovered = parse_utc(candidate.get("discovery_time"))
+    newest = max([value for value in (discovered, latest_observation) if value is not None], default=None)
+    magnitude = latest_magnitude_for(candidate)
+    optical_target = role in TARGET_ROLES and channel in SPECTROSCOPY_APPLICABLE_CHANNELS
+    counterpart_target = role in COUNTERPART_ROLES and channel not in SPECTROSCOPY_APPLICABLE_CHANNELS
+    is_target = not held_out and coordinates and (optical_target or counterpart_target)
+
+    basis: list[str] = []
+    if held_out:
+        basis.append(f"Reported {status if status in {'retracted', 'bogus'} else 'retracted'}; held out of follow-up.")
+    elif role not in COUNTERPART_ROLES:
+        basis.append(f"Record role {role.replace('-', ' ') or 'unknown'}: not a follow-up target.")
+    else:
+        if discovered is not None:
+            basis.append(f"Discovered {_utc_text(discovered)[:10]}.")
+        if counterpart_target and detections == 0:
+            basis.append("Multimessenger counterpart pending: no optical detection is retained.")
+        if optical_target and not classified:
+            basis.append("No public classification is retained.")
+        if conflict:
+            basis.append("Active classification assertions disagree.")
+        if optical_target and not has_spectrum:
+            basis.append("No public spectrum is retained.")
+        if latest_observation is not None:
+            basis.append(f"No retained observation since {_utc_text(latest_observation)[:10]}.")
+        elif optical_target:
+            basis.append("No retained follow-up observation.")
+        if not coordinates:
+            basis.append("No valid coordinates are retained.")
+
+    objectives: list[dict[str, Any]] = []
+    if is_target:
+        if counterpart_target:
+            objectives.append({
+                "kind": "counterpart",
+                "text": "Image the reported position for an optical counterpart, or record a limiting magnitude.",
+                "closes_gap": "follow-up-photometry",
+                "suggested_evidence_type": SUGGESTED_EVIDENCE_TYPES["follow-up-photometry"],
+            })
+        if optical_target:
+            objectives.append({
+                "kind": "imaging",
+                "text": "Confirm persistence and current brightness with calibrated multi-band imaging (g, r, i or V, R).",
+                "closes_gap": None if observation_count else "follow-up-photometry",
+                "suggested_evidence_type": SUGGESTED_EVIDENCE_TYPES["follow-up-photometry"],
+            })
+            if not classified or not has_spectrum or conflict:
+                gap = "spectrum" if not has_spectrum else "classification"
+                objectives.append({
+                    "kind": "spectroscopy",
+                    "text": (
+                        "Obtain a classification-quality spectrum" + (
+                            " to resolve the disagreeing classifications." if conflict else
+                            "." if not has_spectrum else
+                            "; the retained spectrum has not yielded a public classification."
+                        )
+                    ),
+                    "closes_gap": gap,
+                    "suggested_evidence_type": SUGGESTED_EVIDENCE_TYPES[gap],
+                })
+            else:
+                objectives.append({
+                    "kind": "monitoring",
+                    "text": "Continue multi-band photometric monitoring of the classified transient's light curve.",
+                    "closes_gap": None,
+                    "suggested_evidence_type": SUGGESTED_EVIDENCE_TYPES["follow-up-photometry"],
+                })
+    for priority, objective in enumerate(objectives, start=1):
+        objective["priority"] = priority
+
+    kinds = {row["kind"] for row in objectives}
+    cadence = (
+        "none" if not objectives else
+        "rapid" if "counterpart" in kinds else
+        "nightly" if "spectroscopy" in kinds else
+        "weekly"
+    )
+
+    reasons = []
+    if held_out:
+        reasons.append(f"Status {status}: held out of the follow-up leaderboard.")
+    elif role == "localization-region-alert":
+        reasons.append("Localization-region alert: a counterpart search, not a classified optical target.")
+    elif role in TARGET_ROLES:
+        reasons.append("Follow-up target candidate in the " + (channel.replace('-', ' ') or "unknown") + " channel.")
+    else:
+        reasons.append(f"Record role {role.replace('-', ' ') or 'unknown'} is not a follow-up target.")
+    reasons.append("Coordinates retained." if coordinates else "No valid coordinates are retained; windows and exposure estimates are not possible.")
+    reasons.append(
+        {"latest-retained-detection": "Latest magnitude is the newest retained detection.",
+         "discovery-magnitude": "Latest magnitude falls back to the source-reported discovery magnitude."}
+        .get(magnitude["basis"], "No magnitude is retained; exposure estimates are not possible.")
+    )
+
+    return {
+        "schema": SUGGESTED_FOLLOW_UP_SCHEMA,
+        "basis": basis,
+        "objectives": objectives,
+        "cadence": {"code": cadence, "text": FOLLOW_UP_CADENCES[cadence]},
+        "latest_magnitude": magnitude,
+        "eligibility": {
+            "is_target": bool(is_target),
+            "status": status,
+            "record_role": role,
+            "ranking_channel": channel,
+            "coordinates_present": bool(coordinates),
+            "magnitude_present": magnitude["value"] is not None,
+            "newest_evidence_at": None if newest is None else _utc_text(newest),
+            "follow_up_window_days": FOLLOW_UP_WINDOW_DAYS,
+            "reasons": reasons,
+        },
+        "claim_boundary": SUGGESTED_FOLLOW_UP_CLAIM,
     }
 
 
@@ -4249,6 +4464,7 @@ def main() -> int:
         # Scored once, before aggregation. Re-scoring here would overwrite
         # recorded_score_at_ingest with our freshly derived release score.
         candidate["science_brief"] = science_brief_for(candidate)
+        candidate["suggested_follow_up"] = suggested_follow_up_for(candidate)
         accounting_totals["applicableSourceEvaluations"] += int(accounting["applicableSources"])
         accounting_totals["executedQueryReceipts"] += int(accounting["executedQueryReceipts"])
         accounting_totals["dataBearingSourceEvaluations"] += int(accounting["dataBearingSources"])
@@ -5209,6 +5425,23 @@ def main() -> int:
         for candidate in candidates
         if len(_retained_messenger_channels(candidate)) < 2
     )
+    def _suggested_follow_up_holds(candidate: dict[str, Any]) -> bool:
+        block = candidate.get("suggested_follow_up") or {}
+        objectives = block.get("objectives") or []
+        return (
+            block.get("schema") == SUGGESTED_FOLLOW_UP_SCHEMA
+            and block == suggested_follow_up_for(candidate)
+            and block.get("claim_boundary") == SUGGESTED_FOLLOW_UP_CLAIM
+            and all(row["suggested_evidence_type"] in SUGGESTED_EVIDENCE_TYPES.values() for row in objectives)
+            and all(row["kind"] in {"imaging", "spectroscopy", "counterpart", "monitoring"} for row in objectives)
+            and [row["priority"] for row in objectives] == list(range(1, len(objectives) + 1))
+            and (block.get("cadence") or {}).get("code") in FOLLOW_UP_CADENCES
+            and ((block.get("cadence") or {}).get("code") == "none") == (not objectives)
+            and (bool(objectives) == bool((block.get("eligibility") or {}).get("is_target")))
+            and (not (str(candidate.get("status") or "").lower() in {"retracted", "bogus"}) or not objectives)
+        )
+
+    suggested_follow_up_integrity = all(_suggested_follow_up_holds(candidate) for candidate in candidates)
     science_brief_integrity = all(
         (candidate.get("science_brief") or {}).get("schema") == "ctas.candidate-science-brief@1.0.0"
         and {
@@ -5302,6 +5535,7 @@ def main() -> int:
         gate("score-term-applicability", score_applicability, "missing-spectrum points are confined to optical follow-up target candidates and a messenger-diversity bonus requires two independently retained channels"),
         gate("score-arithmetic-reconciliation", score_reconciliation, f"{len(candidates)} scores recomputed against this release's one score clock ({score_clock['score_as_of']}, declared in the complete-catalog manifest), identical to the published models, and reproduced exactly from their applicable terms"),
         gate("candidate-science-brief-integrity", science_brief_integrity, f"{len(candidates)} deterministic known, uncertain, missing, and recent-change summaries"),
+        gate("suggested-follow-up-integrity", suggested_follow_up_integrity, f"{len(candidates)} clock-free follow-up drafts reproduce from retained evidence; objectives only for eligible targets, evidence types from the science-brief vocabulary, retracted and bogus records carry none"),
         gate("evidence-replay-no-future-leakage", replay_integrity, "historical availability uses provider-publication or CTAS-receipt clocks, never observation time alone"),
         gate("source-matrix-round-trip-integrity", source_matrix_round_trip, f"{len(candidates)} source matrices reproduce exactly from {len(source_matrix_patterns)} shared no-evidence patterns"),
         gate("alias-index-integrity", alias_integrity, f"{alias_index.get('alias_count', 0)} provider-scoped aliases bound to the catalog checksum"),

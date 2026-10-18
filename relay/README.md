@@ -7,7 +7,7 @@ and the public files they name; Gaia Science Alerts light curves, Pan-STARRS
 detections at MAST, TESS/Kepler/K2 light-curve files at MAST (mission files and the
 TESS-SPOC full-frame light curves), IRSA ZTF light
 curves, ExoFOP-TESS, the NASA Exoplanet Archive's TAP service and spectrum files,
-NASA ADS and Lasair). It fetches one allow-listed public address when a visitor
+NED, VizieR (Gaia DR3, SWEET-Cat), HEASARC, AAVSO VSX, NASA ADS and Lasair). It fetches one allow-listed public address when a visitor
 asks, and passes the answer straight back. It keeps nothing; Cloudflare may hold
 an identical response for up to an hour so providers are not asked twice.
 
@@ -20,6 +20,39 @@ asked only for its public listing (`/search/spectra?…&public=yes&format=json|t
 and for files under `/system/files/uploaded/`; a proprietary spectrum comes back as a
 sign-in page or a 401/403, which the CTAS page reports as proprietary. No WISeREP
 account is used or asked for.
+
+## Routes
+
+Each route is one host, one path pattern and a check on the query string (`ROUTES` in
+`worker.js`). What each one is for:
+
+| Host and path | Used by | Allowed |
+|---|---|---|
+| `www.wis-tns.org/system/files/uploaded/…` | CTAS "Plot spectrum" | public upload files, no query |
+| `www.wiserep.org/search/spectra` | CTAS spectrum lookup and the public-spectra count | `public=yes`, `format=json|tsv|csv`, a name ≤ 80 chars |
+| `www.wiserep.org/system/files/uploaded/…` | CTAS "Plot spectrum" | public upload files, no query |
+| `gsaweb.ast.cam.ac.uk/alerts/alert/<name>/lightcurve.csv` | CTAS Gaia Alerts by name | no query |
+| `gsaweb.ast.cam.ac.uk/alerts/alerts.csv` | CTAS Gaia Alerts by position (the whole public index, matched in the browser) | no query |
+| `catalogs.mast.stsci.edu/api/v0.1/panstarrs/dr2/(detection|mean)` | CTAS Pan-STARRS cone | radius ≤ 0.01° |
+| `mast.stsci.edu/api/v0.1/Download/file` | WorldsIndex light curves | TESS/Kepler/K2 `_lc`/`_llc`/`_slc` FITS and TESS-SPOC light curves only |
+| `irsa.ipac.caltech.edu/cgi-bin/ZTF/nph_light_curves` | CTAS IRSA ZTF cone | `POS=CIRCLE ra dec r`, r < 1° |
+| `exofop.ipac.caltech.edu/tess/target.php` | WorldsIndex ExoFOP | `id=<TIC>` or `toi=<TOI>` with `json` |
+| `exoplanetarchive.ipac.caltech.edu/TAP/sync` | WorldsIndex archive rows | one `SELECT … FROM spectra|ml|stellarhosts|ps|pscomppars|toi|k2pandc|cumulative WHERE …`, csv or json |
+| `exoplanetarchive.ipac.caltech.edu/cgi-bin/atmospheres/nph-firefly` | WorldsIndex spectrum files | `atmospheres&spec_path=…` (resolved through the archive's workspace) |
+| `ned.ipac.caltech.edu/tap/sync` | CTAS NED cone | `SELECT TOP n … FROM NEDTAP.objdir WHERE CONTAINS(… CIRCLE(… r))=1`, r ≤ 0.05° |
+| `tapvizier.cds.unistra.fr/TAPVizieR/tap/sync` | CTAS Gaia DR3 cone; WorldsIndex Gaia DR3 by source id and SWEET-Cat by host | `"I/355/gaiadr3"` (cone ≤ 0.05° or `Source=<id>`) and `"J/A+A/656/A53/sweetcat"` (`Name='…'`) |
+| `heasarc.gsfc.nasa.gov/xamin/vo/tap/sync` | CTAS HEASARC pointed observations | `swiftmastr|xmmmaster|chanmaster|numaster|nicermastr`, cone ≤ 0.25° |
+| `www.aavso.org/vsx/index.php` | CTAS known variables near the position | `view=api.list`, radius ≤ 0.1°, json |
+| `api.adsabs.harvard.edu/v1/search/query` | both pages' paper lists | `q` ≤ 400 chars, listed `fl` fields, ≤ 50 rows; key `ADS_TOKEN` |
+| `api.lasair.lsst.ac.uk/api/(object|cone|sherlock/position)/` | CTAS Rubin via Lasair | listed parameters, radius ≤ 60″; key `LASAIR_TOKEN` |
+
+TAP routes (NED, VizieR, HEASARC) accept only `REQUEST=doQuery`, `LANG=ADQL`, `FORMAT=csv|json`,
+an optional `MAXREC` ≤ 999 and one `QUERY` matching the route's pattern; no `UPLOAD`, no
+semicolons, parameter names case-insensitive but each at most once (`tapQuery`).
+
+The pages' "Check all sources now" control re-runs every source for one target; a second press
+passes `fresh`, which only bypasses the visitor's browser cache (`cache: "reload"`). The relay
+address does not change, so this edge cache still stands between visitors and the providers.
 
 Deploy (free Cloudflare account, from this folder):
 

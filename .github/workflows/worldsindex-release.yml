@@ -77,7 +77,10 @@ jobs:
           python3 scripts/test_worldsindex_publisher_recovery.py
           node scripts/test_worldsindex_live_mast.mjs
           node scripts/test_worldsindex_live_nasa.mjs
+          node scripts/test_worldsindex_live_sources.mjs
           node --check worldsindex/assets/live-mast.js
+          node --check worldsindex/assets/live-nasa.js
+          node --check worldsindex/assets/live-sources.js
           node --check worldsindex/assets/ephemeris.js
           node --check scripts/worldsindex_transit_ephemerides.mjs
           node scripts/test_worldsindex_ephemerides.mjs
@@ -122,6 +125,8 @@ jobs:
           node scripts/test_ctas_spectrum_ascii.js
           node scripts/test_ctas_spectrum_fits.js
           node scripts/test_ctas_lightcurve_summary.js
+          node --check ctas/followup.js
+          node scripts/test_ctas_followup.mjs
       # The page in a real browser (layout at phone width, sticky bars, heading outline,
       # WCAG via axe-core, no first-party console errors, the live panel's behaviour) and
       # the evidence schema. Blocking since 2026-10-03: a release that fails them is not
@@ -142,6 +147,7 @@ jobs:
           python3 scripts/test_tools_browser.py 2>&1 | tail -15 || status=1
           python3 scripts/test_research_browser.py 2>&1 | tail -10 || status=1
           python3 scripts/test_worldsindex_lightcurves_browser.py 2>&1 | tail -10 || status=1
+          python3 scripts/test_worldsindex_live_sources_browser.py 2>&1 | tail -10 || status=1
           if [ "$status" -eq 0 ]; then
             echo "CTAS browser and evidence-schema checks: passed" >> "$GITHUB_STEP_SUMMARY"
           else

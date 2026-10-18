@@ -6,7 +6,7 @@
   <meta name="description" content="WorldsIndex is a provenance-aware atlas of confirmed exoplanets, candidates, disputed claims, measurements, methods, and source evidence.">
   <meta name="theme-color" content="#050a12">
   <link rel="canonical" href="https://jackmcguireastro.github.io/worldsindex/">
-  <link rel="stylesheet" href="assets/app.css?v=20261004">
+  <link rel="stylesheet" href="assets/app.css?v=20261017">
   <title>WorldsIndex · Explore worlds beyond the Solar System</title>
 <link rel="stylesheet" href="../assets/css/continuity.css?v=20260920">
 </head>
@@ -204,7 +204,7 @@
           <article><p class="eyebrow">Latest provider attempt</p><div id="provider-health" class="provider-health"><span class="health-dot"></span><span>Loading provider health…</span></div></article>
           <article><p class="eyebrow">Evidence pipeline</p><ol class="evidence-pipeline"><li>Publication or catalog change discovered</li><li>Linked to a source and object identity</li><li>Measurements normalized with units and uncertainty</li><li>Validated against scientific and release gates</li><li>Promoted into a versioned evidence release</li></ol></article>
         </div>
-        <aside class="boundary"><h2>What “automatically updated” means</h2><p>Provider checks and validated static publication are automated. A newly discovered paper is not silently converted into a trusted measurement: it must pass a source-specific identity, units, uncertainty, provenance, and regression contract. Failed providers are recorded while the previous validated measurements remain available.</p></aside>
+        <aside class="boundary"><h2>What “automatically updated” means</h2><p>Provider checks and validated static publication are automated. A newly discovered paper is not silently converted into a trusted measurement: it must pass a source-specific identity, units, uncertainty, provenance, and regression contract. Failed providers are recorded while the previous validated measurements remain available.</p><h2>What “live” means</h2><p>Three layers, in plain words. <strong>The release</strong> is rebuilt hourly from the catalogs the publisher ingests; a per-target source (Gaia, SIMBAD, MAST, ExoFOP and the other “live query” contracts) is not frozen into it. <strong>Opening an object fetches nothing</strong> from any archive. <strong>“Check all sources now”</strong> in an object's Evidence tab asks every public source this page can reach, a few at a time, and marks what is new compared with the rows packaged for that object; answers that pass through the site's relay can be up to one hour old (its cache), SIMBAD and the MAST search are as current as the provider. “Live” does not mean a stream that updates on its own, and it never covers sources that need a login or a form (ASAS-SN, DACE, Exoplanet.eu's API), which appear as links. Live values are never stored and are not part of the release.</p></aside>
       </section>
       <section id="data-downloads-panel" class="data-view-panel" hidden>
         <div class="download-grid">
@@ -220,6 +220,6 @@
 
   <footer><p><strong>WorldsIndex</strong><span>Powered by ExoNexus</span></p><p>Versioned evidence · source-native measurements · reproducible downloads</p><nav aria-label="Jack McGuire website"><a href="../index.html">Home</a><a href="../qualquest/">QualQuest</a><a href="../worldsindex/" aria-current="page">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="../cv.pdf" target="_blank" rel="noopener">CV (PDF)</a></nav></footer>
   <div id="toast" role="status" aria-live="polite" aria-hidden="true"></div>
-  <script type="module" src="assets/app.js?v=20261004"></script>
+  <script type="module" src="assets/app.js?v=20261017"></script>
 </body>
 </html>

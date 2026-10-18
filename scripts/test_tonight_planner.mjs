@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
 import { nightGrid, visibility, localNoonUtc, airmass, separationDeg, sunPosition, moonPosition, julianDate, utcMsToBjdTdb, bjdTdbToUtcMs, barycentricCorrectionSeconds } from "../tonight/astro.js";
-import { ctasTargets, worldsSystems, altitudeChartSvg, SITES, transitTargets, transitsTonight, darkWindow } from "../tonight/planner.js";
+import { ctasTargets, worldsSystems, altitudeChartSvg, SITES, transitTargets, transitsTonight, darkWindow, prefillFromQuery, followupFor, feasibleTelescopes } from "../tonight/planner.js";
 
 const minutesApart = (ms, iso) => Math.abs(ms - Date.parse(iso)) / 60000;
 let passed = 0;
@@ -72,6 +72,52 @@ test("CTAS rows: only follow-up targets with coordinates, linked to their dossie
   assert.equal(rows[0].name, "SN 2026abc");
   assert.equal(rows[0].detail, "SN Ia · ZTF");
   assert.equal(rows[0].href, "../ctas.html?event=ev%2F1#dossier");
+  assert.deepEqual(rows[0].followup.kinds, ["imaging", "spectroscopy"], "classified, but without a spectrum count the rules still ask for a spectrum");
+});
+
+test("CTAS rows carry the suggested objective and cadence from the published rules", () => {
+  const summary = {
+    candidate_columns: ["event_id", "name", "ra_deg", "dec_deg", "classification", "discovery_survey", "discovery_magnitude", "discovery_time", "ctas_score", "record_role", "ranking_channel", "status", "n_spectra", "n_observations", "photometry_outcomes"],
+    candidate_rows: [
+      ["ev1", "AT 2026abc", 10, 20, "Unclassified", "ZTF", 18.2, "2026-10-01T00:00:00Z", 71, "follow-up-target-candidate", "optical", "candidate", 0, 3, { detections: 3 }],
+      ["ev2", "SN 2026def", 11, 21, "SN Ia", "ATLAS", 17.0, "2026-10-01T00:00:00Z", 50, "follow-up-target-candidate", "optical", "candidate", 2, 10, { detections: 10 }],
+      ["ev3", "GRB 261001A", 12, 22, null, "Swift", null, "2026-10-01T00:00:00Z", 40, "follow-up-target-candidate", "x-ray-gamma-ray", "candidate", 0, 0, { detections: 0 }],
+    ],
+  };
+  const rows = ctasTargets(summary);
+  assert.deepEqual(rows.map((r) => [r.followup.text, r.followup.cadence]), [["imaging + spectroscopy", "nightly"], ["imaging + monitoring", "weekly"], ["counterpart", "rapid"]]);
+  assert.equal(rows[0].followup.block.schema, "ctas-suggested-follow-up.v1");
+  assert.equal(followupFor({ record_role: "retracted-event", status: "retracted", ra_deg: 1, dec_deg: 2 }).text, "none");
+});
+
+test("feasible telescopes come from the placeholder CCD profiles at tonight's airmass", () => {
+  const bright = feasibleTelescopes(followupFor({ record_role: "follow-up-target-candidate", ranking_channel: "optical", status: "candidate", ra_deg: 1, dec_deg: 2, discovery_magnitude: 16, classification: "Unclassified" }), { airmass: 1.2, moonIllumination: 0.1 });
+  assert.deepEqual(bright.map((f) => [f.label, f.feasible, f.text]), [["WIRO", true, "imaging + spectrum"], ["RBO", true, "imaging"]]);
+  assert.ok(bright.every((f) => f.placeholder), "every verdict is flagged as resting on placeholder values");
+  const faint = feasibleTelescopes(followupFor({ record_role: "follow-up-target-candidate", ranking_channel: "optical", status: "candidate", ra_deg: 1, dec_deg: 2, discovery_magnitude: 22.5, classification: "Unclassified" }), { airmass: 1.2, moonIllumination: 0.1 });
+  assert.deepEqual(faint.map((f) => f.feasible), [true, false], "22.5 mag: the 2.3 m within 3 x 600 s, the 0.6 m not");
+  const faintBright = feasibleTelescopes(followupFor({ record_role: "follow-up-target-candidate", ranking_channel: "optical", status: "candidate", ra_deg: 1, dec_deg: 2, discovery_magnitude: 22.5, classification: "Unclassified" }), { airmass: 2.5, moonIllumination: 0.95 });
+  assert.deepEqual(faintBright.map((f) => f.feasible), [false, false], "low and in moonlight, neither");
+  assert.deepEqual(feasibleTelescopes(followupFor({ record_role: "retracted-event", status: "retracted", ra_deg: 1, dec_deg: 2 }), {}), []);
+  assert.deepEqual(feasibleTelescopes(null, {}), []);
+});
+
+test("a dossier link prefills site, list and the linked target; junk is dropped", () => {
+  const full = prefillFromQuery(new URLSearchParams("site=rbo&list=ctas&date=2026-10-17&event=123e4567-e89b-42d3-a456-426614174000&name=AT2026abvo&ra=66.133125&dec=-0.727111&mag=19.79"));
+  assert.equal(full.site, "rbo");
+  assert.equal(full.list, "ctas");
+  assert.equal(full.date, "2026-10-17");
+  assert.equal(full.target.id, "123e4567-e89b-42d3-a456-426614174000");
+  assert.deepEqual([full.target.name, full.target.ra, full.target.dec, full.target.mag, full.target.fromLink], ["AT2026abvo", 66.133125, -0.727111, 19.79, true]);
+  assert.equal(full.target.href, "../ctas.html?event=123e4567-e89b-42d3-a456-426614174000#dossier");
+  assert.deepEqual(full.target.followup.kinds, ["imaging", "spectroscopy"]);
+  const partial = prefillFromQuery(new URLSearchParams("site=mars&list=everything&date=yesterday&event=abc&ra=400&dec=10&mag=99"));
+  assert.deepEqual(partial, { event: "abc" }, "an invalid position leaves only the event to select");
+  assert.deepEqual(prefillFromQuery(new URLSearchParams("")), {});
+  const noMag = prefillFromQuery(new URLSearchParams("ra=10&dec=-5"));
+  assert.equal(noMag.target.mag, null);
+  assert.equal(noMag.target.name, "Linked target");
+  assert.equal(noMag.target.id, "query:10,-5");
 });
 
 test("WorldsIndex objects are grouped by system; candidates only when asked", () => {

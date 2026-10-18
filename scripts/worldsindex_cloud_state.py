@@ -37,6 +37,9 @@ STATE_REPO = os.environ.get("WORLDSINDEX_STATE_REPO", "JackMcGuireAstro/worldsin
 TAG = os.environ.get("WORLDSINDEX_STATE_TAG", "state")
 PREFIX, SUFFIX = "wi-state-", ".tar.gz"
 STATE_PATHS = ("data/snapshots", "data/observations", "data/atlas", "public/data", "outputs")
+# GitHub refuses release assets of 2 GiB or more (HTTP 422 "size must be less than 2147483648").
+ASSET_LIMIT_BYTES = int(os.environ.get("WORLDSINDEX_STATE_ASSET_LIMIT_BYTES", 2 * 1024 ** 3))
+ASSET_WARN_BYTES = int(os.environ.get("WORLDSINDEX_STATE_ASSET_WARN_BYTES", int(1.5 * 1024 ** 3)))
 SKIP_NAMES = {"scheduler.lock", ".DS_Store"}
 KEEP_RECENT = int(os.environ.get("WORLDSINDEX_STATE_KEEP_RECENT", "3"))
 KEEP_DAYS = int(os.environ.get("WORLDSINDEX_STATE_KEEP_DAYS", "2"))
@@ -158,8 +161,16 @@ def save(source: Path) -> None:
     started = time.monotonic()
     files = pack(source, staged)
     check(staged)
-    gh("release", "upload", TAG, str(staged), "--repo", STATE_REPO, capture=False)
     size = staged.stat().st_size
+    if size >= ASSET_LIMIT_BYTES:
+        staged.unlink()
+        raise RuntimeError(
+            f"the state archive is {size / 1e6:.0f} MB, over GitHub's {ASSET_LIMIT_BYTES / 1e6:.0f} MB release-asset limit; "
+            "nothing uploaded. The compaction summary line above names the largest areas; tighten retention there"
+        )
+    if size >= ASSET_WARN_BYTES:
+        print(f"WARN  the state archive is {size / 1e6:.0f} MB; GitHub refuses assets from {ASSET_LIMIT_BYTES / 1e6:.0f} MB", file=sys.stderr)
+    gh("release", "upload", TAG, str(staged), "--repo", STATE_REPO, capture=False)
     staged.unlink()
     listing = assets()
     if name not in {a["name"] for a in listing}:

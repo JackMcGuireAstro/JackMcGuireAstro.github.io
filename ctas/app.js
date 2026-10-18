@@ -1301,6 +1301,16 @@
       '<p class="ctas-export-status" data-export-status role="status" aria-live="polite">Ready. Nothing is sent to a server; files are assembled in this browser.</p></div></details>';
   }
 
+  // The suggested follow-up card (ctas/followup.js): the published clock-free draft, or the
+  // same rules run here for an older release, plus tonight's windows at WIRO and Red Buttes
+  // and S/N-20 exposure estimates once the exposure model has loaded.
+  function renderFollowup(candidate) {
+    if (!window.CTASFollowup) return "";
+    try { return window.CTASFollowup.render(candidate); } catch (error) {
+      return '<section class="ctas-followup" data-followup-card aria-labelledby="ctas-followup-title"><h4 id="ctas-followup-title">Suggested follow-up</h4><p>The follow-up draft could not be drawn: ' + esc(error.message) + '</p></section>';
+    }
+  }
+
   function renderDetails(candidate) {
     var counts = candidate.follow_up_counts || {};
     var evidence = Object.keys(counts).filter(function (key) { return Number(counts[key]) > 0; }).map(function (key) {
@@ -1319,7 +1329,7 @@
       '</h3><p>' + esc(summary.intro) +
       '</p></div><div class="ctas-detail__score"><span>CTAS follow-up score</span><strong>' + esc(num(candidate.ctas_score, 1)) +
       '</strong><small>ordering aid · not probability</small></div></div>' +
-      '<div class="ctas-workspace__actions"><button type="button" data-close-candidate>Close dossier</button><details class="ctas-more-actions"><summary>More actions</summary><div><button type="button" data-copy-link>Copy link</button><button type="button" data-download-candidate>Download JSON</button><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></details></div>' + renderScienceBrief(candidate) +
+      '<div class="ctas-workspace__actions"><button type="button" data-close-candidate>Close dossier</button><details class="ctas-more-actions"><summary>More actions</summary><div><button type="button" data-copy-link>Copy link</button><button type="button" data-download-candidate>Download JSON</button><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></details></div>' + renderFollowup(candidate) + renderScienceBrief(candidate) +
       '<dl class="ctas-detail__facts ctas-detail__facts--essential">' + fact("Event / messenger", humanKey(candidate.event_type || "Not recorded") + " · " + humanKey(candidate.primary_messenger || "Not recorded")) +
       fact("Physical classification", window.CTASPresentation.classInfo(candidate).physical || "Not reported") +
       fact("Alert / provider label", window.CTASPresentation.classInfo(candidate).alert || "None retained") +

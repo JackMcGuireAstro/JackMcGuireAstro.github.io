@@ -441,3 +441,10 @@ footer nav a { display: inline-flex; align-items: center; min-height: 44px; colo
 /* live archive data (live-nasa.js) */
 .live-extras{margin-top:2rem;padding-top:1rem;border-top:1px solid #24394d}.live-extras h4{margin:1.2rem 0 .4rem}.live-papers{padding-left:1.3rem}.live-papers li{margin:.3rem 0}.live-extras .text-link{margin:.2rem .6rem .2rem 0}
 .curve-fold{margin-top:1.6rem}.curve-fold h3{margin:0 0 .3rem;font-size:1.15rem}.curve-fold .curve-chart canvas{height:300px}.live-mast .fineprint{flex-basis:100%;margin:.2rem 0 0}
+/* Live from the archives (worldsindex/assets/live-sources.js) */
+.live-rows{margin:.8rem 0;padding-left:1.2rem;font-size:.88rem;overflow-wrap:anywhere}.live-rows li{margin:.5rem 0;padding-left:.3rem;border-left:3px solid transparent}
+.live-rows li[data-live-status="pending"]{border-left-color:var(--cyan)}.live-rows li[data-live-status="ok"]{border-left-color:var(--green)}.live-rows li[data-live-status="unavailable"],.live-rows li[data-live-status="needs-key"],.live-rows li[data-live-status="no-relay"]{border-left-color:var(--gold)}
+.live-rows li[data-live-status="pending"] .live-state::after{content:"";display:inline-block;width:.7em;height:.7em;margin-left:.35em;border:2px solid var(--cyan);border-right-color:transparent;border-radius:50%;vertical-align:-.1em;animation:live-spin 1s linear infinite}
+@keyframes live-spin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.live-rows li[data-live-status="pending"] .live-state::after{animation:none}}
+.live-meta,.live-same{color:var(--muted);font-size:.78rem}.live-new,.live-changed{display:inline-block;margin:.15rem .2rem .15rem 0;padding:.08rem .5rem;border-radius:999px;font:600 .76rem/1.5 var(--sans);color:var(--text)}
+.live-new{background:rgba(79,199,154,.16);border:1px solid var(--green)}.live-changed{background:rgba(232,169,58,.16);border:1px solid var(--gold)}.live-progress{color:var(--muted);font-size:.85rem}

@@ -1,6 +1,6 @@
 // Tests for relay/worker.js with a stand-in for the network.
 import assert from "node:assert/strict";
-import worker, { matchRoute, SITE_ORIGINS, keep, KEEP, fitsContentType } from "../relay/worker.js";
+import worker, { matchRoute, SITE_ORIGINS, keep, KEEP, fitsContentType, tapQuery } from "../relay/worker.js";
 
 // A minimal FITS file: one header block (SIMPLE, BITPIX -32, NAXIS 1) and one data block.
 const FITS_BYTES = (() => {
@@ -143,6 +143,45 @@ r = await call(spec);
 assert.equal(r.status, 502, "no workspace on the page means the source is unavailable");
 globalThis.fetch = realFetch;
 assert.ok(matchRoute("https://exofop.ipac.caltech.edu/tess/target.php?toi=1000.01&json"));
+
+// ---- routes added for the per-target "Check all sources now" panels (2026-10-17)
+const tapUrl = (base, query, extra = "") => base + "?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=" + encodeURIComponent(query) + extra;
+const NED = "https://ned.ipac.caltech.edu/tap/sync", VIZ = "https://tapvizier.cds.unistra.fr/TAPVizieR/tap/sync", HEA = "https://heasarc.gsfc.nasa.gov/xamin/vo/tap/sync";
+const nedCone = (r) => `SELECT TOP 20 prefname, pretype, ra, dec, z FROM NEDTAP.objdir WHERE CONTAINS(POINT('J2000', ra, dec), CIRCLE('J2000', 242.816, -24.931, ${r}))=1`;
+assert.ok(matchRoute(tapUrl(NED, nedCone("0.0167"))), "NED cone within 3 arcmin");
+assert.ok(matchRoute(tapUrl(NED, nedCone("0.0167") + " ORDER BY prefname")), "an ORDER BY is fine");
+assert.equal(matchRoute(tapUrl(NED, nedCone("0.5"))), null, "a half-degree NED cone is refused");
+assert.equal(matchRoute(tapUrl(NED, "SELECT TOP 20 prefname FROM NEDTAP.objdir WHERE prefname LIKE '%'")), null, "only cones are relayed");
+assert.equal(matchRoute(tapUrl(NED, nedCone("0.0167") + "; DROP TABLE x")), null);
+assert.equal(matchRoute(tapUrl(NED, nedCone("0.0167")).replace("FORMAT=csv", "FORMAT=votable")), null, "only csv or json answers");
+assert.equal(matchRoute(tapUrl(NED, nedCone("0.0167"), "&UPLOAD=x")), null, "no other TAP parameters");
+assert.equal(matchRoute(tapUrl(NED, nedCone("0.0167"), "&query=x")), null, "a parameter may appear once, whatever its case");
+assert.ok(matchRoute(tapUrl(NED, nedCone("0.0167")).replace("REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=", "request=doQuery&lang=adql&format=json&query=")), "TAP parameter names are case-insensitive");
+assert.ok(matchRoute(tapUrl(VIZ, `SELECT TOP 10 Source, RA_ICRS, DE_ICRS, Gmag, Plx FROM "I/355/gaiadr3" WHERE 1=CONTAINS(POINT('ICRS', RA_ICRS, DE_ICRS), CIRCLE('ICRS', 217.3266, -3.4445, 0.0014))`)), "Gaia DR3 cone at VizieR");
+assert.ok(matchRoute(tapUrl(VIZ, `SELECT TOP 1 Source, Gmag, Plx, PM FROM "I/355/gaiadr3" WHERE Source=3643098875811934208`)), "Gaia DR3 by source id");
+assert.ok(matchRoute(tapUrl(VIZ, `SELECT TOP 5 Name, Teff, logg, "[Fe/H]" FROM "J/A+A/656/A53/sweetcat" WHERE Name='WASP-39'`)), "SWEET-Cat by host name");
+assert.equal(matchRoute(tapUrl(VIZ, `SELECT TOP 5 * FROM "I/345/gaia2" WHERE Source=1`)), null, "other VizieR catalogs are not relayed");
+assert.equal(matchRoute(tapUrl(VIZ, `SELECT TOP 5 Name FROM "J/A+A/656/A53/sweetcat" WHERE Name='x' OR 1=1`)), null);
+assert.equal(matchRoute(tapUrl(VIZ, `SELECT TOP 10 Source FROM "I/355/gaiadr3" WHERE 1=CONTAINS(POINT('ICRS', RA_ICRS, DE_ICRS), CIRCLE('ICRS', 1, 2, 0.2))`)), null, "a wide Gaia cone is refused");
+assert.ok(matchRoute(tapUrl(HEA, "SELECT TOP 50 name, obsid, start_time, xrt_exposure FROM swiftmastr WHERE CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', 242.816, -24.931, 0.2))=1 ORDER BY start_time DESC")), "Swift master within 12 arcmin");
+assert.ok(matchRoute(tapUrl(HEA, "SELECT TOP 50 name, obsid, time, exposure FROM chanmaster WHERE CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', 242.816, -24.931, 0.2))=1")));
+assert.equal(matchRoute(tapUrl(HEA, "SELECT TOP 50 name FROM swiftmastr WHERE CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', 242.816, -24.931, 0.5))=1")), null, "a half-degree HEASARC cone is refused");
+assert.equal(matchRoute(tapUrl(HEA, "SELECT TOP 50 name FROM rosmaster WHERE CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', 1, 2, 0.1))=1")), null, "only the listed master tables");
+assert.ok(tapQuery(new URLSearchParams("QUERY=SELECT TOP 1 x FROM t WHERE y&FORMAT=json"), /^SELECT TOP 1 x FROM t WHERE y$/, 0.1), "REQUEST and LANG default to doQuery and ADQL");
+assert.ok(!tapQuery(new URLSearchParams("QUERY=SELECT TOP 1 x FROM t WHERE y&FORMAT=json&REQUEST=doTables"), /^SELECT TOP 1 x FROM t WHERE y$/, 0.1));
+assert.ok(matchRoute("https://gsaweb.ast.cam.ac.uk/alerts/alerts.csv"), "the Gaia Science Alerts index");
+assert.equal(matchRoute("https://gsaweb.ast.cam.ac.uk/alerts/alerts.csv?x=1"), null);
+assert.equal(matchRoute("https://gsaweb.ast.cam.ac.uk/alerts/alertsindex"), null, "the HTML index page is not relayed");
+assert.ok(matchRoute("https://www.aavso.org/vsx/index.php?view=api.list&ra=242.816&dec=-24.931&radius=0.0167&format=json"), "VSX known variables near a position");
+assert.equal(matchRoute("https://www.aavso.org/vsx/index.php?view=api.list&ra=242.816&dec=-24.931&radius=2&format=json"), null, "a two-degree VSX search is refused");
+assert.equal(matchRoute("https://www.aavso.org/vsx/index.php?view=api.object&ident=SS+Cyg&format=json"), null, "only the positional list");
+assert.equal(matchRoute("https://www.aavso.org/vsx/index.php?view=api.list&ra=1&dec=2&radius=0.01&format=xml"), null);
+assert.equal(matchRoute("https://www.aavso.org/apps/webobs/results/?star=SS+Cyg"), null, "AAVSO observation pages are not relayed");
+assert.ok(matchRoute(tap("select kepoi_name,koi_disposition,rowupdate from cumulative where kepoi_name = 'K00001.01'")), "the KOI cumulative table");
+r = await call(tapUrl(NED, nedCone("0.0167")));
+assert.equal(r.status, 200);
+assert.equal(upstreamCalls.at(-1).init.method, "GET");
+assert.equal(r.headers.get("Cache-Control"), "public, max-age=3600", "TAP answers are edge-cached like everything else");
 
 // keyed sources: the key comes from the Worker's secrets, never from the page
 const ads = "https://api.adsabs.harvard.edu/v1/search/query?q=" + encodeURIComponent('full:"2026pel"') + "&fl=bibcode,title,author,pubdate&rows=20&sort=date+desc";

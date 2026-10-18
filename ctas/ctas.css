@@ -1252,6 +1252,36 @@ svg.is-narrow .ctas-spectrum-marker text { font-size: 13px; }
 .ctas-science-brief__grid li { color: var(--ink-2); font-size: .77rem; overflow-wrap: anywhere; }
 .ctas-science-brief__grid ul { margin: 0; padding-left: 1rem; }
 
+/* Suggested follow-up: the published draft plus tonight at WIRO and Red Buttes. */
+.ctas-followup { margin: 1rem 0; padding: .85rem; border: 1px solid rgba(212, 167, 79, .45); background: rgba(212, 167, 79, .05); }
+.ctas-followup__head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin-bottom: .65rem; }
+.ctas-followup__head h4 { margin: 0; }
+.ctas-followup__cadence { text-transform: capitalize; }
+.ctas-followup__badge { display: inline-block; padding: .15rem .55rem; border: 1px solid rgba(255, 171, 107, .8); border-radius: 999px; color: #ffc9a3; font-size: .74rem; text-decoration: none; }
+.ctas-followup__badge:hover, .ctas-followup__badge:focus-visible { color: #07101d; background: #ffab6b; }
+.ctas-followup__archival { margin: 0 0 .65rem; color: var(--ink-2); font-size: .82rem; }
+.ctas-followup__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .55rem; }
+.ctas-followup__grid > section, .ctas-followup__telescope { min-width: 0; padding: .7rem; border: 1px solid var(--border); background: var(--surface); }
+.ctas-followup h5 { margin: 0 0 .35rem; color: var(--gold); font-size: .73rem; letter-spacing: .05em; text-transform: uppercase; }
+.ctas-followup p, .ctas-followup li { color: var(--ink-2); font-size: .8rem; overflow-wrap: anywhere; }
+.ctas-followup ul, .ctas-followup ol { margin: 0 0 .5rem; padding-left: 1.1rem; }
+.ctas-followup li + li { margin-top: .25rem; }
+.ctas-followup li .pill { margin-right: .3rem; font-size: .7rem; text-transform: capitalize; }
+.ctas-followup li small, .ctas-followup td small, .ctas-followup th small { display: block; color: var(--ink-3); font-size: .72rem; }
+.ctas-followup__telescopes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; margin-top: .55rem; }
+.ctas-followup__exposures { width: 100%; border-collapse: collapse; margin: .35rem 0 .5rem; font-size: .78rem; }
+.ctas-followup__exposures caption { margin-bottom: .3rem; color: var(--ink-3); font-size: .72rem; text-align: left; }
+.ctas-followup__exposures th, .ctas-followup__exposures td { padding: .25rem .4rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+.ctas-followup__exposures th small { display: inline; }
+.ctas-followup__links a { color: var(--gold); }
+.ctas-followup .ctas-claim-boundary { margin: .65rem 0 0; font-size: .76rem; }
+@media (max-width: 840px) {
+  .ctas-followup__grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .ctas-followup__telescopes { grid-template-columns: 1fr; }
+}
+
 .ctas-score-waterfall { margin-top: .75rem; }
 .ctas-score-waterfall__row { display: grid; grid-template-columns: minmax(10rem, 1.25fr) 3fr 4.6rem; align-items: center; gap: .5rem; min-height: 34px; }
 .ctas-score-waterfall__track { position: relative; height: 12px; border-radius: 99px; background: rgba(255,255,255,.06); overflow: hidden; }
@@ -1760,8 +1790,20 @@ table.ctas-table { min-width: 900px; }
 #followup-examples button,#followup-examples select{min-height:44px;padding:.55rem .75rem;border:1px solid #52616f;border-radius:8px;background:#101927;color:#e2eaf2;font:inherit;cursor:pointer}#followup-examples button:disabled{opacity:.65;cursor:default}#ctas-followup-examples td:first-child button{display:flex;align-items:center;text-align:left;background:transparent;border:0;padding:.2rem}#followup-examples{scroll-margin-top:11rem}
 
 /* Live provider data (ctas/live-sources.js) */
-.ctas-live__sources { margin: .6rem 0; padding-left: 1.1rem; color: var(--ink-2); font-size: .82rem; }
-.ctas-live__sources li { margin: .25rem 0; }
+.ctas-live__sources { margin: .6rem 0; padding-left: 1.1rem; color: var(--ink-2); font-size: .82rem; overflow-wrap: anywhere; }
+.ctas-live__sources li { margin: .45rem 0; padding-left: .25rem; border-left: 3px solid transparent; }
+.ctas-live__sources li[data-live-status="pending"] { border-left-color: var(--blue); }
+.ctas-live__sources li[data-live-status="ok"] { border-left-color: var(--green); }
+.ctas-live__sources li[data-live-status="unavailable"], .ctas-live__sources li[data-live-status="needs-key"], .ctas-live__sources li[data-live-status="no-relay"] { border-left-color: var(--gold); }
+.ctas-live__sources li[data-live-status="pending"] .ctas-live__state::after { content: ""; display: inline-block; width: .7em; height: .7em; margin-left: .35em; border: 2px solid var(--blue); border-right-color: transparent; border-radius: 50%; vertical-align: -.1em; animation: ctas-live-spin 1s linear infinite; }
+@keyframes ctas-live-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ctas-live__sources li[data-live-status="pending"] .ctas-live__state::after { animation: none; } }
+.ctas-live__meta { display: inline-block; color: var(--ink-3); font-size: .74rem; }
+.ctas-live__same { color: var(--ink-3); }
+.ctas-live__new, .ctas-live__changed { display: inline-block; margin: .15rem .2rem .15rem 0; padding: .08rem .45rem; border-radius: 999px; font: 600 .74rem/1.5 var(--font-body); color: var(--ink); }
+.ctas-live__new { background: var(--green-soft); border: 1px solid var(--green); }
+.ctas-live__changed { background: var(--gold-soft); border: 1px solid var(--gold); }
+.ctas-live__progress { color: var(--ink-2); font-size: .8rem; }
 .ctas-live [data-live-fetch], .ctas-live [data-live-csv] { margin: .4rem 0; }
 .ctas-live__papers { margin: .4rem 0 .6rem; padding-left: 1.3rem; font-size: .82rem; }
 .ctas-live__papers li { margin: .3rem 0; }

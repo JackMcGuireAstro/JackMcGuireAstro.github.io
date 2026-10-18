@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://jackmcguireastro.github.io/assets/images/ctas/ctas-card.png">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="assets/css/site.css?v=20260903-notebook">
-<link rel="stylesheet" href="ctas/ctas.css?v=20261011">
+<link rel="stylesheet" href="ctas/ctas.css?v=20261017">
 <link rel="alternate" type="application/atom+xml" title="CTAS — strong new follow-up targets" href="ctas/data/feed.xml">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
@@ -404,6 +404,16 @@
             universe, shards, and validation results to exact checksums. A new snapshot is collected, checked, and
             published automatically about every 30 minutes on GitHub's servers. “Verified” means those automated
             integrity checks passed for that snapshot; it is not scientific certification or human peer review. A failed run keeps the previous snapshot live and the next run retries automatically.</p></section>
+          <section id="what-live-means"><h3>What “live” means here</h3><p>Three layers, in plain words. <strong>The release</strong> is
+            rebuilt about every 30 minutes, but it only repeats what the publishing computer's database holds; a record's
+            follow-up rows change in a release only when the backend has re-queried that target, and each dossier's live panel
+            says, per source, when that last happened. <strong>Opening a dossier fetches nothing</strong> from any provider.
+            <strong>“Check all sources now”</strong> asks every public source this page can reach, a few at a time, and marks
+            what is new compared with the retained evidence; answers that pass through the site's relay can be up to one hour
+            old (its cache), direct answers are as current as the provider. “Live” therefore does not mean a stream that updates
+            on its own, and it never covers sources that need a key or a login (ATLAS forced photometry, the TNS API, AAVSO AID,
+            GCN streams); those appear as links or as retained evidence only. Live values are never stored and are not part of
+            the verified snapshot.</p></section>
           <section id="use-and-cite"><h3>Use and cite</h3><p>Cite CTAS as “Cowboy Transient Alert System
             (Jack McGuire), version 1.5.0,” include the catalog checksum and access date, and cite each original
             provider used in scientific work. <a href="mailto:jackmcg7@live.com?subject=CTAS%20citation">Contact Jack</a>
@@ -444,13 +454,14 @@
 <script src="ctas/catalog-model.js?v=20260907-followup"></script>
 <script src="ctas/astro-evidence.js?v=20260829-evidence1"></script>
 <script src="ctas/observability.js?v=20260830-workbench1"></script>
+<script src="ctas/followup.js?v=20261017"></script>
 <script src="ctas/workbench.js?v=20260920"></script>
 <script src="ctas/chunk-loader.js?v=20260919-multipart"></script>
 <script src="ctas/lightcurve-summary.js?v=20261004"></script>
 <script src="ctas/spectrum-ascii.js?v=20261011"></script>
 <script src="ctas/spectrum-fits.js?v=20261011"></script>
-<script src="ctas/live-sources.js?v=20261011"></script>
-<script src="ctas/app.js?v=20261011"></script>
+<script src="ctas/live-sources.js?v=20261017"></script>
+<script src="ctas/app.js?v=20261017"></script>
 
 </body>
 </html>

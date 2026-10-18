@@ -3,6 +3,12 @@
 // from the site's own published catalogs; nothing is sent anywhere or stored.
 import { nightGrid, visibility, localNoonUtc, altitudeDeg, airmass, utcMsToBjdTdb, bjdTdbToUtcMs, localSiderealDeg, moonPosition, separationDeg, julianDate, TT_MINUS_UTC_SECONDS } from "./astro.js?v=20261004";
 import { transitsBetween } from "../worldsindex/assets/ephemeris.js?v=20261004";
+// The CTAS follow-up rules (objective kind per record) and the CCD model behind the exposure
+// calculator, so the CTAS list doubles as tonight's follow-up sheet. followup.js is a classic
+// script that registers itself on globalThis.
+import "../ctas/followup.js?v=20261017";
+import * as ccd from "../tools/exposure/ccd.js?v=20261003";
+const Followup = globalThis.CTASFollowup;
 
 export const SITES = [
   { id: "wiro", name: "WIRO (Wyoming Infrared Observatory)", lat: 41.0979, lon: -105.9767, tz: "America/Denver" },
@@ -19,17 +25,63 @@ export const SITES = [
 
 const $ = (selector) => document.querySelector(selector);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const state = { ctas: null, worlds: null, transits: null, grid: null, rows: [], selected: null };
+const state = { ctas: null, worlds: null, transits: null, grid: null, rows: [], selected: null, prefill: null };
 
 // ------------------------------------------------------------------ catalogs
 export function ctasTargets(summary) {
   const cols = summary.candidate_columns || [], at = Object.fromEntries(cols.map((c, i) => [c, i]));
+  const column = (r, name) => (name in at ? r[at[name]] : undefined);
   return (summary.candidate_rows || []).map((r) => ({
     kind: "ctas", id: r[at.event_id], name: r[at.name], ra: r[at.ra_deg], dec: r[at.dec_deg],
     detail: [r[at.classification], r[at.discovery_survey]].filter(Boolean).join(" · "),
     mag: r[at.discovery_magnitude], discovered: r[at.discovery_time], score: r[at.ctas_score], role: r[at.record_role],
     href: `../ctas.html?event=${encodeURIComponent(r[at.event_id])}#dossier`,
+    followup: followupFor({
+      event_id: r[at.event_id], name: r[at.name], ra_deg: r[at.ra_deg], dec_deg: r[at.dec_deg], status: column(r, "status"),
+      record_role: r[at.record_role], ranking_channel: column(r, "ranking_channel") ?? "optical", classification: r[at.classification],
+      discovery_time: r[at.discovery_time], discovery_magnitude: r[at.discovery_magnitude], discovery_survey: r[at.discovery_survey],
+      n_spectra: column(r, "n_spectra") ?? 0, n_observations: column(r, "n_observations") ?? 0, photometry_outcomes: column(r, "photometry_outcomes") ?? {},
+    }),
   })).filter((t) => t.role === "follow-up-target-candidate" && Number.isFinite(t.ra) && Number.isFinite(t.dec));
+}
+
+// The follow-up objective for one compact CTAS row: its kinds ("imaging + spectroscopy") and
+// cadence, from the same rules the exporter publishes in each dossier.
+export function followupFor(rowLike) {
+  if (!Followup) return null;
+  const block = Followup.derive(rowLike);
+  return { block, kinds: block.objectives.map((o) => o.kind), text: block.objectives.map((o) => o.kind).join(" + ") || "none", cadence: block.cadence.code };
+}
+
+// Which of Jack's telescopes could take the suggested observation tonight, from the
+// placeholder WIRO and Red Buttes profiles: S/N 20 in r within 3 x 600 s at the target's best
+// airmass, and the spectroscopy threshold. `airmass` and `moonIllumination` come from tonight.
+export function feasibleTelescopes(followup, { airmass, moonIllumination } = {}) {
+  if (!Followup || !followup || !followup.block.objectives.length) return [];
+  const sky = moonIllumination == null ? "grey" : moonIllumination < 0.25 ? "dark" : moonIllumination < 0.75 ? "grey" : "bright";
+  const windows = ccd.TELESCOPES.map((t) => ({ site: { telescope: t.id }, best_airmass: Number.isFinite(airmass) ? Math.max(1, airmass) : 1.5, sky_preset: sky }));
+  return Followup.feasibility(followup.block, ccd, { windows });
+}
+
+// A target carried in the address (a dossier's "Open in the Tonight planner" link):
+// ?site=wiro&list=ctas&event=<uuid>&name=AT2026abc&ra=66.13&dec=-0.73&mag=19.8. Only values
+// the page can use are kept; a target needs both coordinates.
+export function prefillFromQuery(params) {
+  const get = (key) => (params.get(key) ?? "").trim();
+  const out = {};
+  if (SITES.some((s) => s.id === get("site"))) out.site = get("site");
+  if (["ctas", "worlds", "transits"].includes(get("list"))) out.list = get("list");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(get("date"))) out.date = get("date");
+  const ra = Number(get("ra")), dec = Number(get("dec")), mag = Number(get("mag"));
+  if (get("ra") !== "" && get("dec") !== "" && ra >= 0 && ra < 360 && Math.abs(dec) <= 90) {
+    out.target = { kind: "ctas", id: get("event") || `query:${ra},${dec}`, name: get("name").slice(0, 80) || "Linked target", ra, dec,
+      mag: get("mag") !== "" && Number.isFinite(mag) && mag > -5 && mag < 35 ? mag : null, fromLink: true,
+      detail: "From the dossier link", score: null, role: "follow-up-target-candidate",
+      href: get("event") ? `../ctas.html?event=${encodeURIComponent(get("event"))}#dossier` : "../ctas.html" };
+    out.target.followup = followupFor({ event_id: out.target.id, name: out.target.name, ra_deg: ra, dec_deg: dec, status: "candidate",
+      record_role: "follow-up-target-candidate", ranking_channel: "optical", classification: "Unclassified", discovery_magnitude: out.target.mag });
+  } else if (get("event")) out.event = get("event");
+  return out;
 }
 
 export function worldsSystems(index, { includeCandidates = false } = {}) {
@@ -169,6 +221,8 @@ async function run() {
     let targets;
     if (s.list === "ctas") {
       targets = (await loadCtas()).filter((t) => !Number.isFinite(s.magLimit) || t.mag == null || t.mag <= s.magLimit);
+      const linked = state.prefill?.target;
+      if (linked && !targets.some((t) => t.id === linked.id)) targets = [linked, ...targets];
     } else {
       targets = worldsSystems(await loadWorlds(), { includeCandidates: s.candidates });
     }
@@ -177,6 +231,13 @@ async function run() {
       .sort((a, b) => b.vis.hours - a.vis.hours || (b.score ?? 0) - (a.score ?? 0) || b.vis.maxAlt - a.vis.maxAlt);
     renderTable(s, targets.length);
     status.textContent = "";
+    const wanted = state.prefill?.target?.id ?? state.prefill?.event;
+    if (wanted) {
+      const index = state.rows.findIndex((t) => t.id === wanted);
+      if (index >= 0) select(index);
+      else if (state.prefill?.target) status.textContent = `${state.prefill.target.name} is not above ${s.altLimit}° while it is dark at this site tonight.`;
+      state.prefill = null;
+    }
   } catch (error) {
     status.textContent = `Could not compute: ${error.message}`;
   }
@@ -185,12 +246,15 @@ async function run() {
 function renderTable(s, considered) {
   const shown = state.rows.slice(0, 200);
   const ctas = s.list === "ctas";
+  const moon = state.grid ? state.grid.moonIllumination : null;
+  const telescopes = (t) => feasibleTelescopes(t.followup, { airmass: t.vis.bestAirmass, moonIllumination: moon }).filter((f) => f.feasible).map((f) => `${f.label}: ${f.text}`).join("; ") || "—";
   $("#results").innerHTML = `<p class="muted">${state.rows.length.toLocaleString()} of ${considered.toLocaleString()} ${ctas ? "CTAS transients" : "planetary systems"} are above ${s.altLimit}° while it is dark${state.rows.length > 200 ? "; showing the 200 up longest" : ""}. Select a row for its altitude curve.</p>` +
+    (ctas ? `<p class="muted">“Objective” is the CTAS suggested follow-up for each record (imaging, spectroscopy, counterpart or monitoring) and “Feasible at” names which of WIRO and Red Buttes could reach S/N 20 in r within 3 × 600 s at the target’s best airmass tonight, or take a classification spectrum, using the <a href="../tools/exposure/#placeholder-note">placeholder instrument values</a> of the exposure calculator and the discovery magnitude. It is a heuristic draft, not an observing request.</p>` : "") +
     `<div class="table-wrap" role="region" aria-label="Observable targets" tabindex="0"><table><caption class="visually-hidden">Targets observable tonight</caption><thead><tr>` +
-    `<th scope="col">${ctas ? "Transient" : "Host star"}</th><th scope="col">${ctas ? "Class · survey" : "Planets"}</th>${ctas ? '<th scope="col">Disc. mag</th><th scope="col">CTAS score</th>' : ""}` +
+    `<th scope="col">${ctas ? "Transient" : "Host star"}</th><th scope="col">${ctas ? "Class · survey" : "Planets"}</th>${ctas ? '<th scope="col">Disc. mag</th><th scope="col">CTAS score</th><th scope="col">Objective</th><th scope="col">Feasible at</th>' : ""}` +
     `<th scope="col">Hours up</th><th scope="col">Highest</th><th scope="col">Best time</th><th scope="col">Moon sep.</th><th scope="col"><span class="visually-hidden">Open</span></th></tr></thead><tbody>` +
-    shown.map((t, i) => `<tr data-row="${i}" tabindex="0" aria-label="Show the altitude curve for ${esc(t.name)}"><th scope="row">${esc(t.name)}</th><td>${esc(t.detail)}</td>` +
-      (ctas ? `<td>${t.mag == null ? "—" : Number(t.mag).toFixed(1)}</td><td>${t.score == null ? "—" : Number(t.score).toFixed(0)}</td>` : "") +
+    shown.map((t, i) => `<tr data-row="${i}" tabindex="0" aria-label="Show the altitude curve for ${esc(t.name)}"><th scope="row">${esc(t.name)}${t.fromLink ? " <small>linked</small>" : ""}</th><td>${esc(t.detail)}</td>` +
+      (ctas ? `<td>${t.mag == null ? "—" : Number(t.mag).toFixed(1)}</td><td>${t.score == null ? "—" : Number(t.score).toFixed(0)}</td><td>${esc(t.followup ? t.followup.text : "—")}${t.followup && t.followup.cadence !== "none" ? ` <small>${esc(t.followup.cadence)}</small>` : ""}</td><td>${esc(telescopes(t))}</td>` : "") +
       `<td>${t.vis.hours.toFixed(1)}</td><td>${Math.round(t.vis.maxAlt)}° <small>(X=${t.vis.bestAirmass ? t.vis.bestAirmass.toFixed(2) : "—"})</small></td>` +
       `<td>${timeFmt(t.vis.bestMs, s.site.tz)}</td><td>${t.vis.moonSep == null ? "—" : Math.round(t.vis.moonSep) + "°"}</td>` +
       `<td><a href="${esc(t.href)}">${ctas ? "Dossier" : "WorldsIndex"}<span class="visually-hidden"> for ${esc(t.name)}</span></a></td></tr>`).join("") +
@@ -273,6 +337,10 @@ export function init() {
   siteSelect.innerHTML = SITES.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join("") + '<option value="custom">Custom latitude/longitude…</option>';
   const today = new Date();
   $("#date").value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  state.prefill = prefillFromQuery(new URL(window.location.href).searchParams);
+  if (state.prefill.site) siteSelect.value = state.prefill.site;
+  if (state.prefill.date) $("#date").value = state.prefill.date;
+  if (state.prefill.list) $("#list").value = state.prefill.list;
   $("#tz").value = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   const toggleCustom = () => { $("#custom").hidden = siteSelect.value !== "custom"; };
   siteSelect.addEventListener("change", toggleCustom);

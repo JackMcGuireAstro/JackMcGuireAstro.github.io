@@ -541,6 +541,150 @@ class ScienceBriefTests(unittest.TestCase):
         self.assertEqual(brief["most_recent_change"]["entry_id"], "publicly-latest")
 
 
+class SuggestedFollowUpTests(unittest.TestCase):
+    """The clock-free follow-up draft: objectives only for eligible targets."""
+
+    def target(self, **updates):
+        return event(**{"record_role": "follow-up-target-candidate", "ranking_channel": "optical", "status": "candidate", **updates})
+
+    def test_unclassified_optical_target_gets_imaging_then_spectroscopy_nightly(self):
+        block = EXPORTER.suggested_follow_up_for(self.target())
+        self.assertEqual(block["schema"], "ctas-suggested-follow-up.v1")
+        self.assertEqual([row["kind"] for row in block["objectives"]], ["imaging", "spectroscopy"])
+        self.assertEqual([row["priority"] for row in block["objectives"]], [1, 2])
+        self.assertEqual(block["objectives"][0]["closes_gap"], "follow-up-photometry")
+        self.assertEqual(block["objectives"][1]["closes_gap"], "spectrum")
+        self.assertEqual(block["objectives"][1]["suggested_evidence_type"], "rights-cleared spectrum or spectrum metadata")
+        self.assertEqual(block["cadence"]["code"], "nightly")
+        self.assertIn("No public classification is retained.", block["basis"])
+        self.assertIn("No public spectrum is retained.", block["basis"])
+        self.assertIn("Discovered 2026-08-22.", block["basis"])
+        self.assertTrue(block["eligibility"]["is_target"])
+        self.assertEqual(block["eligibility"]["newest_evidence_at"], "2026-08-22T00:00:00Z")
+        self.assertEqual(block["latest_magnitude"], {
+            "value": 17.2, "band": None, "system": None, "observed_at": "2026-08-22T00:00:00Z",
+            "provider": "ZTF", "basis": "discovery-magnitude",
+        })
+        self.assertEqual(block["claim_boundary"], EXPORTER.SUGGESTED_FOLLOW_UP_CLAIM)
+        self.assertIn("not an exposure-time calculation or observing request", block["claim_boundary"])
+
+    def test_the_draft_is_deterministic_and_clock_free(self):
+        candidate = self.target(discovery_time="2019-01-01T00:00:00Z")
+        first = EXPORTER.suggested_follow_up_for(deepcopy(candidate))
+        second = EXPORTER.suggested_follow_up_for(deepcopy(candidate))
+        self.assertEqual(first, second)
+        serialized = json.dumps(first)
+        # Ages, "recent" and today's date would rewrite every dossier each release.
+        self.assertNotIn(" ago", serialized)
+        self.assertNotIn("recent", serialized.lower())
+        self.assertNotIn(datetime.now(timezone.utc).strftime("%Y-%m-%d"), serialized)
+        self.assertEqual(first["basis"][0], "Discovered 2019-01-01.")
+
+    def test_latest_magnitude_prefers_the_newest_retained_detection(self):
+        candidate = self.target(
+            follow_up_counts={**event()["follow_up_counts"], "observations": 3},
+            follow_up={"observations": [
+                {"observed_at": "2026-08-23T00:00:00Z", "detection": 1, "magnitude": 17.9, "band": "g", "magnitude_system": "AB", "provider": "a"},
+                {"observed_at": "2026-08-24T00:00:00Z", "detection": 1, "magnitude": 18.123456, "band": "r", "magnitude_system": "AB", "provider": "b"},
+                {"observed_at": "2026-08-25T00:00:00Z", "detection": 0, "limiting_magnitude": 20.5, "band": "r", "provider": "c"},
+                {"observed_at": "2026-08-26T00:00:00Z", "detection": 1, "magnitude": 99.0, "band": "r", "provider": "d"},
+                {"observed_at": "2026-08-27T00:00:00Z", "detection": 1, "magnitude": 18.5, "band": "r", "provider": "e", "superseded": 1},
+            ]},
+        )
+        block = EXPORTER.suggested_follow_up_for(candidate)
+        self.assertEqual(block["latest_magnitude"], {
+            "value": 18.123, "band": "r", "system": "AB", "observed_at": "2026-08-24T00:00:00Z",
+            "provider": "b", "basis": "latest-retained-detection",
+        })
+        self.assertIsNone(block["objectives"][0]["closes_gap"], "photometry exists, so imaging closes no gap")
+        self.assertIn("No retained observation since 2026-08-26.", block["basis"], "the superseded row does not count")
+
+    def test_classified_target_with_a_spectrum_is_monitored_weekly(self):
+        block = EXPORTER.suggested_follow_up_for(self.target(
+            classification="SN Ia", follow_up_counts={**event()["follow_up_counts"], "spectra": 1},
+        ))
+        self.assertEqual([row["kind"] for row in block["objectives"]], ["imaging", "monitoring"])
+        self.assertEqual(block["cadence"]["code"], "weekly")
+        self.assertNotIn("No public spectrum is retained.", block["basis"])
+
+    def test_disagreeing_classifications_ask_for_a_spectrum_even_when_one_exists(self):
+        block = EXPORTER.suggested_follow_up_for(self.target(
+            classification="SN Ia", follow_up_counts={**event()["follow_up_counts"], "spectra": 1},
+            follow_up={"classifications": [
+                {"classification": "SN Ia", "probability": 0.6}, {"classification": "SN II", "probability": 0.4},
+            ]},
+        ))
+        self.assertIn("Active classification assertions disagree.", block["basis"])
+        spectroscopy = block["objectives"][1]
+        self.assertEqual(spectroscopy["kind"], "spectroscopy")
+        self.assertEqual(spectroscopy["closes_gap"], "classification")
+        self.assertIn("disagreeing", spectroscopy["text"])
+        self.assertEqual(block["cadence"]["code"], "nightly")
+
+    def test_multimessenger_alert_gets_a_rapid_counterpart_search(self):
+        block = EXPORTER.suggested_follow_up_for(event(
+            record_role="localization-region-alert", ranking_channel="neutrino-multimessenger",
+            primary_messenger="neutrino", discovery_magnitude=None, classification=None,
+        ))
+        self.assertEqual([row["kind"] for row in block["objectives"]], ["counterpart"])
+        self.assertEqual(block["cadence"]["code"], "rapid")
+        self.assertIn("Multimessenger counterpart pending: no optical detection is retained.", block["basis"])
+        self.assertFalse(block["eligibility"]["magnitude_present"])
+        self.assertIsNone(block["latest_magnitude"]["value"])
+        self.assertIn("No magnitude is retained; exposure estimates are not possible.", block["eligibility"]["reasons"])
+
+    def test_retracted_terrestrial_and_coordinate_free_records_get_no_objectives(self):
+        for candidate, reason in (
+            (self.target(status="retracted", record_role="retracted-event"), "Reported retracted; held out of follow-up."),
+            (self.target(status="bogus"), "Reported bogus; held out of follow-up."),
+            (event(record_role="known-terrestrial-event", ranking_channel="contextual-non-target"), "Record role known terrestrial event: not a follow-up target."),
+            (event(record_role="unvalidated-detector-trigger", ranking_channel="radio"), "Record role unvalidated detector trigger: not a follow-up target."),
+            (self.target(ra_deg=None, dec_deg=None), "No valid coordinates are retained."),
+        ):
+            with self.subTest(reason=reason):
+                block = EXPORTER.suggested_follow_up_for(candidate)
+                self.assertEqual(block["objectives"], [])
+                self.assertEqual(block["cadence"]["code"], "none")
+                self.assertFalse(block["eligibility"]["is_target"])
+                self.assertIn(reason, block["basis"])
+
+    def test_evidence_types_come_from_the_science_brief_vocabulary(self):
+        candidate = self.target(record_completeness=EXPORTER.completeness_for(self.target()))
+        brief_vocabulary = {row["suggested_evidence_type"] for row in EXPORTER.science_brief_for(candidate)["missing_information"]}
+        block = EXPORTER.suggested_follow_up_for(candidate)
+        self.assertEqual({row["kind"] for row in block["objectives"]}, {"imaging", "spectroscopy"})
+        self.assertTrue({row["suggested_evidence_type"] for row in block["objectives"]} <= brief_vocabulary, brief_vocabulary)
+        self.assertTrue(set(EXPORTER.SUGGESTED_EVIDENCE_TYPES.values()) >= brief_vocabulary - {"source-attributed public evidence"})
+
+    def test_browser_fallback_derivation_agrees_with_the_exporter(self):
+        """ctas/followup.js re-derives the block for releases that predate it."""
+        cases = [
+            self.target(),
+            self.target(classification="SN Ia", follow_up_counts={**event()["follow_up_counts"], "spectra": 1}),
+            self.target(classification="SN Ia", follow_up_counts={**event()["follow_up_counts"], "spectra": 1},
+                        follow_up={"classifications": [{"classification": "SN Ia", "probability": 0.6}, {"classification": "SN II", "probability": 0.4}]}),
+            event(record_role="localization-region-alert", ranking_channel="neutrino-multimessenger", primary_messenger="neutrino", discovery_magnitude=None),
+            self.target(status="retracted", record_role="retracted-event"),
+            event(record_role="known-terrestrial-event", ranking_channel="contextual-non-target"),
+            self.target(ra_deg=None, dec_deg=None),
+            self.target(follow_up_counts={**event()["follow_up_counts"], "observations": 2}, follow_up={"observations": [
+                {"observed_at": "2026-08-23T00:00:00Z", "detection": 1, "magnitude": 17.9, "band": "g", "magnitude_system": "AB", "provider": "a"},
+                {"observed_at": "2026-08-24T00:00:00Z", "detection": 1, "magnitude": 18.123456, "band": "r", "magnitude_system": "AB", "provider": "b"},
+            ]}),
+        ]
+        script = (
+            "const f=require(process.argv[1]);let input='';process.stdin.on('data',d=>input+=d);"
+            "process.stdin.on('end',()=>{process.stdout.write(JSON.stringify(JSON.parse(input).map(c=>f.derive(c))));});"
+        )
+        result = subprocess.run(
+            ["node", "-e", script, str(ROOT / "ctas/followup.js")], input=json.dumps(cases),
+            capture_output=True, text=True, check=True,
+        )
+        for candidate, browser in zip(cases, json.loads(result.stdout)):
+            with self.subTest(role=candidate.get("record_role"), status=candidate.get("status")):
+                self.assertEqual(browser, EXPORTER.suggested_follow_up_for(candidate))
+
+
 class ArtifactBuilderTests(unittest.TestCase):
     def test_alias_index_preserves_an_explicit_same_string_collision(self):
         first = event(designations=[{
@@ -1419,6 +1563,19 @@ class CertificateAndArtifactTests(unittest.TestCase):
                 )
                 self.assertTrue(brief["what_happened"]["basis_record_ids"])
                 self.assertIn("does not confirm", brief["claim_boundary"])
+
+    def test_every_suggested_follow_up_reproduces_and_is_claim_bounded(self):
+        if not all("suggested_follow_up" in candidate for candidate in self.snapshot["candidates"]):
+            self.skipTest("this release predates ctas-suggested-follow-up.v1; the browser derives the draft")
+        for candidate in self.snapshot["candidates"]:
+            block = candidate["suggested_follow_up"]
+            with self.subTest(event_id=candidate["event_id"]):
+                self.assertEqual(block["schema"], EXPORTER.SUGGESTED_FOLLOW_UP_SCHEMA)
+                self.assertEqual(block, EXPORTER.suggested_follow_up_for(candidate))
+                self.assertEqual(bool(block["objectives"]), block["eligibility"]["is_target"])
+                self.assertEqual(block["cadence"]["code"] == "none", not block["objectives"])
+                self.assertEqual(block["claim_boundary"], EXPORTER.SUGGESTED_FOLLOW_UP_CLAIM)
+        self.assertIn("suggested-follow-up-integrity", {gate["id"] for gate in self.certificate["gates"]})
 
     def test_replay_timeline_never_uses_observation_time_as_public_availability(self):
         for candidate in self.snapshot["candidates"]:

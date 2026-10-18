@@ -158,6 +158,39 @@ function run() {
   $("#curve").innerHTML = chartSvg(out) + `<p class="muted">The marked point is the result above.${m === "snr" ? "" : " The dashed line is the target S/N."} S/N grows roughly as √t once the source or the sky dominates the noise.</p>`;
 }
 
+// Prefill from the address, e.g. a CTAS dossier's "Open the exposure calculator" link:
+// ?telescope=wiro&filter=r&mode=time&snr=20&mag=19.8&airmass=1.3&target=AT2026abvo.
+// Unknown or out-of-range values are dropped, never guessed.
+export function prefillFromQuery(params) {
+  const get = (key) => (params.get(key) ?? "").trim();
+  const out = {};
+  if (TELESCOPES.some((t) => t.id === get("telescope"))) out.telescope = get("telescope");
+  if (FILTERS.some((f) => f.id === get("filter"))) out.filter = get("filter");
+  if (["snr", "time", "maglim"].includes(get("mode"))) out.mode = get("mode");
+  for (const key of ["mag", "snr", "exptime", "airmass"]) {
+    const field = FIELDS.find((f) => f.key === key), value = Number(get(key));
+    if (get(key) !== "" && Number.isFinite(value) && field.ok(value, {})) out[key] = value;
+  }
+  if (["dark", "grey", "bright"].includes(get("sky"))) out.sky = get("sky");
+  if (get("target")) out.target = get("target").slice(0, 80);
+  return out;
+}
+
+function applyPrefill(prefill) {
+  if (prefill.telescope) { $("#telescope").value = prefill.telescope; applyTelescope(); }
+  if (prefill.sky) $("#skyPreset").value = prefill.sky;
+  if (prefill.filter || prefill.sky) { if (prefill.filter) $("#filter").value = prefill.filter; applyFilter(); }
+  if (prefill.mode) document.querySelector(`input[name="mode"][value="${prefill.mode}"]`).checked = true;
+  for (const key of ["mag", "snr", "exptime", "airmass"]) if (prefill[key] !== undefined) $(`#${key}`).value = String(prefill[key]);
+  if (prefill.target) {
+    const note = document.createElement("p");
+    note.className = "muted";
+    note.id = "etc-prefill";
+    note.textContent = `Prefilled for ${prefill.target} from its CTAS dossier. The telescope presets are placeholder values (see the note below); the magnitude is the latest one CTAS retained, which may be out of date.`;
+    $("#etc-form").insertAdjacentElement("afterend", note);
+  }
+}
+
 export function init() {
   const groups = [...new Set(FILTERS.map((f) => f.group))];
   $("#filter").innerHTML = groups.map((g) => `<optgroup label="${esc(g)}">${FILTERS.filter((f) => f.group === g).map((f) => `<option value="${f.id}">${f.id}</option>`).join("")}</optgroup>`).join("");
@@ -179,6 +212,8 @@ export function init() {
     });
   }
   $("#etc-form").addEventListener("submit", (event) => { event.preventDefault(); run(); });
+  const prefill = prefillFromQuery(new URL(window.location.href).searchParams);
+  if (Object.keys(prefill).length) { applyPrefill(prefill); if (prefill.telescope) lastPreset = prefill.telescope; }
   run();
 }
 

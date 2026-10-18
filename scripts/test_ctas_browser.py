@@ -243,6 +243,109 @@ class BrowserTests(unittest.TestCase):
         self.assertTrue(calls, "providers are contacted after the request")
         self.assertTrue(all(u.startswith(("https://api.alerce.online/", "https://api.lsst.fink-portal.org/")) for u in calls))
 
+    def test_check_all_sources_now_fills_every_row_and_marks_what_is_new(self):
+        """One keyboard-reachable control runs every live source; each row gets a fetched
+        time, a summary and a comparison with the release; axe passes afterwards."""
+        import json as _json
+        from urllib.parse import unquote, urlparse, parse_qs
+        calls = []
+
+        def direct(route):
+            url = route.request.url
+            calls.append(url)
+            if url.endswith("/lightcurve"):
+                body = {"detections": [{"mjd": 61500.5 + i, "fid": 1 + i % 2, "magpsf": 18 + i / 10, "sigmapsf": 0.05, "isdiffpos": "t"} for i in range(4)], "non_detections": []}
+            elif "/ztf/v1/objects/?" in url:
+                q = parse_qs(urlparse(url).query)
+                body = {"items": [{"oid": "ZTF26testobj", "meanra": float(q["ra"][0]), "meandec": float(q["dec"][0])}]}
+            elif "simbad" in url:
+                body = {"metadata": [{"name": "main_id"}, {"name": "otype"}, {"name": "sep"}], "data": [["NGC 1", "G", 0.001]]}
+            else:
+                body = []
+            route.fulfill(status=200, content_type="application/json", body=_json.dumps(body), headers={"Access-Control-Allow-Origin": "*"})
+
+        def relay(route):
+            calls.append(route.request.url)
+            target = unquote(route.request.url.split("?url=", 1)[1])
+            h = {"Access-Control-Allow-Origin": "*"}
+            if "alerts.csv" in target:
+                route.fulfill(status=200, content_type="text/csv", body="#Name,Date,RaDeg,DecDeg,AlertMag\nGaia26abc,2026-10-01 00:00:00,0,0,18.0\n", headers=h)
+            elif "ned.ipac" in target:
+                route.fulfill(status=200, content_type="text/csv", body="prefname,pretype,ra,dec,z\nWISEA J1,G,1,2,0.1\n", headers=h)
+            elif "heasarc" in target:
+                route.fulfill(status=200, content_type="text/csv", body="name,obsid\n", headers=h)
+            elif "adsabs" in target:
+                route.fulfill(status=200, content_type="application/json", body=_json.dumps({"response": {"numFound": 40, "docs": [{"bibcode": "2026TNSAN.1....1K", "title": ["A note"], "author": ["A"], "pubdate": "2026-10-00", "doctype": "circular"}]}}), headers=h)
+            elif "wiserep" in target:
+                route.fulfill(status=200, content_type="application/json", body=_json.dumps([{"Spec. ID": 1}, {"Spec. ID": 2}, {"Spec. ID": 3}, {"Spec. ID": 4}, {"Spec. ID": 5}]), headers=h)
+            elif "aavso" in target:
+                route.fulfill(status=200, content_type="application/json", body=_json.dumps({"VSXObjects": ""}), headers=h)
+            elif "lasair" in target:
+                route.fulfill(status=503, content_type="text/plain", body="key", headers=h)
+            elif "panstarrs" in target:
+                route.fulfill(status=200, content_type="application/json", body=_json.dumps({"data": []}), headers=h)
+            else:
+                route.fulfill(status=200, content_type="text/csv", body="", headers=h)
+
+        self.page.route("**/live-config.json", lambda route: route.fulfill(
+            status=200, content_type="application/json", body=_json.dumps({"relay": "https://relay.test"})))
+        for host in ("https://api.alerce.online/**", "https://api.lsst.fink-portal.org/**", "https://simbad.cds.unistra.fr/**"):
+            self.page.route(host, direct)
+        self.page.route("https://relay.test/**", relay)
+        self.page.locator("#ctas-results [data-open-event]").first.click()
+        self.page.wait_for_selector("#candidate-workspace [data-live-panel]", state="attached", timeout=45000)
+        self.page.evaluate("() => { document.querySelector('[data-live-panel]').open = true; }")
+        rows = self.page.locator("[data-live-row]")
+        self.assertGreaterEqual(rows.count(), 16, "every registered source has a row before any check")
+        self.assertIn("not checked yet", rows.first.inner_text())
+        self.assertRegex(self.page.locator("[data-live-rows]").inner_text(), r"release (last asked|never asked)", "rows say when the release last asked each source")
+        self.assertEqual(calls, [], "opening the panel contacts no provider")
+        button = self.page.locator("[data-live-fetch]")
+        self.assertEqual(button.inner_text().strip(), "Check all sources now")
+        button.focus()
+        self.assertEqual(self.page.evaluate("() => document.activeElement && document.activeElement.hasAttribute('data-live-fetch')"), True, "the control takes keyboard focus")
+        self.page.keyboard.press("Enter")
+        self.page.wait_for_function("() => /^Checked all/.test(document.querySelector('[data-live-progress]').textContent)", timeout=60000)
+        self.assertTrue(calls)
+        self.assertTrue(all(u.startswith(("https://relay.test/?url=", "https://api.alerce.online/", "https://api.lsst.fink-portal.org/", "https://simbad.cds.unistra.fr/")) for u in calls),
+                        "direct where CORS allows, otherwise through the relay")
+        text = self.page.locator("[data-live-rows]").inner_text()
+        self.assertNotIn("checking…", text, "every row has settled")
+        self.assertNotIn("not checked yet", text)
+        self.assertRegex(text, r"fetched \d\d:\d\d:\d\d UTC", "each row carries its fetched time")
+        alerce = self.page.locator("[data-live-row='alerce']")
+        self.assertEqual(alerce.get_attribute("data-live-status"), "ok")
+        self.assertIn("4 measurements", alerce.inner_text())
+        self.assertIn("New since the release", alerce.inner_text(), "measurements dated after anything retained are marked")
+        self.assertEqual(self.page.locator("[data-live-row='lasair']").get_attribute("data-live-status"), "needs-key")
+        self.assertIn("Lasair key", self.page.locator("[data-live-row='lasair']").inner_text())
+        self.assertEqual(self.page.locator("[data-live-row='simbad']").get_attribute("data-live-status"), "ok")
+        self.assertIn("NGC 1", self.page.locator("[data-live-row='simbad']").inner_text())
+        self.assertIn("5 public spectra", self.page.locator("[data-live-row='wiserep']").inner_text())
+        self.assertIn("Link only", self.page.locator("[data-live-row='tns-page']").inner_text())
+        self.assertIn("something new since the release", self.page.locator("[data-live-progress]").inner_text())
+        self.assertEqual(self.page.locator("[data-live-results] .ctas-lightcurve svg").count(), 1, "the live measurements are drawn with the retained-data renderer")
+        self.assertIn("Fetched ", self.page.locator("[data-live-extras]").inner_text())
+        remembered = self.page.evaluate("() => Object.keys(localStorage).filter(k => k.startsWith('ctas-live-seen:')).length")
+        self.assertEqual(remembered, 1, "the summary is remembered in this browser only")
+        # second press: same addresses, browser cache bypassed, relay address unchanged
+        first = len(calls)
+        self.assertIn("Check again", button.inner_text())
+        button.click()
+        self.page.wait_for_function("() => /^Checked all/.test(document.querySelector('[data-live-progress]').textContent)", timeout=60000)
+        self.assertTrue(all("fresh=" not in u for u in calls[first:]))
+        self.assertEqual(sorted(calls[first:]), sorted(calls[:first]))
+        errors = [e for e in self.console if e[0] in {"error", "pageerror"} and "Failed to load resource" not in e[1]
+                  and not any(host in e[1] for host in THIRD_PARTY_HOSTS)]
+        self.assertEqual(errors, [])
+        for width, height in ((320, 568), (390, 844)):
+            with self.subTest(viewport=f"{width}x{height}"):
+                self.page.set_viewport_size({"width": width, "height": height})
+                self.page.wait_for_timeout(300)
+                overflow = self.page.evaluate("() => document.documentElement.scrollWidth - document.documentElement.clientWidth")
+                self.assertLessEqual(overflow, 1)
+        self.assertEqual(self._axe_violations(), [])
+
     # ------------------------------------------------------------ live TNS spectra
     def _open_dossier(self, event_id, page=None):
         page = page or self.page
@@ -546,6 +649,58 @@ class BrowserTests(unittest.TestCase):
                 self.assertLessEqual(overflow, 1)
                 self.assertEqual(self.page.locator(".ctas-lightcurve svg.is-narrow").count(), 1, "phone-width drawing")
         self.assertEqual(self._axe_violations(), [])
+
+    # ------------------------------------------------------------ suggested follow-up
+    def _followup_dossier(self):
+        candidate = _published_dossier(
+            lambda row: row.get("record_role") == "follow-up-target-candidate" and row.get("discovery_magnitude") is not None
+            and row.get("ra_deg") is not None and (row.get("status") or "") == "candidate",
+            lambda c: True)
+        if candidate is None:
+            self.skipTest("this release has no optical follow-up target with a magnitude")
+        return candidate
+
+    def test_dossier_shows_a_suggested_follow_up_card_for_both_telescopes(self):
+        """The card renders with the dossier, completes with the exposure model, names both
+        telescopes with tonight's window and exposure times, carries one placeholder badge
+        and the claim boundary, links to the planner and calculator, and fits a phone."""
+        candidate = self._followup_dossier()
+        self._open_dossier(candidate["event_id"])
+        self.page.wait_for_selector("#candidate-workspace [data-followup-card]", state="attached", timeout=30000)
+        self.page.wait_for_selector("[data-followup-card] [data-followup-telescope='rbo']", state="attached", timeout=30000)
+        card = self.page.locator("[data-followup-card]")
+        self.assertEqual(card.locator("h4").inner_text(), "Suggested follow-up")
+        self.assertIn(card.get_attribute("data-followup-source"), {"published", "browser"})
+        text_ = card.inner_text()
+        for phrase in ("Objectives", "Cadence:", "Latest magnitude:", "WIRO 2.3 m", "Red Buttes 0.6 m",
+                       "not an exposure-time calculation or observing request", "requests telescope time"):
+            self.assertIn(phrase.upper(), text_.upper(), phrase)  # section headings render in capitals
+        self.assertRegex(text_, r"(\d+(\.\d)? h above 30°|Not above 30°)")
+        self.assertRegex(text_, r"Exposure for S/N 20 at [\d.]+ mag")
+        self.assertGreaterEqual(card.locator(".ctas-followup__exposures tbody tr").count(), 10, "five filters on each telescope")
+        self.assertIn("Spectroscopy:", text_)
+        badge = card.locator("[data-followup-placeholder-badge]")
+        self.assertEqual(badge.count(), 1, "exactly one placeholder badge per card")
+        self.assertEqual(badge.get_attribute("href"), "tools/exposure/#placeholder-note")
+        hrefs = card.locator("a").evaluate_all("els => els.map(e => e.getAttribute('href'))")
+        self.assertTrue(any(h.startswith("tonight/?site=wiro") and "ra=" in h for h in hrefs), hrefs)
+        self.assertTrue(any(h.startswith("tools/exposure/?telescope=rbo") and "mag=" in h for h in hrefs), hrefs)
+        for link in ("tonight/?site=wiro", "tools/exposure/?telescope=rbo", "tools/exposure/#placeholder-note"):
+            href = next(h for h in hrefs if h.startswith(link))
+            response = self.page.request.get(self.url.rsplit("/", 1)[0] + "/" + href.split("#")[0].split("?")[0])
+            self.assertEqual(response.status, 200, href)
+        badge.focus()
+        self.assertEqual(self.page.evaluate("() => document.activeElement.getAttribute('data-followup-placeholder-badge')"), "", "the badge is keyboard reachable")
+        self.assertEqual(self._axe_violations(), [])
+        errors = [entry for entry in self.console if entry[0] in {"error", "pageerror"}
+                  and not any(host in entry[1] for host in THIRD_PARTY_HOSTS) and "ERR_TUNNEL_CONNECTION_FAILED" not in entry[1]]
+        self.assertEqual(errors, [])
+        for width, height in ((320, 568), (390, 844)):
+            with self.subTest(viewport=f"{width}x{height}"):
+                self.page.set_viewport_size({"width": width, "height": height})
+                self.page.wait_for_timeout(300)
+                overflow = self.page.evaluate("() => document.documentElement.scrollWidth - document.documentElement.clientWidth")
+                self.assertLessEqual(overflow, 1)
 
     def _axe_violations(self, page=None):
         page = page or self.page

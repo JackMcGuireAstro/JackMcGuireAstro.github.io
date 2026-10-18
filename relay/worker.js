@@ -51,6 +51,12 @@ export const ROUTES = [
     path: /^\/alerts\/alert\/Gaia\d{2}[a-z]{1,4}\/lightcurve\.csv$/,
     query: (q) => q.toString() === "",
   },
+  { // Gaia Science Alerts index (every published alert with its position), so a page can
+    // find an alert at a candidate's position; one public CSV, a few megabytes, edge-cached
+    host: "gsaweb.ast.cam.ac.uk",
+    path: /^\/alerts\/alerts\.csv$/,
+    query: (q) => q.toString() === "",
+  },
   { // Pan-STARRS DR2 detections (cone search) from MAST catalogs
     host: "catalogs.mast.stsci.edu",
     path: /^\/api\/v0\.1\/panstarrs\/dr2\/(detection|mean)\.(json|csv)$/,
@@ -75,8 +81,30 @@ export const ROUTES = [
   { // NASA Exoplanet Archive TAP: read-only SELECTs on public tables
     host: "exoplanetarchive.ipac.caltech.edu",
     path: /^\/TAP\/sync$/,
-    query: (q) => /^select\s[\w\s,*().]{1,400}\sfrom\s(spectra|ml|stellarhosts|ps|pscomppars|toi|k2pandc)\s+where\s[^;]{1,600}$/i.test(q.get("query") || "")
+    query: (q) => /^select\s[\w\s,*().]{1,400}\sfrom\s(spectra|ml|stellarhosts|ps|pscomppars|toi|k2pandc|cumulative)\s+where\s[^;]{1,600}$/i.test(q.get("query") || "")
       && ["json", "csv"].includes(q.get("format") || "") && [...q.keys()].every((k) => k === "query" || k === "format"),
+  },
+  { // NED TAP: a small cone around a position in the object directory (names, types, redshifts)
+    host: "ned.ipac.caltech.edu",
+    path: /^\/tap\/sync$/,
+    query: (q) => tapQuery(q, /^SELECT\s+TOP\s+\d{1,3}\s+[\w\s,.]{1,200}\s+FROM\s+NEDTAP\.objdir\s+WHERE\s+CONTAINS\(POINT\('J2000',\s*ra,\s*dec\),\s*CIRCLE\('J2000',\s*[-\d.]+,\s*[-\d.]+,\s*(0?\.\d+)\)\)\s*=\s*1(\s+ORDER\s+BY\s+[\w.]+(\s+(ASC|DESC))?)?$/i, 0.05),
+  },
+  { // VizieR TAP: Gaia DR3 (by source id or a small cone) and SWEET-Cat (by host name)
+    host: "tapvizier.cds.unistra.fr",
+    path: /^\/TAPVizieR\/tap\/sync$/,
+    query: (q) => tapQuery(q, /^SELECT\s+TOP\s+\d{1,3}\s+[\w\s,."*+/\[\]]{1,300}\s+FROM\s+"(I\/355\/gaiadr3|J\/A\+A\/656\/A53\/sweetcat)"\s+WHERE\s+(1\s*=\s*CONTAINS\(POINT\('ICRS',\s*RA_ICRS,\s*DE_ICRS\),\s*CIRCLE\('ICRS',\s*[-\d.]+,\s*[-\d.]+,\s*(0?\.\d+)\)\)|Source\s*=\s*\d{1,20}|Name\s*=\s*'[\w .+\-]{1,60}')(\s+ORDER\s+BY\s+\w+(\s+(ASC|DESC))?)?$/i, 0.05),
+  },
+  { // HEASARC TAP: pointed-observation master tables within a small cone
+    host: "heasarc.gsfc.nasa.gov",
+    path: /^\/xamin\/vo\/tap\/sync$/,
+    query: (q) => tapQuery(q, /^SELECT\s+TOP\s+\d{1,3}\s+[\w\s,.]{1,200}\s+FROM\s+(swiftmastr|xmmmaster|chanmaster|numaster|nicermastr)\s+WHERE\s+CONTAINS\(POINT\('ICRS',\s*ra,\s*dec\),\s*CIRCLE\('ICRS',\s*[-\d.]+,\s*[-\d.]+,\s*(0?\.\d+)\)\)\s*=\s*1(\s+ORDER\s+BY\s+\w+(\s+(ASC|DESC))?)?$/i, 0.25),
+  },
+  { // AAVSO VSX: known variable stars near a position (public API, no key)
+    host: "www.aavso.org",
+    path: /^\/vsx\/index\.php$/,
+    query: (q) => q.get("view") === "api.list" && /^-?\d{1,3}(\.\d+)?$/.test(q.get("ra") || "") && /^-?\d{1,2}(\.\d+)?$/.test(q.get("dec") || "")
+      && Number(q.get("radius")) > 0 && Number(q.get("radius")) <= 0.1 && (q.get("format") || "json") === "json"
+      && [...q.keys()].every((k) => ["view", "ra", "dec", "radius", "format", "tomag", "frommag"].includes(k)),
   },
   { // NASA Exoplanet Archive atmospheric-spectrum data files, by the spectra table's spec_path.
     // The archive serves these files only from inside a short-lived workspace that its
@@ -105,6 +133,28 @@ export const ROUTES = [
     postForm: true,
   },
 ];
+
+// IVOA TAP sync requests (NED, VizieR, HEASARC): only REQUEST=doQuery, LANG=ADQL, a CSV or
+// JSON answer, and one SELECT that matches the route's own pattern; a cone in the query may
+// not be wider than `maxRadius` degrees. Parameter names are matched case-insensitively,
+// as the TAP standard requires, but each may appear once.
+export function tapQuery(q, pattern, maxRadius) {
+  const seen = new Map();
+  for (const [key, value] of q.entries()) {
+    const name = key.toUpperCase();
+    if (seen.has(name) || !["REQUEST", "LANG", "FORMAT", "QUERY", "MAXREC"].includes(name)) return false;
+    seen.set(name, value);
+  }
+  if ((seen.get("REQUEST") || "doQuery") !== "doQuery" || !/^ADQL$/i.test(seen.get("LANG") || "ADQL")) return false;
+  if (!["csv", "json"].includes((seen.get("FORMAT") || "").toLowerCase())) return false;
+  if (seen.has("MAXREC") && !/^\d{1,3}$/.test(seen.get("MAXREC"))) return false;
+  const query = (seen.get("QUERY") || "").trim();
+  if (query.length > 700 || query.includes(";")) return false;
+  const found = pattern.exec(query);
+  if (!found) return false;
+  const radius = found.slice(1).map(Number).find((n) => Number.isFinite(n) && n > 0 && n < 1);
+  return radius === undefined || radius <= maxRadius;
+}
 
 export const MAST_LIGHTCURVE = new RegExp("^mast:(?:(?:TESS|Kepler|K2)/[A-Za-z0-9_\\-./]+_(?:lc|llc|slc)"
   + "|HLSP/tess-spoc/[A-Za-z0-9_\\-./]+/hlsp_tess-spoc_tess_phot_\\d{16}-s\\d{4}_tess_v\\d+_lc)\\.fits$");

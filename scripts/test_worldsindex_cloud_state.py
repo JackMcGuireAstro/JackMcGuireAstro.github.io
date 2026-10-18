@@ -81,6 +81,19 @@ class WorldsIndexStateTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertEqual(list(self.release.iterdir()), [])
 
+    def test_archive_over_the_asset_limit_is_refused_before_upload(self):
+        self.write_state(self.source, "big")
+        (self.source / "outputs/sync/blob.bin").write_bytes(os.urandom(300_000))
+        result = self.cli("save", str(self.source), WORLDSINDEX_STATE_ASSET_LIMIT_BYTES="200000")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("release-asset limit", result.stderr)
+        self.assertEqual(list(self.release.iterdir()), [])
+        # Under the limit but over the warning line: saved, with a warning.
+        result = self.cli("save", str(self.source), WORLDSINDEX_STATE_ASSET_LIMIT_BYTES="900000", WORLDSINDEX_STATE_ASSET_WARN_BYTES="200000")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("WARN", result.stderr)
+        self.assertEqual(len([p for p in self.release.iterdir() if p.name.startswith("wi-state-")]), 1)
+
     def test_restore_refuses_paths_outside_the_source(self):
         bad = self.tmp / "evil.tar.gz"
         payload = self.tmp / "p.txt"

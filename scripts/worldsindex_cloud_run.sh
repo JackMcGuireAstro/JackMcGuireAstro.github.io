@@ -59,11 +59,11 @@ if [ "$DRY_RUN" = "1" ]; then
   say "dry run: working data not saved and nothing pushed"
 else
   # Keep the saved state from growing without bound: promotion evidence keeps only the gzip
-  # copies of the atlas (verified byte-identical first) and probe artifacts older than 14 days
-  # that nothing references are dropped. Lossless for the audit trail; see
+  # copies of the atlas (verified byte-identical first), probe artifacts older than 7 days
+  # that nothing references are dropped and identical probe responses are hard-linked. Lossless for the audit trail; see
   # scripts/compact-state.ts in the builder. A failure here is reported, not fatal.
   say "compacting the working data before saving"
-  if (cd "$SOURCE" && npm run --silent state:compact -- --retain-sync-days 14 --summary-line) >"$LOGS/compact.json" 2>"$LOGS/compact.err"; then
+  if (cd "$SOURCE" && npm run --silent state:compact -- --retain-sync-days 7 --summary-line) >"$LOGS/compact.json" 2>"$LOGS/compact.err"; then
     say "compacted: $(tail -1 "$LOGS/compact.err" 2>/dev/null || echo done)"
   else
     say "WARN  compaction failed; saving the working data as it is ($(tail -1 "$LOGS/compact.err" 2>/dev/null))"
