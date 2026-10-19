@@ -130,6 +130,34 @@ class DispositionAndLinkTests(unittest.TestCase):
             self.assertNotEqual(alias, source_key)
             self.assertIn(source_key, EXPORTER.SOURCE_FAMILY_MAP)
 
+    def test_collector_gcn_mission_sources_resolve_in_the_source_universe(self):
+        # The collector registers CHIME/FRB, DSA-110, MAXI/GSC, BOOM and SVOM as sources
+        # with these exact ids (supernova_watch/sources.py, 2026-10-19). Each must already
+        # be a key the exporter publishes, with a reviewed family and a GCN
+        # represented-through path, so the closure and disposition gates cannot meet an
+        # unknown label when a database carries those registry rows.
+        contract_keys = {row[0] for row in EXPORTER.ADDITIONAL_SOURCE_CONTRACTS}
+        for source_key in ("chime", "dsa110-gcn", "maxi", "boom-gcn", "svom-gcn"):
+            with self.subTest(source_key=source_key):
+                self.assertEqual(
+                    EXPORTER.source_family(source_key), "multimessenger-and-high-energy"
+                )
+                self.assertEqual(EXPORTER.provider_source_key(source_key), source_key)
+                self.assertTrue(
+                    {"gcn", "gcn-high-energy"} & set(EXPORTER.REPRESENTED_THROUGH[source_key]),
+                    source_key,
+                )
+                self.assertTrue(
+                    source_key in contract_keys or source_key == "svom-gcn",
+                    f"{source_key} has neither a placeholder contract nor a registry precedent",
+                )
+        # Mission records themselves are labelled "gcn", the registry source every GCN
+        # connector shares; discovery-survey labels fold into the same keys.
+        self.assertEqual(EXPORTER.provider_source_key("gcn"), "gcn")
+        for survey, source_key in (("Chime", "chime"), ("CHIME", "chime"), ("DSA-110", "dsa110-gcn"),
+                                   ("MAXI", "maxi"), ("BOOM", "boom-gcn")):
+            self.assertEqual(EXPORTER.SURVEY_SOURCE_ALIASES[survey], source_key)
+
     def test_valid_and_invalid_tns_designations(self):
         self.assertEqual(EXPORTER.tns_object_id("SN2026abc"), "2026abc")
         self.assertEqual(EXPORTER.tns_object_id("AT2026abc"), "2026abc")

@@ -247,6 +247,9 @@ SOURCE_FAMILY_MAP = {
         "fermi-gcn", "swift-gcn", "gecam-gcn", "calet-gcn", "hawc-gcn", "konus-gcn",
         "nuem-gcn", "gcn-high-energy", "superk-gcn", "svom-gcn", "boom-gcn",
         "dsa110-gcn", "integral-gcn", "km3net-gcn", "moa-gcn",
+        # Registry sources since the collector's 2026-10-19 GCN mission connectors
+        # (CHIME/FRB and MAXI/GSC); the same keys as the older placeholder contracts.
+        "chime", "maxi",
     )},
     **{key: "spectroscopy" for key in ("tns-public-reports", "aavso", "wiserep")},
     **{key: "photometric-follow-up" for key in ("ztf-irsa", "ztf-alerce", "aavso-aid")},
@@ -323,6 +326,7 @@ REPRESENTED_THROUGH = {
     "superk-gcn": ["gcn"],
     "svom-gcn": ["gcn"],
     "boom-gcn": ["gcn"],
+    "dsa110-gcn": ["gcn"],
     "integral-gcn": ["gcn"],
     "moa-gcn": ["gcn"],
 }
