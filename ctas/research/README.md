@@ -154,3 +154,95 @@ tree: the certificate binds `bulk-downloads.json`, which carries each asset's
 byte length and SHA-256, so verifying a downloaded asset against it is the
 binding. `CITATION.cff` and `codemeta.json` at the repository root are
 repository metadata, not release data, and are not bound.
+
+## Feeds, changelog, status page and sky tools (added 2026-10-19, part C)
+
+**Feeds.** `ctas/data/feeds/` holds Atom 1.0 and JSON Feed 1.1 files written by
+the exporter through `scripts/ctas_feed.py`: `all-events`, one feed per event
+type the exporter enumerates (`event-type/<event-type>`), one per ranking
+channel, i.e. messenger family (`channel/optical`, `channel/x-ray-gamma-ray`,
+`channel/radio`, `channel/neutrino-multimessenger`,
+`channel/contextual-non-target`), and one per sky region (`region/...`). The
+regions are the 192 HEALPix order-2 NESTED pixels in ICRS (nside 4, about 215
+square degrees each, `healpix2-000` to `healpix2-191`), the galactic plane
+(`galactic-plane`: J2000 galactic latitude within 10 degrees) and the two
+equatorial hemispheres (`north`: Dec >= 0, `south`: Dec < 0); a record can be
+in up to three region feeds. Order 2 was chosen over order 3 (768 regions, 1,536
+files) because a region of about 215 square degrees is a useful "my patch of
+sky" for a reader and keeps the Pages tree to 428 feed files. Every feed holds
+its newest 100 records ordered by the record's public change clock (the latest
+of discovery, classification, spectrum, messenger-notice and retraction clocks;
+never the export time), its item ids are the stable event ids, and its bytes
+carry no release clock, so an unchanged feed is byte-identical between
+releases. The set of feeds is fixed, so every address is stable and an empty
+set is still a valid feed. `ctas/data/feeds/index.json` lists every file with
+byte length and SHA-256; the exporter validates each file (JSON Feed required
+members; Atom well-formed with feed id, updated and entry ids) before writing,
+`scripts/validate_ctas_schemas.py` repeats the check on the published tree, and
+`ctas/data/feed.xml` (strong new follow-up targets) is unchanged.
+
+**Changelog.** `ctas/data/changelog.json` (`scripts/ctas_changelog.py`, schema
+`ctas/schemas/changelog.schema.json`) compares each release with the previous
+published one by stable event id: new and removed records, new and revised
+classifications, retractions (status or retraction notice), renames (the name
+changed, the id stayed: AT2026zxx becoming SN2026zxx), source-state changes
+from the previous release's source universe (degraded, recovered, changed) and
+coverage milestones (round numbers of records or evaluations, a source's first
+retained records, new contracts). Each entry carries fixed-template sentences in
+plain words, is identified by the SHA-256 of its content, and entries are
+carried forward from the previous release's changelog (newest first, at most
+24). No model writes any of it. The catalog page shows it inside "Publication
+history" (fetched only when that panel is opened); `ctas/status.html` shows it
+in full.
+
+**Status page.** `ctas/status.html` (`ctas/status.js`) reads `status.json`
+and the files it names: `ctas/data/source-accounting.json` (schema
+`source-accounting.schema.json`) gives the four denominators per source across
+the release, declared (the contract is in this universe version), applicable
+(records whose rule names the source), executed (query receipts with an executed
+terminal outcome, and the records holding one) and data-bearing (records whose
+current query outcome is DATA_RETURNED, beside the records that keep retained
+rows from the source), with totals that must reproduce the aggregate
+`source_accounting` of `status.json` or the release fails (gate
+`changelog-feeds-and-source-accounting-integrity`). Per source, "declared" is a
+yes/no fact and the other three are record counts; the aggregates are their
+sums. The page also shows the provider connector health from `status.json`, the
+release clocks and freshness window, the watchdog's limits as the workflow file
+sets them (they are not in any release), the cloud-run marker when the release
+names one (`cloud_run_marker_path`), the changelog, the feeds and the links to
+`openapi.yaml`, the schemas, `provenance.json`, the bulk downloads and the
+DataLink manifest. Its one optional live request (open `freshness-watchdog`
+issues from the public GitHub API) runs only when a button is pressed and is
+labelled live.
+
+**Sky tools.** `ctas/sky.js` adds to the dossier's sky panel and to the
+catalog page's Sky section: Aladin Lite v3 from the CDS CDN pinned to one
+version (`https://aladin.cds.unistra.fr/AladinLite/api/v3/3.6.1/aladin.js`;
+if the CDN no longer serves that version the page says so and uses `latest`),
+loaded only when a reader opens an atlas, with background layers DSS2 colour
+(`CDS/P/DSS2/color`), Legacy Surveys DR10 colour
+(`CDS/P/DESI-Legacy-Surveys/DR10/color`), Pan-STARRS DR1 colour
+(`CDS/P/PanSTARRS/DR1/color-z-zg-g`, Dec > -30) and 2MASS colour
+(`CDS/P/2MASS/color`); a layer that fails falls back to DSS2 and says so. The
+HiPS identifiers are CDS identifiers (checked against the CDS HiPS list by
+`ID` in the MOCServer, `https://alasky.cds.unistra.fr/MocServer/query?ID=<id>&get=id`);
+if CDS renames one, the layer falls back and the identifier is the only line to
+change. Aladin Lite is CDS software under LGPL-3.0-or-later; its logo and link
+stay in every view, as the licence and the CDS terms ask. For multimessenger
+records the atlas draws an approximate localisation region: a circle of area
+equal to the newest retained 90% sky area, or of radius equal to the retained
+coordinate uncertainty, labelled approximate until the collector publishes MOCs
+(Track 3); no MOC or HEALPix product is in `ctas/data` today. The printable
+finder chart (2' and 10') is fetched by the browser, in order, from the Legacy
+Surveys viewer (`https://www.legacysurvey.org/viewer/jpeg-cutout?...&layer=ls-dr10`,
+then `ls-dr9`), the Pan-STARRS cutout service north of Dec -30
+(`ps1filenames.py` then `fitscut.cgi`), and CDS HiPS2FITS DSS2, with north and
+east arrows, crosshair, scale bar, name, ICRS coordinates and epoch; "Open print
+view" opens a print-friendly page in a new tab. Nothing fetched is stored. The
+Web SAMP button sends `coord.pointAt.sky` for the retained position (the catalog
+page's button sends the all-events VOTable); Web SAMP works in Chrome, Firefox
+and Edge with a running hub and not in Safari. Every dossier carries a "Report a
+problem" link: a prefilled GitHub issue on the website repository (title
+`<name> (<event id>)`, label `data-problem`, body with the stable event id, the
+release checksum and the panel). The deploy workflow creates the `data-problem`
+label idempotently.

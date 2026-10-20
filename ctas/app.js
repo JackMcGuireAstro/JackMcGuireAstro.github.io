@@ -1311,6 +1311,21 @@
     }
   }
 
+  // A prefilled GitHub issue on the website repository (label data-problem, created by
+  // the deploy workflow): the stable event id, the release checksum and the panel travel
+  // in the body, so a report can be matched to the exact release. No account is needed
+  // to read it; GitHub asks for one to post, and nothing is sent until the reader does.
+  function reportProblemUrl(candidate, panel) {
+    var status = state.status || {}, release = (status.static_snapshot_verification || {}).content_release_id || status.catalog_content_checksum_sha256 || "unknown";
+    var body = ["<!-- Thank you. Keep the lines below so the report can be matched to the exact release. -->",
+      "Stable event id: " + candidate.event_id, "Name shown: " + candidate.name,
+      "Release checksum (content_release_id): " + release, "Catalog checksum: " + (status.catalog_content_checksum_sha256 || "unknown"),
+      "Panel: " + (panel || "whole dossier"), "Dossier: " + window.location.origin + window.location.pathname + "?event=" + encodeURIComponent(candidate.event_id) + "#dossier",
+      "", "What is wrong (the value you expected, the source that says so):", ""].join("\n");
+    return "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/issues/new?title=" + encodeURIComponent(candidate.name + " (" + candidate.event_id + ")") +
+      "&labels=" + encodeURIComponent("data-problem") + "&body=" + encodeURIComponent(body);
+  }
+
   function renderDetails(candidate) {
     var counts = candidate.follow_up_counts || {};
     var evidence = Object.keys(counts).filter(function (key) { return Number(counts[key]) > 0; }).map(function (key) {
@@ -1329,7 +1344,8 @@
       '</h3><p>' + esc(summary.intro) +
       '</p></div><div class="ctas-detail__score"><span>CTAS follow-up score</span><strong>' + esc(num(candidate.ctas_score, 1)) +
       '</strong><small>ordering aid · not probability</small></div></div>' +
-      '<div class="ctas-workspace__actions"><button type="button" data-close-candidate>Close dossier</button><details class="ctas-more-actions"><summary>More actions</summary><div><button type="button" data-copy-link>Copy link</button><button type="button" data-download-candidate>Download JSON</button><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></details></div>' + renderFollowup(candidate) + renderScienceBrief(candidate) +
+      '<div class="ctas-workspace__actions"><button type="button" data-close-candidate>Close dossier</button><details class="ctas-more-actions"><summary>More actions</summary><div><button type="button" data-copy-link>Copy link</button><button type="button" data-download-candidate>Download JSON</button><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></details>' +
+      '<a class="ctas-report-problem" data-report-problem href="' + esc(reportProblemUrl(candidate)) + '" target="_blank" rel="noopener">Report a problem<span class="sr-only"> (opens a prefilled GitHub issue in a new tab)</span></a></div>' + renderFollowup(candidate) + renderScienceBrief(candidate) +
       '<dl class="ctas-detail__facts ctas-detail__facts--essential">' + fact("Event / messenger", humanKey(candidate.event_type || "Not recorded") + " · " + humanKey(candidate.primary_messenger || "Not recorded")) +
       fact("Physical classification", window.CTASPresentation.classInfo(candidate).physical || "Not reported") +
       fact("Alert / provider label", window.CTASPresentation.classInfo(candidate).alert || "None retained") +
@@ -2694,6 +2710,8 @@
     getSnapshot: function () { return state.snapshot || {}; },
     getCandidates: function () { return state.candidates.slice(); },
     getVisibleCandidates: function () { return visible(); },
+    getSkyCandidates: function () { return skyRows(); },
+    reportProblemUrl: reportProblemUrl,
     getFilters: currentFilters,
     loadCandidateDetail: loadCandidateDetail,
     openById: function (eventId) {

@@ -320,7 +320,11 @@
     updateUrl({at: cutoff}, true);
   }
 
+  // Aladin Lite v3 pinned to one version (ctas/sky.js owns the layers, the localisation
+  // overlay and the fallback); this path remains only for a page without sky.js.
+  var ALADIN_PINNED_URL = "https://aladin.cds.unistra.fr/AladinLite/api/v3/3.6.1/aladin.js";
   function loadAladin(candidate, button) {
+    if (window.CTASSky && window.CTASSky.openDossierAtlas) { window.CTASSky.openDossierAtlas(candidate, button); return; }
     var panel = button.closest(".ctas-aladin"), stage = panel.querySelector("[data-aladin-stage]"), status = panel.querySelector("[data-aladin-status]");
     var requestedFov = Number(panel.getAttribute("data-current-fov")) || .2;
     button.disabled = true; status.textContent = "Loading the CDS Aladin Lite runtime and public sky imagery…"; stage.hidden = false;
@@ -337,7 +341,7 @@
       }).catch(function (error) { status.textContent = "Aladin Lite could not initialize: " + error.message; button.disabled = false; });
     }
     if (window.A && window.A.init) { start(); return; }
-    var script = document.createElement("script"); script.src = "https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js";
+    var script = document.createElement("script"); script.src = ALADIN_PINNED_URL;
     script.charset = "utf-8"; script.onload = start; script.onerror = function () { status.textContent = "The external Aladin Lite runtime could not be loaded. Coordinates and source links remain available."; button.disabled = false; };
     document.head.appendChild(script);
   }
@@ -352,8 +356,8 @@
     var body = '<?xml version="1.0"?><methodCall><methodName>' + method + '</methodName><params>' + params.map(function (value) { return "<param>" + xmlRpcValue(value) + "</param>"; }).join("") + '</params></methodCall>';
     return fetch("http://localhost:21012/", {method: "POST", headers: {"Content-Type": "text/xml"}, body: body}).then(function (response) { if (!response.ok) throw new Error("hub returned HTTP " + response.status); return response.text(); });
   }
-  function sendSamp() {
-    var status = document.getElementById("ctas-samp-status"); if (status) status.textContent = "Contacting a SAMP Web Profile hub on this computer because you explicitly requested it…";
+  function sendSamp(statusElement) {
+    var status = statusElement || document.getElementById("ctas-samp-status"); if (status) status.textContent = "Contacting a SAMP Web Profile hub on this computer because you explicitly requested it…";
     sampCall("samp.webhub.register", [{"samp.name": "CTAS public catalog"}]).then(function (raw) {
       var document_ = new DOMParser().parseFromString(raw, "application/xml"), key = null;
       Array.prototype.forEach.call(document_.querySelectorAll("member"), function (member) {
@@ -461,6 +465,9 @@
     afterCandidateRender: afterCandidateRender,
     candidatePanels: candidatePanels,
     skyContextPanel: skyContextPanel,
-    refreshActions: updateActionStates
+    refreshActions: updateActionStates,
+    candidateById: candidateById,
+    sampCall: sampCall,
+    sendSamp: sendSamp
   };
 }());

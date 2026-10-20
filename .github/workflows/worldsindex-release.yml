@@ -24,6 +24,9 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  # The deploy job keeps the `data-problem` issue label (the dossiers' "Report a problem"
+  # links) in place with the workflow token; nothing else here writes to issues.
+  issues: write
 
 # One deployment at a time; never cancel an in-flight deploy.
 concurrency:
@@ -133,6 +136,11 @@ jobs:
           node --check ctas/followup.js
           node scripts/test_ctas_followup.mjs
           python3 scripts/test_ctas_interop.py
+          python3 scripts/test_ctas_changelog.py
+          node --check ctas/sky.js
+          node --check ctas/changelog.js
+          node --check ctas/status.js
+          node scripts/test_ctas_sky.js
       - name: CTAS published JSON against ctas/schemas (OpenAPI 3.1 response schemas)
         run: python3 scripts/validate_ctas_schemas.py | tee -a "$GITHUB_STEP_SUMMARY"
       # The page in a real browser (layout at phone width, sticky bars, heading outline,
@@ -226,6 +234,16 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+      - name: Keep the data-problem issue label (dossier "Report a problem" links)
+        # Idempotent: `--force` updates the colour and description when the label already
+        # exists and creates it otherwise. A failure here never undoes the deployment.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create data-problem --repo "$GITHUB_REPOSITORY" --force \
+            --color D93F0B \
+            --description "A reader reports a wrong or missing value in a CTAS dossier (prefilled from the dossier's Report a problem link; carries the stable event id and the release checksum)"
 
   verify-live:
     name: Verify the live releases match what was deployed

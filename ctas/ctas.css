@@ -1813,3 +1813,70 @@ table.ctas-table { min-width: 900px; }
 .ctas-neighbours li { margin: .2rem 0; }
 .ctas-link-button { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
 .ctas-link-button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+/* ------------------------------------------------------------ Track 1, part C
+   Sky tools on the dossier and the catalog page, the changelog panel and the
+   status page. Additive; nothing above changes meaning. */
+.ctas-sky-tools { display: grid; gap: .6rem; margin-top: .75rem; }
+.ctas-sky-tools__layers { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
+.ctas-sky-tools__layers span { width: 100%; color: var(--ink-3); font-size: .68rem; font-weight: 750; letter-spacing: .05em; text-transform: uppercase; }
+.ctas-sky-tools__layers button, .ctas-sky-tools__samp button, .ctas-finder__body button, .ctas-sky-atlas button, .ctas-finder__body a {
+  min-height: 38px; padding: .45rem .65rem; border: 1px solid var(--border-strong); border-radius: 6px;
+  background: var(--surface-2); color: var(--ink); font-weight: 700; text-decoration: none; cursor: pointer;
+}
+.ctas-sky-tools__layers button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+.ctas-sky-tools__region { display: flex; gap: .5rem; align-items: start; color: var(--ink-2); font-size: .8rem; }
+.ctas-sky-tools__region input { margin-top: .25rem; }
+.ctas-sky-tools__credit, .ctas-sky-tools__note, .ctas-finder__note { margin: 0; color: var(--ink-3); font-size: .74rem; }
+.ctas-sky-tools__samp [data-samp-status] { margin: .2rem 0 0; color: var(--ink-2); font-size: .78rem; }
+.ctas-finder { border-top: 1px solid var(--border); padding-top: .5rem; }
+.ctas-finder > summary { min-height: 44px; padding: .5rem 0; cursor: pointer; font-weight: 750; }
+.ctas-finder > summary small { margin-left: .4rem; color: var(--ink-3); font-weight: 400; }
+.ctas-finder__body { display: grid; gap: .65rem; }
+.ctas-finder__head { margin: 0; color: var(--ink-2); font-size: .82rem; }
+.ctas-finder__fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .75rem; }
+.ctas-finder__field { margin: 0; }
+.ctas-finder__frame { position: relative; aspect-ratio: 1 / 1; border: 1px solid var(--border); background: #030912; overflow: hidden; }
+.ctas-finder__frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ctas-finder__overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.ctas-finder__marks line, .ctas-finder__marks path { stroke: #ffd166; stroke-width: 2; fill: #ffd166; }
+.ctas-finder__marks text { fill: #ffd166; font: 700 24px/1 system-ui, sans-serif; paint-order: stroke; stroke: rgba(0,0,0,.8); stroke-width: 4px; }
+.ctas-finder__wait { position: absolute; inset: auto .6rem .6rem; margin: 0; color: var(--ink-2); font-size: .78rem; }
+.ctas-finder figcaption { margin-top: .35rem; color: var(--ink-3); font-size: .72rem; }
+.ctas-sky-atlas { margin-top: .9rem; border-top: 1px solid var(--border); }
+.ctas-sky-atlas > summary { min-height: 48px; padding: .7rem 0; cursor: pointer; font-weight: 750; }
+.ctas-sky-atlas > summary small { display: block; color: var(--ink-3); font-weight: 400; font-size: .74rem; }
+.ctas-sky-atlas__body { display: grid; gap: .6rem; padding-bottom: .6rem; }
+.ctas-sky-atlas__stage { min-height: 420px; border: 1px solid var(--border); background: #030912; }
+.ctas-report-problem { margin-left: auto; align-self: center; color: var(--ink-2); font-size: .8rem; text-decoration: underline; text-underline-offset: 3px; }
+.ctas-changelog { margin-top: .4rem; border-top: 1px solid var(--border); }
+.ctas-changelog > summary { display: flex; align-items: center; min-height: 48px; padding: .7rem 0; cursor: pointer; }
+.ctas-changelog > summary small { display: block; color: var(--ink-3); font-size: .74rem; }
+.ctas-changelog__body { display: grid; gap: .6rem; }
+.ctas-changelog__statement { margin: 0; color: var(--ink-3); font-size: .78rem; }
+.ctas-changelog__entries { list-style: none; margin: 0; padding: 0; display: grid; gap: .8rem; }
+.ctas-changelog__entry { padding: .75rem .85rem; border: 1px solid var(--border); background: var(--surface); }
+.ctas-changelog__head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .3rem .8rem; }
+.ctas-changelog__head span { color: var(--ink-3); font-size: .78rem; }
+.ctas-changelog__words { margin: .45rem 0 0; padding-left: 1.1rem; color: var(--ink-2); }
+.ctas-changelog__list { margin-top: .4rem; }
+.ctas-changelog__list > summary { min-height: 40px; padding: .35rem 0; cursor: pointer; font-weight: 700; }
+.ctas-changelog__list > summary small { margin-left: .35rem; color: var(--ink-3); font-weight: 400; }
+.ctas-changelog__list ul { margin: .25rem 0 .4rem; padding-left: 1.1rem; }
+.ctas-changelog__list li small { color: var(--ink-3); }
+.ctas-changelog__meta { margin: .4rem 0 0; color: var(--ink-3); font-size: .74rem; overflow-wrap: anywhere; }
+.ctas-status-page__grid { display: grid; gap: 1.25rem; }
+.ctas-status-section { padding: 1rem clamp(.9rem, 2.5vw, 1.5rem); }
+.ctas-status-section .ctas-section-heading { margin-bottom: .6rem; }
+.ctas-status-section h3 { margin: 1rem 0 .3rem; font-size: 1.05rem; }
+.ctas-status-section .ctas-evidence-table td small, .ctas-status-section .ctas-evidence-table th small { display: block; color: var(--ink-3); font-weight: 400; }
+.ctas-status-section .ctas-evidence-table-wrap { max-height: 32rem; overflow: auto; }
+.ctas-status-section .ctas-evidence-table thead th { position: sticky; top: 0; background: #101927; z-index: 1; }
+.ctas-status-links { margin: .4rem 0; padding-left: 1.1rem; }
+.ctas-status-links li { margin: .2rem 0; overflow-wrap: anywhere; }
+.ctas-status-links small { display: block; color: var(--ink-3); }
+.ctas-status-page .ctas-status--hero code { font-size: .85em; }
+@media (max-width: 760px) {
+  .ctas-report-problem { margin-left: 0; }
+  .ctas-finder__fields { grid-template-columns: 1fr; }
+}

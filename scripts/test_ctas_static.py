@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 import uuid
@@ -1004,6 +1005,10 @@ class PublisherPageAllowlistTests(unittest.TestCase):
         links = self.site / "ctas/data/links"
         links.mkdir()
         (links / "manifest.json").write_text('{"documents": [], "document_count": 0, "event_count": 0}')
+        # The feed block (Track 1, part C) collects from the feeds index the same way.
+        feeds = self.site / "ctas/data/feeds"
+        feeds.mkdir()
+        (feeds / "index.json").write_text('{"feeds": [], "feed_count": 0}')
         self.git("init", "-q")
         self.git("config", "user.name", "CTAS fixture")
         self.git("config", "user.email", "ctas-fixture@example.invalid")
@@ -1829,10 +1834,17 @@ class CertificateAndArtifactTests(unittest.TestCase):
             "research/sources.vot", "research/tom-targets.ecsv", "research/source-accounting.vot",
             "research/release-history.ecsv",
             "candidate-chunks/manifest.json", "bulk-downloads.json", "links/manifest.json", "provenance.json",
+            "changelog.json", "source-accounting.json", "feeds/index.json",
             "status.json", "source-universe.json", "release-history.json",
             "link-health.json", "certification.json",
         ):
             self.assertIn(name, publisher)
+        # Track 1, part C: feed files are collected from their index and retired like
+        # stale DataLink documents.
+        self.assertIn('FEED_FILES=$(python3', publisher)
+        self.assertIn('PUBLIC_FILES+=("$feed_file")', publisher)
+        self.assertIn('feeds/(?:all-events|event-type/[a-z0-9-]+|channel/[a-z0-9-]+|region/[a-z0-9-]+)', publisher)
+        self.assertIn('"ctas/data/feeds/index.json",', publisher)
         # Track 1: DataLink documents are collected from their manifest like pages and
         # chunks, the VOParquet assets go to the rolling GitHub Release after the tests
         # and before the data-branch push, and every JSON file is schema-checked.
@@ -2126,6 +2138,103 @@ class CertificateAndArtifactTests(unittest.TestCase):
         )
         for path in EXPORTER.API_DESCRIPTION_PATHS:
             self.assertIn(path, self.certificate["files"], path)
+
+    def test_changelog_source_accounting_and_feeds_are_certified_and_reconcile(self):
+        """Track 1, part C: the plain-words changelog, the per-source denominators and the
+        feed set are declared by status.json, bound by the certificate, pass their own
+        structural checks, and the per-source counts reproduce from the published dossiers."""
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import ctas_changelog
+        import ctas_feed
+
+        for key, path in (("changelog_path", "ctas/data/changelog.json"), ("source_accounting_path", "ctas/data/source-accounting.json"),
+                          ("feeds_index_path", "ctas/data/feeds/index.json"), ("status_page_path", "ctas/status.html")):
+            self.assertEqual(self.status.get(key), path)
+        files = self.certificate["files"]
+        gates = {gate["id"]: gate for gate in self.certificate["gates"]}
+        self.assertTrue(gates[EXPORTER.RELEASE_PRODUCTS_GATE_ID]["passed"], gates[EXPORTER.RELEASE_PRODUCTS_GATE_ID]["evidence"])
+        for path in ("ctas/data/changelog.json", "ctas/data/source-accounting.json", "ctas/data/feeds/index.json",
+                     "ctas/sky.js", "ctas/changelog.js", "ctas/status.html", "ctas/status.js", "scripts/ctas_changelog.py", "scripts/ctas_feed.py"):
+            self.assertTrue(path in files, path)
+            raw = (ROOT / path).read_bytes()
+            self.assertEqual(files[path], {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)}, path)
+            self.assertTrue(path in EXPORTER.REQUIRED_PUBLIC_ARTIFACTS or path in EXPORTER.BOUND_CODE_PATHS, path)
+        # changelog
+        changelog = json.loads((ROOT / "ctas/data/changelog.json").read_text())
+        self.assertEqual(ctas_changelog.changelog_problems(changelog), [])
+        self.assertEqual(changelog["schema"], ctas_changelog.CHANGELOG_SCHEMA)
+        for entry in changelog["entries"]:
+            self.assertEqual(entry["summary"], ctas_changelog.plain_words(entry))
+        # per-source accounting reproduces from the dossiers' expanded source matrices
+        accounting = json.loads((ROOT / "ctas/data/source-accounting.json").read_text())
+        recomputed = {}
+        for candidate in self.snapshot["candidates"]:
+            for row in EXPORTER.expand_source_matrix(candidate["source_matrix"], self.source_matrix_patterns):
+                counts = recomputed.setdefault(row["sourceContractId"], {"applicable_events": 0, "executed_query_receipts": 0, "data_returned_events": 0, "events_with_retained_records": 0})
+                counts["applicable_events"] += 1
+                counts["executed_query_receipts"] += int(row.get("executedReceiptCount") or 0)
+                counts["data_returned_events"] += 1 if row.get("currentQueryOutcome") == "DATA_RETURNED" else 0
+                counts["events_with_retained_records"] += 1 if int(row.get("retainedRecordCount") or 0) > 0 else 0
+        by_key = {row["source_key"]: row for row in accounting["sources"]}
+        self.assertEqual(set(recomputed) <= set(by_key), True)
+        for key, counts in recomputed.items():
+            for field, value in counts.items():
+                self.assertEqual(by_key[key][field], value, f"{key}.{field}")
+        declared = {row["source_key"] for row in self.universe["sources"]}
+        self.assertEqual({row["source_key"] for row in accounting["sources"] if row["declared"]}, declared)
+        for row in accounting["sources"]:
+            if row["source_key"] not in recomputed:
+                self.assertEqual((row["applicable_events"], row["executed_query_receipts"], row["data_returned_events"]), (0, 0, 0))
+        totals = accounting["totals"]
+        aggregate = self.status["source_accounting"]
+        self.assertEqual(totals["declared_sources"], aggregate["declaredSources"])
+        self.assertEqual(totals["applicable_source_evaluations"], aggregate["applicableSourceEvaluations"])
+        self.assertEqual(totals["executed_query_receipts"], aggregate["executedQueryReceipts"])
+        self.assertEqual(totals["data_bearing_source_evaluations"], aggregate["dataBearingSourceEvaluations"])
+        self.assertEqual(totals["outcome_counts"], aggregate["outcomeCounts"])
+        self.assertEqual(accounting["source_count"], len(accounting["sources"]))
+        # feeds: every file the index names is bound and validates
+        index = json.loads((ROOT / "ctas/data/feeds/index.json").read_text())
+        self.assertEqual(index["feed_count"], 1 + len(ctas_feed.EVENT_TYPES) + len(ctas_feed.RANKING_CHANNELS) + 195)
+        feed_files = {}
+        for row in index["feeds"]:
+            for key in ("json_feed", "atom"):
+                path = row[key]["path"]
+                raw = (ROOT / path).read_bytes()
+                feed_files[path] = raw
+                self.assertEqual(files[path], {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)}, path)
+        self.assertEqual(ctas_feed.feed_problems(feed_files, index), [])
+        self.assertEqual(set(str(p.relative_to(ROOT)) for p in (ROOT / "ctas/data/feeds").rglob("*") if p.is_file()),
+                         set(feed_files) | {"ctas/data/feeds/index.json"}, "nothing but the declared feeds under feeds/")
+        all_items = json.loads(feed_files["ctas/data/feeds/all-events.json"])["items"]
+        self.assertEqual(len(all_items), min(ctas_feed.FEED_ITEMS, len(self.snapshot["candidates"])))
+        event_ids = {candidate["event_id"] for candidate in self.snapshot["candidates"]}
+        self.assertTrue(all(item["_ctas"]["event_id"] in event_ids for item in all_items))
+        # the pages and the workflow that go with them
+        page = (ROOT / "ctas.html").read_text()
+        for token in ('ctas/sky.js?v=', 'ctas/changelog.js?v=', 'href="ctas/status.html"', 'href="ctas/data/feeds/index.json"',
+                      'type="application/feed+json"', 'ctas/data/feeds/all-events.xml'):
+            self.assertIn(token, page)
+        status_page = (ROOT / "ctas/status.html").read_text()
+        self.assertEqual(status_page.count("<h1"), 1)
+        self.assertIn('src="status.js', status_page)
+        self.assertIn('src="changelog.js', status_page)
+        app = (ROOT / "ctas/app.js").read_text()
+        self.assertIn('data-report-problem', app)
+        self.assertIn('encodeURIComponent("data-problem")', app)
+        workflow = (ROOT / ".github/workflows/worldsindex-release.yml").read_text()
+        self.assertIn("gh label create data-problem", workflow)
+        self.assertIn("--force", workflow)
+        self.assertIn("issues: write", workflow)
+        workbench = (ROOT / "ctas/workbench.js").read_text()
+        self.assertNotIn("api/v3/latest/aladin.js", workbench, "the Aladin runtime is pinned")
+        sky = (ROOT / "ctas/sky.js").read_text()
+        self.assertIn('ALADIN_VERSION = "3.6.1"', sky)
+        self.assertIn('"https://aladin.cds.unistra.fr/AladinLite/api/v3/"', sky)
+        self.assertIn("api/v3/3.6.1/aladin.js", workbench)
+        validator = (ROOT / "scripts/validate_ctas_schemas.py").read_text()
+        for name in ("changelog.json", "source-accounting.json", "feeds/index.json"):
+            self.assertIn(f'"{name}"', validator)
 
     def test_release_history_is_unique_and_git_grounded(self):
         history = json.loads((self.data_dir / "release-history.json").read_text())

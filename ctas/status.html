@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CTAS status | Cowboy Transient Alert System | Jack McGuire</title>
+<meta name="description" content="Status of the Cowboy Transient Alert System: the current release, every source with its four denominators (declared, applicable, executed, data-bearing), provider health, the freshness watchdog, the plain-words changelog, the feeds, and the machine-readable descriptions.">
+<link rel="canonical" href="https://jackmcguireastro.github.io/ctas/status.html">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="../assets/css/site.css?v=20260903-notebook">
+<link rel="stylesheet" href="ctas.css?v=20261019-status">
+<link rel="alternate" type="application/atom+xml" title="CTAS — all public records (Atom)" href="data/feeds/all-events.xml">
+<link rel="alternate" type="application/feed+json" title="CTAS — all public records (JSON Feed)" href="data/feeds/all-events.json">
+<link rel="stylesheet" href="../assets/css/continuity.css?v=20260920">
+</head>
+<body class="ctas-status-page">
+
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="site-header">
+  <div class="wrap wrap--wide site-header__inner">
+    <a class="brand" href="../index.html">Jack McGuire</a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">
+      <span class="nav-toggle__bars" aria-hidden="true"><span></span></span>
+      <span class="nav-toggle__label">Menu</span>
+    </button>
+    <nav class="nav" id="primary-nav" aria-label="Primary">
+      <ul class="nav__list">
+        <li><a class="nav__link" href="../index.html">Home</a></li>
+        <li><a class="nav__link" href="../qualquest/">QualQuest</a></li>
+        <li><a class="nav__link" href="../worldsindex/">WorldsIndex</a></li>
+        <li><a class="nav__link" href="../ctas.html" aria-current="page">CTAS</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <section class="hero ctas-hero ctas-console-head" id="top">
+    <div class="hero__sky" aria-hidden="true"></div>
+    <div class="wrap hero__inner ctas-hero__inner">
+      <div>
+        <div class="ctas-console-identity">
+          <p class="eyebrow"><span class="ctas-live-dot" aria-hidden="true"></span>Cowboy Transient Alert System</p>
+          <h1>CTAS <span>Status</span></h1>
+          <p class="hero__statement">The current release, every source with its four denominators, the publisher's freshness, what changed between releases, the feeds, and the machine-readable descriptions. Everything here is read from the published files of the release; nothing is computed on a server.</p>
+        </div>
+        <p class="ctas-hero__meta"><a href="../ctas.html">Back to the catalog</a> · <a href="data/status.json">status.json</a> · <a href="data/certification.json">verification report</a></p>
+        <div class="ctas-status ctas-status--hero" id="ctas-status-release" role="status" aria-live="polite"><p>Loading the release status…</p></div>
+      </div>
+    </div>
+  </section>
+
+  <noscript>
+    <section class="section"><div class="wrap">
+      <h2>Status without JavaScript</h2>
+      <p>This page assembles its tables from the release's files in the browser. The files are static and readable directly: <a href="data/status.json">status.json</a> (release identity, aggregate source accounting, provider health), <a href="data/source-accounting.json">source-accounting.json</a> (the four denominators per source), <a href="data/changelog.json">changelog.json</a>, <a href="data/feeds/index.json">feeds/index.json</a>, <a href="data/certification.json">certification.json</a>, <a href="openapi.yaml">openapi.yaml</a> and <a href="data/provenance.json">provenance.json</a>.</p>
+    </div></section>
+  </noscript>
+
+  <section class="section ctas-interface" aria-label="CTAS status details">
+    <div class="wrap wrap--wide ctas-status-page__grid">
+
+      <section class="ctas-panel ctas-status-section" id="freshness" aria-labelledby="freshness-title">
+        <div class="ctas-section-heading"><div><p class="eyebrow">Publisher</p><h2 id="freshness-title">Freshness and the watchdog</h2></div>
+          <p>When the release was built, how long it is valid, when the data last changed, and what the hourly freshness watchdog would call stale.</p></div>
+        <div class="ctas-panel__body" id="ctas-status-freshness"><p>Loading…</p></div>
+      </section>
+
+      <section class="ctas-panel ctas-status-section" id="sources" aria-labelledby="sources-title">
+        <div class="ctas-section-heading"><div><p class="eyebrow">Sources</p><h2 id="sources-title">The four denominators per source</h2></div>
+          <p>For every source contract: declared in this release's universe, the records it applies to, the executed query receipts it holds, and the records whose current query returned data, beside its operational and representation states and the provider's live connector health.</p></div>
+        <div class="ctas-panel__body" id="ctas-status-sources"><p>Loading…</p></div>
+      </section>
+
+      <section class="ctas-panel ctas-status-section" id="changelog" aria-labelledby="changelog-title">
+        <div class="ctas-section-heading"><div><p class="eyebrow">Releases</p><h2 id="changelog-title">Plain-words changelog</h2></div>
+          <p>What changed between consecutive releases, keyed by the stable event id: new records, classifications, retractions, renames, source-state changes and coverage milestones. Every sentence is a fixed template over counts and names.</p></div>
+        <div class="ctas-panel__body" id="ctas-status-changelog"><p>Loading…</p></div>
+      </section>
+
+      <section class="ctas-panel ctas-status-section" id="feeds" aria-labelledby="feeds-title">
+        <div class="ctas-section-heading"><div><p class="eyebrow">Follow without an account</p><h2 id="feeds-title">Feeds</h2></div>
+          <p>Atom 1.0 and JSON Feed 1.1 files, regenerated with each release: every public record, one feed per event type, per messenger family and per sky region. A feed reader fetches them; CTAS holds nothing about who reads them.</p></div>
+        <div class="ctas-panel__body" id="ctas-status-feeds"><p>Loading…</p></div>
+      </section>
+
+      <section class="ctas-panel ctas-status-section" id="machine" aria-labelledby="machine-title">
+        <div class="ctas-section-heading"><div><p class="eyebrow">For programs</p><h2 id="machine-title">Machine-readable descriptions and downloads</h2></div>
+          <p>The OpenAPI description of every static endpoint, the JSON Schemas, the W3C PROV-JSON provenance of the build, the bulk VOParquet downloads, the DataLink manifest and the research tables.</p></div>
+        <div class="ctas-panel__body" id="ctas-status-machine"><p>Loading…</p></div>
+      </section>
+
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap wrap--wide">
+    <div class="site-footer__inner">
+      <div>
+        <h2>Contact</h2>
+        <p><a href="mailto:jackmcg7@live.com">jackmcg7@live.com</a></p>
+        <p>Department of Physics &amp; Astronomy<br>University of Wyoming, Laramie, Wyoming</p>
+      </div>
+      <nav aria-label="Footer">
+        <h2>Site</h2>
+        <ul class="footer-nav">
+          <li><a href="../index.html">Home</a></li>
+          <li><a href="../qualquest/">QualQuest</a></li>
+          <li><a href="../worldsindex/">WorldsIndex</a></li>
+          <li><a href="../ctas.html">CTAS</a></li>
+          <li><a href="status.html" aria-current="page">CTAS status</a></li>
+          <li><a href="data/feeds/index.json">CTAS feeds</a></li>
+        </ul>
+      </nav>
+    </div>
+    <p class="colophon">&copy; 2026 Jack McGuire. This is a static site built with assets from the
+      <a href="https://html5up.net">HTML5 UP</a> Stellar template.</p>
+  </div>
+</footer>
+
+<script src="../assets/js/site.js"></script>
+<script src="changelog.js?v=20261019"></script>
+<script src="status.js?v=20261019"></script>
+
+</body>
+</html>

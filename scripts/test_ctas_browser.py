@@ -7,7 +7,9 @@ browser can prove — that the first screen does not download the complete
 catalog, that the celestial sphere is painted without any interaction, that a
 dossier opens with its source matrix rebuilt from the shared patterns, that the
 complete catalog arrives only on request, and that no tested viewport scrolls
-sideways.
+sideways. The Track 1 part C tests add the sky tools (finder chart, SAMP, pinned Aladin
+atlas, localisation region, report link), the lazy changelog panel, the first-screen
+budget line, and ctas/status.html.
 
 Skipped, not failed, when Playwright or a generated release is unavailable, so
 a publisher without a browser stack still reports honestly instead of blocking.
@@ -819,6 +821,320 @@ class BrowserTests(unittest.TestCase):
                     " - document.documentElement.clientWidth"
                 )
                 self.assertLessEqual(overflow, 1)
+
+    # ------------------------------------------------------------ Track 1 part C: sky tools
+    def _first_party_first_load(self):
+        """Requests and bytes of the first screen, printed so the budget can be read from the log."""
+        rows = self.page.evaluate(
+            "() => performance.getEntriesByType('resource').concat(performance.getEntriesByType('navigation'))"
+            ".filter(e => e.name.startsWith(location.origin)).map(e => [e.name.replace(location.origin + '/', ''), e.transferSize || 0, e.decodedBodySize || 0])")
+        total = sum(row[2] for row in rows)
+        print(f"\nfirst screen: {len(rows)} first-party requests, {total:,} decoded bytes ({total / 1024:.0f} KiB)")
+        return rows, total
+
+    def test_first_screen_budget_has_no_new_data_requests_and_no_external_sky_runtime(self):
+        """The sky tools add two script files and nothing else before a panel is opened: no
+        Aladin runtime, no cutout image, no feed or changelog file is requested on load."""
+        rows, total = self._first_party_first_load()
+        names = [row[0].split("?")[0] for row in rows]
+        self.assertIn("ctas/sky.js", names)
+        self.assertIn("ctas/changelog.js", names)
+        self.assertLess(total, 1_500_000, "first-screen decoded bytes")
+        data_requests = sorted(name for name in self.requests)
+        self.assertEqual([n for n in data_requests if n.startswith("feeds/") or n in ("changelog.json", "source-accounting.json")], [],
+                         "feeds, changelog and source accounting load only when a panel or the status page asks")
+        external = self.page.evaluate("() => performance.getEntriesByType('resource').map(e => e.name).filter(n => !n.startsWith(location.origin))")
+        # (the 96-pixel HiPS2FITS thumbnails of the follow-up examples predate this batch)
+        self.assertEqual([u for u in external if "aladin" in u or "legacysurvey" in u or "ps1images" in u or ("hips2fits" in u and "width=96" not in u)], [])
+
+    def _coordinate_dossier(self):
+        candidate = _published_dossier(lambda row: row.get("ra_deg") is not None and row.get("dec_deg") is not None, lambda c: True)
+        if candidate is None:
+            self.skipTest("this release has no dossier with coordinates")
+        return candidate
+
+    ALADIN_STUB = """
+      window.__aladinCalls = [];
+      window.A = {
+        init: Promise.resolve(),
+        aladin: function (el, options) { window.__aladinCalls.push(['aladin', options]); el.innerHTML = '<div class="aladin-stub"><a href="https://aladin.cds.unistra.fr/">Aladin Lite</a></div>';
+          return {setBaseImageLayer: function (layer) { window.__aladinCalls.push(['layer', typeof layer === 'string' ? layer : layer.id]); },
+                  addCatalog: function (cat) { window.__aladinCalls.push(['catalog', cat.name, cat.sources.length]); },
+                  addOverlay: function () { window.__aladinCalls.push(['overlay']); },
+                  removeLayer: function () { window.__aladinCalls.push(['removeLayer']); }}; },
+        HiPS: function (id, options) { return {id: id, options: options}; },
+        catalog: function (options) { return {name: options.name, sources: [], addSources: function (rows) { this.sources = this.sources.concat(rows); }}; },
+        marker: function (ra, dec, options) { return {ra: ra, dec: dec, marker: true, options: options}; },
+        source: function (ra, dec, data) { return {ra: ra, dec: dec, data: data}; },
+        graphicOverlay: function (options) { return {options: options, shapes: [], add: function (shape) { this.shapes.push(shape); window.__aladinCalls.push(['circle', shape.radius]); }, show: function () {}, hide: function () {}}; },
+        circle: function (ra, dec, radius, options) { return {ra: ra, dec: dec, radius: radius, options: options}; }
+      };
+    """
+
+    def _stub_sky_network(self):
+        """Serve the pinned Aladin runtime as a recording stub and every cutout as a tiny
+        image, so the panels run offline and nothing real is fetched."""
+        calls = []
+        png = bytes.fromhex("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c636000020000050001e2"
+                            "26059b0000000049454e44ae426082")
+
+        def aladin(route):
+            calls.append(route.request.url)
+            route.fulfill(status=200, content_type="application/javascript", body=self.ALADIN_STUB)
+
+        def image(route):
+            calls.append(route.request.url)
+            route.fulfill(status=200, content_type="image/png", body=png)
+
+        def listing(route):
+            calls.append(route.request.url)
+            route.fulfill(status=200, content_type="text/plain", headers={"Access-Control-Allow-Origin": "*"},
+                          body="projcell,subcell,ra,dec,filter,mjd,type,filename,shortname\n1,1,1,1,g,1,stack,/x/g.fits,g\n1,1,1,1,i,1,stack,/x/i.fits,i\n1,1,1,1,y,1,stack,/x/y.fits,y\n")
+        self.page.route("https://aladin.cds.unistra.fr/**", aladin)
+        self.page.route("https://www.legacysurvey.org/**", image)
+        self.page.route("https://alasky.cds.unistra.fr/**", image)
+        self.page.route("https://ps1images.stsci.edu/cgi-bin/ps1filenames.py**", listing)
+        self.page.route("https://ps1images.stsci.edu/cgi-bin/fitscut.cgi**", image)
+        return calls
+
+    def test_dossier_sky_panel_carries_finder_chart_samp_and_report_link(self):
+        """Every dossier with coordinates gets the finder chart (fetched only when opened, from
+        the Legacy Surveys viewer first), the SAMP button with the Safari note, the pinned Aladin
+        atlas with four layers, and a prefilled data-problem issue link; axe stays clean."""
+        candidate = self._coordinate_dossier()
+        calls = self._stub_sky_network()
+        self._open_dossier(candidate["event_id"])
+        self.page.wait_for_selector("#candidate-workspace [data-sky-tools]", state="attached", timeout=30000)
+        # the dossier's own 900-pixel DSS2 preview and the example thumbnails predate this batch
+        self.assertEqual([u for u in calls if "hips2fits" not in u], [], "opening a dossier fetches no runtime and no finder cutout")
+        tools = self.page.locator("[data-sky-tools]")
+        self.assertIn("does not work in Safari", tools.inner_text())
+        self.assertEqual(tools.locator("[data-samp-point]").count(), 1)
+        report = self.page.locator("#candidate-workspace [data-report-problem]")
+        href = report.get_attribute("href")
+        from urllib.parse import urlparse, parse_qs, unquote
+        parsed = urlparse(href)
+        self.assertEqual(parsed.netloc + parsed.path, "github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/issues/new")
+        query = parse_qs(parsed.query)
+        self.assertEqual(query["title"], [f"{candidate['name']} ({candidate['event_id']})"])
+        self.assertEqual(query["labels"], ["data-problem"])
+        body = unquote(query["body"][0])
+        self.assertIn("Stable event id: " + candidate["event_id"], body)
+        self.assertIn("Release checksum (content_release_id): ", body)
+        self.assertIn("Panel: ", body)
+        # finder chart: opened on request, 2' and 10' fields, Legacy Surveys DR10 first
+        finder = self.page.locator("[data-finder]")
+        self.assertEqual(finder.count(), 1)
+        finder.locator("summary").click()
+        self.page.wait_for_function("() => document.querySelectorAll('[data-finder-field][data-finder-state=\"loaded\"]').length === 2", timeout=30000)
+        fields = self.page.locator("[data-finder-field]")
+        self.assertEqual([fields.nth(i).get_attribute("data-finder-field") for i in range(2)], ["2", "10"])
+        self.assertEqual([fields.nth(i).get_attribute("data-finder-source-id") for i in range(2)], ["ls-dr10", "ls-dr10"])
+        self.assertTrue(all("layer=ls-dr10" in u for u in calls if "legacysurvey" in u), calls)
+        svg = finder.locator("svg.ctas-finder__overlay").first
+        self.assertIn("N", svg.text_content()); self.assertIn("E", svg.text_content())
+        self.assertIn("epoch J2000", finder.inner_text())
+        self.assertIn("north up, east left", finder.inner_text())
+        with self.page.expect_popup() as popup_info:
+            finder.locator("[data-finder-print]").click()
+        popup = popup_info.value
+        popup.wait_for_load_state()
+        self.assertIn("Finder chart: " + candidate["name"], popup.title())
+        self.assertEqual(popup.locator("figure").count(), 2)
+        self.assertIn("north up, east left", popup.locator("figcaption").first.inner_text())
+        popup.close()
+        # the atlas: pinned runtime, marker, layer buttons, fallback logo link kept
+        self.page.locator("[data-load-aladin]").click()
+        self.page.wait_for_function("() => window.__aladinCalls && window.__aladinCalls.some(c => c[0] === 'catalog')", timeout=30000)
+        self.assertTrue(any(u == "https://aladin.cds.unistra.fr/AladinLite/api/v3/3.6.1/aladin.js" for u in calls), calls)
+        layers = self.page.locator("#candidate-workspace [data-sky-atlas-tools] [data-sky-layer]")
+        self.assertEqual(layers.count(), 4)
+        self.assertEqual([layers.nth(i).get_attribute("data-sky-layer") for i in range(4)], ["dss2", "ls-dr10", "ps1", "2mass"])
+        layers.nth(1).click()
+        self.assertEqual(self.page.evaluate("() => window.__aladinCalls.filter(c => c[0] === 'layer').pop()[1]"), "CDS/P/DESI-Legacy-Surveys/DR10/color")
+        self.assertEqual(layers.nth(1).get_attribute("aria-pressed"), "true")
+        self.assertIn("pinned 3.6.1", self.page.locator("[data-aladin-status]").inner_text())
+        self.assertEqual(self.page.locator(".aladin-stub a[href*='aladin.cds.unistra.fr']").count(), 1, "the Aladin logo link stays")
+        self.assertEqual(self._axe_violations(), [])
+        errors = [e for e in self.console if e[0] in {"error", "pageerror"} and not any(h in e[1] for h in THIRD_PARTY_HOSTS) and "ERR_TUNNEL_CONNECTION_FAILED" not in e[1]]
+        self.assertEqual(errors, [])
+
+    def test_finder_chart_falls_back_through_the_image_sources(self):
+        """When the Legacy Surveys viewer answers nothing usable the chart moves on to
+        Pan-STARRS (north of Dec -30) and finally HiPS2FITS DSS2, and says which answered."""
+        candidate = self._coordinate_dossier()
+        calls = self._stub_sky_network()
+        self.page.unroute("https://www.legacysurvey.org/**")
+        self.page.route("https://www.legacysurvey.org/**", lambda route: (calls.append(route.request.url), route.fulfill(status=404, body="no")))
+        self._open_dossier(candidate["event_id"])
+        self.page.wait_for_selector("[data-finder]", state="attached", timeout=30000)
+        self.page.locator("[data-finder] summary").click()
+        self.page.wait_for_function("() => document.querySelectorAll('[data-finder-field][data-finder-state]').length === 2", timeout=30000)
+        expected = "ps1" if float(candidate["dec_deg"]) > -30 else "dss2"
+        self.assertEqual(self.page.locator("[data-finder-field]").first.get_attribute("data-finder-source-id"), expected)
+        self.assertTrue(any("layer=ls-dr9" in u for u in calls), "DR9 is tried after DR10")
+        if expected == "ps1":
+            self.assertTrue(any("fitscut.cgi" in u and "red=/x/y.fits" in u for u in calls), calls)
+        else:
+            self.assertTrue(any("hips2fits" in u for u in calls), calls)
+
+    def test_approximate_localisation_region_is_drawn_only_for_multimessenger_records(self):
+        """The region circle comes from the newest retained 90% sky area (or the coordinate
+        uncertainty for messenger records) and is labelled approximate; optical records get none."""
+        candidate = self._coordinate_dossier()
+        self._stub_sky_network()
+        self._open_dossier(candidate["event_id"])
+        self.page.wait_for_selector("[data-sky-tools]", state="attached", timeout=30000)
+        optical = self.page.evaluate("(id) => window.CTASSky.localisation(window.CTASWorkbench.candidateById(id))", candidate["event_id"])
+        self.assertIsNone(optical, "an optical record without notices gets no region")
+        synthetic = self.page.evaluate("""(id) => {
+          const base = window.CTASWorkbench.candidateById(id);
+          const gw = Object.assign({}, base, {primary_messenger: 'gravitational-wave', record_role: 'localization-region-alert',
+            follow_up: {messenger_signals: [{sky_area_90_sq_deg: 314.159, observed_at: '2026-10-01T00:00:00Z', skymap_url: 'https://gracedb.ligo.org/x.fits'},
+                                            {sky_area_90_sq_deg: 1000, observed_at: '2026-09-01T00:00:00Z', retracted: true}]}});
+          const nu = Object.assign({}, base, {primary_messenger: 'neutrino', coordinate_error_arcsec: 3600, follow_up: {}});
+          return [window.CTASSky.localisation(gw), window.CTASSky.localisation(nu)];
+        }""", candidate["event_id"])
+        self.assertAlmostEqual(synthetic[0]["radius_deg"], 10.0, places=3)
+        self.assertTrue(synthetic[0]["approximate"])
+        self.assertEqual(synthetic[0]["skymap_url"], "https://gracedb.ligo.org/x.fits")
+        self.assertAlmostEqual(synthetic[1]["radius_deg"], 1.0, places=6)
+        self.assertIn("coordinate uncertainty", synthetic[1]["basis"])
+
+    def test_catalog_page_atlas_loads_only_when_opened_and_draws_the_plotted_candidates(self):
+        calls = self._stub_sky_network()
+        self.page.reload(wait_until="networkidle")
+        self.page.wait_for_selector("[data-sky-atlas]", state="attached", timeout=30000)
+        self.assertEqual([u for u in calls if "hips2fits" not in u], [], "the atlas requests nothing until opened")
+        atlas = self.page.locator("[data-sky-atlas]")
+        self.assertIn("Aladin Lite", atlas.locator("summary").inner_text())
+        self.assertEqual(atlas.locator("[data-sky-layer]").count(), 4)
+        self.assertIn("does not work in Safari", atlas.text_content())
+        atlas.locator("summary").click()
+        self.page.wait_for_function("() => window.__aladinCalls && window.__aladinCalls.some(c => c[0] === 'catalog')", timeout=30000)
+        drawn = self.page.evaluate("() => window.__aladinCalls.filter(c => c[0] === 'catalog').pop()[2]")
+        plotted = self.page.evaluate("() => window.CTASApp.getSkyCandidates().filter(c => c.ra_deg !== undefined && c.ra_deg !== null).length")
+        self.assertEqual(drawn, plotted, "the atlas draws exactly the plotted set of the current window")
+        # widening the window to the whole retained catalog redraws the markers
+        self.page.evaluate("() => { document.querySelector('.ctas-window__more').open = true; document.querySelector('[data-sky-days=\"36500\"]').click(); }")
+        self.page.wait_for_function("() => window.CTASApp.getSkyCandidates().length > 0 && window.__aladinCalls.filter(c => c[0] === 'catalog').pop()[2] === window.CTASApp.getSkyCandidates().filter(c => c.ra_deg !== undefined && c.ra_deg !== null).length", timeout=60000)
+        drawn = self.page.evaluate("() => window.__aladinCalls.filter(c => c[0] === 'catalog').pop()[2]")
+        self.assertGreater(drawn, 0)
+        self.assertIn("plotted candidates with coordinates", self.page.locator("[data-sky-atlas-status]").inner_text())
+        self.assertEqual(self.page.locator("[data-sky-atlas] [data-samp-events]").count(), 1)
+        self.assertEqual(self._axe_violations(), [])
+
+    def test_changelog_panel_loads_the_file_only_when_opened(self):
+        self.page.wait_for_selector("[data-changelog-panel]", state="attached", timeout=30000)
+        self.assertNotIn("changelog.json", self.requests)
+        panel = self.page.locator("[data-changelog-panel]")
+        self.assertIn("Plain-words changelog", panel.locator("summary").text_content())
+        self.page.evaluate("() => { document.getElementById('catalog-changes').open = true; document.getElementById('ctas-reference').open = true; }")
+        panel.locator("summary").click()
+        self.page.wait_for_function("() => /claim|No release-to-release|Release checksum/.test(document.querySelector('[data-changelog-body]').textContent)", timeout=30000)
+        self.assertIn("changelog.json", self.requests)
+        body = panel.locator("[data-changelog-body]").inner_text()
+        self.assertTrue("not a new discovery" in body or "No release-to-release changes" in body, body[:200])
+        self.assertEqual(self._axe_violations(), [])
+
+
+@unittest.skipUnless((DATA / "status.json").exists() and (ROOT / "ctas" / "status.html").exists(),
+                     "no generated release in ctas/data; run the exporter first")
+class StatusPageTests(unittest.TestCase):
+    """ctas/status.html: the four denominators per source, the watchdog view, the changelog,
+    the feeds and the machine descriptions, read from the release's own files."""
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError as exc:  # pragma: no cover
+            raise unittest.SkipTest(f"playwright is not installed: {exc}") from exc
+        port = _free_port()
+        cls.server = http.server.ThreadingHTTPServer(("127.0.0.1", port), functools.partial(_QuietHandler, directory=str(ROOT)))
+        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.thread.start()
+        cls.url = f"http://127.0.0.1:{port}/ctas/status.html"
+        cls.playwright = sync_playwright().start()
+        try:
+            cls.browser = cls.playwright.chromium.launch()
+        except Exception as exc:  # pragma: no cover
+            cls.playwright.stop(); cls.server.shutdown()
+            raise unittest.SkipTest(f"no Chromium available: {exc}") from exc
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.browser.close(); cls.playwright.stop(); cls.server.shutdown(); cls.server.server_close()
+
+    def setUp(self):
+        self.page = self.browser.new_page(viewport={"width": 1280, "height": 900})
+        self.console, self.requests = [], []
+        self.page.on("console", lambda m: self.console.append((m.type, m.text)))
+        self.page.on("pageerror", lambda e: self.console.append(("pageerror", str(e))))
+        self.page.on("response", lambda r: self.requests.append(r.url.split("/ctas/", 1)[-1].split("?")[0]) if "/ctas/" in r.url else None)
+        self.page.goto(self.url, wait_until="networkidle", timeout=60000)
+        self.page.wait_for_function("() => document.querySelectorAll('#ctas-status-sources table').length > 0", timeout=60000)
+
+    def tearDown(self):
+        self.page.close()
+
+    def test_status_page_structure_and_no_errors(self):
+        errors = [e for e in self.console if e[0] in {"error", "pageerror"} and not any(h in e[1] for h in THIRD_PARTY_HOSTS) and "ERR_TUNNEL_CONNECTION_FAILED" not in e[1]]
+        self.assertEqual(errors, [])
+        headings = self.page.evaluate("() => [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map(h => h.tagName)")
+        self.assertEqual(headings.count("H1"), 1)
+        previous, skips = 0, []
+        for tag in headings:
+            level = int(tag[1])
+            if previous and level > previous + 1:
+                skips.append((previous, tag))
+            previous = level
+        self.assertEqual(skips, [])
+        self.assertNotIn("data/certification.json", self.requests, "the 700 KB report is linked, not fetched")
+        for name in ("data/status.json", "data/source-accounting.json", "data/changelog.json", "data/feeds/index.json", "data/source-universe.json"):
+            self.assertIn(name, self.requests)
+        self.assertEqual([r for r in self.requests if r.startswith("data/feeds/") and r != "data/feeds/index.json"], [], "no feed file is fetched, only linked")
+        for width, height in VIEWPORTS:
+            with self.subTest(viewport=f"{width}x{height}"):
+                self.page.set_viewport_size({"width": width, "height": height})
+                self.page.wait_for_timeout(300)
+                self.assertLessEqual(self.page.evaluate("() => document.documentElement.scrollWidth - document.documentElement.clientWidth"), 1)
+
+    def test_every_table_has_a_text_summary_and_the_denominators_reconcile(self):
+        tables = self.page.locator("table")
+        self.assertGreaterEqual(tables.count(), 6)
+        for index in range(tables.count()):
+            wrap = tables.nth(index).locator("xpath=..")
+            summary_id = wrap.get_attribute("aria-labelledby")
+            self.assertTrue(summary_id, f"table {index} has no summary")
+            self.assertGreater(len(self.page.locator(f"#{summary_id}").text_content()), 40)
+            self.assertTrue(tables.nth(index).locator("caption").count())
+        status = json.loads((DATA / "status.json").read_text())
+        accounting = json.loads((DATA / "source-accounting.json").read_text())
+        self.assertEqual(accounting["totals"]["applicable_source_evaluations"], status["source_accounting"]["applicableSourceEvaluations"])
+        source_rows = self.page.locator("#ctas-status-sources table").first.locator("tbody tr")
+        self.assertEqual(source_rows.count(), accounting["source_count"])
+        text = self.page.locator("#sources-summary").inner_text()
+        self.assertIn(f"{status['source_accounting']['applicableSourceEvaluations']:,} applicable evaluations", text)
+        self.assertIn("Declared", self.page.locator("#ctas-status-sources table").first.inner_text())
+        freshness = self.page.locator("#ctas-status-freshness").inner_text()
+        self.assertIn("valid until", freshness)
+        self.assertIn("freshness-watchdog", freshness)
+        self.assertIn("4 h", freshness)
+        feeds = self.page.locator("#ctas-status-feeds").inner_text()
+        self.assertIn("HEALPix order-2", feeds)
+        self.assertGreaterEqual(self.page.locator("#ctas-status-feeds a[href$='.xml']").count(), 10)
+        machine = self.page.locator("#ctas-status-machine")
+        for href in ("openapi.yaml", "data/provenance.json", "data/links/manifest.json", "data/bulk-downloads.json", "schemas/status.schema.json"):
+            self.assertEqual(machine.locator(f"a[href='{href}']").count(), 1, href)
+
+    def test_status_page_passes_axe(self):
+        axe = next((path for path in (ROOT / "node_modules" / "axe-core" / "axe.min.js", ROOT.parent / "node_modules" / "axe-core" / "axe.min.js") if path.exists()), None)
+        if axe is None:
+            self.skipTest("axe-core is not installed; run: npm install axe-core")
+        self.page.add_script_tag(content=axe.read_text())
+        result = self.page.evaluate("async () => await axe.run(document, {runOnly: {type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']}})")
+        self.assertEqual([f"{v['id']} ({len(v['nodes'])} nodes): {v['help']}" for v in result["violations"]], [])
 
 
 if __name__ == "__main__":
