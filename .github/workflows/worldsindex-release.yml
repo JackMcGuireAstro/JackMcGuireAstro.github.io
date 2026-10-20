@@ -122,9 +122,11 @@ jobs:
           node scripts/test_research_census.mjs
       # The Track 1 interoperability exports (ECSV, VOTable, VOParquet, DataLink, PROV-JSON)
       # are read back with Astropy and pyarrow, and every published JSON file is validated
-      # against ctas/schemas with check-jsonschema.
+      # against ctas/schemas with check-jsonschema. Same astropy range as the WorldsIndex
+      # step above (both suites pass on 7.2 and 8.0); a narrower pin here made pip
+      # downgrade the astropy the WorldsIndex step had just installed in this job.
       - name: CTAS interoperability dependencies
-        run: python3 -m pip install --quiet --disable-pip-version-check "astropy>=7.0,<8" "astropy-healpix>=1.0,<3" "pyarrow>=21,<27" "pandas>=2.2,<4" "check-jsonschema>=0.33,<1" "pyyaml>=6,<7"
+        run: python3 -m pip install --quiet --disable-pip-version-check "astropy>=7.0,<9" "astropy-healpix>=1.0,<3" "pyarrow>=21,<27" "pandas>=2.2,<4" "check-jsonschema>=0.33,<1" "pyyaml>=6,<7"
       - name: CTAS static release
         # Fixture commits can start detached Git maintenance that outlives the
         # test and races temporary-directory cleanup. Limit this to CI checks.
