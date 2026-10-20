@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="WorldsIndex release status: the four denominators per source, provider monitor state, cloud run, identity counts and the machine-readable description of the current release.">
+  <meta name="theme-color" content="#050a12">
+  <link rel="canonical" href="https://jackmcguireastro.github.io/worldsindex/status.html">
+  <link rel="alternate" type="application/feed+json" title="WorldsIndex release changes (JSON Feed)" href="data/feed.json">
+  <link rel="alternate" type="application/atom+xml" title="WorldsIndex release changes (Atom)" href="data/feed.xml">
+  <link rel="stylesheet" href="assets/app.css?v=20261020">
+  <title>WorldsIndex · Release status</title>
+<link rel="stylesheet" href="../assets/css/continuity.css?v=20260920">
+</head>
+<body data-active-page="status">
+  <a class="skip-link" href="#main">Skip to the status report</a>
+
+  <nav class="site-journey" aria-label="Astronomy website"><span>Jack McGuire /</span><a href="../index.html">Home</a><a href="../qualquest/">QualQuest</a><a href="./">WorldsIndex</a><a href="../ctas.html">CTAS</a></nav>
+<header class="topbar">
+    <a class="brand" href="./" aria-label="WorldsIndex home">
+      <span class="brand-mark" aria-hidden="true"><i></i></span>
+      <span>WorldsIndex<small>Powered by ExoNexus</small></span>
+    </a>
+    <nav class="app-tabs" aria-label="WorldsIndex views">
+      <a href="./?section=discover">Discover</a>
+      <a href="./?section=sky">Sky</a>
+      <a href="./?section=compare">Compare</a>
+      <a href="./?section=methods">Methods</a>
+      <a href="./?section=sources">Data</a>
+      <a href="status.html" aria-current="page">Status</a>
+    </nav>
+    <a class="portfolio-link" href="../index.html" aria-label="Jack McGuire home">JM ↗</a>
+  </header>
+
+  <main id="main" class="status-page" tabindex="-1">
+    <p class="eyebrow">Release status</p>
+    <h1>What this release holds, and what it does not</h1>
+    <p class="lede">Everything on this page is read from the files the current release publishes under <code>worldsindex/data/</code>; nothing is fetched from a provider when you open it, and nothing about you is kept. Where a file is not published, the section says so. Counts are the builder's own; a declared source is not a query receipt, and a provider that answered is not thereby ingested.</p>
+    <p id="status-loading" class="loading-shell" role="status" aria-live="polite"><span class="loading-pulse" aria-hidden="true"></span><span>Reading the release files…</span></p>
+    <noscript><p class="plain-language-summary">This page fills its tables with JavaScript. Without it, read <a href="data/manifest.json">manifest.json</a>, <a href="data/source-coverage.json">source-coverage.json</a>, <a href="data/source-monitor.json">source-monitor.json</a> and <a href="data/changelog.md">changelog.md</a> directly.</p></noscript>
+
+    <section aria-labelledby="release-title">
+      <h2 id="release-title">Release</h2>
+      <div id="release-summary"><p class="table-summary">Reading manifest.json…</p></div>
+      <h3 id="cloud-run-title">Cloud run</h3>
+      <div id="cloud-run"><p class="table-summary">Reading cloud-run.json…</p></div>
+    </section>
+
+    <section aria-labelledby="sources-title">
+      <h2 id="sources-title">Sources: the four denominators</h2>
+      <p class="plain-language-summary"><strong>Declared</strong> means the source is in the versioned source universe. <strong>Applicable</strong> means at least one object of this release states an identifier of the kind the source is keyed on. <strong>Executed</strong> means a bounded query, snapshot lookup or retrieval attempt happened for this release — not computable for sources that run only in the visitor's browser. <strong>Data-bearing</strong> means valid rows were retained for at least one object. A source can be declared and applicable and still carry nothing; the last-attempt column says why.</p>
+      <div id="sources-summary"><p class="table-summary">Reading source-coverage.json…</p></div>
+      <div id="sources-table"></div>
+    </section>
+
+    <section aria-labelledby="monitor-title">
+      <h2 id="monitor-title">Provider monitor</h2>
+      <p class="plain-language-summary">The monitor checks every declared provider each hour and records what it answered. A failed <em>required</em> check quarantines the attempt: the last validated receipt stays in force and nothing from the failing attempt is promoted into the atlas. The provider's own error text is kept and shown here.</p>
+      <div id="monitor-summary"><p class="table-summary">Reading source-monitor.json…</p></div>
+      <div id="monitor-table"></div>
+    </section>
+
+    <section aria-labelledby="identity-title">
+      <h2 id="identity-title">Identity</h2>
+      <p class="plain-language-summary">Objects are counted by identity state: canonical and resolved identities link their retained aliases into one object; ambiguous identities and unreviewed records stay separate until review resolves them. Membership in several catalogs is not independent confirmation.</p>
+      <div id="identity-table"><p class="table-summary">Reading manifest.json…</p></div>
+    </section>
+
+    <section aria-labelledby="machine-title">
+      <h2 id="machine-title">Machine-readable description</h2>
+      <ul class="status-links">
+        <li><a href="openapi.yaml">openapi.yaml</a> (OpenAPI 3.1 for every static endpoint)</li>
+        <li><a href="data/manifest.json">manifest.json</a></li>
+        <li><a href="data/provenance.json">provenance.json</a> (W3C PROV-JSON)</li>
+        <li><a href="data/bulk-downloads.json">bulk-downloads.json</a></li>
+        <li><a href="data/exports/index.json">exports/index.json</a></li>
+        <li><a href="data/feed.json">feed.json</a> · <a href="data/feed.xml">feed.xml</a></li>
+        <li><a href="data/changelog.md">changelog.md</a> · <a href="data/changelog.json">changelog.json</a></li>
+        <li><a href="data/source-coverage.json">source-coverage.json</a> · <a href="data/source-monitor.json">source-monitor.json</a></li>
+      </ul>
+      <h3 id="schemas">JSON Schemas</h3>
+      <p class="table-summary">One JSON Schema (2020-12) per published record type, validated against every published file at publish time; the OpenAPI document references them.</p>
+      <ul class="status-links" id="schema-links">
+        <li><a href="schemas/manifest.schema.json">manifest</a></li>
+        <li><a href="schemas/catalog-index.schema.json">catalog-index</a></li>
+        <li><a href="schemas/details-shard.schema.json">details-shard</a></li>
+        <li><a href="schemas/sky-detections.schema.json">sky-detections</a></li>
+        <li><a href="schemas/registry.schema.json">registry</a></li>
+        <li><a href="schemas/transit-ephemerides.schema.json">transit-ephemerides</a></li>
+        <li><a href="schemas/source-coverage.schema.json">source-coverage</a></li>
+        <li><a href="schemas/source-monitor.schema.json">source-monitor</a></li>
+        <li><a href="schemas/lightcurve-index.schema.json">lightcurve-index</a></li>
+        <li><a href="schemas/lightcurve.schema.json">lightcurve</a></li>
+        <li><a href="schemas/cloud-run.schema.json">cloud-run</a></li>
+        <li><a href="schemas/exports-index.schema.json">exports-index</a></li>
+        <li><a href="schemas/bulk-downloads.schema.json">bulk-downloads</a></li>
+        <li><a href="schemas/provenance.schema.json">provenance</a></li>
+        <li><a href="schemas/changelog.schema.json">changelog</a></li>
+        <li><a href="schemas/feed.schema.json">feed</a></li>
+        <li><a href="schemas/common.schema.json">common definitions</a></li>
+      </ul>
+      <h3 id="exports-title">Exports</h3>
+      <div id="exports-table"><p class="table-summary">Reading exports/index.json…</p></div>
+      <h3 id="bulk-title">Bulk downloads</h3>
+      <div id="bulk-table"><p class="table-summary">Reading bulk-downloads.json…</p></div>
+      <h3 id="provenance-title">Provenance</h3>
+      <div id="provenance-summary"><p class="table-summary">Reading provenance.json…</p></div>
+      <h3 id="changelog-title">Changelog and feeds</h3>
+      <div id="changelog-summary"><p class="table-summary">Reading changelog.json…</p></div>
+    </section>
+  </main>
+
+  <footer><p><strong>WorldsIndex</strong><span>Powered by ExoNexus</span></p><p>Versioned evidence · source-native measurements · reproducible downloads</p><nav class="footer-data-links" aria-label="WorldsIndex release data"><a href="status.html" aria-current="page">Status</a><a href="data/changelog.md">Changelog</a><a href="data/feed.json" type="application/feed+json">Feed (JSON)</a><a href="data/feed.xml" type="application/atom+xml">Feed (Atom)</a><a href="data/exports/index.json">Exports</a><a href="openapi.yaml">OpenAPI</a><a href="#schemas">Schemas</a></nav><nav aria-label="Jack McGuire website"><a href="../index.html">Home</a><a href="../qualquest/">QualQuest</a><a href="./">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="../cv.pdf" target="_blank" rel="noopener">CV (PDF)</a></nav></footer>
+  <script type="module" src="assets/status.js?v=20261020"></script>
+</body>
+</html>

@@ -242,12 +242,16 @@ source({key: 'simbad', label: 'SIMBAD', kind: 'context', family: ['simbad'], uni
     const r = 5, rows = tapRows(await ctx.json(tapUrl(SIMBAD, `SELECT TOP 5 main_id, otype, ra, dec FROM basic WHERE CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', ${ids.position.ra}, ${ids.position.dec}, ${(r / 3600).toFixed(6)}))=1`, 'json')));
     return okOrNone({how: `names unknown to SIMBAD; within ${r}″ of the catalog position`, count: rows.length, rows: rows.map(x => ({name: x.main_id, type: x.otype})), link: `https://simbad.cds.unistra.fr/simbad/sim-coo?Coord=${encodeURIComponent(ids.position.ra + ' ' + ids.position.dec)}&Radius=${r}&Radius.unit=arcsec`});
   }});
-source({key: 'sweetcat', label: 'SWEET-Cat 2.0 (VizieR)', kind: 'context', family: ['vizier', 'vizier-contract-catalogs'], unit: ['host row', 'host rows'], relay: true,
+// SWEET-Cat at VizieR: J/A+A/691/A53/catalog (Sousa et al. 2024, the August 2024 copy of the
+// table). The 2021 designation J/A+A/656/A53 is answered by CDS with "Catalogue is not found or
+// not available" and has no table in TAPVizieR (checked 2026-10-20), so a query against it can
+// never return a row; the frozen builder snapshot uses the same 2024 table.
+source({key: 'sweetcat', label: 'SWEET-Cat (VizieR, 2024 copy)', kind: 'context', family: ['vizier', 'vizier-contract-catalogs'], unit: ['host row', 'host rows'], relay: true,
   applies: (ids) => ids.host ? true : 'No host name',
   run: async (ids, ctx) => {
-    const table = parseCsv(await ctx.relayText(tapUrl(VIZIER, `SELECT TOP 5 * FROM "J/A+A/656/A53/sweetcat" WHERE Name='${sql(ids.host)}'`)));
+    const table = parseCsv(await ctx.relayText(tapUrl(VIZIER, `SELECT TOP 5 * FROM "J/A+A/691/A53/catalog" WHERE Name='${sql(ids.host)}'`)));
     if (table.markup) throw new Error('VizieR answered in a format this page cannot read');
-    return okOrNone({how: `Name = ${ids.host}`, count: table.rows.length, rows: table.rows, link: `https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-source=J/A%2bA/656/A53/sweetcat&Name=${encodeURIComponent(ids.host)}`});
+    return okOrNone({how: `Name = ${ids.host}`, count: table.rows.length, rows: table.rows, link: `https://vizier.cds.unistra.fr/viz-bin/VizieR-4?-source=J/A%2bA/691/A53/catalog&Name=${encodeURIComponent(ids.host)}`});
   }});
 source({key: 'ads', label: 'Papers (NASA ADS)', kind: 'papers', family: ['ads'], unit: ['paper', 'papers'], relay: true,
   applies: (ids, object) => adsQuery(object) ? true : 'No searchable name',

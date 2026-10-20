@@ -159,7 +159,8 @@ assert.equal(matchRoute(tapUrl(NED, nedCone("0.0167"), "&query=x")), null, "a pa
 assert.ok(matchRoute(tapUrl(NED, nedCone("0.0167")).replace("REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=", "request=doQuery&lang=adql&format=json&query=")), "TAP parameter names are case-insensitive");
 assert.ok(matchRoute(tapUrl(VIZ, `SELECT TOP 10 Source, RA_ICRS, DE_ICRS, Gmag, Plx FROM "I/355/gaiadr3" WHERE 1=CONTAINS(POINT('ICRS', RA_ICRS, DE_ICRS), CIRCLE('ICRS', 217.3266, -3.4445, 0.0014))`)), "Gaia DR3 cone at VizieR");
 assert.ok(matchRoute(tapUrl(VIZ, `SELECT TOP 1 Source, Gmag, Plx, PM FROM "I/355/gaiadr3" WHERE Source=3643098875811934208`)), "Gaia DR3 by source id");
-assert.ok(matchRoute(tapUrl(VIZ, `SELECT TOP 5 Name, Teff, logg, "[Fe/H]" FROM "J/A+A/656/A53/sweetcat" WHERE Name='WASP-39'`)), "SWEET-Cat by host name");
+assert.ok(matchRoute(tapUrl(VIZ, `SELECT TOP 5 Name, Teff, logg, "[Fe/H]" FROM "J/A+A/656/A53/sweetcat" WHERE Name='WASP-39'`)), "SWEET-Cat by host name (old designation, pages already open)");
+assert.ok(matchRoute(tapUrl(VIZ, `SELECT TOP 5 * FROM "J/A+A/691/A53/catalog" WHERE Name='WASP-39'`)), "SWEET-Cat 2024 table by host name");
 assert.equal(matchRoute(tapUrl(VIZ, `SELECT TOP 5 * FROM "I/345/gaia2" WHERE Source=1`)), null, "other VizieR catalogs are not relayed");
 assert.equal(matchRoute(tapUrl(VIZ, `SELECT TOP 5 Name FROM "J/A+A/656/A53/sweetcat" WHERE Name='x' OR 1=1`)), null);
 assert.equal(matchRoute(tapUrl(VIZ, `SELECT TOP 10 Source FROM "I/355/gaiadr3" WHERE 1=CONTAINS(POINT('ICRS', RA_ICRS, DE_ICRS), CIRCLE('ICRS', 1, 2, 0.2))`)), null, "a wide Gaia cone is refused");

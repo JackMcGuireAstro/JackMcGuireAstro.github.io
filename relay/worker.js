@@ -89,10 +89,10 @@ export const ROUTES = [
     path: /^\/tap\/sync$/,
     query: (q) => tapQuery(q, /^SELECT\s+TOP\s+\d{1,3}\s+[\w\s,.]{1,200}\s+FROM\s+NEDTAP\.objdir\s+WHERE\s+CONTAINS\(POINT\('J2000',\s*ra,\s*dec\),\s*CIRCLE\('J2000',\s*[-\d.]+,\s*[-\d.]+,\s*(0?\.\d+)\)\)\s*=\s*1(\s+ORDER\s+BY\s+[\w.]+(\s+(ASC|DESC))?)?$/i, 0.05),
   },
-  { // VizieR TAP: Gaia DR3 (by source id or a small cone) and SWEET-Cat (by host name)
+  { // VizieR TAP: Gaia DR3 (by source id or a small cone) and SWEET-Cat (by host name; the 2024 table J/A+A/691/A53/catalog — J/A+A/656/A53 is not served by CDS — and the old name kept for pages already open)
     host: "tapvizier.cds.unistra.fr",
     path: /^\/TAPVizieR\/tap\/sync$/,
-    query: (q) => tapQuery(q, /^SELECT\s+TOP\s+\d{1,3}\s+[\w\s,."*+/\[\]]{1,300}\s+FROM\s+"(I\/355\/gaiadr3|J\/A\+A\/656\/A53\/sweetcat)"\s+WHERE\s+(1\s*=\s*CONTAINS\(POINT\('ICRS',\s*RA_ICRS,\s*DE_ICRS\),\s*CIRCLE\('ICRS',\s*[-\d.]+,\s*[-\d.]+,\s*(0?\.\d+)\)\)|Source\s*=\s*\d{1,20}|Name\s*=\s*'[\w .+\-]{1,60}')(\s+ORDER\s+BY\s+\w+(\s+(ASC|DESC))?)?$/i, 0.05),
+    query: (q) => tapQuery(q, /^SELECT\s+TOP\s+\d{1,3}\s+[\w\s,."*+/\[\]]{1,300}\s+FROM\s+"(I\/355\/gaiadr3|J\/A\+A\/656\/A53\/sweetcat|J\/A\+A\/691\/A53\/catalog)"\s+WHERE\s+(1\s*=\s*CONTAINS\(POINT\('ICRS',\s*RA_ICRS,\s*DE_ICRS\),\s*CIRCLE\('ICRS',\s*[-\d.]+,\s*[-\d.]+,\s*(0?\.\d+)\)\)|Source\s*=\s*\d{1,20}|Name\s*=\s*'[\w .+\-]{1,60}')(\s+ORDER\s+BY\s+\w+(\s+(ASC|DESC))?)?$/i, 0.05),
   },
   { // HEASARC TAP: pointed-observation master tables within a small cone
     host: "heasarc.gsfc.nasa.gov",

@@ -244,3 +244,132 @@ the same relay, the planet's atmospheric spectra (NASA Exoplanet Archive `spectr
 table, with the data file plotted in the browser), host-star records
 (`stellarhosts`), microlensing solutions (`ml`) for microlensing planets, the
 ExoFOP-TESS overview for TOIs, and papers from NASA ADS (free key held by the relay).
+
+## Interoperability, provenance and the status page (Framework v2, Track 1)
+
+Everything in this section is additive: new files under `worldsindex/data/`, new keys in
+`manifest.json`, new panels that render only when their data exists. Nothing is published
+or announced anywhere else (standing decision, 2026-10-19): no DOIs, no registry entries,
+no bots.
+
+### Exports
+
+`scripts/worldsindex_interop.mjs` (called by the static builder) writes ECSV 1.0 and
+VOTable 1.5 copies of every public table under `worldsindex/data/exports/`: `objects`,
+`measurements` (one row per retained catalog value per publication, as the source states
+it), `transit_ephemerides`, `source_coverage`, `identity_states` and `references`, each
+`.ecsv.gz` and `.vot.gz`, plus `exports/index.json` with every column's datatype, UCD1+,
+VOUnits unit and description. A column-metadata registry is the single source of those
+descriptions; a table that emits an unregistered column, or omits a registered one, stops
+the build. Rows carry a HEALPix order-8 nested index and are sorted by it. VOParquet copies
+of `objects` and `measurements` (`scripts/worldsindex_parquet.py`, astropy + pyarrow) are
+built outside the Pages tree and uploaded by the publisher as assets of the rolling GitHub
+Release `worldsindex-data-latest`; `bulk-downloads.json` names them with bytes, SHA-256 and
+URLs, or says why none was built. Tests: `node --test scripts/test_worldsindex_interop.mjs`
+and `python3 scripts/test_worldsindex_interop.py` (Astropy/pyarrow round trip of a built
+release).
+
+### Schemas and the API description
+
+`worldsindex/openapi.yaml` (OpenAPI 3.1) describes every static endpoint; one JSON Schema
+2020-12 file per record type lives under `worldsindex/schemas/` (`manifest`,
+`catalog-index`, `details-shard`, `sky-detections`, `registry`, `transit-ephemerides`,
+`source-coverage`, `source-monitor`, `lightcurve-index`, `lightcurve`, `cloud-run`,
+`exports-index`, `bulk-downloads`, `provenance`, `changelog`, `feed`, `common`).
+`scripts/validate_worldsindex_schemas.py` runs `check-jsonschema` over every published
+top-level JSON file and a time-bounded sample of the detail shards, checks the schemas
+against their metaschema and the OpenAPI document against the schema set, and fails on any
+published JSON file without a schema; the publisher and the deploy workflow refuse a release
+on a mismatch. The status page links every schema file, and the static test checks that the
+list and the directory agree.
+
+### Provenance
+
+`worldsindex/data/provenance.json` is W3C PROV-JSON per build
+(`scripts/worldsindex_provenance.mjs`): the release and every artifact with its SHA-256,
+the atlas projection, every declared source with contract and parser version, snapshot id
+and digest, retrieval time, last attempt and monitor state, the identity rules with the
+reviewed re-identification pins, the builder and site commits, the state asset restored
+(from the cloud-run marker) and the VOParquet assets. `manifest.json` names it by
+`provenancePath`.
+
+### Changelog and feeds
+
+`scripts/worldsindex_changelog.mjs` compares the build with the previous published release
+(the data-branch tip, read through the data store) and writes `changelog.json`,
+`changelog.md`, `feed.json` (JSON Feed 1.1) and `feed.xml` (Atom): objects added and
+removed, promotions to confirmed, demotions, identity-state changes, native rows and
+spectra added per object, source-state and monitor changes; capped lists, complete counts;
+"not computable" rather than a guess when the previous release lacks the object export.
+The feeds are passive files a reader fetches; nothing posts anywhere. The catalog page's
+footer and `<link rel="alternate">` point at them.
+
+### Source contributions, v1 and v2
+
+The builder's `public/data/source-contributions.json.gz` (per object: aliases and
+source-native rows from the frozen context sources) is consumed by the static builder
+through `scripts/worldsindex_contributions.mjs`, which accepts schema versions
+`worldsindex-source-contributions.v1` (2026-10-05) and `.v2` (builder commit `c54691a`,
+2026-10-16; additive `link`/`via` per row and `links`/`viaCrossIdentifier`/`omitted` per
+source) for the matching atlas projection, logs which version it consumed and how many
+rows, and ignores any other file whole with the reason. Until 2026-10-20 the static
+builder accepted only v1, so every release built from a v2 file — every cloud run since
+the 2026-10-16 landing (builder `56f699f`) — silently carried no context rows, no NASA
+aliases and `sourceContributions: null` in its manifest (the live manifest of 2026-10-20
+05:00 UTC: 86,109 packaged rows, `sourceContributions: null`; the restored 2026-10-05
+state builds 314,135 packaged rows with its v2 file consumed and 89,595 without it).
+The Evidence tab's "Packaged source records" table shows the attaching identifier and,
+for rows that arrived through a cross-identifier another source stated, which source
+stated it. Tests: `node --test scripts/test_worldsindex_front.mjs` (v1/v2 fixtures) and
+the release-level checks in `scripts/test_worldsindex_static.py`.
+
+### Status page
+
+`worldsindex/status.html` (+ `worldsindex/assets/status.js`) reads only published files
+and shows, with a text summary before every table: the release facts and the cloud-run
+marker; per source the four denominators from `source-coverage.json`'s `denominators`
+block (declared / applicable / executed / data-bearing, with object counts), the
+builder's eligible / attached / missing-at-provider / blocked counts, the source state and
+the last retrieval attempt (`RETRIEVED`, `UNCHANGED`, `REFUSED`, `FAILED`, `SKIPPED …` with
+category and the provider's words); the provider monitor's state including a quarantine
+and the provider's retained error message per failing required check; identity and
+status counts; and links to `openapi.yaml`, every schema, `provenance.json`,
+`bulk-downloads.json`, the exports index, the feeds and the changelog. One h1, an unbroken
+heading outline; nothing about the reader is kept.
+
+### Sky panel and report-a-problem link
+
+Every object workspace with a catalog coordinate (all but nine of the 2026-10 releases'
+objects, the Solar System rows the Open Exoplanet Catalogue lists without coordinates)
+gains a **Sky** tab (`worldsindex/assets/sky.js`), and the Sky (catalog) page an
+interactive atlas of the filtered objects. Both load nothing until opened:
+
+- **Aladin Lite v3** from the CDS CDN, pinned to `3.6.1`
+  (`https://aladin.cds.unistra.fr/AladinLite/api/v3/3.6.1/aladin.js`, the build the CTAS
+  pages pin; "latest" only as a stated fallback when the CDN stops serving it), with four
+  background layers — DSS2 colour, Legacy Surveys DR10 colour, Pan-STARRS DR1 colour
+  (north of Dec −30°) and 2MASS colour — and DSS2 as the fallback when a layer fails. The
+  host marker sits at the catalog coordinate; the other catalog objects within 5′ (same
+  host and nearby hosts, from the catalog index already in the browser) are drawn as a
+  second marker layer and listed beneath. **Licence:** Aladin Lite is CDS software under
+  the LGPL-3.0-or-later; it is loaded unmodified from CDS, its logo and link stay in the
+  view, and the panel credits each HiPS provider.
+- **Printable finder chart** at 2′ and 10′: JPEG cutouts fetched by the browser from the
+  Legacy Surveys viewer (DR10, then DR9), the Pan-STARRS cutout service north of Dec −30°,
+  and CDS HiPS2FITS (DSS2) last, with north/east arrows, crosshair, scale bar, name, ICRS
+  coordinates and epoch; a print-friendly view opens in a new tab. Nothing is stored.
+- **Web SAMP** (`http://localhost:21012/`, XML-RPC built in the page): `coord.pointAt.sky`
+  for the catalog position and `table.load.votable` with the object's rows (a VOTable
+  built in the browser from the release's selected values and the packaged native rows,
+  handed to the hub as a `data:` URL and downloadable); the catalog page sends the
+  published `exports/objects.vot.gz`. Works in Chrome, Firefox and Edge with a running hub
+  (TOPCAT, Aladin); not in Safari — the panel says so.
+- **Report a problem**: every object workspace carries a link to a prefilled GitHub issue
+  on the website repository — title `<name> (<object id>)`, label `data-problem` (kept by
+  the deploy workflow with `gh label create --force`), body with the stable object id, the
+  atlas projection id, the release checksum (atlas SHA-256), the build time, the panel the
+  reader was on and the dossier URL. Nothing is sent until the reader posts it.
+
+Tests: `node --test scripts/test_worldsindex_front.mjs` (pure helpers) and
+`python3 scripts/test_worldsindex_sky_browser.py` (Playwright; Aladin, the image services
+and the SAMP hub stubbed locally; axe-core when installed).

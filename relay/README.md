@@ -40,7 +40,7 @@ Each route is one host, one path pattern and a check on the query string (`ROUTE
 | `exoplanetarchive.ipac.caltech.edu/TAP/sync` | WorldsIndex archive rows | one `SELECT … FROM spectra|ml|stellarhosts|ps|pscomppars|toi|k2pandc|cumulative WHERE …`, csv or json |
 | `exoplanetarchive.ipac.caltech.edu/cgi-bin/atmospheres/nph-firefly` | WorldsIndex spectrum files | `atmospheres&spec_path=…` (resolved through the archive's workspace) |
 | `ned.ipac.caltech.edu/tap/sync` | CTAS NED cone | `SELECT TOP n … FROM NEDTAP.objdir WHERE CONTAINS(… CIRCLE(… r))=1`, r ≤ 0.05° |
-| `tapvizier.cds.unistra.fr/TAPVizieR/tap/sync` | CTAS Gaia DR3 cone; WorldsIndex Gaia DR3 by source id and SWEET-Cat by host | `"I/355/gaiadr3"` (cone ≤ 0.05° or `Source=<id>`) and `"J/A+A/656/A53/sweetcat"` (`Name='…'`) |
+| `tapvizier.cds.unistra.fr/TAPVizieR/tap/sync` | CTAS Gaia DR3 cone; WorldsIndex Gaia DR3 by source id and SWEET-Cat by host | `"I/355/gaiadr3"` (cone ≤ 0.05° or `Source=<id>`) and `"J/A+A/691/A53/catalog"` (the SWEET-Cat table, August 2024 copy; `Name='…'`; the earlier `"J/A+A/656/A53/sweetcat"` stays allowed for pages already open but CDS does not serve that designation) |
 | `heasarc.gsfc.nasa.gov/xamin/vo/tap/sync` | CTAS HEASARC pointed observations | `swiftmastr|xmmmaster|chanmaster|numaster|nicermastr`, cone ≤ 0.25° |
 | `www.aavso.org/vsx/index.php` | CTAS known variables near the position | `view=api.list`, radius ≤ 0.1°, json |
 | `api.adsabs.harvard.edu/v1/search/query` | both pages' paper lists | `q` ≤ 400 chars, listed `fl` fields, ≤ 50 rows; key `ADS_TOKEN` |

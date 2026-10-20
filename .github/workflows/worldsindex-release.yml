@@ -91,6 +91,10 @@ jobs:
           node --check scripts/worldsindex_changelog.mjs
           node --check scripts/worldsindex_provenance.mjs
           node --test scripts/test_worldsindex_interop.mjs
+          node --check worldsindex/assets/sky.js
+          node --check worldsindex/assets/status.js
+          node --check scripts/worldsindex_contributions.mjs
+          node --test scripts/test_worldsindex_front.mjs
       # The Track 1 exports (ECSV, VOTable, the VOParquet index, PROV-JSON, changelog, feeds)
       # read back with Astropy and pyarrow, and every published WorldsIndex JSON file against
       # worldsindex/schemas (named by worldsindex/openapi.yaml) with check-jsonschema.
@@ -177,6 +181,7 @@ jobs:
           python3 scripts/test_research_browser.py 2>&1 | tail -10 || status=1
           python3 scripts/test_worldsindex_lightcurves_browser.py 2>&1 | tail -10 || status=1
           python3 scripts/test_worldsindex_live_sources_browser.py 2>&1 | tail -10 || status=1
+          python3 scripts/test_worldsindex_sky_browser.py 2>&1 | tail -10 || status=1
           if [ "$status" -eq 0 ]; then
             echo "CTAS browser and evidence-schema checks: passed" >> "$GITHUB_STEP_SUMMARY"
           else

@@ -290,7 +290,7 @@ for path in json.load(open(sys.argv[1])).get("artifacts", {}):
         print("worldsindex/data/" + path)
 PY_OBSERVATIONS
 )
-(cd "$SITE" && python3 scripts/test_worldsindex_static.py && node --check worldsindex/assets/app.js && git diff --check) >>"$LOG" 2>&1 \
+(cd "$SITE" && python3 scripts/test_worldsindex_static.py && node --check worldsindex/assets/app.js && node --check worldsindex/assets/sky.js && node --check worldsindex/assets/status.js && node --test scripts/test_worldsindex_front.mjs && git diff --check) >>"$LOG" 2>&1 \
   || die "static release validation failed"
 # Track 1 gates: the exports read back with Astropy and pyarrow cell for cell (values, units,
 # UCDs, limit flags, provenance columns), and every published JSON file matches its schema

@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import * as interop from './worldsindex_interop.mjs';
 import { atomFeed, CHANGELOG_SCHEMA_VERSION, diffReleases, jsonFeed, loadPreviousRelease, renderChangelogMarkdown } from './worldsindex_changelog.mjs';
 import { provenanceDocument, PROVENANCE_SCHEMA_VERSION } from './worldsindex_provenance.mjs';
+import { acceptSourceContributions, describeSourceContributions } from './worldsindex_contributions.mjs';
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const sourceRoot = resolve(process.env.WORLDSINDEX_SOURCE_DIR ?? '/Users/johnmcguire/Documents/Codex/CTAS and WorldsIndex/WorldsIndex Development/work/worldsindex');
@@ -209,8 +210,12 @@ const loadedContributions = await readFile(join(sourceRoot, 'public/data/source-
   .then((bytes) => JSON.parse(gunzipSync(bytes).toString('utf8')))
   .catch((error) => { if (error.code === 'ENOENT') return null; throw error; });
 // A file left over from another atlas projection (or an unknown schema) is ignored, never half-applied.
-const contributions = loadedContributions && loadedContributions.schemaVersion === 'worldsindex-source-contributions.v1' && loadedContributions.atlasProjectionId === atlas.projectionId ? loadedContributions : null;
-if (loadedContributions && !contributions) console.warn('source-contributions.json.gz ignored: built for another atlas projection or schema');
+// v1 (2026-10-05) and v2 (builder commit c54691a, 2026-10-16: additive `link`/`via` on each row, per-source
+// `links`/`viaCrossIdentifier`/`omitted`) share the same object → { aliases, records } shape, so both are
+// consumed the same way; the version consumed is logged and carried in the manifest (sourceContributions).
+const { contributions, reason: contributionsReason } = acceptSourceContributions(loadedContributions, atlas.projectionId);
+if (loadedContributions && !contributions) console.warn(`source-contributions.json.gz ignored: ${contributionsReason}`);
+if (contributions) console.log(`source-contributions.json.gz: consumed ${describeSourceContributions(contributions)}`);
 // The builder's object × source coverage summary (ExoNexus packages/exonexus/archive/source-coverage.ts):
 // per source, objects eligible / attached / missing at the provider / blocked. Optional; published
 // beside the release so the gap between "could carry" and "carries" is visible over time.

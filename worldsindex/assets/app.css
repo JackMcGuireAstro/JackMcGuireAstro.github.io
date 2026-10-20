@@ -448,3 +448,35 @@ footer nav a { display: inline-flex; align-items: center; min-height: 44px; colo
 @keyframes live-spin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.live-rows li[data-live-status="pending"] .live-state::after{animation:none}}
 .live-meta,.live-same{color:var(--muted);font-size:.78rem}.live-new,.live-changed{display:inline-block;margin:.15rem .2rem .15rem 0;padding:.08rem .5rem;border-radius:999px;font:600 .76rem/1.5 var(--sans);color:var(--text)}
 .live-new{background:rgba(79,199,154,.16);border:1px solid var(--green)}.live-changed{background:rgba(232,169,58,.16);border:1px solid var(--gold)}.live-progress{color:var(--muted);font-size:.85rem}
+
+/* Framework v2 Track 1 (2026-10-20): Sky tab, catalog atlas, finder chart, SAMP, report link, status page, footer data links. */
+.sky-panel h2{margin:0 0 .4rem;font:520 1.5rem var(--display)}.sky-panel h3{margin:1.4rem 0 .4rem;font:520 1.1rem var(--display)}
+.sky-atlas,.sky-finder{margin-top:1rem;border:1px solid var(--line);border-radius:var(--radius-small);background:var(--panel);overflow:clip}
+.sky-atlas>summary,.sky-finder>summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem .8rem;padding:.75rem .9rem;cursor:pointer;font-weight:600}.sky-atlas>summary small,.sky-finder>summary small{color:var(--muted);font-weight:400;font-size:.74rem}
+.sky-atlas>summary:hover,.sky-finder>summary:hover{background:rgba(120,216,245,.045)}
+.sky-atlas-body,.sky-finder-body{padding:.8rem .9rem 1rem;border-top:1px solid var(--line)}
+.sky-atlas-stage{width:100%;height:min(70vh,520px);min-height:280px;margin-top:.6rem;border-radius:var(--radius-small);background:#000;overflow:hidden}
+.sky-atlas-stage .aladin-container{border-radius:var(--radius-small)}
+.sky-tools-layers{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem}.sky-tools-layers span{color:var(--muted);font-size:.74rem}
+.sky-tools-layers button{padding:.28rem .7rem;border:1px solid var(--line-strong);border-radius:999px;background:transparent;color:var(--text);font-size:.76rem;cursor:pointer}
+.sky-tools-layers button[aria-pressed="true"]{background:rgba(120,216,245,.16);border-color:var(--cyan);color:var(--cyan-bright)}
+.sky-tools-credit{margin:.5rem 0 0}
+.sky-tools-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.8rem}
+.sky-finder-head{margin:0 0 .6rem;font-size:.86rem}
+.sky-finder-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}
+.finder-field{margin:0}.finder-frame{position:relative;aspect-ratio:1;border:1px solid var(--line-strong);border-radius:var(--radius-small);background:#000;overflow:hidden}
+.finder-frame img{display:block;width:100%;height:100%;object-fit:cover}.finder-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.finder-marks line,.finder-marks path{stroke:#ffe66d;stroke-width:2;fill:#ffe66d}.finder-marks text{fill:#ffe66d;font:bold 22px sans-serif;paint-order:stroke;stroke:#000;stroke-width:3px}
+.finder-wait{position:absolute;inset:auto 0 0;margin:0;padding:.4rem .6rem;background:rgba(0,0,0,.6);color:var(--muted);font-size:.74rem}
+.finder-field figcaption{margin-top:.35rem;color:var(--muted);font-size:.74rem}
+.catalog-sky{margin-top:1rem}
+.footer-data-links{display:flex;flex-wrap:wrap;gap:.3rem .9rem;margin:.4rem 0 0}footer .footer-data-links a{font-size:.78rem}
+/* status page */
+.status-page{max-width:1180px;margin:0 auto;padding:1.5rem 16px 3rem}.status-page h1{margin:.2rem 0 .4rem;font:520 clamp(1.8rem,4vw,2.6rem) var(--display)}
+.status-page h2{margin:2rem 0 .5rem;font:520 1.4rem var(--display)}.status-page h3{margin:1.2rem 0 .4rem;font:520 1.05rem var(--display)}
+.status-page .table-summary{margin:.3rem 0 .6rem;color:#c8d4de;font-size:.86rem}.status-page .table-wrap{margin-top:.4rem;max-height:70vh}
+.status-page td small{display:block;color:var(--muted)}.status-page .status-links{display:flex;flex-wrap:wrap;gap:.5rem .9rem;padding:0;margin:.5rem 0;list-style:none}
+.status-page .state-pill{display:inline-block;padding:.08rem .5rem;border-radius:999px;border:1px solid var(--line-strong);font:600 .72rem/1.5 var(--sans,system-ui)}
+.status-page .state-pill[data-state="ok"]{border-color:var(--green,#4fc79a);color:#9ff0cc}.status-page .state-pill[data-state="warn"]{border-color:var(--gold,#e8a93a);color:#ffd98a}.status-page .state-pill[data-state="bad"]{border-color:#f48b8b;color:#ffb3b3}
+@media (max-width:760px){.sky-atlas-stage{height:60vw;min-height:240px}}
+@media print{.sky-atlas-stage,.sky-tools-actions{display:none}}

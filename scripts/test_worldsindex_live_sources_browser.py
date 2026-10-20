@@ -96,7 +96,7 @@ class LiveSourcesBrowserTests(unittest.TestCase):
                 route.fulfill(status=200, content_type="application/json", body="[]", headers=headers)
             elif "gaiadr3" in target:
                 route.fulfill(status=200, content_type="text/csv", body="Source,RA_ICRS,DE_ICRS,Gmag,Plx,PM\n3643098875811934208,217.3,-3.4,11.9,4.6,30\n", headers=headers)
-            elif "sweetcat" in target:
+            elif "sweetcat" in target or "691/A53/catalog" in target:
                 route.fulfill(status=200, content_type="text/csv", body="Name,Teff\n", headers=headers)
             elif "adsabs" in target:
                 route.fulfill(status=503, content_type="text/plain", body="key", headers=headers)
@@ -133,7 +133,9 @@ class LiveSourcesBrowserTests(unittest.TestCase):
         self.assertIn("needs-key", page.locator("[data-live-row='ads']").get_attribute("data-live-status"))
         self.assertIn("NASA ADS key", page.locator("[data-live-row='ads']").inner_text())
         self.assertEqual(page.locator("[data-live-row='simbad']").get_attribute("data-live-status"), "ok")
-        self.assertIn("source id from PSCompPars", page.locator("[data-live-row='gaia-dr3']").inner_text())
+        # A release that packages the frozen stellar-host rows (source contributions consumed) states the
+        # Gaia DR3 id on the record itself; one without them resolves it live from PSCompPars.
+        self.assertRegex(page.locator("[data-live-row='gaia-dr3']").inner_text(), r"source id (from PSCompPars|stated by the record)")
         self.assertIn("Link only", page.locator("[data-live-row='exoplanet-eu']").inner_text())
         self.assertIn("something new since the release", page.locator("[data-live-progress]").inner_text())
         self.assertIn("Planetary Systems rows", page.locator("[data-live-extras-out]").inner_text())

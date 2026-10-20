@@ -78,7 +78,7 @@ assert.equal(problemResult({noRelay: true}).status, 'no-relay');
     if (target.includes('from stellarhosts')) return reply([{hostname: 'WASP-39', st_refname: '<a href=https://ui.adsabs.harvard.edu/abs/2011A/abstract>Faedi 2011</a>', st_teff: 5400}]);
     if (target.includes('from spectra')) return reply([{pl_name: 'WASP-39 b', spec_type: 'transmission', instrument: 'NIRISS', spec_path: '80/70/32/30/WASP_39_b_3.11466_3868_2.tbl'}]);
     if (target.includes('gaiadr3')) return reply('Source,RA_ICRS,DE_ICRS,Gmag,Plx,PM\n3643098875811934208,217.3266,-3.4445,11.9,4.6,30\n', 'text/csv');
-    if (target.includes('sweetcat')) return reply('Name,Teff,logg\nWASP-39,5485,4.5\n', 'text/csv');
+    if (target.includes('sweetcat') || target.includes('691/A53/catalog')) return reply('Name,Teff,logg\nWASP-39,5485,4.5\n', 'text/csv');
     if (target.includes('adsabs')) return new Response('key', {status: 503});
     return new Response('', {status: 404});
   };

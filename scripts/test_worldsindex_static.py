@@ -23,6 +23,37 @@ APP = ROOT / "worldsindex"
 DATA = APP / "data"
 
 
+CONTRIBUTIONS_SCHEMA_VERSIONS = {"worldsindex-source-contributions.v1", "worldsindex-source-contributions.v2"}
+
+
+def check_contribution_rows(contributions: dict, packaged_records: dict) -> None:
+    """The rows a consumed contributions file declares must be in the shards: every frozen source the
+    builder attached rows for has packaged rows of that source (spectra included; packaged rows are
+    distinct records, attachedRows counts one per object a row reached), and v2 rows attached through
+    a stated cross-identifier carry `via` with the identifier and the source, table and column that
+    stated it."""
+    by_source: dict[str, int] = {}
+    via_rows = 0
+    for record in packaged_records.values():
+        by_source[record["sourceId"]] = by_source.get(record["sourceId"], 0) + 1
+        if record.get("via"):
+            via = record["via"]
+            assert via.get("value") and via.get("sourceId") and via.get("table") and via.get("column"), record["sourceRecordId"]
+            assert record.get("link"), f"{record['sourceRecordId']} carries via without the attaching link"
+            via_rows += 1
+    for source_id, summary in contributions["sources"].items():
+        if source_id == "nasa-name-tables":
+            continue  # its rows are aliases on the catalog index (checked above), not packaged records
+        if summary["state"] == "FROZEN_SNAPSHOT" and summary["attachedRows"] > 0:
+            assert by_source.get(source_id, 0) > 0, f"{source_id}: {summary['attachedRows']} attached rows declared, none packaged"
+    spectra = contributions["sources"].get("nasa-atmospheric-spectroscopy")
+    if spectra and spectra["state"] == "FROZEN_SNAPSHOT" and spectra["attachedRows"] > 0:
+        assert by_source.get("nasa-atmospheric-spectroscopy", 0) > 0, "spectrum rows were consumed but none is packaged"
+    if contributions["schemaVersion"] == "worldsindex-source-contributions.v2":
+        declared_via = sum(summary.get("viaCrossIdentifier", 0) for summary in contributions["sources"].values())
+        assert (declared_via == 0) == (via_rows == 0), f"v2 declares {declared_via} cross-identifier rows, shards carry {via_rows}"
+
+
 def read_gzip_json(path: Path):
     with gzip.open(path, "rt", encoding="utf-8") as stream:
         return json.load(stream)
@@ -108,13 +139,17 @@ def main() -> None:
     # NASA context attached by exact NASA keys (optional; present when the builder produced it).
     contributions = manifest.get("sourceContributions")
     if contributions:
-        assert contributions["schemaVersion"] == "worldsindex-source-contributions.v1"
+        # v1 (2026-10-05) and v2 (builder c54691a, 2026-10-16; additive link/via per row) are both
+        # consumed; the static builder on main accepted only v1 until 2026-10-20 and silently dropped
+        # every v2 file (scripts/worldsindex_contributions.mjs).
+        assert contributions["schemaVersion"] in CONTRIBUTIONS_SCHEMA_VERSIONS, contributions["schemaVersion"]
         indexed = {item["objectId"]: item for item in catalog_index["objects"]}
         assert "HIP 108859" in indexed["object-hd-209458-b"].get("aliases", []), "NASA aliases must be searchable"
         for entry in registry["sources"]["entries"]:
             summary = contributions["sources"].get(entry["id"])
             if summary and summary["state"] == "FROZEN_SNAPSHOT" and summary["attachedRows"] > 0:
                 assert entry["state"] == "INGESTED" and entry["release"] == summary["snapshotId"], entry["id"]
+        check_contribution_rows(contributions, packaged_records)
 
     packaged_sources = {"nasa-pscomppars", "nasa-toi", "nasa-koi", "nasa-k2", "exoplanet-eu"}
     for detection in atlas["detections"]:
@@ -126,6 +161,7 @@ def main() -> None:
 
     transit_count = check_transit_ephemerides(manifest, by_id, packaged_records)
     interop_note = check_interop_products(manifest)
+    check_front_end(atlas)
 
     assert "object-hd-209458-b" in by_id
     assert by_id["object-hd-209458-b"]["sourceRecordCount"] >= 20
@@ -311,6 +347,40 @@ def check_transit_ephemerides(manifest: dict, by_id: dict, packaged_records: dic
         epoch = _number(values.get("koi_time0bk")) + BKJD_OFFSET if row["sourceId"] == "nasa-koi" else _number(values.get("pl_tranmid"))
         assert abs(epoch - row["t0Bjd"]) < 1e-7, f"{object_id}: epoch differs from its source row"
     return len(rows)
+
+
+def check_front_end(atlas: dict) -> None:
+    """Framework v2 Track 1 part D, the parts a static read can verify: the Sky tab, the report link
+    and the footer data links are in the page; sky.js pins the Aladin Lite build and the four
+    layers and keeps the LGPL note; status.html has one h1, an unbroken heading outline and a link
+    to every schema file (and no link without a file); every object without a coordinate is one
+    the panel will not render for; the automation notes document the panel and the licence."""
+    index = (APP / "index.html").read_text(encoding="utf-8")
+    assert 'id="object-tab-sky"' in index and 'id="tab-sky"' in index, "the Sky tab is missing"
+    assert 'id="report-problem"' in index, "the report-a-problem link is missing"
+    assert 'id="catalog-sky"' in index, "the catalog page has no atlas container"
+    for href in ("status.html", "data/changelog.md", "data/feed.json", "data/feed.xml", "data/exports/index.json", "openapi.yaml"):
+        assert f'href="{href}"' in index, f"footer link to {href} is missing"
+    assert "sky.js?v=" in (APP / "assets" / "app.js").read_text(encoding="utf-8")
+    sky = (APP / "assets" / "sky.js").read_text(encoding="utf-8")
+    assert "https://aladin.cds.unistra.fr/AladinLite/api/v3/" in sky and "ALADIN_VERSION = '3.6.1'" in sky, "Aladin Lite must stay pinned"
+    for hips in ("CDS/P/DSS2/color", "CDS/P/DESI-Legacy-Surveys/DR10/color", "CDS/P/PanSTARRS/DR1/color-z-zg-g", "CDS/P/2MASS/color"):
+        assert hips in sky, hips
+    assert "LGPL-3.0-or-later" in sky and "not work in Safari" in sky and "data-problem" in sky
+    for host in ("legacysurvey.org/viewer/jpeg-cutout", "ps1images.stsci.edu/cgi-bin/fitscut.cgi", "alasky.cds.unistra.fr/hips-image-services/hips2fits"):
+        assert host in sky, host
+    status_html = (APP / "status.html").read_text(encoding="utf-8")
+    assert status_html.count("<h1") == 1, "status page must have exactly one h1"
+    levels = [int(level) for level in re.findall(r"<h([1-6])[\s>]", status_html)]
+    assert all(after - before <= 1 for before, after in zip(levels, levels[1:])), f"status page heading outline jumps: {levels}"
+    schema_links = set(re.findall(r'href="schemas/([^"]+)"', status_html))
+    schema_files = {path.name for path in (APP / "schemas").glob("*.schema.json")}
+    assert schema_links == schema_files, f"status page schema links {schema_links ^ schema_files} differ from the files"
+    assert "status.js?v=" in status_html
+    without_coordinates = [d["name"] for d in atlas["detections"] if d.get("raDeg") is None or d.get("decDeg") is None]
+    assert len(without_coordinates) <= 20, f"unexpectedly many objects without coordinates: {len(without_coordinates)}"
+    notes = (ROOT / "WORLDSINDEX-AUTOMATION.md").read_text(encoding="utf-8")
+    assert "Aladin Lite" in notes and "LGPL" in notes and "status.html" in notes, "WORLDSINDEX-AUTOMATION.md must document the sky panel, its licence and the status page"
 
 
 if __name__ == "__main__":
