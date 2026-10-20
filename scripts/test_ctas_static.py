@@ -1968,28 +1968,35 @@ class CertificateAndArtifactTests(unittest.TestCase):
         })
 
     def test_real_rights_cleared_regression_records_remain_inspectable(self):
-        by_name = {row["name"]: row for row in self.snapshot["candidates"]}
-        multi = by_name["AT2026zxr"]
-        self.assertEqual(multi["event_id"], "3f55528c-f552-4513-933b-9c982b8b675f")
+        # These are real public events pinned by their stable event id. Their names change
+        # legitimately: AT2026zxx became SN2026zxx when TNS received its classification on
+        # 2026-10-19 17:04 UTC, and a lookup by name refused every release for seven hours.
+        # The name is reported, never required.
+        by_event = {row["event_id"]: row for row in self.snapshot["candidates"]}
+
+        def pinned(event_id, former_names):
+            self.assertIn(event_id, by_event, f"pinned regression event {event_id} ({'/'.join(former_names)}) is missing from the release")
+            row = by_event[event_id]
+            self.assertTrue(row["name"], f"pinned regression event {event_id} has no name")
+            return row
+
+        multi = pinned("3f55528c-f552-4513-933b-9c982b8b675f", ["AT2026zxr"])
         providers = {row["provider"] for row in multi["follow_up"]["observations"]}
         self.assertTrue({"atlas", "rubin-fink", "rubin-lasair"} <= providers)
 
-        stale = by_name["SN2026wpd"]
-        self.assertEqual(stale["event_id"], "1a6053f4-5660-4228-ad6a-c0a2f9c553f5")
+        stale = pinned("1a6053f4-5660-4228-ad6a-c0a2f9c553f5", ["SN2026wpd"])
         self.assertTrue(any(
             row["retainedEvidenceState"] == "STALE_LAST_GOOD_RETAINED"
             for row in EXPORTER.expand_source_matrix(stale["source_matrix"], self.source_matrix_patterns)
         ))
 
-        no_match = by_name["AT2026zxx"]
-        self.assertEqual(no_match["event_id"], "2ce4c4eb-dd3a-485e-9f34-e46ba0553883")
+        no_match = pinned("2ce4c4eb-dd3a-485e-9f34-e46ba0553883", ["AT2026zxx", "SN2026zxx"])
         self.assertTrue(any(
             row["currentQueryOutcome"] == "SEARCHED_NO_MATCH"
             for row in EXPORTER.expand_source_matrix(no_match["source_matrix"], self.source_matrix_patterns)
         ))
 
-        revision = by_name["NuEm-220601A-118386"]
-        self.assertEqual(revision["event_id"], "c72e4f9e-ad8d-4573-bb15-917a911b5a6b")
+        revision = pinned("c72e4f9e-ad8d-4573-bb15-917a911b5a6b", ["NuEm-220601A-118386"])
         signals = revision["follow_up"]["messenger_signals"]
         self.assertGreaterEqual(len(signals), 2)
         self.assertTrue(any(row.get("retracted") for row in signals))
