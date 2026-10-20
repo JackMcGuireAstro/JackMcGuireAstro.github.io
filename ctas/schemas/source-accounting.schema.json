@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS source accounting by source",
+  "description": "ctas/data/source-accounting.json: the four source denominators (declared, applicable, executed, data-bearing) per source across every public record of the release, with totals that must reproduce status.json source_accounting.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.public-source-accounting@1.0.0"
+    },
+    "generated_at": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "candidate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "statement": {
+      "type": "string"
+    },
+    "per_source_versus_aggregate": {
+      "type": "string"
+    },
+    "definitions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "totals": {
+      "type": "object",
+      "properties": {
+        "declared_sources": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "applicable_source_evaluations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "executed_query_receipts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "data_returned_source_evaluations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "data_bearing_source_evaluations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "outcome_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "required": [
+        "declared_sources",
+        "applicable_source_evaluations",
+        "executed_query_receipts",
+        "data_returned_source_evaluations",
+        "data_bearing_source_evaluations",
+        "outcome_counts"
+      ]
+    },
+    "source_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "declared": {
+            "type": "boolean"
+          },
+          "implementation_state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "operational_state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "representation_state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "primary_family": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "applicable_events": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "executed_query_receipts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "events_with_executed_receipts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "data_returned_events": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "events_with_retained_records": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "outcome_counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "required": [
+          "source_key",
+          "name",
+          "declared",
+          "applicable_events",
+          "executed_query_receipts",
+          "events_with_executed_receipts",
+          "data_returned_events",
+          "events_with_retained_records",
+          "outcome_counts"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "generated_at",
+    "catalog_content_checksum_sha256",
+    "candidate_count",
+    "statement",
+    "per_source_versus_aggregate",
+    "definitions",
+    "totals",
+    "source_count",
+    "sources"
+  ],
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/noBannedKeys"
+    }
+  ]
+}

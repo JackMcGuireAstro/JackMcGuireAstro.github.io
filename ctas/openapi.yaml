@@ -55,7 +55,7 @@ paths:
       operationId: getStatus
       responses:
         "200":
-          description: The current release's status. provenance_path, api_description_path, bulk_downloads_path and datalink_manifest_path name the Track 1 additions.
+          description: The current release's status. provenance_path, api_description_path, bulk_downloads_path and datalink_manifest_path name the Track 1 additions; changelog_path, source_accounting_path, feeds_index_path and status_page_path the part C additions; cloud_run_marker_path is present only when the GitHub Actions publisher built the release.
           content:
             application/json:
               schema:
@@ -388,6 +388,93 @@ paths:
           description: Atom 1.0 feed built from live-summary.json.
           content:
             application/atom+xml: {}
+  /ctas/data/feeds/index.json:
+    get:
+      tags: [interoperability]
+      summary: Index of every Atom 1.0 and JSON Feed 1.1 file of the release (all records, per event type, per ranking channel, per sky region)
+      operationId: getFeedsIndex
+      responses:
+        "200":
+          description: Feed listing with byte lengths and SHA-256; the region rule (HEALPix order 2 NESTED in ICRS, galactic plane within 10 degrees, north and south) and the public change clocks the feeds order by.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/feeds-index.schema.json
+  /ctas/data/feeds/all-events.json:
+    get:
+      tags: [interoperability]
+      summary: JSON Feed 1.1 of every public record, newest public change first (at most 100 items)
+      operationId: getAllEventsJsonFeed
+      responses:
+        "200":
+          description: JSON Feed 1.1; per-item CTAS fields under the _ctas extension (event id, coordinates, score, regions, dossier chunk).
+          content:
+            application/feed+json: {}
+  /ctas/data/feeds/all-events.xml:
+    get:
+      tags: [interoperability]
+      summary: Atom 1.0 of every public record, newest public change first (at most 100 entries)
+      operationId: getAllEventsAtom
+      responses:
+        "200":
+          description: Atom 1.0 feed; entry ids are urn:ctas:event:<uuid>.
+          content:
+            application/atom+xml: {}
+  /ctas/data/feeds/{kind}/{name}.{format}:
+    get:
+      tags: [interoperability]
+      summary: One feed per event type, ranking channel or sky region, as JSON Feed 1.1 (json) or Atom 1.0 (xml)
+      operationId: getFeed
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [event-type, channel, region]
+        - name: name
+          in: path
+          required: true
+          description: An event type the exporter enumerates (optical-transient, gamma-ray-burst-candidate, ...), a ranking channel (optical, x-ray-gamma-ray, radio, neutrino-multimessenger, contextual-non-target), or a region (healpix2-000 .. healpix2-191, galactic-plane, north, south); the complete list is in feeds/index.json.
+          schema:
+            type: string
+            pattern: "^[a-z0-9-]+$"
+        - name: format
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [json, xml]
+      responses:
+        "200":
+          description: The feed; empty sets still give a valid feed with no items.
+          content:
+            application/feed+json: {}
+            application/atom+xml: {}
+  /ctas/data/changelog.json:
+    get:
+      tags: [status]
+      summary: Plain-words changelog between consecutive releases (new events, classifications, retractions, renames by stable event id, source-state changes, coverage milestones)
+      operationId: getChangelog
+      responses:
+        "200":
+          description: Newest first, at most 24 entries, carried forward from the previous release; every sentence is a fixed template over counts and names.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/changelog.schema.json
+  /ctas/data/source-accounting.json:
+    get:
+      tags: [sources]
+      summary: The four source denominators (declared, applicable, executed, data-bearing) per source across the release
+      operationId: getSourceAccounting
+      responses:
+        "200":
+          description: One row per source with record counts and current query outcomes; totals reproduce status.json source_accounting or the release fails.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/source-accounting.schema.json
   /ctas/data/observatories.json:
     get:
       tags: [interoperability]
@@ -455,7 +542,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [common, status, live-summary, catalog-index, catalog-page, catalog-page-manifest, candidate-chunk, candidate-json-part, candidate-chunk-manifest, alias-index, source-universe, source-matrix-patterns, research-manifest, release-history, link-health, certification, bulk-downloads, datalink-manifest, provenance, delivery, observatories, cloud-run]
+            enum: [common, status, live-summary, catalog-index, catalog-page, catalog-page-manifest, candidate-chunk, candidate-json-part, candidate-chunk-manifest, alias-index, source-universe, source-matrix-patterns, research-manifest, release-history, link-health, certification, bulk-downloads, datalink-manifest, provenance, delivery, observatories, cloud-run, changelog, source-accounting, feeds-index]
       responses:
         "200":
           description: JSON Schema document.

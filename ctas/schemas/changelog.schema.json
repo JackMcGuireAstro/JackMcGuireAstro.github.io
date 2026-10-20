@@ -1,0 +1,342 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS release changelog",
+  "description": "ctas/data/changelog.json: plain-words changes between consecutive public releases (new events, classifications, retractions, renames by stable event id, source-state changes, coverage milestones), newest first, at most 24 entries; written by scripts/ctas_changelog.py from the exporter's --release-base-ref comparison.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.public-release-changelog@1.0.0"
+    },
+    "generated_at": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "statement": {
+      "type": "string"
+    },
+    "claim_boundary": {
+      "type": "string"
+    },
+    "entry_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "entries": {
+      "type": "array",
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "properties": {
+          "entry_id": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          },
+          "published_at": {
+            "$ref": "common.schema.json#/$defs/dateTime"
+          },
+          "catalog_content_checksum_sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          },
+          "previous_catalog_content_checksum_sha256": {
+            "$ref": "common.schema.json#/$defs/nullableSha256"
+          },
+          "base_commit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "previous_candidate_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "candidate_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "new_event_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "removed_event_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "classification_change_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "retraction_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rename_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source_state_change_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "new_events": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "properties": {
+                "event_id": {
+                  "$ref": "common.schema.json#/$defs/uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "event_type": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "primary_messenger": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "discovery_survey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "classification": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "event_id",
+                "name"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "removed_events": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "properties": {
+                "event_id": {
+                  "$ref": "common.schema.json#/$defs/uuid"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "event_id",
+                "name"
+              ]
+            }
+          },
+          "classification_changes": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "properties": {
+                "event_id": {
+                  "$ref": "common.schema.json#/$defs/uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "new",
+                    "revised"
+                  ]
+                },
+                "previous_classification": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "classification": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "event_id",
+                "name",
+                "kind",
+                "classification"
+              ]
+            }
+          },
+          "retractions": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "properties": {
+                "event_id": {
+                  "$ref": "common.schema.json#/$defs/uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "previous_status": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "basis": {
+                  "enum": [
+                    "status",
+                    "retraction-notice"
+                  ]
+                }
+              },
+              "required": [
+                "event_id",
+                "name",
+                "basis"
+              ]
+            }
+          },
+          "renames": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "properties": {
+                "event_id": {
+                  "$ref": "common.schema.json#/$defs/uuid"
+                },
+                "previous_name": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "event_id",
+                "previous_name",
+                "name"
+              ]
+            }
+          },
+          "source_state_changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source_key": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "previous_state": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "state": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "direction": {
+                  "enum": [
+                    "degraded",
+                    "recovered",
+                    "changed"
+                  ]
+                }
+              },
+              "required": [
+                "source_key",
+                "name",
+                "direction"
+              ]
+            }
+          },
+          "coverage_milestones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "text"
+              ]
+            }
+          },
+          "summary": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "entry_id",
+          "published_at",
+          "catalog_content_checksum_sha256",
+          "previous_candidate_count",
+          "candidate_count",
+          "new_event_count",
+          "removed_event_count",
+          "classification_change_count",
+          "retraction_count",
+          "rename_count",
+          "source_state_change_count",
+          "new_events",
+          "removed_events",
+          "classification_changes",
+          "retractions",
+          "renames",
+          "source_state_changes",
+          "coverage_milestones",
+          "summary"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "generated_at",
+    "statement",
+    "claim_boundary",
+    "entry_count",
+    "entries"
+  ],
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/noBannedKeys"
+    }
+  ]
+}

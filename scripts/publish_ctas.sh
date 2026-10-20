@@ -49,6 +49,9 @@ PUBLIC_FILES=(
   ctas/data/bulk-downloads.json
   ctas/data/links/manifest.json
   ctas/data/provenance.json
+  ctas/data/changelog.json
+  ctas/data/source-accounting.json
+  ctas/data/feeds/index.json
   ctas/data/status.json
   ctas/data/source-universe.json
   ctas/data/release-history.json
@@ -547,6 +550,47 @@ while IFS= read -r link_document; do
   [ -n "$link_document" ] && PUBLIC_FILES+=("$link_document")
 done <<<"$DATALINK_FILES"
 
+# ------------------------------------------------------- collect feed files
+# One Atom and one JSON Feed file per feed the index declares (all records, per event
+# type, per ranking channel, per sky region), each with its byte length and SHA-256;
+# the exporter wrote them, nothing else under feeds/ is published.
+FEED_FILES=$(python3 - <<'PYCTASFEEDS'
+import hashlib
+import json
+import re
+from pathlib import Path
+
+root = Path.cwd().resolve()
+index = json.loads(Path("ctas/data/feeds/index.json").read_text())
+feeds = index.get("feeds")
+if not isinstance(feeds, list) or len(feeds) != index.get("feed_count"):
+    raise ValueError("Feed count differs from the feeds index")
+paths = []
+seen = set()
+for row in feeds:
+    for key in ("json_feed", "atom"):
+        meta = row.get(key) or {}
+        relative = meta.get("path")
+        if not isinstance(relative, str) or not re.fullmatch(
+                r"ctas/data/feeds/(?:all-events|event-type/[a-z0-9-]+|channel/[a-z0-9-]+|region/(?:healpix2-[0-9]{3}|galactic-plane|north|south))\.(?:json|xml)", relative):
+            raise ValueError("Unexpected feed path")
+        if relative in seen:
+            raise ValueError("Feed path listed twice: " + relative)
+        seen.add(relative)
+        target = root / relative
+        if target.is_symlink() or target.resolve() != target or not target.is_file():
+            raise ValueError("Feed file is missing or is a redirected path: " + relative)
+        raw = target.read_bytes()
+        if len(raw) != meta.get("bytes") or hashlib.sha256(raw).hexdigest() != meta.get("sha256"):
+            raise ValueError("Feed file integrity mismatch: " + relative)
+        paths.append(relative)
+print("\n".join(paths))
+PYCTASFEEDS
+) || die "feeds index validation failed; nothing committed"
+while IFS= read -r feed_file; do
+  [ -n "$feed_file" ] && PUBLIC_FILES+=("$feed_file")
+done <<<"$FEED_FILES"
+
 # ------------------------------------------------- retire superseded artifacts
 # The partition width and the first-screen artifact can change between code
 # releases. Any previously published data file the current manifest no longer
@@ -562,23 +606,26 @@ from pathlib import Path
 manifest = json.loads(Path("ctas/data/candidate-chunks/manifest.json").read_text())
 pages = json.loads(Path("ctas/data/catalog-pages/manifest.json").read_text())
 links = json.loads(Path("ctas/data/links/manifest.json").read_text())
+feeds = json.loads(Path("ctas/data/feeds/index.json").read_text())
 current = {row["path"] for row in manifest.get("chunks", [])}
 current |= {row["path"] for row in manifest.get("parts", [])}
 current |= {row["path"] for row in pages.get("pages", [])}
 current |= {row["path"] for row in links.get("documents", [])}
+current |= {row[key]["path"] for row in feeds.get("feeds", []) for key in ("json_feed", "atom")}
 current |= {
     "ctas/data/candidate-chunks/manifest.json",
     "ctas/data/catalog-pages/manifest.json",
     "ctas/data/links/manifest.json",
+    "ctas/data/feeds/index.json",
 }
 tracked = subprocess.run(
     ["git", "ls-files", "ctas/data/candidate-chunks", "ctas/data/catalog-pages",
-     "ctas/data/links", "ctas/data/catalog-bootstrap.json"],
+     "ctas/data/links", "ctas/data/feeds", "ctas/data/catalog-bootstrap.json"],
     capture_output=True, text=True, check=True,
 ).stdout.split()
 retired = sorted(set(tracked) - current)
 for path in retired:
-    if not re.fullmatch(r"ctas/data/(?:candidate-chunks/[0-9a-f]{2,3}(?:\.part-[0-9]{6})?\.json|catalog-pages/[0-9]{4}\.json|links/[0-9a-f]{3}\.xml|catalog-bootstrap\.json)", path):
+    if not re.fullmatch(r"ctas/data/(?:candidate-chunks/[0-9a-f]{2,3}(?:\.part-[0-9]{6})?\.json|catalog-pages/[0-9]{4}\.json|links/[0-9a-f]{3}\.xml|feeds/(?:all-events|event-type/[a-z0-9-]+|channel/[a-z0-9-]+|region/[a-z0-9-]+)\.(?:json|xml)|catalog-bootstrap\.json)", path):
         raise ValueError("Refusing to retire an unexpected tracked path: " + path)
     target = Path(path)
     if target.is_symlink() or target.absolute().resolve() != target.absolute():
@@ -603,7 +650,7 @@ phase_done validate-detail-pages-and-retirement
 for suite in scripts/test_ctas_static.py scripts/test_ctas_links.py scripts/test_ctas_identity.py \
              scripts/test_ctas_astro_evidence.py scripts/test_ctas_browser.py \
              scripts/test_ctas_chunks.py scripts/test_ctas_publisher_recovery.py \
-             scripts/test_ctas_interop.py; do
+             scripts/test_ctas_interop.py scripts/test_ctas_changelog.py scripts/test_ctas_feed.py; do
   python3 "$suite" >>"$LOG" 2>&1 || die "$suite failed against the generated release; nothing committed"
   phase_done "$(basename "$suite")"
 done

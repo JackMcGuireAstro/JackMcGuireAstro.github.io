@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS feeds index",
+  "description": "ctas/data/feeds/index.json: every Atom 1.0 and JSON Feed 1.1 file of the release (all records, per event type, per ranking channel, per sky region) with byte length and SHA-256; written by scripts/ctas_feed.py inside the export.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.public-feeds-index@1.0.0"
+    },
+    "generated_at": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "statement": {
+      "type": "string"
+    },
+    "regions": {
+      "type": "object",
+      "properties": {
+        "healpix": {
+          "type": "object",
+          "properties": {
+            "order": {
+              "const": 2
+            },
+            "nside": {
+              "const": 4
+            },
+            "scheme": {
+              "const": "NESTED"
+            },
+            "frame": {
+              "const": "ICRS"
+            },
+            "count": {
+              "const": 192
+            }
+          },
+          "required": [
+            "order",
+            "nside",
+            "scheme",
+            "frame",
+            "count"
+          ]
+        },
+        "galactic_plane_half_width_deg": {
+          "type": "number"
+        },
+        "hemispheres": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "healpix"
+      ]
+    },
+    "item_limit": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "change_clocks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "legacy_feed": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "const": "ctas/data/feed.xml"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
+    "feed_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "feeds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "event-type",
+              "channel",
+              "region"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "member_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "item_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "json_feed": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^ctas/data/feeds/(all-events|event-type/[a-z0-9-]+|channel/[a-z0-9-]+|region/(healpix2-[0-9]{3}|galactic-plane|north|south))\\.(json|xml)$"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sha256": {
+                "$ref": "common.schema.json#/$defs/sha256"
+              }
+            },
+            "required": [
+              "path",
+              "bytes",
+              "sha256"
+            ]
+          },
+          "atom": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^ctas/data/feeds/(all-events|event-type/[a-z0-9-]+|channel/[a-z0-9-]+|region/(healpix2-[0-9]{3}|galactic-plane|north|south))\\.(json|xml)$"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sha256": {
+                "$ref": "common.schema.json#/$defs/sha256"
+              }
+            },
+            "required": [
+              "path",
+              "bytes",
+              "sha256"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "title",
+          "description",
+          "member_count",
+          "item_count",
+          "json_feed",
+          "atom"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "generated_at",
+    "catalog_content_checksum_sha256",
+    "statement",
+    "regions",
+    "item_limit",
+    "feed_count",
+    "feeds"
+  ],
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/noBannedKeys"
+    }
+  ]
+}

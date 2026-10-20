@@ -88,6 +88,125 @@ def interop():
     return ctas_interop
 
 
+def changelog_module():
+    """scripts/ctas_changelog.py (plain-words release changelog), standard library only."""
+
+    try:
+        import ctas_changelog
+    except ModuleNotFoundError:
+        from scripts import ctas_changelog  # type: ignore[no-redef]
+    return ctas_changelog
+
+
+def feed_module():
+    """scripts/ctas_feed.py (Atom and JSON Feed per category and sky region).
+
+    The region feeds need astropy_healpix, installed with the collector like the
+    interoperability exports; the import is deferred for the same reason as interop().
+    """
+
+    try:
+        import ctas_feed
+    except ModuleNotFoundError:
+        from scripts import ctas_feed  # type: ignore[no-redef]
+    return ctas_feed
+
+
+def source_accounting_by_source(
+    per_source: dict[str, dict[str, Any]], source_universe_rows: list[dict[str, Any]],
+    accounting_totals: dict[str, Any], candidate_count: int, generated_at: str,
+    catalog_content_checksum_sha256: str,
+) -> tuple[dict[str, Any], list[str]]:
+    """The four denominators per source across the release (ctas/data/source-accounting.json).
+
+    ``per_source`` is accumulated from every dossier's complete source matrix: for each
+    source, how many records it applied to, how many executed query receipts it holds,
+    how many records' current query outcome is DATA_RETURNED and how many records keep
+    retained rows from it. Declared sources with no applicable record appear with zeros;
+    a legacy source referenced by a retained row but absent from this universe version
+    appears with ``declared`` false. The totals must reproduce the aggregate counts the
+    status carries, or the release fails.
+    """
+
+    universe_by_key = {str(row.get("source_key")): row for row in source_universe_rows}
+    rows: list[dict[str, Any]] = []
+    for key in sorted(set(universe_by_key) | set(per_source)):
+        contract = universe_by_key.get(key) or {}
+        counts = per_source.get(key) or {}
+        rows.append({
+            "source_key": key,
+            "name": str(contract.get("name") or counts.get("name") or key),
+            "declared": key in universe_by_key,
+            "implementation_state": contract.get("implementation_state"),
+            "operational_state": contract.get("operational_state"),
+            "representation_state": contract.get("representation_state"),
+            "primary_family": contract.get("primary_family") or contract.get("source_family"),
+            "applicable_events": int(counts.get("applicable_events") or 0),
+            "executed_query_receipts": int(counts.get("executed_query_receipts") or 0),
+            "events_with_executed_receipts": int(counts.get("events_with_executed_receipts") or 0),
+            "data_returned_events": int(counts.get("data_returned_events") or 0),
+            "events_with_retained_records": int(counts.get("events_with_retained_records") or 0),
+            "outcome_counts": dict(sorted((counts.get("outcome_counts") or {}).items())),
+        })
+    totals = {
+        "declared_sources": len(universe_by_key),
+        "applicable_source_evaluations": sum(row["applicable_events"] for row in rows),
+        "executed_query_receipts": sum(row["executed_query_receipts"] for row in rows),
+        "data_returned_source_evaluations": sum(row["data_returned_events"] for row in rows),
+        "data_bearing_source_evaluations": sum(row["events_with_retained_records"] for row in rows),
+        "outcome_counts": {},
+    }
+    for row in rows:
+        for outcome, count in row["outcome_counts"].items():
+            totals["outcome_counts"][outcome] = totals["outcome_counts"].get(outcome, 0) + int(count)
+    totals["outcome_counts"] = dict(sorted(totals["outcome_counts"].items()))
+    problems: list[str] = []
+    for ours, theirs in (
+        ("declared_sources", "declaredSources"), ("applicable_source_evaluations", "applicableSourceEvaluations"),
+        ("executed_query_receipts", "executedQueryReceipts"), ("data_bearing_source_evaluations", "dataBearingSourceEvaluations"),
+    ):
+        if int(totals[ours]) != int(accounting_totals.get(theirs) or 0):
+            problems.append(f"source accounting: {ours} {totals[ours]} differs from the aggregate {theirs} {accounting_totals.get(theirs)}")
+    if totals["outcome_counts"] != {k: int(v) for k, v in (accounting_totals.get("outcomeCounts") or {}).items()}:
+        problems.append("source accounting: per-source outcome counts do not sum to the aggregate outcome counts")
+    document = {
+        "schema": SOURCE_ACCOUNTING_SCHEMA,
+        "generated_at": generated_at,
+        "catalog_content_checksum_sha256": catalog_content_checksum_sha256,
+        "candidate_count": candidate_count,
+        "statement": (
+            "The four source denominators per source for this release, summed over every public "
+            "record's source matrix: declared (the contract is in this release's source universe), "
+            "applicable (records whose executable applicability rule names the source), executed "
+            "(persisted query receipts with an executed terminal outcome, and the records that hold at "
+            "least one), and data-bearing (records whose current query outcome for the source is "
+            "DATA_RETURNED, beside the records that keep retained rows from it, which also counts rows "
+            "retained before the receipt model)."
+        ),
+        "per_source_versus_aggregate": (
+            "Per source, 'declared' is a yes/no fact about the contract, and the three other columns are "
+            "counts of records. The aggregate figures in status.json (applicableSourceEvaluations, "
+            "executedQueryReceipts, dataBearingSourceEvaluations) are the sums of the per-source columns "
+            "applicable_events, executed_query_receipts and events_with_retained_records; the release "
+            "fails if they do not reproduce. Nothing here is a success rate of the provider: NOT_QUERIED, "
+            "NOT_CONFIGURED and LINK_ONLY_NOT_QUERIED describe CTAS, not the provider."
+        ),
+        "definitions": {
+            "declared": "The source contract is in this release's versioned source universe.",
+            "applicable_events": "Public records whose applicability rule names this source (the source is a row of their source matrix).",
+            "executed_query_receipts": "Persisted query receipts for this source with an executed terminal outcome, summed over records.",
+            "events_with_executed_receipts": "Public records with at least one executed receipt for this source.",
+            "data_returned_events": "Public records whose current query outcome for this source is DATA_RETURNED.",
+            "events_with_retained_records": "Public records that keep rights-cleared rows (aliases, measurements, notices, reports or products) from this source.",
+            "outcome_counts": "Current query outcome per record for this source (one outcome per applicable record).",
+        },
+        "totals": totals,
+        "source_count": len(rows),
+        "sources": rows,
+    }
+    return document, problems
+
+
 SCHEMA_VERSION = 2
 
 # 1.1.0 adds definition_checksum_sha256 (the contracts without operational state).
@@ -126,6 +245,14 @@ BULK_PHOTOMETRY_ASSET = "ctas-photometry.parquet"
 DATALINK_MANIFEST_PATH = "ctas/data/links/manifest.json"
 PROVENANCE_PATH = "ctas/data/provenance.json"
 INTEROP_GATE_ID = "interoperability-exports-round-trip"
+# Track 1, part C (2026-10-19): the plain-words changelog, the per-source accounting
+# behind the status page, and the per-category/per-region feeds, all certificate-bound.
+CHANGELOG_PATH = "ctas/data/changelog.json"
+SOURCE_ACCOUNTING_PATH = "ctas/data/source-accounting.json"
+SOURCE_ACCOUNTING_SCHEMA = "ctas.public-source-accounting@1.0.0"
+FEEDS_INDEX_PATH = "ctas/data/feeds/index.json"
+CLOUD_RUN_MARKER_PATH = "ctas/data/cloud-run.json"
+RELEASE_PRODUCTS_GATE_ID = "changelog-feeds-and-source-accounting-integrity"
 CANDIDATE_BUCKET_COUNT = 4096
 SNAPSHOT_VALIDITY_MINUTES = 90  # status.valid_until; see the payload below
 LIVE_SUMMARY_SCHEMA = "ctas.public-live-summary@1.0.0"
@@ -207,6 +334,7 @@ REQUIRED_PUBLIC_ARTIFACTS = (
     "ctas/data/source-universe.json", LINK_HEALTH_PATH,
     SOURCE_MATRIX_PATTERNS_PATH, "ctas/data/release-history.json",
     BULK_DOWNLOADS_PATH, DATALINK_MANIFEST_PATH, PROVENANCE_PATH,
+    CHANGELOG_PATH, SOURCE_ACCOUNTING_PATH, FEEDS_INDEX_PATH,
 )
 # The machine description of the static endpoints and the JSON Schemas it references
 # are code: they are bound by the certificate and validated against every published
@@ -235,12 +363,16 @@ API_DESCRIPTION_PATHS = (
     "ctas/schemas/observatories.schema.json",
     "ctas/schemas/cloud-run.schema.json",
     "ctas/schemas/common.schema.json",
+    "ctas/schemas/changelog.schema.json",
+    "ctas/schemas/source-accounting.schema.json",
+    "ctas/schemas/feeds-index.schema.json",
 )
 # Code and fixed-input files the verification report binds beside the generated data.
 BOUND_CODE_PATHS = (
     "ctas.html", "ctas/app.js", "ctas/chunk-loader.js", "ctas/presentation.js", "ctas/catalog-model.js", "ctas/astro-evidence.js",
     "ctas/workbench.js", "ctas/observability.js", "ctas/live-sources.js", "ctas/spectrum-ascii.js",
     "ctas/lightcurve-summary.js", "ctas/followup.js", "tools/exposure/ccd.js", "ctas/ctas.css",
+    "ctas/sky.js", "ctas/changelog.js", "ctas/status.html", "ctas/status.js",
     "ctas/data/observatories.json",
     "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
     "ctas/schema/astro-evidence-core-0.1.0.schema.json",
@@ -250,6 +382,8 @@ BOUND_CODE_PATHS = (
     "scripts/test_ctas_publisher_recovery.py",
     "scripts/check_ctas_links.py", "scripts/rebuild_ctas_release_history.py",
     "scripts/validate_ctas_schemas.py", "scripts/test_ctas_interop.py",
+    "scripts/ctas_changelog.py", "scripts/ctas_feed.py",
+    "scripts/test_ctas_changelog.py", "scripts/test_ctas_feed.py", "scripts/test_ctas_sky.js",
     "scripts/test_ctas_static.py", "scripts/test_ctas_catalog_model.js",
     "scripts/test_ctas_links.py", "scripts/test_ctas_astro_evidence.py",
     "scripts/test_ctas_identity.py", "scripts/test_ctas_browser.py", "scripts/test_ctas_release_browser.js",
@@ -4851,6 +4985,7 @@ def main() -> int:
     }
     projection_problems: list[str] = []
     source_matrix_patterns: dict[str, list[dict[str, Any]]] = {}
+    per_source_accounting: dict[str, dict[str, Any]] = {}
     for candidate in candidates:
         event_id = str(candidate["event_id"])
         candidate_attempts = counts["all_attempts"].get(event_id, [])
@@ -4887,6 +5022,20 @@ def main() -> int:
             {key: row.get(key) for key in SOURCE_MATRIX_ROW_KEYS}
             for row in source_matrix
         ]
+        for matrix_row in complete_source_matrix:
+            per_source = per_source_accounting.setdefault(str(matrix_row.get("sourceContractId")), {
+                "name": matrix_row.get("sourceName"), "applicable_events": 0, "executed_query_receipts": 0,
+                "events_with_executed_receipts": 0, "data_returned_events": 0,
+                "events_with_retained_records": 0, "outcome_counts": {},
+            })
+            per_source["applicable_events"] += 1
+            executed = int(matrix_row.get("executedReceiptCount") or 0)
+            per_source["executed_query_receipts"] += executed
+            per_source["events_with_executed_receipts"] += 1 if executed else 0
+            outcome = str(matrix_row.get("currentQueryOutcome") or "")
+            per_source["data_returned_events"] += 1 if outcome == "DATA_RETURNED" else 0
+            per_source["events_with_retained_records"] += 1 if int(matrix_row.get("retainedRecordCount") or 0) > 0 else 0
+            per_source["outcome_counts"][outcome] = per_source["outcome_counts"].get(outcome, 0) + 1
         candidate["source_matrix"] = compact_source_matrix(
             complete_source_matrix, source_matrix_patterns,
         )
@@ -5337,6 +5486,43 @@ def main() -> int:
     release_history_raw = (
         json.dumps(release_history, indent=2, sort_keys=True) + "\n"
     ).encode()
+    # Track 1, part C: the plain-words changelog is the same two-release comparison keyed
+    # by stable event id (so a rename is a rename), plus the previous release's source
+    # universe for source-state changes; entries are carried forward from the previous
+    # release's changelog the way the release history is.
+    def _previous_json(path: str) -> Any:
+        try:
+            raw = git_blob(site_root, args.release_base_ref, path)
+            return json.loads(raw) if raw else None
+        except (TypeError, json.JSONDecodeError):
+            return None
+    previous_universe = _previous_json("ctas/data/source-universe.json")
+    previous_changelog = _previous_json(CHANGELOG_PATH)
+    changelog_entry = changelog_module().build_entry(
+        previous_candidates=previous_snapshot.get("candidates") if previous_snapshot else None,
+        current_candidates=candidates,
+        previous_universe=previous_universe if isinstance(previous_universe, dict) else None,
+        current_universe=source_universe,
+        previous_accounting=(previous_snapshot or {}).get("source_accounting"),
+        current_accounting=payload["source_accounting"],
+        published_at=payload["generated_at"],
+        catalog_content_checksum_sha256=payload["catalog_content_checksum_sha256"],
+        previous_catalog_content_checksum_sha256=previous_checksum,
+        base_commit=git_ref(site_root, args.release_base_ref),
+    )
+    changelog = changelog_module().carry_forward(previous_changelog, changelog_entry, generated_at=payload["generated_at"])
+    changelog_raw = (json.dumps(changelog, indent=2, sort_keys=True) + "\n").encode()
+    release_product_problems = changelog_module().changelog_problems(changelog)
+    source_accounting_document, source_accounting_problems = source_accounting_by_source(
+        per_source_accounting, source_universe_rows, payload["source_accounting"], len(candidates),
+        payload["generated_at"], payload["catalog_content_checksum_sha256"],
+    )
+    release_product_problems.extend(source_accounting_problems)
+    source_accounting_raw = (json.dumps(source_accounting_document, indent=2, sort_keys=True) + "\n").encode()
+    feed_files, feeds_index = feed_module().build_feeds(catalog_index, generated_at=payload["generated_at"])
+    release_product_problems.extend(feed_module().feed_problems(feed_files, feeds_index))
+    feeds_index_raw = (json.dumps(feeds_index, indent=2, sort_keys=True) + "\n").encode()
+    clock.done("changelog-source-accounting-feeds")
     alias_index, alias_index_raw = alias_index_artifact(
         candidates, payload["catalog_content_checksum_sha256"],
     )
@@ -5381,6 +5567,9 @@ def main() -> int:
     problems.extend(recursive_safety_problems(release_history, "release-history"))
     problems.extend(recursive_safety_problems(bulk_downloads, "bulk-downloads"))
     problems.extend(recursive_safety_problems(datalink_manifest, "datalink-manifest"))
+    problems.extend(recursive_safety_problems(changelog, "changelog"))
+    problems.extend(recursive_safety_problems(source_accounting_document, "source-accounting"))
+    problems.extend(recursive_safety_problems(feeds_index, "feeds-index"))
     if problems:
         print("export failed validation:", file=sys.stderr)
         for p in problems[:20]:
@@ -5435,6 +5624,10 @@ def main() -> int:
         "source_accounting": payload["source_accounting"],
         "local_store_exceptions": payload["local_store_exceptions"],
     }
+    # The cloud publisher places its run marker in the output directory before the
+    # export (publish_ctas.sh), so a release can name it and a page need not probe for it.
+    if (Path(args.output_dir) / "cloud-run.json").is_file():
+        status["cloud_run_marker_path"] = CLOUD_RUN_MARKER_PATH
     problems.extend(recursive_safety_problems(status, "status"))
     if problems:
         print("export failed validation:", file=sys.stderr)
@@ -5546,6 +5739,9 @@ def main() -> int:
                 ("ctas/data/release-history.json", release_history_raw),
                 (BULK_DOWNLOADS_PATH, bulk_downloads_raw),
                 (DATALINK_MANIFEST_PATH, datalink_manifest_raw),
+                (CHANGELOG_PATH, changelog_raw),
+                (SOURCE_ACCOUNTING_PATH, source_accounting_raw),
+                (FEEDS_INDEX_PATH, feeds_index_raw),
             )
         },
     )
@@ -5577,6 +5773,10 @@ def main() -> int:
         DATALINK_MANIFEST_PATH: datalink_manifest_raw,
         **datalink_files,
         PROVENANCE_PATH: provenance_raw,
+        CHANGELOG_PATH: changelog_raw,
+        SOURCE_ACCOUNTING_PATH: source_accounting_raw,
+        FEEDS_INDEX_PATH: feeds_index_raw,
+        **feed_files,
     }
 
     if link_health_raw:
@@ -6083,6 +6283,11 @@ def main() -> int:
         gate("alias-index-integrity", alias_integrity, f"{alias_index.get('alias_count', 0)} provider-scoped aliases bound to the catalog checksum"),
         gate("research-table-integrity", research_integrity, f"{len(research_manifest.get('tables', []))} research tables and interoperability exports checksum-bound to the catalog"),
         gate(INTEROP_GATE_ID, interop_integrity, interop_evidence),
+        gate(RELEASE_PRODUCTS_GATE_ID, not release_product_problems, (
+            f"changelog of {changelog['entry_count']} entries reproduces its entry ids; per-source accounting for "
+            f"{source_accounting_document['source_count']} sources sums to the aggregate denominators; "
+            f"{feeds_index['feed_count']} Atom and JSON Feed pairs validate (feed id/updated/entry ids; version/title/items)"
+        ) if not release_product_problems else "; ".join(release_product_problems[:3])),
         gate("derived-magnitude-safety", magnitude_safety, f"{payload['statistics']['magnitude_values_excluded']} implausible source values retained only as flagged raw reports"),
         gate("release-history-integrity", release_history_integrity, f"{len(release_history['entries'])} checksum-addressed public catalog changes"),
         gate("coordinate-integrity", coordinate_contract, "coordinate pairs are complete/absent and within ICRS degree ranges"),
@@ -6147,6 +6352,9 @@ def main() -> int:
         "bulk_downloads": {"path": BULK_DOWNLOADS_PATH, "sha256": hashlib.sha256(bulk_downloads_raw).hexdigest()},
         "datalink_manifest": {"path": DATALINK_MANIFEST_PATH, "sha256": hashlib.sha256(datalink_manifest_raw).hexdigest()},
         "provenance": {"path": PROVENANCE_PATH, "sha256": hashlib.sha256(provenance_raw).hexdigest()},
+        "changelog": {"path": CHANGELOG_PATH, "sha256": hashlib.sha256(changelog_raw).hexdigest()},
+        "source_accounting": {"path": SOURCE_ACCOUNTING_PATH, "sha256": hashlib.sha256(source_accounting_raw).hexdigest()},
+        "feeds_index": {"path": FEEDS_INDEX_PATH, "sha256": hashlib.sha256(feeds_index_raw).hexdigest()},
         "api_description": {"path": "ctas/openapi.yaml", "sha256": hashlib.sha256(working_code["ctas/openapi.yaml"]).hexdigest() if "ctas/openapi.yaml" in working_code else None},
     }
     # New top-level keys only (rule N1): the PROV-JSON document and the machine
@@ -6155,6 +6363,10 @@ def main() -> int:
     status["api_description_path"] = "ctas/openapi.yaml"
     status["bulk_downloads_path"] = BULK_DOWNLOADS_PATH
     status["datalink_manifest_path"] = DATALINK_MANIFEST_PATH
+    status["changelog_path"] = CHANGELOG_PATH
+    status["source_accounting_path"] = SOURCE_ACCOUNTING_PATH
+    status["feeds_index_path"] = FEEDS_INDEX_PATH
+    status["status_page_path"] = "ctas/status.html"
     status_raw = (json.dumps(status, indent=2, sort_keys=True) + "\n").encode()
     certificate_raw = (json.dumps(certificate, indent=2, sort_keys=True) + "\n").encode()
     final_public_bytes = {
@@ -6194,6 +6406,17 @@ def main() -> int:
         write_output_artifact(out, relative, raw)
     atomic_write(out / "bulk-downloads.json", bulk_downloads_raw)
     atomic_write(out / "provenance.json", provenance_raw)
+    atomic_write(out / "changelog.json", changelog_raw)
+    atomic_write(out / "source-accounting.json", source_accounting_raw)
+    for relative, raw in {**feed_files, FEEDS_INDEX_PATH: feeds_index_raw}.items():
+        write_output_artifact(out, relative, raw)
+    # A feed file the index no longer declares must not linger beside the current set.
+    feeds_root = out / "feeds"
+    if feeds_root.is_dir():
+        current_feed_files = {output_path_for_public_artifact(out, path) for path in {**feed_files, FEEDS_INDEX_PATH: b""}}
+        for stale in sorted(feeds_root.rglob("*")):
+            if stale.is_file() and stale.resolve() not in current_feed_files:
+                stale.unlink(missing_ok=True)
     # The VOParquet assets never enter the Pages tree: the publisher uploads them to
     # the rolling GitHub Release that bulk-downloads.json names.
     import tempfile

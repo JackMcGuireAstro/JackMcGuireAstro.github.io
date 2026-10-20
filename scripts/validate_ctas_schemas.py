@@ -20,8 +20,12 @@ and every part file (there are few, and they are the hardest case). --all-chunks
 validates all 4,096 roots. Everything else (status, live summary, catalog index, every
 catalog page, every manifest, the source universe, the release history, the link-health
 report, the certificate, bulk-downloads, the DataLink manifest, the provenance
-document, the cloud-run marker, observatories.json and ctas/delivery.json) is validated
-completely. The whole step is budgeted to stay under about 60 s on the real release.
+document, the changelog, the per-source accounting, the feeds index, the cloud-run
+marker, observatories.json and ctas/delivery.json) is validated completely. Every JSON
+Feed file named by the feeds index is parsed and checked for the JSON Feed 1.1 required
+members (version, title, items with ids), and every Atom file for well-formedness with a
+feed id, updated and entry ids (the same checks scripts/ctas_feed.py applies before the
+exporter writes them). The whole step is budgeted to stay under about 60 s on the real release.
 
 Exit status 0 when every file validates, 1 on a schema violation, 2 when a required
 file or the validator is missing.
@@ -36,6 +40,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_DIR = ROOT / "ctas/schemas"
@@ -61,6 +66,10 @@ DECLARED_FILES = {
     "bulk-downloads.json": ("bulk_downloads_path", "bulk-downloads"),
     "links/manifest.json": ("datalink_manifest_path", "datalink-manifest"),
     "provenance.json": ("provenance_path", "provenance"),
+    # Track 1, part C: the changelog, the per-source accounting and the feeds index.
+    "changelog.json": ("changelog_path", "changelog"),
+    "source-accounting.json": ("source_accounting_path", "source-accounting"),
+    "feeds/index.json": ("feeds_index_path", "feeds-index"),
 }
 # Present only after the link checker ran (the publisher) or in a deployed tree; the
 # cloud-run marker only when the GitHub Actions publisher built the release.
@@ -151,6 +160,38 @@ def run(command: list[str], schema: Path, files: list[Path]) -> int:
     return 1
 
 
+def check_feeds(data_dir: Path, status: Any) -> int:
+    """Every feed the index declares, read back with scripts/ctas_feed.py's structural checks."""
+    if not (isinstance(status, dict) and status.get("feeds_index_path")):
+        print(f"skip  {'feeds (Atom and JSON Feed 1.1)':36s} no feeds index is declared by this release")
+        return 0
+    index_path = data_dir / "feeds/index.json"
+    try:
+        index = json.loads(index_path.read_text())
+    except (OSError, ValueError) as exc:
+        print(f"FAIL  {'feeds (Atom and JSON Feed 1.1)':36s} {index_path} unreadable: {exc}")
+        return 1
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import ctas_feed  # noqa: PLC0415 - only when a release declares feeds
+    files: dict[str, bytes] = {}
+    for row in index.get("feeds", []):
+        for key in ("json_feed", "atom"):
+            path = (row.get(key) or {}).get("path")
+            if isinstance(path, str) and path.startswith("ctas/data/"):
+                target = data_dir / path[len("ctas/data/"):]
+                if target.exists():
+                    files[path] = target.read_bytes()
+    problems = ctas_feed.feed_problems(files, index)
+    label = f"{'feeds (Atom and JSON Feed 1.1)':36s} {len(files):5d} file(s)"
+    if problems:
+        print(f"FAIL  {label}")
+        for line in problems[:12]:
+            print("      " + line[:400])
+        return 1
+    print(f"ok    {label}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--site-root", default=str(ROOT))
@@ -225,6 +266,7 @@ def main() -> int:
     delivery = site_root / "ctas/delivery.json"
     if delivery.exists():
         failures += run(command, SCHEMA_DIR / "delivery.schema.json", [delivery])
+    failures += check_feeds(data_dir, status)
     elapsed = time.monotonic() - started
     if failures:
         print(f"{failures} schema check(s) failed after {elapsed:.1f} s", file=sys.stderr)
