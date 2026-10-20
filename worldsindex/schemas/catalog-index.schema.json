@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/catalog-index.schema.json",
+  "title": "worldsindex-catalog-index.v1",
+  "description": "worldsindex/data/catalog-index.json.gz: one record per object with names, position, status, identity state, methods and sources (the search index of the page).",
+  "type": "object",
+  "properties": {
+    "schemaName": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "worldsindex-catalog-index.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "projectionId": {
+      "type": "string"
+    },
+    "identityNotice": {
+      "type": "string"
+    },
+    "coordinateNotice": {
+      "type": "string"
+    },
+    "coverage": {
+      "$ref": "common.schema.json#/$defs/coverageCounts"
+    },
+    "objects": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/catalogObject"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "projectionId",
+    "coverage",
+    "objects"
+  ],
+  "additionalProperties": true
+}

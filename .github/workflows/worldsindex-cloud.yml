@@ -23,7 +23,7 @@ on:
         default: false
 
 permissions:
-  contents: write   # push the worldsindex-data release branch
+  contents: write   # push the worldsindex-data release branch; replace the VOParquet assets of the rolling "worldsindex-data-latest" release
   actions: write    # start "Validate and deploy site"
 
 concurrency:
@@ -65,6 +65,12 @@ jobs:
       - name: Install the builder
         working-directory: source
         run: npm ci --no-audit --no-fund
+      # Track 1 interoperability products of the static release: the VOParquet assets need
+      # astropy and pyarrow (scripts/worldsindex_parquet.py), the exports are read back with
+      # Astropy, astropy-healpix and pyarrow (scripts/test_worldsindex_interop.py), and every
+      # published JSON file is validated against worldsindex/schemas with check-jsonschema.
+      - name: Install the static release's interoperability dependencies
+        run: python3 -m pip install --quiet --disable-pip-version-check "astropy>=7.0,<9" "astropy-healpix>=1.0,<3" "pyarrow>=21,<27" "check-jsonschema>=0.33,<1" "pyyaml>=6,<7"
       - name: Builder settings and git identity
         env:
           BUILDER_ENV: ${{ secrets.WORLDSINDEX_ENV }}

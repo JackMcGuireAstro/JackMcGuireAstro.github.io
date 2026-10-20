@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/feed.schema.json",
+  "title": "JSON Feed 1.1 (WorldsIndex)",
+  "description": "worldsindex/data/feed.json: JSON Feed 1.1 of new, confirmed, demoted and updated planets per release, with one summary item per release with changes.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": "https://jsonfeed.org/version/1.1"
+    },
+    "title": {
+      "type": "string"
+    },
+    "home_page_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "feed_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "description": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^urn:worldsindex:release:"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content_text": {
+            "type": "string"
+          },
+          "date_published": {
+            "$ref": "common.schema.json#/$defs/isoDateTime"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "release",
+                "new",
+                "confirmed",
+                "demoted",
+                "updated"
+              ]
+            }
+          },
+          "_worldsindex": {
+            "type": "object",
+            "properties": {
+              "objectId": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "title",
+          "content_text",
+          "date_published"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "version",
+    "title",
+    "items"
+  ],
+  "additionalProperties": true
+}

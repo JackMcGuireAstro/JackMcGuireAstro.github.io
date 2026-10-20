@@ -7,11 +7,17 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { extractTransitEphemerides, SCHEMA_VERSION as TRANSIT_EPHEMERIDES_SCHEMA } from './worldsindex_transit_ephemerides.mjs';
+import { tmpdir } from 'node:os';
+import * as interop from './worldsindex_interop.mjs';
+import { atomFeed, CHANGELOG_SCHEMA_VERSION, diffReleases, jsonFeed, loadPreviousRelease, renderChangelogMarkdown } from './worldsindex_changelog.mjs';
+import { provenanceDocument, PROVENANCE_SCHEMA_VERSION } from './worldsindex_provenance.mjs';
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const sourceRoot = resolve(process.env.WORLDSINDEX_SOURCE_DIR ?? '/Users/johnmcguire/Documents/Codex/CTAS and WorldsIndex/WorldsIndex Development/work/worldsindex');
 const outputRoot = join(siteRoot, 'worldsindex', 'data');
 const detailRoot = join(outputRoot, 'details');
+// One release clock for the manifest, the changelog, the feeds and the provenance document.
+const releaseGeneratedAt = new Date().toISOString();
 
 await mkdir(detailRoot, { recursive: true });
 await copyFile(join(sourceRoot, 'public/data/sky-detections.json.gz'), join(outputRoot, 'sky-detections.json.gz'));
@@ -353,6 +359,84 @@ if (sourceCoverage) {
   await writeFile(join(outputRoot, 'source-coverage.json'), `${JSON.stringify(sourceCoverage, null, 2)}\n`);
   coveragePaths.push('source-coverage.json');
 }
+// ---- Interoperability exports (Framework v2, Track 1) ---------------------------------------
+// ECSV 1.0 and VOTable 1.5 of every public table (scripts/worldsindex_interop.mjs), gzip-
+// compressed like the JSON artifacts (Astropy and TOPCAT read .gz transparently); VOParquet
+// copies of the objects and measurements tables are written outside the Pages tree
+// (WORLDSINDEX_RELEASE_ASSETS_DIR) for the publisher to upload as release assets, and
+// bulk-downloads.json names them with sizes and SHA-256 digests. Every export is a manifest
+// artifact; none is an input to anything above.
+const exportsRoot = join(outputRoot, 'exports');
+await mkdir(exportsRoot, { recursive: true });
+const detectionsById = new Map(atlas.detections.map((detection) => [detection.objectId, detection]));
+const detailCounts = new Map([...details].map(([objectId, detail]) => [objectId, { records: detail.records.length, spectra: detail.records.filter((record) => record.sourceId === 'nasa-atmospheric-spectroscopy').length }]));
+const identityRulesVersion = await readFile(join(sourceRoot, 'data/atlas/release-contract.json'), 'utf8').then((text) => JSON.parse(text)?.sources?.['exoplanet-eu']?.identityRulesVersion ?? null).catch(() => null);
+const exportTables = {
+  objects: interop.objectsTable(catalogObjects, detectionsById, detailCounts),
+  measurements: interop.measurementsTable(details, detectionsById),
+  transit_ephemerides: interop.transitEphemeridesTable(transitEphemerides),
+  ...(sourceCoverage ? { source_coverage: interop.sourceCoverageTable(sourceCoverage) } : {}),
+  identity_states: interop.identityStatesTable(catalogObjects, identityRulesVersion ?? ''),
+  references: interop.referencesTable(details),
+};
+const exportMeta = { release_atlas_generated_at: atlas.generatedAt, atlas_projection_id: atlas.projectionId, source_universe_version: registry.sources.version, site: `${interop.SITE_BASE_URL}/worldsindex/` };
+const exportIndex = { schemaVersion: interop.EXPORTS_SCHEMA_VERSION, generatedAt: atlas.generatedAt, atlasProjectionId: atlas.projectionId, formats: { ecsv: interop.ECSV_FORMAT_NOTE, votable: interop.VOTABLE_FORMAT_NOTE }, claimBoundary: interop.INTEROP_CLAIM, tables: {} };
+const exportPaths = ['exports/index.json'];
+for (const [table, { specs, rows }] of Object.entries(exportTables)) {
+  const ecsvBytes = gzipSync(interop.ecsv(table, specs, rows, exportMeta), { level: 6 });
+  const votBytes = gzipSync(interop.votable(table, specs, rows, exportMeta), { level: 6 }); // level 6: a quarter of the time of 9 for the 190 MB measurements VOTable, 5% larger
+  await writeFile(join(exportsRoot, `${table}.ecsv.gz`), ecsvBytes);
+  await writeFile(join(exportsRoot, `${table}.vot.gz`), votBytes);
+  exportPaths.push(`exports/${table}.ecsv.gz`, `exports/${table}.vot.gz`);
+  exportIndex.tables[table] = {
+    description: interop.TABLE_DESCRIPTIONS[table], rows: rows.length,
+    files: { ecsv: { path: `exports/${table}.ecsv.gz`, bytes: ecsvBytes.byteLength, sha256: interop.sha256(ecsvBytes) }, votable: { path: `exports/${table}.vot.gz`, bytes: votBytes.byteLength, sha256: interop.sha256(votBytes) } },
+    columns: specs.map((spec) => ({ name: spec.name, datatype: spec.datatype, ucd: spec.ucd, unit: spec.unit, description: spec.description })),
+  };
+}
+// VOParquet release assets, built from the ECSV files by scripts/worldsindex_parquet.py (astropy + pyarrow).
+const releaseRepository = process.env.WORLDSINDEX_RELEASE_REPO || (() => { try { return execFileSync('git', ['-C', siteRoot, 'remote', 'get-url', 'origin'], { encoding: 'utf8' }).trim().replace(/^(git@github\.com:|https:\/\/github\.com\/)/, '').replace(/\.git$/, ''); } catch { return 'JackMcGuireAstro/JackMcGuireAstro.github.io'; } })();
+const releaseTag = process.env.WORLDSINDEX_RELEASE_TAG || 'worldsindex-data-latest';
+const releaseAssetsDir = resolve(process.env.WORLDSINDEX_RELEASE_ASSETS_DIR || join(tmpdir(), 'worldsindex-release-assets'));
+const parquetScript = join(siteRoot, 'scripts', 'worldsindex_parquet.py');
+let parquetAvailable = null;
+try { execFileSync('python3', [parquetScript, '--check'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); parquetAvailable = true; } catch (error) { parquetAvailable = `${String(error.stdout || error.message).trim().split('\n').pop()}`; }
+const releaseAssets = [];
+if (parquetAvailable === true) {
+  await mkdir(releaseAssetsDir, { recursive: true });
+  for (const table of ['objects', 'measurements']) {
+    const output = join(releaseAssetsDir, `worldsindex-${table}.parquet`);
+    const result = JSON.parse(execFileSync('python3', [parquetScript, '--ecsv', join(exportsRoot, `${table}.ecsv.gz`), '--output', output, '--name', table], { encoding: 'utf8', maxBuffer: 10_000_000 }).trim().split('\n').pop());
+    releaseAssets.push({ name: result.name, table, rows: result.rows, columns: result.columns, bytes: result.bytes, sha256: result.sha256, format: 'VOParquet 1.0 (Apache Parquet, zstd, IVOA.VOTable-Parquet.version/content metadata), rows sorted by healpix_8_nested', downloadUrl: `https://github.com/${releaseRepository}/releases/download/${releaseTag}/${result.name}`, sourceEcsvSha256: exportIndex.tables[table].files.ecsv.sha256 });
+  }
+}
+const bulkDownloads = {
+  schemaVersion: 'worldsindex-bulk-downloads.v1', generatedAt: atlas.generatedAt, atlasProjectionId: atlas.projectionId,
+  releaseTag, releaseUrl: `https://github.com/${releaseRepository}/releases/tag/${releaseTag}`, repository: releaseRepository,
+  statement: 'Bulk tables are published as assets of one rolling GitHub Release, not in the GitHub Pages tree. The publisher replaces each asset after the release is built; verify the SHA-256 below against the downloaded file, because an asset can lag the Pages release by one cycle while an upload is in flight or has failed.',
+  claimBoundary: interop.INTEROP_CLAIM,
+  unavailableReason: parquetAvailable === true ? null : `VOParquet assets were not built in this run: ${parquetAvailable}`,
+  assets: releaseAssets,
+};
+await writeFile(join(outputRoot, 'bulk-downloads.json'), `${JSON.stringify(bulkDownloads, null, 2)}\n`);
+
+// ---- Changelog and feeds against the previous published release ----------------------------
+// The publisher names the previous release (WORLDSINDEX_RELEASE_BASE_REF, resolved in
+// WORLDSINDEX_RELEASE_BASE_GIT_DIR, its data store); a local build falls back to this
+// checkout's origin/worldsindex-data when it exists. Without a base nothing is listed as changed.
+const baseGitDir = process.env.WORLDSINDEX_RELEASE_BASE_GIT_DIR || (() => { try { return resolve(siteRoot, execFileSync('git', ['-C', siteRoot, 'rev-parse', '--git-dir'], { encoding: 'utf8' }).trim()); } catch { return null; } })();
+const baseRef = process.env.WORLDSINDEX_RELEASE_BASE_REF || 'origin/worldsindex-data';
+const previousRelease = loadPreviousRelease({ gitDir: baseGitDir, ref: baseRef });
+const sourceMonitorNow = await readFile(join(outputRoot, 'source-monitor.json'), 'utf8').then(JSON.parse).catch(() => null);
+const preManifest = { generatedAt: releaseGeneratedAt, atlasGeneratedAt: atlas.generatedAt, objectCount: atlas.coverage.objects, detailRecordCount: [...details.values()].reduce((sum, item) => sum + item.records.length, 0) };
+const changelog = diffReleases({ manifest: preManifest, catalogIndex, sourceCoverage, sourceMonitor: sourceMonitorNow, detailCounts }, previousRelease);
+await writeFile(join(outputRoot, 'changelog.json'), `${JSON.stringify(changelog, null, 2)}\n`);
+await writeFile(join(outputRoot, 'changelog.md'), renderChangelogMarkdown(changelog));
+const feed = jsonFeed(changelog, previousRelease?.feed ?? null);
+await writeFile(join(outputRoot, 'feed.json'), `${JSON.stringify(feed, null, 2)}\n`);
+await writeFile(join(outputRoot, 'feed.xml'), atomFeed(feed));
+await writeFile(join(exportsRoot, 'index.json'), `${JSON.stringify(exportIndex, null, 2)}\n`);
+
 const artifactPaths = [
   'sky-detections.json.gz',
   'catalog-index.json.gz',
@@ -361,13 +445,45 @@ const artifactPaths = [
   ...coveragePaths,
   ...lightcurvePaths,
   'source-monitor.json',
+  ...exportPaths,
+  'bulk-downloads.json',
+  'changelog.json',
+  'changelog.md',
+  'feed.json',
+  'feed.xml',
   ...[...buckets.keys()].sort().map((bucket) => `details/${bucket}.json.gz`),
 ].sort();
-const artifacts = Object.fromEntries(await Promise.all(artifactPaths.map(describeArtifact)));
+const artifactsBeforeProvenance = Object.fromEntries(await Promise.all(artifactPaths.map(describeArtifact)));
+
+// ---- W3C PROV-JSON for this build (scripts/worldsindex_provenance.mjs) --------------------
+const gitHead = (directory) => { try { return execFileSync('git', ['-C', directory, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { return null; } };
+const builderPackage = await readFile(join(sourceRoot, 'package.json'), 'utf8').then(JSON.parse).catch(() => ({}));
+const releaseContract = await readFile(join(sourceRoot, 'data/atlas/release-contract.json'), 'utf8').then(JSON.parse).catch(() => null);
+const identityPins = [];
+for (const name of ['reviewed-reidentification.json', 'reviewed-reidentification-v3.json']) {
+  const pin = await readFile(join(sourceRoot, 'packages/exonexus/identity', name), 'utf8').then(JSON.parse).catch(() => null);
+  if (pin && pin.schemaVersion === 'worldsindex-reviewed-reidentification.v1') identityPins.push({ fromRules: pin.fromRules, toRules: pin.toRules, snapshotId: pin.snapshotId, transitionsSha256: pin.transitionsSha256, reviewedAt: pin.reviewedAt, reviewedBy: pin.reviewedBy });
+}
+const cloudRunMarker = process.env.WORLDSINDEX_CLOUD_RUN_MARKER ? await readFile(process.env.WORLDSINDEX_CLOUD_RUN_MARKER, 'utf8').then(JSON.parse).catch(() => null) : null;
+const provenance = provenanceDocument({
+  generatedAt: releaseGeneratedAt,
+  manifest: { schemaVersion: 'worldsindex-static-release.v1', objectCount: atlas.coverage.objects, detailRecordCount: preManifest.detailRecordCount },
+  artifacts: artifactsBeforeProvenance,
+  atlas: { projectionId: atlas.projectionId, generatedAt: atlas.generatedAt, schemaVersion: atlas.schemaVersion, sourceSnapshots: atlas.sourceSnapshots ?? [] },
+  registry, sourceCoverage, sourceMonitor: sourceMonitorNow,
+  identity: { rulesVersion: identityRulesVersion ?? 'unknown', contract: releaseContract ? { reviewedAt: releaseContract.reviewedAt, reviewedBy: releaseContract.reviewedBy, snapshotId: releaseContract.sources?.['exoplanet-eu']?.snapshotId ?? null } : null, pins: identityPins },
+  builder: { commit: gitHead(sourceRoot), version: builderPackage.version ?? null, name: builderPackage.description ?? 'ExoNexus (WorldsIndex builder)' },
+  site: { commit: gitHead(siteRoot), repository: releaseRepository },
+  stateAsset: cloudRunMarker, releaseAssets,
+});
+await writeFile(join(outputRoot, 'provenance.json'), `${JSON.stringify(provenance, null, 2)}\n`);
+artifactPaths.push('provenance.json');
+artifactPaths.sort();
+const artifacts = Object.fromEntries(Object.entries({ ...artifactsBeforeProvenance, ...Object.fromEntries([await describeArtifact('provenance.json')]) }).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 
 const manifest = {
   schemaVersion: 'worldsindex-static-release.v1',
-  generatedAt: new Date().toISOString(),
+  generatedAt: releaseGeneratedAt,
   atlasGeneratedAt: atlas.generatedAt,
   objectCount: atlas.coverage.objects,
   renderableObjectCount: atlas.coverage.renderableObjects,
@@ -389,6 +505,15 @@ const manifest = {
   },
   sourceContributions: contributions ? { schemaVersion: contributions.schemaVersion, generatedAt: contributions.generatedAt, boundary: contributions.boundary, sources: contributions.sources } : null,
   sourceCoverage: sourceCoverage ? { path: 'source-coverage.json', schemaVersion: sourceCoverage.schemaVersion, generatedAt: sourceCoverage.generatedAt, sources: Object.keys(sourceCoverage.sources ?? {}).length } : null,
+  // Framework v2 Track 1 (additive): machine description, exports, bulk assets, provenance, changelog and feeds.
+  apiDescriptionUrl: `${interop.SITE_BASE_URL}/worldsindex/openapi.yaml`,
+  schemasUrl: `${interop.SITE_BASE_URL}/worldsindex/schemas/`,
+  exports: { path: 'exports/index.json', schemaVersion: exportIndex.schemaVersion, tables: Object.fromEntries(Object.entries(exportIndex.tables).map(([table, entry]) => [table, { rows: entry.rows, ecsv: entry.files.ecsv.path, votable: entry.files.votable.path }])) },
+  bulkDownloads: { path: 'bulk-downloads.json', schemaVersion: bulkDownloads.schemaVersion, releaseTag, assets: releaseAssets.map((asset) => asset.name), unavailableReason: bulkDownloads.unavailableReason },
+  provenancePath: 'provenance.json',
+  provenanceSchemaVersion: PROVENANCE_SCHEMA_VERSION,
+  changelog: { path: 'changelog.json', markdownPath: 'changelog.md', schemaVersion: CHANGELOG_SCHEMA_VERSION, comparable: changelog.comparable, previousReleaseCommit: previousRelease?.commit ?? null, summary: changelog.summary },
+  feeds: { json: 'feed.json', atom: 'feed.xml', items: feed.items.length },
   artifacts,
   scientificBoundary: 'Static public catalog projection. Source membership is not independent confirmation; source-composite values are not self-consistent publication solutions; catalog projections are not completeness-corrected populations.',
 };

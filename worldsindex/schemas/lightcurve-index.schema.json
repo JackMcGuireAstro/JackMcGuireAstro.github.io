@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/lightcurve-index.schema.json",
+  "title": "WorldsIndex light-curve index",
+  "description": "worldsindex/data/lightcurves/index.json: the validated observation products copied into the release, each with its SHA-256 and point count, and the retrieval failures.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string"
+    },
+    "checkedUnix": {
+      "type": "number"
+    },
+    "checkedAt": {
+      "type": "string"
+    },
+    "sourceManifestUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sourceManifestSha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "declaredProducts": {
+      "type": "integer"
+    },
+    "entries": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._-]+\\.json\\.gz$"
+          },
+          "sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          },
+          "pointCount": {
+            "type": "integer"
+          },
+          "sourceUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "retrievedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "target",
+          "path",
+          "sha256",
+          "pointCount"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "failures": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "state": {
+      "type": "string"
+    },
+    "claim": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "entries",
+    "state"
+  ],
+  "additionalProperties": true
+}

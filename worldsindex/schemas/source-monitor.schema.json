@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/source-monitor.schema.json",
+  "title": "worldsindex-public-sync-status.v2",
+  "description": "worldsindex/data/source-monitor.json: the provider monitor's public status (the latest attempt, the last validated run, every observation) plus each source-specific promotion gate's latest recorded outcome.",
+  "allOf": [
+    {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "startedAt": {
+          "type": "string"
+        },
+        "completedAt": {
+          "type": "string"
+        },
+        "previousValidatedRunId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "receiptSha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "promotion": {
+          "type": "object"
+        },
+        "summary": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "sourceId": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "changed": {
+                "type": "boolean"
+              },
+              "checkedAt": {
+                "type": "string"
+              },
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "errorCategory": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "httpStatus": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "latencyMs": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "fingerprint": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "latestMarker": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "officialUrl": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "recordCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "requestDescription": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "responseSha256": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "artifact": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "sourceId",
+              "state",
+              "checkedAt"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "runId",
+        "state",
+        "startedAt",
+        "completedAt",
+        "observations"
+      ],
+      "additionalProperties": true
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "string",
+          "pattern": "^worldsindex-public-sync-status\\.v[0-9]+$"
+        },
+        "monitorOnly": {
+          "type": "boolean"
+        },
+        "lastGood": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "lastGoodCompletedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lastGoodRunId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "latestAttempt": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "datasetPromotion": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion"
+      ],
+      "additionalProperties": true
+    }
+  ]
+}

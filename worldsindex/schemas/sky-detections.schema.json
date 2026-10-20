@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/sky-detections.schema.json",
+  "title": "WorldsIndex sky atlas",
+  "description": "worldsindex/data/sky-detections.json.gz: the source-resolved atlas projection the release is built from (schemaName WorldsIndex sky atlas, its own numeric schemaVersion), every detection with method claims, coordinate claims and the selected population values.",
+  "type": "object",
+  "properties": {
+    "schemaName": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "type": "string"
+    },
+    "projectionId": {
+      "type": "string"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "sourceSnapshots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string"
+          },
+          "snapshotId": {
+            "type": "string"
+          },
+          "artifactSha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          }
+        },
+        "required": [
+          "sourceId",
+          "snapshotId"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "coordinateNotice": {
+      "type": "string"
+    },
+    "identityNotice": {
+      "type": "string"
+    },
+    "coverage": {
+      "$ref": "common.schema.json#/$defs/coverageCounts"
+    },
+    "detections": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/atlasDetection"
+      }
+    }
+  },
+  "required": [
+    "schemaName",
+    "schemaVersion",
+    "projectionId",
+    "generatedAt",
+    "sourceSnapshots",
+    "coverage",
+    "detections"
+  ],
+  "additionalProperties": true
+}

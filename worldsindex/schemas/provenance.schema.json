@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/provenance.schema.json",
+  "title": "worldsindex-provenance.v1",
+  "description": "worldsindex/data/provenance.json: W3C PROV-JSON for one build (entities, activities, agents and their relations), with a schemaVersion and generatedAt beside the PROV-JSON members.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "worldsindex-provenance.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "note": {
+      "type": "string"
+    },
+    "prefix": {
+      "type": "object",
+      "properties": {
+        "prov": {
+          "const": "http://www.w3.org/ns/prov#"
+        },
+        "xsd": {
+          "type": "string"
+        },
+        "wi": {
+          "type": "string",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "prov",
+        "wi"
+      ],
+      "additionalProperties": true
+    },
+    "entity": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "prov:type": {
+            "type": "string"
+          },
+          "prov:label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "prov:type"
+        ],
+        "additionalProperties": true
+      },
+      "minProperties": 3
+    },
+    "activity": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "prov:type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "prov:type"
+        ],
+        "additionalProperties": true
+      },
+      "minProperties": 2
+    },
+    "agent": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "prov:type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "prov:type"
+        ],
+        "additionalProperties": true
+      },
+      "minProperties": 2
+    },
+    "used": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "wasGeneratedBy": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "wasDerivedFrom": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "wasAssociatedWith": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "wasAttributedTo": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "prefix",
+    "entity",
+    "activity",
+    "agent",
+    "used",
+    "wasGeneratedBy",
+    "wasDerivedFrom",
+    "wasAssociatedWith",
+    "wasAttributedTo"
+  ],
+  "additionalProperties": true
+}

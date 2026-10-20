@@ -45,8 +45,10 @@ say "identity rules: $(grep -m1 -o '"outcome": "[A-Z_]*"' "$LOGS/reidentify.log"
 ARGS=(--full)
 [ "$DRY_RUN" = "1" ] && ARGS+=(--dry-run)
 say "running the WorldsIndex publisher (full cycle)"
+# WORLDSINDEX_RELEASE_TOKEN: the publisher replaces the VOParquet assets of the rolling
+# "worldsindex-data-latest" GitHub Release with it (contents: write; never a state token).
 OUT=$(WORLDSINDEX_SITE="$SITE" WORLDSINDEX_SOURCE="$SOURCE" WORLDSINDEX_LOG_DIR="$LOGS/publish" \
-  WORLDSINDEX_CLOUD_RUN_MARKER="$MARKER" \
+  WORLDSINDEX_CLOUD_RUN_MARKER="$MARKER" WORLDSINDEX_RELEASE_TOKEN="$DEPLOY_TOKEN" \
   DATA_BRANCH_DISPATCHER=0 bash "$SITE/scripts/publish_worldsindex.sh" "${ARGS[@]}" 2>&1)
 STATUS=$?
 printf '%s\n' "$OUT" | tail -25

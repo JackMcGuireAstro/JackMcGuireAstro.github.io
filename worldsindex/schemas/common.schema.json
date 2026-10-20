@@ -1,0 +1,617 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/common.schema.json",
+  "title": "WorldsIndex common definitions",
+  "description": "Shared record fragments of the WorldsIndex static release (JSON Schema 2020-12). Every schema is additive: unknown keys are allowed so a later release can add fields without breaking a reader of this one.",
+  "type": "object",
+  "$defs": {
+    "isoDateTime": {
+      "type": "string",
+      "description": "ISO 8601 date-time text (UTC)",
+      "minLength": 10
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "artifactDigest": {
+      "type": "object",
+      "properties": {
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "$ref": "common.schema.json#/$defs/sha256"
+        }
+      },
+      "required": [
+        "bytes",
+        "sha256"
+      ],
+      "additionalProperties": true
+    },
+    "normalizedStatus": {
+      "type": "string",
+      "enum": [
+        "CONFIRMED",
+        "CANDIDATE",
+        "CONTROVERSIAL",
+        "FALSE_POSITIVE",
+        "REFUTED",
+        "UNKNOWN"
+      ]
+    },
+    "identityState": {
+      "type": "string",
+      "enum": [
+        "CANONICAL",
+        "RESOLVED",
+        "AMBIGUOUS",
+        "UNREVIEWED"
+      ]
+    },
+    "limitType": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "LOWER_LIMIT",
+        "UPPER_LIMIT",
+        "INTERVAL",
+        "UNKNOWN_LIMIT"
+      ]
+    },
+    "reference": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "href": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "coverageCounts": {
+      "type": "object",
+      "properties": {
+        "objects": {
+          "type": "integer"
+        },
+        "renderableObjects": {
+          "type": "integer"
+        },
+        "missingCoordinates": {
+          "type": "integer"
+        },
+        "sourceRecordOccurrences": {
+          "type": "integer"
+        },
+        "statusCounts": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "methodCounts": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "sourceCounts": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "identityCounts": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "primaryMethodCounts": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "claimMethodCounts": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "objects",
+        "renderableObjects",
+        "sourceRecordOccurrences",
+        "statusCounts",
+        "methodCounts",
+        "sourceCounts",
+        "identityCounts"
+      ],
+      "additionalProperties": true
+    },
+    "methodClaim": {
+      "type": "object",
+      "properties": {
+        "sourceId": {
+          "type": "string"
+        },
+        "sourceObjectId": {
+          "type": "string"
+        },
+        "sourceMethodLabel": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "methodCode": {
+          "type": "string"
+        },
+        "methodBasis": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sourceId",
+        "methodCode",
+        "methodBasis"
+      ],
+      "additionalProperties": true
+    },
+    "coordinateClaim": {
+      "type": "object",
+      "properties": {
+        "sourceId": {
+          "type": "string"
+        },
+        "raDeg": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "decDeg": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "sourceId"
+      ],
+      "additionalProperties": true
+    },
+    "populationValue": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "propertyCode": {
+          "type": "string"
+        },
+        "sourceId": {
+          "type": "string"
+        },
+        "sourceRecordId": {
+          "type": "string"
+        },
+        "definitionCode": {
+          "type": "string"
+        },
+        "limitType": {
+          "type": "string",
+          "enum": [
+            "NONE",
+            "LOWER_LIMIT",
+            "UPPER_LIMIT",
+            "INTERVAL",
+            "UNKNOWN_LIMIT"
+          ]
+        },
+        "note": {
+          "type": "string"
+        },
+        "massDefinition": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "unit",
+        "propertyCode",
+        "sourceId",
+        "sourceRecordId",
+        "limitType"
+      ],
+      "additionalProperties": true
+    },
+    "population": {
+      "type": "object",
+      "properties": {
+        "orbitalPeriodDays": {
+          "$ref": "common.schema.json#/$defs/populationValue"
+        },
+        "radiusEarth": {
+          "$ref": "common.schema.json#/$defs/populationValue"
+        },
+        "massEarth": {
+          "$ref": "common.schema.json#/$defs/populationValue"
+        },
+        "minimumMassEarth": {
+          "$ref": "common.schema.json#/$defs/populationValue"
+        },
+        "estimatedMassEarth": {
+          "$ref": "common.schema.json#/$defs/populationValue"
+        },
+        "eccentricity": {
+          "$ref": "common.schema.json#/$defs/populationValue"
+        },
+        "equilibriumTemperatureK": {
+          "$ref": "common.schema.json#/$defs/populationValue"
+        },
+        "insolationEarth": {
+          "$ref": "common.schema.json#/$defs/populationValue"
+        }
+      },
+      "additionalProperties": true
+    },
+    "objectCore": {
+      "type": "object",
+      "properties": {
+        "objectId": {
+          "type": "string"
+        },
+        "sourceObjectIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "systemId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "raDeg": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "decDeg": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "normalizedStatus": {
+          "type": "string",
+          "enum": [
+            "CONFIRMED",
+            "CANDIDATE",
+            "CONTROVERSIAL",
+            "FALSE_POSITIVE",
+            "REFUTED",
+            "UNKNOWN"
+          ]
+        },
+        "methodCode": {
+          "type": "string"
+        },
+        "discoveryYear": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "discoveryFacility": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "identityState": {
+          "type": "string",
+          "enum": [
+            "CANONICAL",
+            "RESOLVED",
+            "AMBIGUOUS",
+            "UNREVIEWED"
+          ]
+        },
+        "primarySourceId": {
+          "type": "string"
+        },
+        "sourceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sourceRecordCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "objectId",
+        "sourceObjectIds",
+        "systemId",
+        "name",
+        "hostName",
+        "normalizedStatus",
+        "methodCode",
+        "identityState",
+        "primarySourceId",
+        "sourceIds",
+        "sourceRecordCount"
+      ],
+      "additionalProperties": true
+    },
+    "atlasDetection": {
+      "allOf": [
+        {
+          "$ref": "common.schema.json#/$defs/objectCore"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "sourceMethodLabel": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "methodBasis": {
+              "type": "string"
+            },
+            "methodClaims": {
+              "type": "array",
+              "items": {
+                "$ref": "common.schema.json#/$defs/methodClaim"
+              }
+            },
+            "coordinateClaims": {
+              "type": "array",
+              "items": {
+                "$ref": "common.schema.json#/$defs/coordinateClaim"
+              }
+            },
+            "population": {
+              "$ref": "common.schema.json#/$defs/population"
+            }
+          },
+          "required": [
+            "methodBasis",
+            "methodClaims",
+            "coordinateClaims",
+            "population"
+          ],
+          "additionalProperties": true
+        }
+      ]
+    },
+    "catalogObject": {
+      "allOf": [
+        {
+          "$ref": "common.schema.json#/$defs/objectCore"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "methodCodes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "aliases": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "methodCodes"
+          ],
+          "additionalProperties": true
+        }
+      ]
+    },
+    "detailRecord": {
+      "type": "object",
+      "properties": {
+        "sourceId": {
+          "type": "string"
+        },
+        "sourceRecordId": {
+          "type": "string"
+        },
+        "recordType": {
+          "type": "string"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hostName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reference": {
+          "$ref": "common.schema.json#/$defs/reference"
+        },
+        "references": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "$ref": "common.schema.json#/$defs/reference"
+          }
+        },
+        "updated": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "published": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "isSourceDefault": {
+          "type": "boolean"
+        },
+        "values": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "required": [
+        "sourceId",
+        "sourceRecordId",
+        "recordType"
+      ],
+      "additionalProperties": true,
+      "description": "One retained native row. Sources added by frozen context (nasa-stellar-hosts and the like) carry further keys (table, link, via); only the stable identifier, source and type are required."
+    },
+    "contextAttempt": {
+      "type": "object",
+      "properties": {
+        "at": {
+          "$ref": "common.schema.json#/$defs/isoDateTime"
+        },
+        "outcome": {
+          "type": "string"
+        },
+        "category": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "detail": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "at",
+        "outcome",
+        "detail"
+      ],
+      "additionalProperties": true,
+      "title": "worldsindex-context-attempt.v1 (public projection)",
+      "description": "The follow-up's last recorded attempt for a source as source-coverage.json publishes it: when, RETRIEVED / UNCHANGED / REFUSED / FAILED / SKIPPED_*, the failure category and the provider's words."
+    },
+    "sourceDenominators": {
+      "type": "object",
+      "properties": {
+        "declared": {
+          "const": true
+        },
+        "applicable": {
+          "type": "boolean"
+        },
+        "executed": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "dataBearing": {
+          "type": "boolean"
+        },
+        "objects": {
+          "type": "object",
+          "properties": {
+            "declared": {
+              "type": "integer"
+            },
+            "applicable": {
+              "type": "integer"
+            },
+            "executed": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "dataBearing": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "declared",
+            "applicable",
+            "executed",
+            "dataBearing"
+          ],
+          "additionalProperties": true
+        },
+        "notComputable": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "declared",
+        "applicable",
+        "executed",
+        "dataBearing",
+        "objects",
+        "notComputable"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

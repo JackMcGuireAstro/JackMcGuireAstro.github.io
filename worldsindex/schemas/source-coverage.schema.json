@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/source-coverage.schema.json",
+  "title": "worldsindex-source-coverage.v1",
+  "description": "worldsindex/data/source-coverage.json: per declared source, objects eligible / attached / missing at the provider / blocked, the last recorded retrieval attempt and (additive since Track 1) the four denominators per source and summed.",
+  "type": "object",
+  "properties": {
+    "schemaName": {
+      "const": "worldsindex-source-coverage"
+    },
+    "schemaVersion": {
+      "const": "worldsindex-source-coverage.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "atlasProjectionId": {
+      "type": "string"
+    },
+    "objects": {
+      "type": "integer"
+    },
+    "objectsWithAnyContribution": {
+      "type": "integer"
+    },
+    "crossIdentifiers": {
+      "type": "integer"
+    },
+    "boundary": {
+      "type": "string"
+    },
+    "sources": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string"
+          },
+          "class": {
+            "type": "string",
+            "enum": [
+              "ATLAS_INGESTED",
+              "FROZEN_CONTEXT",
+              "LIVE_PER_TARGET",
+              "NOT_CONFIGURED"
+            ]
+          },
+          "state": {
+            "type": "string"
+          },
+          "snapshotId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "retrievedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "keyedOn": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "eligible": {
+            "type": "integer"
+          },
+          "attached": {
+            "type": "integer"
+          },
+          "missingAtProvider": {
+            "type": "integer"
+          },
+          "blocked": {
+            "type": "integer"
+          },
+          "blockedReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "identifierMissing": {
+            "type": "integer"
+          },
+          "rows": {
+            "type": "integer"
+          },
+          "attachedRows": {
+            "type": "integer"
+          },
+          "viaCrossIdentifier": {
+            "type": "integer"
+          },
+          "eligibleByPrimarySource": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "attachedByPrimarySource": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "lastAttempt": {
+            "$ref": "common.schema.json#/$defs/contextAttempt"
+          },
+          "denominators": {
+            "$ref": "common.schema.json#/$defs/sourceDenominators"
+          }
+        },
+        "required": [
+          "sourceId",
+          "class",
+          "state",
+          "eligible",
+          "attached",
+          "missingAtProvider",
+          "blocked",
+          "identifierMissing"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "denominators": {
+      "type": "object",
+      "properties": {
+        "definitions": {
+          "type": "object",
+          "properties": {
+            "declared": {
+              "type": "string"
+            },
+            "applicable": {
+              "type": "string"
+            },
+            "executed": {
+              "type": "string"
+            },
+            "dataBearing": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "declared",
+            "applicable",
+            "executed",
+            "dataBearing"
+          ],
+          "additionalProperties": true
+        },
+        "sources": {
+          "type": "object",
+          "properties": {
+            "declared": {
+              "type": "integer"
+            },
+            "applicable": {
+              "type": "integer"
+            },
+            "executed": {
+              "type": "integer"
+            },
+            "executedUnknown": {
+              "type": "integer"
+            },
+            "notExecuted": {
+              "type": "integer"
+            },
+            "dataBearing": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "declared",
+            "applicable",
+            "executed",
+            "executedUnknown",
+            "notExecuted",
+            "dataBearing"
+          ],
+          "additionalProperties": true
+        },
+        "notComputable": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "definitions",
+        "sources",
+        "notComputable"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "schemaName",
+    "schemaVersion",
+    "generatedAt",
+    "atlasProjectionId",
+    "objects",
+    "sources"
+  ],
+  "additionalProperties": true
+}

@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/cloud-run.schema.json",
+  "title": "cloud-run-marker@1",
+  "description": "worldsindex/data/cloud-run.json: the cloud run's public marker (which state archive it restored and when that was saved; whether the state key still works and when it expires). Written by scripts/cloud_run_marker.py, not by the builder.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "cloud-run-marker@1"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "workflow": {
+      "type": "string"
+    },
+    "run_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "run_url": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "state_asset": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "state_saved_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "state_restored_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "token_status": {
+      "type": "string"
+    },
+    "token_checked_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "token_expires_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "token_http_status": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "generated_at",
+    "workflow",
+    "token_status"
+  ],
+  "additionalProperties": true
+}

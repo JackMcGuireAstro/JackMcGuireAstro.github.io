@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/exports-index.schema.json",
+  "title": "worldsindex-exports.v1",
+  "description": "worldsindex/data/exports/index.json: every ECSV/VOTable export table with its row count, files (bytes, SHA-256) and column metadata (datatype, UCD, VOUnits unit, description).",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "worldsindex-exports.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "atlasProjectionId": {
+      "type": "string"
+    },
+    "formats": {
+      "type": "object",
+      "properties": {
+        "ecsv": {
+          "type": "string"
+        },
+        "votable": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "claimBoundary": {
+      "type": "string"
+    },
+    "tables": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "integer"
+          },
+          "files": {
+            "type": "object",
+            "properties": {
+              "ecsv": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "bytes": {
+                    "type": "integer"
+                  },
+                  "sha256": {
+                    "$ref": "common.schema.json#/$defs/sha256"
+                  }
+                },
+                "required": [
+                  "path",
+                  "bytes",
+                  "sha256"
+                ],
+                "additionalProperties": true
+              },
+              "votable": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "bytes": {
+                    "type": "integer"
+                  },
+                  "sha256": {
+                    "$ref": "common.schema.json#/$defs/sha256"
+                  }
+                },
+                "required": [
+                  "path",
+                  "bytes",
+                  "sha256"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "ecsv",
+              "votable"
+            ],
+            "additionalProperties": true
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "datatype": {
+                  "type": "string",
+                  "enum": [
+                    "string",
+                    "float64",
+                    "int64",
+                    "bool"
+                  ]
+                },
+                "ucd": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "unit": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "name",
+                "datatype",
+                "ucd",
+                "unit",
+                "description"
+              ],
+              "additionalProperties": true
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "description",
+          "rows",
+          "files",
+          "columns"
+        ],
+        "additionalProperties": true
+      },
+      "minProperties": 1
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "tables"
+  ],
+  "additionalProperties": true
+}

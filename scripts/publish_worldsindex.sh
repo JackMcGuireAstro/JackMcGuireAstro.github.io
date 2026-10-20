@@ -38,7 +38,19 @@ PUBLIC_FILES=(
   worldsindex/data/source-monitor.json
   worldsindex/data/transit-ephemerides.json.gz
   worldsindex/data/source-coverage.json
+  # Framework v2 Track 1: IVOA exports, bulk-asset index, provenance, changelog and feeds
+  # (scripts/worldsindex_interop.mjs, worldsindex_changelog.mjs, worldsindex_provenance.mjs).
+  worldsindex/data/exports/index.json
+  worldsindex/data/bulk-downloads.json
+  worldsindex/data/provenance.json
+  worldsindex/data/changelog.json
+  worldsindex/data/changelog.md
+  worldsindex/data/feed.json
+  worldsindex/data/feed.xml
 )
+for export_table in objects measurements transit_ephemerides source_coverage identity_states references; do
+  PUBLIC_FILES+=("worldsindex/data/exports/$export_table.ecsv.gz" "worldsindex/data/exports/$export_table.vot.gz")
+done
 for bucket_index in {0..255}; do
   printf -v bucket '%02x' "$bucket_index"
   PUBLIC_FILES+=("worldsindex/data/details/$bucket.json.gz")
@@ -75,10 +87,17 @@ cleanup() {
   if [ "$status" -ne 0 ] && [ -d "$SITE/.git" ]; then
     discard_generated_files
   fi
+  # The VOParquet assets live outside the Pages tree only until they are uploaded (or the
+  # run ends); nothing of theirs is kept between runs unless the caller named the folder.
+  if [ -n "${BULK_DIR:-}" ] && [ -z "${WORLDSINDEX_RELEASE_ASSETS_DIR:-}" ]; then
+    rm -f -- "$BULK_DIR"/*.parquet 2>/dev/null
+    rmdir "$BULK_DIR" 2>/dev/null
+  fi
   rmdir "$LOCKDIR" 2>/dev/null
   return "$status"
 }
 trap cleanup EXIT
+BULK_DIR=""
 
 [ -d "$SITE/.git" ] || die "dedicated website checkout is missing: $SITE"
 [ -f "$SOURCE/package.json" ] || die "ExoNexus source project is missing: $SOURCE"
@@ -104,6 +123,7 @@ input_fingerprint() {
                 "$SOURCE/data/snapshots/exoplanet-eu/ACTIVE.json" "$SOURCE/data/atlas/release-contract.json" \
                 "$SOURCE/outputs/promotion/exoplanet-eu/latest.json" \
                 "$SITE/scripts/build_worldsindex_static.mjs" "$SITE/scripts/worldsindex_transit_ephemerides.mjs" "$SITE/worldsindex/assets/ephemeris.js" \
+                "$SITE/scripts/worldsindex_interop.mjs" "$SITE/scripts/worldsindex_changelog.mjs" "$SITE/scripts/worldsindex_provenance.mjs" "$SITE/scripts/worldsindex_parquet.py" "$SITE/worldsindex/openapi.yaml" \
                 "$SITE/worldsindex/index.html" "$SITE/worldsindex/assets/app.js" \
                 "$SITE/worldsindex/assets/lightcurves.js" "$SITE/worldsindex/assets/photometry.js" "$SITE/worldsindex/assets/science.js" "$SITE/worldsindex/assets/app.css"; do
       [ -f "$file" ] && shasum -a 256 "$file" 2>/dev/null || sha256sum "$file" 2>/dev/null || printf 'missing  %s\n' "$file"
@@ -250,7 +270,15 @@ DATA_TIP=$(cd "$SITE" && bash scripts/data_branch.sh sync "$DATA_STORE" "$DATA_B
 git -C "$SITE" clean -fdqX -- worldsindex/data || die "could not clear the previous generated files"
 
 say "building the GitHub-native static release"
-(cd "$SITE" && WORLDSINDEX_SOURCE_DIR="$SOURCE" node scripts/build_worldsindex_static.mjs) >>"$LOG" 2>&1 \
+# The VOParquet bulk tables are written outside the Pages tree and uploaded below as assets
+# of the rolling GitHub Release that worldsindex/data/bulk-downloads.json names; only that
+# small index enters the release commit. The previous published release (the data-branch
+# tip, read through the data store) is the base of the changelog and the feeds.
+BULK_DIR="${WORLDSINDEX_RELEASE_ASSETS_DIR:-$LOG_DIR/release-assets}"
+mkdir -p "$BULK_DIR" || die "could not prepare the bulk asset folder $BULK_DIR"
+(cd "$SITE" && WORLDSINDEX_SOURCE_DIR="$SOURCE" WORLDSINDEX_RELEASE_ASSETS_DIR="$BULK_DIR" \
+  WORLDSINDEX_RELEASE_BASE_GIT_DIR="$DATA_STORE" WORLDSINDEX_RELEASE_BASE_REF="$DATA_TIP" \
+  node scripts/build_worldsindex_static.mjs) >>"$LOG" 2>&1 \
   || die "static release build failed"
 # Derive observation files from the completed manifest; never guess shard names.
 while IFS= read -r artifact; do
@@ -264,6 +292,14 @@ PY_OBSERVATIONS
 )
 (cd "$SITE" && python3 scripts/test_worldsindex_static.py && node --check worldsindex/assets/app.js && git diff --check) >>"$LOG" 2>&1 \
   || die "static release validation failed"
+# Track 1 gates: the exports read back with Astropy and pyarrow cell for cell (values, units,
+# UCDs, limit flags, provenance columns), and every published JSON file matches its schema
+# under worldsindex/schemas (named by worldsindex/openapi.yaml; the detail-shard sample is
+# bounded by WORLDSINDEX_SCHEMA_BUDGET_SECONDS, default 30). Either failure refuses the release.
+(cd "$SITE" && node --test scripts/test_worldsindex_interop.mjs && python3 scripts/test_worldsindex_interop.py --assets "$BULK_DIR") >>"$LOG" 2>&1 \
+  || die "interoperability exports do not round-trip; nothing published"
+(cd "$SITE" && python3 scripts/validate_worldsindex_schemas.py) >>"$LOG" 2>&1 \
+  || die "published JSON does not validate against worldsindex/schemas; nothing published"
 # The cloud run's public marker (scripts/cloud_run_marker.py: restored state, run id) is
 # published beside the release. It is not a manifest artifact (the static test above and
 # scripts/test_worldsindex_static.py leave it out), but it is allowlisted like everything else.
@@ -343,6 +379,43 @@ if [ "$DRY" -eq 1 ]; then
   discard_generated_files
   exit 0
 fi
+
+# ---- Bulk assets ------------------------------------------------------------------------
+# The VOParquet tables go to the rolling GitHub Release named by bulk-downloads.json (tag
+# "worldsindex-data-latest"), not into the Pages tree: Release assets have no bandwidth limit
+# and no 1 GB site budget. The release is created when missing and each asset is replaced
+# (--clobber). An upload failure is reported, not fatal: the Pages release carries the asset
+# SHA-256 digests, so a reader can tell a lagging asset from the current one, and the next
+# cycle uploads again. WORLDSINDEX_RELEASE_TOKEN (the workflow token, contents: write)
+# authenticates gh; without gh or a token the step is skipped and said so.
+upload_bulk_assets() {
+  local tag repo asset count=0 bytes total=0 sizes=""
+  tag=$(python3 -c "import json;print(json.load(open('worldsindex/data/bulk-downloads.json'))['releaseTag'])" 2>/dev/null) \
+    || { say "WARN  bulk-downloads.json has no release tag; VOParquet assets not uploaded"; return 0; }
+  repo=$(python3 -c "import json;print(json.load(open('worldsindex/data/bulk-downloads.json'))['repository'])" 2>/dev/null)
+  [ -n "$repo" ] || { say "WARN  could not name the GitHub repository; VOParquet assets not uploaded"; return 0; }
+  if ! ls "$BULK_DIR"/*.parquet >/dev/null 2>&1; then say "no VOParquet assets were built this run (see bulk-downloads.json unavailableReason); nothing to upload"; return 0; fi
+  command -v gh >/dev/null 2>&1 || { say "no GitHub CLI on this publisher; VOParquet assets not uploaded"; return 0; }
+  if [ -n "${WORLDSINDEX_RELEASE_TOKEN:-}" ]; then export GH_TOKEN="$WORLDSINDEX_RELEASE_TOKEN"; fi
+  if ! gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
+    gh release create "$tag" --repo "$repo" --title "WorldsIndex bulk data (rolling)" --latest=false \
+      --notes "Rolling VOParquet bulk tables of the latest WorldsIndex release. Names, sizes and SHA-256 digests: https://jackmcguireastro.github.io/worldsindex/data/bulk-downloads.json. Replaced on every release; verify the digest." >>"$LOG" 2>&1 \
+      || { say "WARN  could not create the $tag release on $repo; VOParquet assets not uploaded"; return 0; }
+  fi
+  for asset in "$BULK_DIR"/*.parquet; do
+    [ -f "$asset" ] || continue
+    bytes=$(wc -c <"$asset" | tr -d ' ')
+    gh release upload "$tag" "$asset" --repo "$repo" --clobber >>"$LOG" 2>&1 \
+      || { say "WARN  upload of $(basename "$asset") ($bytes bytes) to release $tag failed; the previous asset stays until the next cycle"; return 0; }
+    count=$((count + 1))
+    total=$((total + bytes))
+    sizes="$sizes $(basename "$asset")=$bytes"
+  done
+  # Size log line: one per release, so the asset growth can be read from the run logs.
+  say "uploaded $count VOParquet asset(s), $total bytes, to release $tag of $repo:$sizes"
+}
+upload_bulk_assets
+# ----------------------------------------------------------------------------------------
 
 # Replace the data branch with one commit holding exactly the allowlisted artifacts.
 # main is never committed to or force-pushed here; only this publisher writes it.

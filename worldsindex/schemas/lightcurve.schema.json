@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/lightcurve.schema.json",
+  "title": "worldsindex-lightcurve.v1",
+  "description": "worldsindex/data/lightcurves/<target>.json.gz: one retained observation product with its time system, units, quality selection and points (arrays in the order of columns).",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string"
+    },
+    "target": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "sourceUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "documentationUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "retrievedAt": {
+      "type": "string"
+    },
+    "rawSha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "timeSystem": {
+      "type": "string"
+    },
+    "timeUnit": {
+      "type": "string"
+    },
+    "valueUnit": {
+      "type": "string"
+    },
+    "valueColumn": {
+      "type": "string"
+    },
+    "uncertaintyColumn": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "columns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "qualitySelection": {
+      "type": "string"
+    },
+    "uncertaintyNote": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rawRowCount": {
+      "type": "integer"
+    },
+    "rejectedRowCount": {
+      "type": "integer"
+    },
+    "pointCount": {
+      "type": "integer"
+    },
+    "points": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": [
+            "number",
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "target",
+    "source",
+    "timeSystem",
+    "columns",
+    "pointCount",
+    "points"
+  ],
+  "additionalProperties": true
+}

@@ -87,6 +87,19 @@ jobs:
           node --check worldsindex/assets/ephemeris.js
           node --check scripts/worldsindex_transit_ephemerides.mjs
           node scripts/test_worldsindex_ephemerides.mjs
+          node --check scripts/worldsindex_interop.mjs
+          node --check scripts/worldsindex_changelog.mjs
+          node --check scripts/worldsindex_provenance.mjs
+          node --test scripts/test_worldsindex_interop.mjs
+      # The Track 1 exports (ECSV, VOTable, the VOParquet index, PROV-JSON, changelog, feeds)
+      # read back with Astropy and pyarrow, and every published WorldsIndex JSON file against
+      # worldsindex/schemas (named by worldsindex/openapi.yaml) with check-jsonschema.
+      - name: WorldsIndex interoperability dependencies
+        run: python3 -m pip install --quiet --disable-pip-version-check "astropy>=7.0,<9" "astropy-healpix>=1.0,<3" "pyarrow>=21,<27" "check-jsonschema>=0.33,<1" "pyyaml>=6,<7"
+      - name: WorldsIndex exports round trip and published JSON against worldsindex/schemas
+        run: |
+          python3 scripts/test_worldsindex_interop.py
+          python3 scripts/validate_worldsindex_schemas.py | tee -a "$GITHUB_STEP_SUMMARY"
       - name: QualQuest static export and public content
         run: python3 scripts/test_qualquest_static.py
       - name: Tonight's sky planner and observing tools

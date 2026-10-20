@@ -1,0 +1,701 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/changelog.schema.json",
+  "title": "worldsindex-changelog.v1",
+  "description": "worldsindex/data/changelog.json: what changed between the previous published release and this one (objects added and removed, promotions, demotions, identity changes, rows and spectra added, source-state and monitor changes); lists capped, counts complete.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "worldsindex-changelog.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "release": {
+      "type": "object",
+      "properties": {
+        "generatedAt": {
+          "type": "string"
+        },
+        "atlasGeneratedAt": {
+          "type": "string"
+        },
+        "projectionId": {
+          "type": "string"
+        },
+        "objectCount": {
+          "type": "integer"
+        },
+        "detailRecordCount": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "generatedAt",
+        "objectCount"
+      ],
+      "additionalProperties": true
+    },
+    "previousRelease": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "ref": {
+          "type": "string"
+        },
+        "commit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "generatedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "objectCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "detailRecordCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "hadObjectExport": {
+          "type": "boolean"
+        }
+      }
+    },
+    "comparable": {
+      "type": "boolean"
+    },
+    "note": {
+      "type": "string"
+    },
+    "objects": {
+      "type": "object",
+      "properties": {
+        "added": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "objectId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "hostName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "identityState": {
+                    "type": "string"
+                  },
+                  "primarySourceId": {
+                    "type": "string"
+                  },
+                  "from": {},
+                  "to": {}
+                },
+                "required": [
+                  "objectId",
+                  "name"
+                ],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": [
+            "count",
+            "truncated",
+            "entries"
+          ],
+          "additionalProperties": true
+        },
+        "removed": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "objectId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "hostName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "identityState": {
+                    "type": "string"
+                  },
+                  "primarySourceId": {
+                    "type": "string"
+                  },
+                  "from": {},
+                  "to": {}
+                },
+                "required": [
+                  "objectId",
+                  "name"
+                ],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": [
+            "count",
+            "truncated",
+            "entries"
+          ],
+          "additionalProperties": true
+        },
+        "statusChanges": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "objectId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "hostName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "identityState": {
+                    "type": "string"
+                  },
+                  "primarySourceId": {
+                    "type": "string"
+                  },
+                  "from": {},
+                  "to": {}
+                },
+                "required": [
+                  "objectId",
+                  "name"
+                ],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": [
+            "count",
+            "truncated",
+            "entries"
+          ],
+          "additionalProperties": true
+        },
+        "promotions": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "objectId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "hostName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "identityState": {
+                    "type": "string"
+                  },
+                  "primarySourceId": {
+                    "type": "string"
+                  },
+                  "from": {},
+                  "to": {}
+                },
+                "required": [
+                  "objectId",
+                  "name"
+                ],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": [
+            "count",
+            "truncated",
+            "entries"
+          ],
+          "additionalProperties": true
+        },
+        "demotions": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "objectId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "hostName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "identityState": {
+                    "type": "string"
+                  },
+                  "primarySourceId": {
+                    "type": "string"
+                  },
+                  "from": {},
+                  "to": {}
+                },
+                "required": [
+                  "objectId",
+                  "name"
+                ],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": [
+            "count",
+            "truncated",
+            "entries"
+          ],
+          "additionalProperties": true
+        },
+        "identityChanges": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "objectId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "hostName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "identityState": {
+                    "type": "string"
+                  },
+                  "primarySourceId": {
+                    "type": "string"
+                  },
+                  "from": {},
+                  "to": {}
+                },
+                "required": [
+                  "objectId",
+                  "name"
+                ],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": [
+            "count",
+            "truncated",
+            "entries"
+          ],
+          "additionalProperties": true
+        },
+        "rowsAdded": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "objectId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "hostName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "identityState": {
+                    "type": "string"
+                  },
+                  "primarySourceId": {
+                    "type": "string"
+                  },
+                  "from": {},
+                  "to": {}
+                },
+                "required": [
+                  "objectId",
+                  "name"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "rows": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "count",
+            "truncated",
+            "entries",
+            "rows"
+          ]
+        },
+        "spectraAdded": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "objectId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "hostName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "identityState": {
+                    "type": "string"
+                  },
+                  "primarySourceId": {
+                    "type": "string"
+                  },
+                  "from": {},
+                  "to": {}
+                },
+                "required": [
+                  "objectId",
+                  "name"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "rows": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "count",
+            "truncated",
+            "entries",
+            "rows"
+          ]
+        }
+      },
+      "required": [
+        "added",
+        "removed",
+        "statusChanges",
+        "promotions",
+        "demotions",
+        "identityChanges"
+      ],
+      "additionalProperties": true
+    },
+    "sources": {
+      "type": "object",
+      "properties": {
+        "changes": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "detail"
+                ],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": [
+            "count",
+            "truncated",
+            "entries"
+          ],
+          "additionalProperties": true
+        },
+        "monitor": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "detail"
+                ],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": [
+            "count",
+            "truncated",
+            "entries"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "changes",
+        "monitor"
+      ],
+      "additionalProperties": true
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "added": {
+          "type": "integer"
+        },
+        "removed": {
+          "type": "integer"
+        },
+        "promotions": {
+          "type": "integer"
+        },
+        "demotions": {
+          "type": "integer"
+        },
+        "otherStatusChanges": {
+          "type": "integer"
+        },
+        "identityChanges": {
+          "type": "integer"
+        },
+        "objectsWithRowsAdded": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "rowsAdded": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "objectsWithSpectraAdded": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "spectraAdded": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "sourceChanges": {
+          "type": "integer"
+        },
+        "monitorChanges": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "added",
+        "removed",
+        "promotions",
+        "demotions",
+        "identityChanges",
+        "sourceChanges"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "release",
+    "previousRelease",
+    "comparable",
+    "objects",
+    "sources",
+    "summary"
+  ],
+  "additionalProperties": true
+}

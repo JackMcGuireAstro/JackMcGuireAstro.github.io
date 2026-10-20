@@ -1,0 +1,274 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/transit-ephemerides.schema.json",
+  "title": "worldsindex-transit-ephemerides.v1",
+  "description": "worldsindex/data/transit-ephemerides.json.gz: one ephemeris per transiting planet, period and epoch from one cited catalog row; rows are arrays in the order of columns.",
+  "type": "object",
+  "properties": {
+    "schemaName": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "worldsindex-transit-ephemerides.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "referenceBjd": {
+      "type": "number"
+    },
+    "timeStandard": {
+      "const": "BJD_TDB"
+    },
+    "selectionPolicy": {
+      "type": "string"
+    },
+    "units": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "sources": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "type": "string"
+          },
+          "snapshotId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "table"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "count": {
+      "type": "integer"
+    },
+    "columns": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "const": "objectId"
+        },
+        {
+          "const": "name"
+        },
+        {
+          "const": "host"
+        },
+        {
+          "const": "raDeg"
+        },
+        {
+          "const": "decDeg"
+        },
+        {
+          "const": "status"
+        },
+        {
+          "const": "periodDays"
+        },
+        {
+          "const": "periodErrDays"
+        },
+        {
+          "const": "t0Bjd"
+        },
+        {
+          "const": "t0ErrDays"
+        },
+        {
+          "const": "durationHours"
+        },
+        {
+          "const": "depthPpt"
+        },
+        {
+          "const": "hostMag"
+        },
+        {
+          "const": "hostMagBand"
+        },
+        {
+          "const": "timeSystem"
+        },
+        {
+          "const": "sourceId"
+        },
+        {
+          "const": "sourceTable"
+        },
+        {
+          "const": "sourceRecordId"
+        },
+        {
+          "const": "reference"
+        },
+        {
+          "const": "referenceUrl"
+        },
+        {
+          "const": "matchedVia"
+        }
+      ],
+      "minItems": 21,
+      "maxItems": 21
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "string",
+            "enum": [
+              "CONFIRMED",
+              "CANDIDATE",
+              "CONTROVERSIAL"
+            ]
+          },
+          {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          {
+            "type": "number",
+            "minimum": 2400000,
+            "maximum": 2500000
+          },
+          {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "V",
+              "TESS",
+              null
+            ]
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "string",
+            "enum": [
+              "nasa-pscomppars",
+              "nasa-ps",
+              "nasa-toi",
+              "nasa-koi",
+              "nasa-k2"
+            ]
+          },
+          {
+            "type": "string",
+            "enum": [
+              "pscomppars",
+              "ps",
+              "toi",
+              "cumulative",
+              "k2pandc"
+            ]
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "tic+period",
+              null
+            ]
+          }
+        ],
+        "minItems": 21,
+        "maxItems": 21
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "referenceBjd",
+    "timeStandard",
+    "count",
+    "columns",
+    "rows"
+  ],
+  "additionalProperties": true
+}

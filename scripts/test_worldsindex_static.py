@@ -125,6 +125,7 @@ def main() -> None:
                 )
 
     transit_count = check_transit_ephemerides(manifest, by_id, packaged_records)
+    interop_note = check_interop_products(manifest)
 
     assert "object-hd-209458-b" in by_id
     assert by_id["object-hd-209458-b"]["sourceRecordCount"] >= 20
@@ -188,8 +189,73 @@ def main() -> None:
         f"{manifest['detailRecordCount']:,} native rows; "
         + (f"{transit_count:,} transit ephemerides; " if transit_count is not None else "")
         + f"{len(registry['sources']['entries'])} source contracts; "
-        f"{len(registry['methods']['entries'])} methods."
+        f"{len(registry['methods']['entries'])} methods"
+        + (f"; {interop_note}." if interop_note else ".")
     )
+
+
+def check_interop_products(manifest: dict) -> str | None:
+    """Track 1 products: exports, bulk downloads, provenance, changelog and feeds.
+
+    Optional like the other later artifacts (a release built by an older builder declares none
+    of them); once declared, every file is present, declared as an artifact, and coherent with
+    the manifest. The Astropy/pyarrow round trip is scripts/test_worldsindex_interop.py.
+    """
+    artifacts = manifest["artifacts"]
+    if "provenancePath" not in manifest and "exports" not in manifest:
+        assert not any(path.startswith("exports/") for path in artifacts), "exports shipped without a manifest declaration"
+        print("note: this release predates the interoperability exports (built by an older builder)")
+        return None
+    assert manifest["provenancePath"] == "provenance.json" and "provenance.json" in artifacts
+    provenance = json.loads((DATA / "provenance.json").read_text())
+    assert provenance["schemaVersion"] == manifest["provenanceSchemaVersion"] == "worldsindex-provenance.v1"
+    assert provenance["generatedAt"] == manifest["generatedAt"]
+    for path, declared in artifacts.items():
+        if path != "provenance.json":
+            assert provenance["entity"][f"wi:artifact/{path}"]["wi:sha256"] == declared["sha256"], f"provenance digest for {path}"
+    exports = manifest["exports"]
+    assert exports["path"] == "exports/index.json" and exports["path"] in artifacts
+    index = json.loads((DATA / exports["path"]).read_text())
+    assert index["schemaVersion"] == exports["schemaVersion"] == "worldsindex-exports.v1"
+    assert set(index["tables"]) == set(exports["tables"]) >= {"objects", "measurements", "transit_ephemerides", "identity_states", "references"}
+    for table, entry in index["tables"].items():
+        assert entry["rows"] == exports["tables"][table]["rows"]
+        for kind, suffix in (("ecsv", ".ecsv.gz"), ("votable", ".vot.gz")):
+            file = entry["files"][kind]
+            assert file["path"] == f"exports/{table}{suffix}" == exports["tables"][table][kind] and file["path"] in artifacts
+            assert artifacts[file["path"]]["sha256"] == file["sha256"] and artifacts[file["path"]]["bytes"] == file["bytes"]
+        for column in entry["columns"]:
+            assert column["ucd"] and column["description"] and column["datatype"] in {"string", "float64", "int64", "bool"}, f"{table}.{column['name']}"
+        with gzip.open(DATA / entry["files"]["ecsv"]["path"], "rt", encoding="utf-8") as stream:
+            assert stream.readline() == "# %ECSV 1.0\n", f"{table}: not ECSV 1.0"
+        with gzip.open(DATA / entry["files"]["votable"]["path"], "rt", encoding="utf-8") as stream:
+            head = stream.read(400)
+        assert 'VOTABLE version="1.5"' in head and 'xmlns="http://www.ivoa.net/xml/VOTable/v1.3"' in head, f"{table}: not VOTable 1.5"
+    assert index["tables"]["objects"]["rows"] == manifest["objectCount"] == index["tables"]["identity_states"]["rows"]
+    assert index["tables"]["transit_ephemerides"]["rows"] == manifest["transitEphemerides"]["count"]
+    bulk_declared = manifest["bulkDownloads"]
+    assert bulk_declared["path"] == "bulk-downloads.json" in artifacts
+    bulk = json.loads((DATA / "bulk-downloads.json").read_text())
+    assert bulk["schemaVersion"] == "worldsindex-bulk-downloads.v1" and bulk["releaseTag"] == bulk_declared["releaseTag"] == "worldsindex-data-latest"
+    assert [asset["name"] for asset in bulk["assets"]] == bulk_declared["assets"]
+    assert (bulk["unavailableReason"] is None) == bool(bulk["assets"]), "either assets or the reason they are missing"
+    for asset in bulk["assets"]:
+        assert asset["downloadUrl"].startswith(f"https://github.com/{bulk['repository']}/releases/download/{bulk['releaseTag']}/") and re.fullmatch(r"[0-9a-f]{64}", asset["sha256"]) and asset["bytes"] > 0
+        assert asset["rows"] == index["tables"][asset["table"]]["rows"]
+    changelog_declared = manifest["changelog"]
+    assert changelog_declared["path"] == "changelog.json" in artifacts and changelog_declared["markdownPath"] == "changelog.md" in artifacts
+    changelog = json.loads((DATA / "changelog.json").read_text())
+    assert changelog["schemaVersion"] == "worldsindex-changelog.v1" and changelog["generatedAt"] == manifest["generatedAt"] and changelog["comparable"] == changelog_declared["comparable"]
+    assert changelog["summary"] == changelog_declared["summary"]
+    assert (DATA / "changelog.md").read_text().startswith(f"# WorldsIndex release {manifest['generatedAt']}")
+    feeds = manifest["feeds"]
+    assert feeds["json"] == "feed.json" in artifacts and feeds["atom"] == "feed.xml" in artifacts
+    feed = json.loads((DATA / "feed.json").read_text())
+    assert feed["version"] == "https://jsonfeed.org/version/1.1" and len(feed["items"]) == feeds["items"]
+    assert (DATA / "feed.xml").read_text().count("<entry>") == feeds["items"]
+    assert manifest["apiDescriptionUrl"].endswith("/worldsindex/openapi.yaml") and (ROOT / "worldsindex" / "openapi.yaml").is_file()
+    assert (ROOT / "worldsindex" / "schemas" / "manifest.schema.json").is_file()
+    return f"{len(index['tables'])} export tables, {len(bulk['assets'])} VOParquet asset(s), {feeds['items']} feed items"
 
 
 def _number(value):

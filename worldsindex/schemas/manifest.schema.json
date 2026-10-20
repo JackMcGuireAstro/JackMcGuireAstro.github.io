@@ -1,0 +1,290 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/manifest.schema.json",
+  "title": "worldsindex-static-release.v1",
+  "description": "worldsindex/data/manifest.json: the release manifest naming every artifact with its byte length and SHA-256, the atlas it was built from, and (since Track 1) the machine description, exports, bulk assets, provenance, changelog and feeds.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "worldsindex-static-release.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "atlasGeneratedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "objectCount": {
+      "type": "integer"
+    },
+    "renderableObjectCount": {
+      "type": "integer"
+    },
+    "sourceRecordOccurrences": {
+      "type": "integer"
+    },
+    "detailObjectCount": {
+      "type": "integer"
+    },
+    "detailRecordCount": {
+      "type": "integer"
+    },
+    "detailShards": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{2}$"
+      },
+      "minItems": 256,
+      "maxItems": 256
+    },
+    "coverage": {
+      "$ref": "common.schema.json#/$defs/coverageCounts"
+    },
+    "catalogIndexSchemaVersion": {
+      "type": "string"
+    },
+    "catalogIndexObjectCount": {
+      "type": "integer"
+    },
+    "catalogIndexBytes": {
+      "type": "integer"
+    },
+    "catalogIndexSha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "sourceUniverseVersion": {
+      "type": "string"
+    },
+    "methodRegistryVersion": {
+      "type": "string"
+    },
+    "atlasSha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "transitEphemerides": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer"
+        },
+        "referenceBjd": {
+          "type": "number"
+        },
+        "bySource": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "crossMatchedToi": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "schemaVersion",
+        "count"
+      ]
+    },
+    "sourceContributions": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "sourceCoverage": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "type": "string"
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "sources": {
+          "type": "integer"
+        }
+      }
+    },
+    "apiDescriptionUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "schemasUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "exports": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "type": "string"
+        },
+        "tables": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "rows": {
+                "type": "integer"
+              },
+              "ecsv": {
+                "type": "string"
+              },
+              "votable": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "rows",
+              "ecsv",
+              "votable"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "path",
+        "schemaVersion",
+        "tables"
+      ],
+      "additionalProperties": true
+    },
+    "bulkDownloads": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "type": "string"
+        },
+        "releaseTag": {
+          "type": "string"
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unavailableReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "path",
+        "releaseTag",
+        "assets"
+      ],
+      "additionalProperties": true
+    },
+    "provenancePath": {
+      "const": "provenance.json"
+    },
+    "provenanceSchemaVersion": {
+      "type": "string"
+    },
+    "changelog": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "markdownPath": {
+          "type": "string"
+        },
+        "schemaVersion": {
+          "type": "string"
+        },
+        "comparable": {
+          "type": "boolean"
+        },
+        "previousReleaseCommit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "summary": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "path",
+        "markdownPath",
+        "comparable"
+      ],
+      "additionalProperties": true
+    },
+    "feeds": {
+      "type": "object",
+      "properties": {
+        "json": {
+          "type": "string"
+        },
+        "atom": {
+          "type": "string"
+        },
+        "items": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "json",
+        "atom",
+        "items"
+      ],
+      "additionalProperties": true
+    },
+    "artifacts": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "$ref": "common.schema.json#/$defs/artifactDigest"
+      },
+      "minProperties": 1
+    },
+    "scientificBoundary": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "atlasGeneratedAt",
+    "objectCount",
+    "detailShards",
+    "coverage",
+    "catalogIndexSha256",
+    "atlasSha256",
+    "artifacts",
+    "scientificBoundary"
+  ],
+  "additionalProperties": true
+}

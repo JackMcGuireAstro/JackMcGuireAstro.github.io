@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/bulk-downloads.schema.json",
+  "title": "worldsindex-bulk-downloads.v1",
+  "description": "worldsindex/data/bulk-downloads.json: the VOParquet release assets (rolling GitHub Release worldsindex-data-latest) with sizes, SHA-256 digests and download URLs; empty with a reason when the run could not build them.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "worldsindex-bulk-downloads.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "atlasProjectionId": {
+      "type": "string"
+    },
+    "releaseTag": {
+      "type": "string"
+    },
+    "releaseUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "repository": {
+      "type": "string"
+    },
+    "statement": {
+      "type": "string"
+    },
+    "claimBoundary": {
+      "type": "string"
+    },
+    "unavailableReason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^worldsindex-[a-z_]+\\.parquet$"
+          },
+          "table": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "integer"
+          },
+          "columns": {
+            "type": "integer"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          },
+          "format": {
+            "type": "string"
+          },
+          "downloadUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "sourceEcsvSha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          }
+        },
+        "required": [
+          "name",
+          "table",
+          "rows",
+          "bytes",
+          "sha256",
+          "downloadUrl"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "releaseTag",
+    "releaseUrl",
+    "repository",
+    "assets",
+    "unavailableReason"
+  ],
+  "additionalProperties": true
+}

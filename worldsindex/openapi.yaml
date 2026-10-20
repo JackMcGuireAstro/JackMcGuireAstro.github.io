@@ -1,0 +1,362 @@
+openapi: 3.1.0
+# WorldsIndex static endpoints (Framework v2, Track 1). Every path is a file GitHub Pages
+# serves from the worldsindex-data branch; there is no server and no query parameter. Files
+# ending in .gz are stored gzip-compressed and served as application/gzip (the page inflates
+# them in the browser; Astropy, TOPCAT and curl --compressed read them directly). Response
+# schemas are the JSON Schema 2020-12 files under worldsindex/schemas/, which the publisher
+# validates every release against (scripts/validate_worldsindex_schemas.py).
+info:
+  title: WorldsIndex static data API
+  version: worldsindex-static-release.v1
+  summary: Static JSON, ECSV, VOTable and VOParquet files of the WorldsIndex release.
+  description: |
+    WorldsIndex is an exoplanet, candidate, host and system index built every hour by GitHub
+    Actions from frozen, checksummed source snapshots and published as static files. The
+    manifest names every artifact with its byte length and SHA-256; a reader can verify a whole
+    release from it. Source membership is not independent confirmation; source-composite values
+    are not self-consistent publication solutions; nothing is averaged across sources.
+  contact:
+    name: Jack McGuire (WorldsIndex)
+    url: https://jackmcguireastro.github.io/worldsindex/
+  license:
+    name: Provider rights and attribution travel with every record; see registry.json.gz (rights per source)
+    url: https://jackmcguireastro.github.io/worldsindex/data/registry.json.gz
+servers:
+  - url: https://jackmcguireastro.github.io/worldsindex
+    description: GitHub Pages (the worldsindex-data branch overlaid on main)
+tags:
+  - name: release
+    description: The manifest, provenance, changelog and feeds of the current release.
+  - name: catalog
+    description: Objects, detail shards, the sky atlas and transit ephemerides.
+  - name: sources
+    description: The source universe, coverage under the four denominators and the provider monitor.
+  - name: exports
+    description: ECSV 1.0 and VOTable 1.5 tables with UCDs and VOUnits, and the VOParquet release assets.
+  - name: observations
+    description: Retained observation products (light curves).
+components:
+  schemas:
+    Manifest:
+      $ref: schemas/manifest.schema.json
+    CatalogIndex:
+      $ref: schemas/catalog-index.schema.json
+    SkyDetections:
+      $ref: schemas/sky-detections.schema.json
+    DetailsShard:
+      $ref: schemas/details-shard.schema.json
+    TransitEphemerides:
+      $ref: schemas/transit-ephemerides.schema.json
+    SourceCoverage:
+      $ref: schemas/source-coverage.schema.json
+    SourceMonitor:
+      $ref: schemas/source-monitor.schema.json
+    Registry:
+      $ref: schemas/registry.schema.json
+    LightcurveIndex:
+      $ref: schemas/lightcurve-index.schema.json
+    Lightcurve:
+      $ref: schemas/lightcurve.schema.json
+    CloudRun:
+      $ref: schemas/cloud-run.schema.json
+    BulkDownloads:
+      $ref: schemas/bulk-downloads.schema.json
+    ExportsIndex:
+      $ref: schemas/exports-index.schema.json
+    Provenance:
+      $ref: schemas/provenance.schema.json
+    Changelog:
+      $ref: schemas/changelog.schema.json
+    Feed:
+      $ref: schemas/feed.schema.json
+  parameters:
+    shard:
+      name: shard
+      in: path
+      required: true
+      description: First two hex digits of sha256(objectId); every release ships all 256 shards.
+      schema:
+        type: string
+        pattern: "^[0-9a-f]{2}$"
+    table:
+      name: table
+      in: path
+      required: true
+      description: Export table name (exports/index.json lists them with their columns).
+      schema:
+        type: string
+        enum: [objects, measurements, transit_ephemerides, source_coverage, identity_states, references]
+    target:
+      name: target
+      in: path
+      required: true
+      description: Light-curve file name without extension, as lightcurves/index.json entries[].path states it.
+      schema:
+        type: string
+        pattern: "^[A-Za-z0-9._-]+$"
+  responses:
+    Gzip:
+      description: gzip-compressed JSON (application/gzip on the wire; inflate to read).
+      content:
+        application/gzip: {}
+paths:
+  /data/manifest.json:
+    get:
+      tags: [release]
+      summary: Release manifest
+      description: Every artifact of the release with bytes and SHA-256, counts, schema versions, and the paths of the exports, bulk downloads, provenance, changelog and feeds. Fetch this first; verify everything else against it.
+      operationId: getManifest
+      responses:
+        "200":
+          description: The current release manifest.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Manifest"
+  /data/provenance.json:
+    get:
+      tags: [release]
+      summary: W3C PROV-JSON provenance of the build
+      description: Entities (the release and its artifacts, the atlas projection, every declared source with contract and parser version, snapshot, retrieval time and last attempt outcome, the identity rules and reviewed pins, the restored state archive, the VOParquet release assets), activities (atlas generation, provider-monitor run, static build) and agents.
+      operationId: getProvenance
+      responses:
+        "200":
+          description: PROV-JSON document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provenance"
+  /data/changelog.json:
+    get:
+      tags: [release]
+      summary: Release-to-release changes (JSON)
+      description: Objects added and removed, promotions to confirmed, demotions to false positive or refuted, identity-state changes, native rows and spectra added per object, source-state and provider-monitor changes, against the previously published release. Lists are capped; counts are complete.
+      operationId: getChangelog
+      responses:
+        "200":
+          description: Changelog document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Changelog"
+  /data/changelog.md:
+    get:
+      tags: [release]
+      summary: Release-to-release changes in plain words (Markdown)
+      operationId: getChangelogMarkdown
+      responses:
+        "200":
+          description: Markdown rendering of changelog.json.
+          content:
+            text/markdown: {}
+  /data/feed.json:
+    get:
+      tags: [release]
+      summary: JSON Feed 1.1 of new, confirmed, demoted and updated planets
+      operationId: getFeed
+      responses:
+        "200":
+          description: JSON Feed 1.1 document; items from earlier releases are carried forward (bounded).
+          content:
+            application/feed+json:
+              schema:
+                $ref: "#/components/schemas/Feed"
+  /data/feed.xml:
+    get:
+      tags: [release]
+      summary: Atom feed with the same entries as feed.json
+      operationId: getAtomFeed
+      responses:
+        "200":
+          description: Atom 1.0 feed.
+          content:
+            application/atom+xml: {}
+  /data/cloud-run.json:
+    get:
+      tags: [release]
+      summary: Cloud-run marker
+      description: Which working-state archive the cloud run restored and when it was saved, and the state key's status. Present when the release was published by the cloud workflow.
+      operationId: getCloudRun
+      responses:
+        "200":
+          description: Marker document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CloudRun"
+        "404":
+          description: The release was not published by the cloud workflow.
+  /data/catalog-index.json.gz:
+    get:
+      tags: [catalog]
+      summary: Catalog index of every object
+      description: One record per object with names, aliases, position, normalized status, identity state, methods, sources and the source record count. Inflate, then validate against CatalogIndex.
+      operationId: getCatalogIndex
+      responses:
+        "200":
+          description: gzip-compressed JSON.
+          content:
+            application/gzip:
+              schema:
+                $ref: "#/components/schemas/CatalogIndex"
+  /data/sky-detections.json.gz:
+    get:
+      tags: [catalog]
+      summary: Sky atlas projection
+      description: Every detection with method claims, coordinate claims and the population values the atlas selected (each with its source record id and limit flag), plus the source snapshots the projection was built from.
+      operationId: getSkyDetections
+      responses:
+        "200":
+          description: gzip-compressed JSON.
+          content:
+            application/gzip:
+              schema:
+                $ref: "#/components/schemas/SkyDetections"
+  /data/details/{shard}.json.gz:
+    get:
+      tags: [catalog]
+      summary: Detail shard (object dossiers)
+      description: The objects whose id hashes to the shard, each with its atlas record and every retained native row (NASA PS solutions, PSCompPars composites, TOI/KOI/K2 candidate rows, Exoplanet.eu rows, frozen-context rows) with source record ids and references.
+      operationId: getDetailsShard
+      parameters:
+        - $ref: "#/components/parameters/shard"
+      responses:
+        "200":
+          description: gzip-compressed JSON object keyed by objectId.
+          content:
+            application/gzip:
+              schema:
+                $ref: "#/components/schemas/DetailsShard"
+  /data/transit-ephemerides.json.gz:
+    get:
+      tags: [catalog]
+      summary: Transit ephemerides
+      description: One ephemeris per transiting planet, period and epoch from one cited catalog row (never combined), with the selection policy and units.
+      operationId: getTransitEphemerides
+      responses:
+        "200":
+          description: gzip-compressed JSON.
+          content:
+            application/gzip:
+              schema:
+                $ref: "#/components/schemas/TransitEphemerides"
+  /data/registry.json.gz:
+    get:
+      tags: [sources]
+      summary: Source universe and method registry
+      description: The 42 declared sources with contract fields (adapter and parser version, rights, rate limit, authentication, state, release) and the 13 detection methods.
+      operationId: getRegistry
+      responses:
+        "200":
+          description: gzip-compressed JSON.
+          content:
+            application/gzip:
+              schema:
+                $ref: "#/components/schemas/Registry"
+  /data/source-coverage.json:
+    get:
+      tags: [sources]
+      summary: Object x source coverage with the four denominators
+      description: Per declared source, objects eligible / attached / missing at the provider / blocked, the last recorded retrieval attempt, and the four denominators (declared, applicable, executed, data-bearing) per source and summed; what the builder cannot compute is null with the reason.
+      operationId: getSourceCoverage
+      responses:
+        "200":
+          description: Coverage summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceCoverage"
+  /data/source-monitor.json:
+    get:
+      tags: [sources]
+      summary: Provider monitor status
+      description: The monitor's latest attempt and last validated run with every provider observation (state, HTTP status, fingerprint, artifact digest), and each source-specific promotion gate's latest outcome.
+      operationId: getSourceMonitor
+      responses:
+        "200":
+          description: Monitor status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceMonitor"
+  /data/exports/index.json:
+    get:
+      tags: [exports]
+      summary: Export tables and their column metadata
+      description: Every ECSV/VOTable table with row count, file bytes and SHA-256, and per column the datatype, UCD1+, VOUnits unit and description.
+      operationId: getExportsIndex
+      responses:
+        "200":
+          description: Exports index.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportsIndex"
+  /data/exports/{table}.ecsv.gz:
+    get:
+      tags: [exports]
+      summary: ECSV 1.0 export (gzip)
+      description: Astropy APE 6 ECSV with a YAML header carrying datatype, unit, UCD and description per column. Read with astropy.table.Table.read(url_or_path, format="ascii.ecsv") or TOPCAT.
+      operationId: getEcsvExport
+      parameters:
+        - $ref: "#/components/parameters/table"
+      responses:
+        "200":
+          description: gzip-compressed ECSV.
+          content:
+            application/gzip: {}
+  /data/exports/{table}.vot.gz:
+    get:
+      tags: [exports]
+      summary: VOTable 1.5 export (gzip)
+      description: IVOA VOTable 1.5 TABLEDATA with a UCD and VOUnits unit per FIELD and an ICRS COOSYS where coordinates exist. Read with astropy.io.votable.parse or TOPCAT.
+      operationId: getVotableExport
+      parameters:
+        - $ref: "#/components/parameters/table"
+      responses:
+        "200":
+          description: gzip-compressed VOTable.
+          content:
+            application/gzip: {}
+  /data/bulk-downloads.json:
+    get:
+      tags: [exports]
+      summary: VOParquet release assets
+      description: Names, sizes, SHA-256 digests and download URLs of the VOParquet tables (objects and measurements) published as assets of the rolling GitHub Release worldsindex-data-latest, outside the Pages tree. Verify the digest after downloading; an asset can lag the Pages release by one cycle.
+      operationId: getBulkDownloads
+      externalDocs:
+        description: The rolling release holding the assets.
+        url: https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/releases/tag/worldsindex-data-latest
+      responses:
+        "200":
+          description: Bulk-downloads index.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkDownloads"
+  /data/lightcurves/index.json:
+    get:
+      tags: [observations]
+      summary: Light-curve index
+      operationId: getLightcurveIndex
+      responses:
+        "200":
+          description: Retained observation products with SHA-256 and point counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LightcurveIndex"
+  /data/lightcurves/{target}.json.gz:
+    get:
+      tags: [observations]
+      summary: One retained light curve
+      operationId: getLightcurve
+      parameters:
+        - $ref: "#/components/parameters/target"
+      responses:
+        "200":
+          description: gzip-compressed JSON.
+          content:
+            application/gzip:
+              schema:
+                $ref: "#/components/schemas/Lightcurve"

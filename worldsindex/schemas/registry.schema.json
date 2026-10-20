@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/registry.schema.json",
+  "title": "WorldsIndex source and method registry",
+  "description": "worldsindex/data/registry.json.gz: the versioned source universe (42 sources with contract fields) and the detection-method registry (13 methods) as this release presents them.",
+  "type": "object",
+  "properties": {
+    "sources": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "stateCounts": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": {
+            "type": "integer"
+          }
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "authority": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string"
+              },
+              "accessMode": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "release": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "recordCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "scope": {
+                "type": "string"
+              },
+              "applicability": {
+                "type": "string"
+              },
+              "parserVersion": {
+                "type": "string"
+              },
+              "adapterVersion": {
+                "type": "string"
+              },
+              "pagination": {
+                "type": "string"
+              },
+              "authentication": {
+                "type": "string"
+              },
+              "rights": {
+                "type": "string"
+              },
+              "rateLimit": {
+                "type": "string"
+              },
+              "documentationUrl": {
+                "type": "string"
+              },
+              "limitation": {
+                "type": "string"
+              },
+              "lastVerifiedAt": {
+                "type": "string"
+              },
+              "policy": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "authority",
+              "accessMode",
+              "state",
+              "parserVersion",
+              "adapterVersion",
+              "rights",
+              "documentationUrl",
+              "lastVerifiedAt"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "version",
+        "entries"
+      ],
+      "additionalProperties": true
+    },
+    "methods": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "shortLabel": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "label"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "version",
+        "entries"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "sources",
+    "methods"
+  ],
+  "additionalProperties": true
+}

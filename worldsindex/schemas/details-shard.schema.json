@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/details-shard.schema.json",
+  "title": "WorldsIndex detail shard",
+  "description": "worldsindex/data/details/<xx>.json.gz: the objects whose id hashes to the shard, each with its atlas record and every retained native row.",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": {
+    "type": "object",
+    "properties": {
+      "objectId": {
+        "type": "string"
+      },
+      "atlasRecord": {
+        "$ref": "common.schema.json#/$defs/atlasDetection"
+      },
+      "records": {
+        "type": "array",
+        "items": {
+          "$ref": "common.schema.json#/$defs/detailRecord"
+        }
+      },
+      "aliases": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        }
+      }
+    },
+    "required": [
+      "objectId",
+      "atlasRecord",
+      "records"
+    ],
+    "additionalProperties": true
+  }
+}
