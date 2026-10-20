@@ -1,0 +1,533 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS shared schema definitions",
+  "description": "Definitions shared by the schemas of the CTAS static endpoints (see ctas/openapi.yaml). No $id: references are resolved relative to the file so check-jsonschema needs no network.",
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "nullableSha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sha256Prefix16": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$"
+    },
+    "dateTime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "nullableDateTime": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+    },
+    "httpsUrl": {
+      "type": "string",
+      "pattern": "^https://"
+    },
+    "nullableHttpsUrl": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^https://"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "publicDataPath": {
+      "type": "string",
+      "pattern": "^ctas/data/[A-Za-z0-9_./-]+$"
+    },
+    "bucket": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{3}$"
+    },
+    "fileEntry": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "$ref": "common.schema.json#/$defs/publicDataPath"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "$ref": "common.schema.json#/$defs/sha256"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "additionalProperties": true
+    },
+    "candidateColumns": {
+      "type": "array",
+      "const": [
+        "event_id",
+        "name",
+        "event_type",
+        "primary_messenger",
+        "messenger_channels",
+        "ra_deg",
+        "dec_deg",
+        "coordinate_error_arcsec",
+        "discovery_time",
+        "discovery_survey",
+        "discovery_instrument",
+        "discovery_magnitude",
+        "status",
+        "classification",
+        "reported_label_kind",
+        "classification_probability",
+        "ctas_score",
+        "score_as_of",
+        "score_valid_until",
+        "score_method_version",
+        "score_applicable_terms",
+        "score_detected_messengers",
+        "follow_up_total",
+        "redshift",
+        "updated_at",
+        "latest_classification_at",
+        "latest_spectrum_at",
+        "latest_messenger_at",
+        "latest_retraction_at",
+        "detail_chunk",
+        "n_classifications",
+        "n_classification_history",
+        "n_observations",
+        "n_spectra",
+        "n_messenger_signals",
+        "n_publications",
+        "n_publication_revisions",
+        "n_host_context",
+        "n_catalog_counterparts",
+        "n_archive_products",
+        "photometry_outcomes",
+        "record_role",
+        "ranking_channel",
+        "default_leaderboard_eligible",
+        "record_label",
+        "record_present",
+        "record_applicable",
+        "record_not_assessed",
+        "record_fraction",
+        "primary_source_key",
+        "primary_source_url",
+        "primary_source_designation",
+        "identity_state",
+        "conflict_count",
+        "source_declared",
+        "source_applicable",
+        "source_executed",
+        "source_data_bearing"
+      ],
+      "description": "The exporter's CATALOG_CANDIDATE_COLUMNS, in order."
+    },
+    "candidateRow": {
+      "type": "array",
+      "minItems": 58,
+      "maxItems": 58,
+      "description": "One positional row; see candidateColumns for the meaning of each position."
+    },
+    "scoreClock": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "ctas.score-clock@1.0.0"
+        },
+        "method_version": {
+          "const": "ctas.follow-up-score@3.0.0"
+        },
+        "score_as_of": {
+          "$ref": "common.schema.json#/$defs/dateTime"
+        },
+        "valid_until": {
+          "$ref": "common.schema.json#/$defs/dateTime"
+        },
+        "statement": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "method_version",
+        "score_as_of",
+        "valid_until"
+      ],
+      "additionalProperties": true
+    },
+    "sourceAccountingTotals": {
+      "type": "object",
+      "properties": {
+        "declaredSources": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "applicableSourceEvaluations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "executedQueryReceipts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dataBearingSourceEvaluations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "outcomeCounts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "required": [
+        "declaredSources",
+        "applicableSourceEvaluations",
+        "executedQueryReceipts",
+        "dataBearingSourceEvaluations",
+        "outcomeCounts"
+      ],
+      "additionalProperties": false
+    },
+    "statistics": {
+      "type": "object",
+      "properties": {
+        "real_events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "public_candidates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "quality_quarantined_records": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "magnitude_values_excluded": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "observations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "spectra": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "messenger_signals": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "classifications": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "classification_history": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "publications": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "host_context": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "catalog_counterparts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "archive_products": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "candidates_with_follow_up": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "messengers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "event_types": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "priority_bands": {
+          "type": "object",
+          "properties": {
+            "urgent_75_100": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "high_50_74": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "routine_25_49": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "low_0_24": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "urgent_75_100",
+            "high_50_74",
+            "routine_25_49",
+            "low_0_24"
+          ],
+          "additionalProperties": false
+        },
+        "source_accounting": {
+          "$ref": "common.schema.json#/$defs/sourceAccountingTotals"
+        }
+      },
+      "required": [
+        "real_events",
+        "public_candidates",
+        "observations",
+        "spectra",
+        "messenger_signals",
+        "classifications",
+        "publications",
+        "candidates_with_follow_up",
+        "messengers",
+        "event_types",
+        "priority_bands"
+      ],
+      "additionalProperties": true
+    },
+    "sourceUniverseSummary": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "ctas.public-source-universe@1.1.0"
+        },
+        "source_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "artifact": {
+          "const": "ctas/data/source-universe.json"
+        },
+        "contract_set_checksum_sha256": {
+          "$ref": "common.schema.json#/$defs/sha256"
+        }
+      },
+      "required": [
+        "schema",
+        "source_count",
+        "artifact",
+        "contract_set_checksum_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "providerStatistic": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "$ref": "common.schema.json#/$defs/nonEmptyString"
+        }
+      },
+      "required": [
+        "provider"
+      ],
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "surveyCount": {
+      "type": "object",
+      "properties": {
+        "survey": {
+          "$ref": "common.schema.json#/$defs/nonEmptyString"
+        },
+        "candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "survey",
+        "candidate_count"
+      ],
+      "additionalProperties": true
+    },
+    "recentStreamEntry": {
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "updated_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "discovery_time": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "classification": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "primary_messenger": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ctas_score": {
+          "type": "number"
+        },
+        "follow_up_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "required": [
+        "event_id",
+        "name",
+        "ctas_score"
+      ],
+      "additionalProperties": true
+    },
+    "coordinatePair": {
+      "description": "Coordinates are complete or absent, never half present.",
+      "anyOf": [
+        {
+          "properties": {
+            "ra_deg": {
+              "type": "null"
+            },
+            "dec_deg": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "ra_deg": {
+              "type": "number",
+              "minimum": 0,
+              "exclusiveMaximum": 360
+            },
+            "dec_deg": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          },
+          "required": [
+            "ra_deg",
+            "dec_deg"
+          ]
+        }
+      ]
+    },
+    "noBannedKeys": {
+      "description": "Keys the exporter never publishes (public-export-safety).",
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "api_key"
+            ]
+          },
+          {
+            "required": [
+              "created_at"
+            ]
+          },
+          {
+            "required": [
+              "password"
+            ]
+          },
+          {
+            "required": [
+              "priority_factors"
+            ]
+          },
+          {
+            "required": [
+              "secret"
+            ]
+          },
+          {
+            "required": [
+              "simulation"
+            ]
+          },
+          {
+            "required": [
+              "token"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

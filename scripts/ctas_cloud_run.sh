@@ -88,7 +88,12 @@ say "building the release${PUBLISH_ARGS:+ (dry run)}"
 # clonefile), and setting it would leak into the publisher's own snapshot tests.
 # DATA_BRANCH_COMPACT=0: this runner's data store lives for one run, so repacking the
 # whole release after the push would only delay the save and the next cycle.
+# CTAS_COLLECTOR_COMMIT names the collector code in ctas/data/provenance.json;
+# CTAS_RELEASE_TOKEN lets the publisher replace the VOParquet assets of the rolling
+# "ctas-data-latest" GitHub Release (contents: write) named in ctas/data/bulk-downloads.json.
+COLLECTOR_COMMIT=$(git -C "$BACKEND" rev-parse HEAD 2>/dev/null || true)
 PUBLISH_OUT=$(CTAS_SITE="$SITE" CTAS_DB="$DATA/soc.db" CTAS_LOG_DIR="$LOGS/publish" CTAS_CLOUD_RUN_MARKER="$MARKER" \
+  CTAS_COLLECTOR_COMMIT="$COLLECTOR_COMMIT" CTAS_RELEASE_TOKEN="$DEPLOY_TOKEN" \
   DATA_BRANCH_DISPATCHER=0 DATA_BRANCH_COMPACT=0 bash "$SITE/scripts/publish_ctas.sh" "${PUBLISH_ARGS[@]}" 2>&1)
 PUBLISH_STATUS=$?
 printf '%s\n' "$PUBLISH_OUT" | tail -20

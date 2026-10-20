@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS static-snapshot verification report",
+  "description": "ctas/data/certification.json: the checksum-bound verification report (every gate with its evidence, every bound file with its SHA-256 and byte length, the content release id and the claim boundary).",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.static-snapshot-verification@1.1.0"
+    },
+    "generated_at": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "valid_until": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "architecture": {
+      "type": "string"
+    },
+    "claim_boundary": {
+      "const": "Automated checksum and structural verification of one static snapshot; not peer review, scientific truth, classification validation, discovery authority, or a managed-service deployment claim."
+    },
+    "status": {
+      "enum": [
+        "verified-static-snapshot",
+        "verification-failed",
+        "publication-binding-pending"
+      ]
+    },
+    "candidate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "content_release_id": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "publication_relationship": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "base_commit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "local_head": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "statement": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "statement"
+      ],
+      "additionalProperties": true
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "common.schema.json#/$defs/nonEmptyString"
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "passed",
+          "evidence"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 43
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "sha256",
+          "bytes"
+        ],
+        "additionalProperties": false
+      },
+      "minProperties": 1
+    },
+    "report_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    }
+  },
+  "required": [
+    "schema",
+    "generated_at",
+    "valid_until",
+    "architecture",
+    "claim_boundary",
+    "status",
+    "candidate_count",
+    "catalog_content_checksum_sha256",
+    "content_release_id",
+    "publication_relationship",
+    "gates",
+    "files",
+    "report_checksum_sha256"
+  ],
+  "additionalProperties": false
+}

@@ -100,6 +100,11 @@ jobs:
           node scripts/test_tools_finder.mjs
           node --check research/barium-dwarfs/census.js
           node scripts/test_research_census.mjs
+      # The Track 1 interoperability exports (ECSV, VOTable, VOParquet, DataLink, PROV-JSON)
+      # are read back with Astropy and pyarrow, and every published JSON file is validated
+      # against ctas/schemas with check-jsonschema.
+      - name: CTAS interoperability dependencies
+        run: python3 -m pip install --quiet --disable-pip-version-check "astropy>=7.0,<8" "astropy-healpix>=1.0,<3" "pyarrow>=21,<27" "pandas>=2.2,<4" "check-jsonschema>=0.33,<1" "pyyaml>=6,<7"
       - name: CTAS static release
         # Fixture commits can start detached Git maintenance that outlives the
         # test and races temporary-directory cleanup. Limit this to CI checks.
@@ -127,6 +132,9 @@ jobs:
           node scripts/test_ctas_lightcurve_summary.js
           node --check ctas/followup.js
           node scripts/test_ctas_followup.mjs
+          python3 scripts/test_ctas_interop.py
+      - name: CTAS published JSON against ctas/schemas (OpenAPI 3.1 response schemas)
+        run: python3 scripts/validate_ctas_schemas.py | tee -a "$GITHUB_STEP_SUMMARY"
       # The page in a real browser (layout at phone width, sticky bars, heading outline,
       # WCAG via axe-core, no first-party console errors, the live panel's behaviour) and
       # the evidence schema. Blocking since 2026-10-03: a release that fails them is not

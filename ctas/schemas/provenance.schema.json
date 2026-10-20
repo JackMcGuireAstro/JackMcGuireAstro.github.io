@@ -1,0 +1,290 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS build provenance (W3C PROV-JSON)",
+  "description": "ctas/data/provenance.json: W3C PROV-JSON naming the upstream sources (with retrieval times and parser versions), the frozen database snapshot, the state asset it was restored from (when the cloud runner names one), the bound code hashes, the collector commit, the site commit, the exporter versions, the collector run and the export that produced the release. Entity and activity attributes are open (PROV-JSON allows qualified attribute names), so only the structure is pinned here.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.build-provenance@1.0.0"
+    },
+    "prefix": {
+      "type": "object",
+      "properties": {
+        "prov": {
+          "const": "http://www.w3.org/ns/prov#"
+        },
+        "xsd": {
+          "const": "http://www.w3.org/2001/XMLSchema#"
+        },
+        "ctas": {
+          "$ref": "common.schema.json#/$defs/httpsUrl"
+        }
+      },
+      "required": [
+        "prov",
+        "xsd",
+        "ctas"
+      ],
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "entity": {
+      "type": "object",
+      "minProperties": 3,
+      "propertyNames": {
+        "pattern": "^ctas:(release|database-snapshot|state-asset|source|code|artifact)/"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "prov:type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "prov:type"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "activity": {
+      "type": "object",
+      "properties": {
+        "ctas:activity/collect": {
+          "type": "object",
+          "properties": {
+            "prov:type": {
+              "const": "ctas:CollectorRun"
+            },
+            "prov:endTime": {
+              "anyOf": [
+                {
+                  "$ref": "common.schema.json#/$defs/dateTime"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "$": {
+                      "$ref": "common.schema.json#/$defs/dateTime"
+                    },
+                    "type": {
+                      "const": "xsd:dateTime"
+                    }
+                  },
+                  "required": [
+                    "$"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "prov:type"
+          ],
+          "additionalProperties": true
+        },
+        "ctas:activity/export": {
+          "type": "object",
+          "properties": {
+            "prov:type": {
+              "const": "ctas:Export"
+            },
+            "prov:endTime": {
+              "anyOf": [
+                {
+                  "$ref": "common.schema.json#/$defs/dateTime"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "$": {
+                      "$ref": "common.schema.json#/$defs/dateTime"
+                    },
+                    "type": {
+                      "const": "xsd:dateTime"
+                    }
+                  },
+                  "required": [
+                    "$"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "ctas:exporter_sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "prov:type",
+            "prov:endTime",
+            "ctas:exporter_sha256"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "ctas:activity/collect",
+        "ctas:activity/export"
+      ],
+      "additionalProperties": false
+    },
+    "agent": {
+      "type": "object",
+      "minProperties": 3,
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "prov:type": {
+            "enum": [
+              "prov:SoftwareAgent",
+              "prov:Organization",
+              "prov:Person",
+              "prov:Agent"
+            ]
+          }
+        },
+        "required": [
+          "prov:type"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "used": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "prov:activity": {
+            "type": "string"
+          },
+          "prov:entity": {
+            "type": "string"
+          },
+          "prov:role": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "prov:activity",
+          "prov:entity"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "wasGeneratedBy": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "prov:entity": {
+            "type": "string"
+          },
+          "prov:activity": {
+            "type": "string"
+          },
+          "prov:time": {
+            "anyOf": [
+              {
+                "$ref": "common.schema.json#/$defs/dateTime"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "$": {
+                    "$ref": "common.schema.json#/$defs/dateTime"
+                  },
+                  "type": {
+                    "const": "xsd:dateTime"
+                  }
+                },
+                "required": [
+                  "$"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "prov:entity",
+          "prov:activity"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "wasDerivedFrom": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "prov:generatedEntity": {
+            "type": "string"
+          },
+          "prov:usedEntity": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "prov:generatedEntity",
+          "prov:usedEntity"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "wasAssociatedWith": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "prov:activity": {
+            "type": "string"
+          },
+          "prov:agent": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "prov:activity",
+          "prov:agent"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "wasAttributedTo": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "prov:entity": {
+            "type": "string"
+          },
+          "prov:agent": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "prov:entity",
+          "prov:agent"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "prefix",
+    "entity",
+    "activity",
+    "agent",
+    "used",
+    "wasGeneratedBy",
+    "wasDerivedFrom",
+    "wasAssociatedWith",
+    "wasAttributedTo"
+  ],
+  "additionalProperties": false
+}

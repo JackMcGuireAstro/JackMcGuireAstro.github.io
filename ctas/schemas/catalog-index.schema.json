@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS catalog index",
+  "description": "ctas/data/catalog-index.json: the complete compact catalog as a columnar candidate table plus the release statistics; the authoritative ordering of the complete-catalog reconstruction.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.public-catalog-index@1.1.0"
+    },
+    "schema_version": {
+      "const": 2
+    },
+    "catalog_as_of": {
+      "$ref": "common.schema.json#/$defs/nullableDateTime"
+    },
+    "latest_record_update": {
+      "$ref": "common.schema.json#/$defs/nullableDateTime"
+    },
+    "origin": {
+      "const": "local-snapshot"
+    },
+    "cadence": {
+      "type": "string"
+    },
+    "candidate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "statistics": {
+      "$ref": "common.schema.json#/$defs/statistics"
+    },
+    "recent_stream": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/recentStreamEntry"
+      }
+    },
+    "provider_statistics": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/providerStatistic"
+      }
+    },
+    "surveys": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/surveyCount"
+      }
+    },
+    "source_universe": {
+      "$ref": "common.schema.json#/$defs/sourceUniverseSummary"
+    },
+    "source_accounting": {
+      "$ref": "common.schema.json#/$defs/sourceAccountingTotals"
+    },
+    "detail_manifest": {
+      "const": "ctas/data/candidate-chunks/manifest.json"
+    },
+    "alias_index": {
+      "const": "ctas/data/alias-index.json"
+    },
+    "research_tables": {
+      "const": "ctas/data/research/manifest.json"
+    },
+    "candidate_columns": {
+      "$ref": "common.schema.json#/$defs/candidateColumns"
+    },
+    "candidate_rows": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/candidateRow"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "schema_version",
+    "candidate_count",
+    "catalog_content_checksum_sha256",
+    "statistics",
+    "recent_stream",
+    "provider_statistics",
+    "surveys",
+    "source_universe",
+    "source_accounting",
+    "detail_manifest",
+    "alias_index",
+    "research_tables",
+    "candidate_columns",
+    "candidate_rows"
+  ],
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/noBannedKeys"
+    }
+  ]
+}

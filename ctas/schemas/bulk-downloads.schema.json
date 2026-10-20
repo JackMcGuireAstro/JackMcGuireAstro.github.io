@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS bulk downloads",
+  "description": "ctas/data/bulk-downloads.json: the VOParquet release assets of this release (name, size, SHA-256, row count, sort order) and the rolling GitHub Release that serves them.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.bulk-downloads@1.0.0"
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "generated_at": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "release_tag": {
+      "const": "ctas-data-latest"
+    },
+    "release_url": {
+      "$ref": "common.schema.json#/$defs/httpsUrl"
+    },
+    "statement": {
+      "type": "string"
+    },
+    "format": {
+      "type": "string"
+    },
+    "claim_boundary": {
+      "type": "string"
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^ctas-[a-z-]+\\.parquet$"
+          },
+          "table": {
+            "enum": [
+              "candidates",
+              "photometry"
+            ]
+          },
+          "table_name": {
+            "type": "string"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          },
+          "media_type": {
+            "const": "application/vnd.apache.parquet"
+          },
+          "format": {
+            "type": "string"
+          },
+          "voparquet_version": {
+            "const": "1.0"
+          },
+          "row_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "row_group_rows": {
+            "const": 50000
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "healpix": {
+            "type": "object",
+            "properties": {
+              "order": {
+                "const": 8
+              },
+              "scheme": {
+                "const": "nested"
+              },
+              "column": {
+                "const": "healpix_8_nested"
+              }
+            },
+            "required": [
+              "order",
+              "scheme",
+              "column"
+            ],
+            "additionalProperties": false
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "catalog_content_checksum_sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          },
+          "download_url": {
+            "$ref": "common.schema.json#/$defs/httpsUrl"
+          }
+        },
+        "required": [
+          "name",
+          "table",
+          "bytes",
+          "sha256",
+          "media_type",
+          "format",
+          "voparquet_version",
+          "row_count",
+          "row_group_rows",
+          "sort",
+          "healpix",
+          "columns",
+          "download_url"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 2,
+      "maxItems": 2
+    }
+  },
+  "required": [
+    "schema",
+    "catalog_content_checksum_sha256",
+    "generated_at",
+    "release_tag",
+    "release_url",
+    "statement",
+    "format",
+    "claim_boundary",
+    "assets"
+  ],
+  "additionalProperties": false
+}

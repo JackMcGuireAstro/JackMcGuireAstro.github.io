@@ -1,0 +1,482 @@
+openapi: 3.1.0
+info:
+  title: CTAS public static endpoints
+  version: "2026-10-19"
+  summary: Every static JSON, VOTable, ECSV, CSV and Atom file a CTAS release publishes, with the JSON Schema of each JSON response.
+  description: |
+    CTAS (the Continuous Transient Alert Snapshot at jackmcguireastro.github.io) is a static site:
+    every "endpoint" is a file written by scripts/export_ctas_snapshot.py, checksum-bound by
+    ctas/data/certification.json and served by GitHub Pages. There are no query parameters, no
+    authentication and no server-side computation. Each response below names the JSON Schema
+    (ctas/schemas/) it validates against; scripts/validate_ctas_schemas.py runs those checks
+    over every published file in the publisher's test phase and in the deploy workflow.
+
+    Reading order for a client: status.json (release identity, paths of every artifact),
+    live-summary.json (first screen), catalog-index.json or the catalog pages (the complete
+    compact table), candidate-chunks/manifest.json and the chunk named by a row's detail_chunk
+    column (the complete dossier), links/<bucket>.xml (DataLink for that dossier),
+    research/manifest.json (every table export), bulk-downloads.json (VOParquet release assets),
+    provenance.json (W3C PROV-JSON for the build).
+
+    Delivery note: on GitHub Pages the dossier chunks and parts are served as <path>.json.gz
+    (ctas/delivery.json says so); the release commit, the certificate and every checksum refer to
+    the plain JSON bytes. Claim boundary: automated checksum and structural verification of one
+    static snapshot; not peer review, scientific truth, classification validation, discovery
+    authority or a managed-service deployment claim.
+  contact:
+    name: CTAS
+    url: https://jackmcguireastro.github.io/ctas.html
+  license:
+    name: See LICENSE.txt in the repository and the rights_or_public_access_basis of each source in source-universe.json
+    identifier: LicenseRef-CTAS-repository
+servers:
+  - url: https://jackmcguireastro.github.io
+    description: GitHub Pages tree (the certified release).
+  - url: https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/releases/download/ctas-data-latest
+    description: Rolling GitHub Release "ctas-data-latest" holding the VOParquet bulk assets named in /ctas/data/bulk-downloads.json.
+tags:
+  - name: status
+    description: Release heartbeat, verification summary and artifact paths.
+  - name: catalog
+    description: The compact candidate table and the complete dossiers.
+  - name: sources
+    description: Source universe, coverage and per-record source accounting.
+  - name: research
+    description: Research table exports (CSV, ECSV, VOTable, TOM targets) and bulk VOParquet downloads.
+  - name: interoperability
+    description: DataLink, provenance, feeds and the machine description itself.
+  - name: schemas
+    description: JSON Schema documents.
+paths:
+  /ctas/data/status.json:
+    get:
+      tags: [status]
+      summary: Release status and the path of every other artifact
+      operationId: getStatus
+      responses:
+        "200":
+          description: The current release's status. provenance_path, api_description_path, bulk_downloads_path and datalink_manifest_path name the Track 1 additions.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/status.schema.json
+  /ctas/data/live-summary.json:
+    get:
+      tags: [catalog]
+      summary: First-screen summary (leaderboard, recent reports, sky rows); at most 2 MiB
+      operationId: getLiveSummary
+      responses:
+        "200":
+          description: Live summary of the release.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/live-summary.schema.json
+  /ctas/data/catalog-index.json:
+    get:
+      tags: [catalog]
+      summary: The complete compact catalog as a columnar candidate table
+      operationId: getCatalogIndex
+      responses:
+        "200":
+          description: candidate_columns names each position of every candidate_rows entry; the row order is the reconstruction order of the complete catalog.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/catalog-index.schema.json
+  /ctas/data/catalog-pages/manifest.json:
+    get:
+      tags: [catalog]
+      summary: Ordered, checksum-bound pages of the compact catalog (each at most 1 MiB)
+      operationId: getCatalogPageManifest
+      responses:
+        "200":
+          description: Page manifest.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/catalog-page-manifest.schema.json
+  /ctas/data/catalog-pages/{page}.json:
+    get:
+      tags: [catalog]
+      summary: One page of the compact catalog
+      operationId: getCatalogPage
+      parameters:
+        - name: page
+          in: path
+          required: true
+          description: Four-digit page number from catalog-pages/manifest.json (0001, 0002, ...).
+          schema:
+            type: string
+            pattern: "^[0-9]{4}$"
+      responses:
+        "200":
+          description: Catalog page.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/catalog-page.schema.json
+  /ctas/data/candidate-chunks/manifest.json:
+    get:
+      tags: [catalog]
+      summary: Complete-catalog reconstruction contract (4096 chunk roots, parts, the catalog index and the release score clock)
+      operationId: getCandidateChunkManifest
+      responses:
+        "200":
+          description: Chunk manifest.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/candidate-chunk-manifest.schema.json
+  /ctas/data/candidate-chunks/{bucket}.json:
+    get:
+      tags: [catalog]
+      summary: Complete public dossiers of every candidate whose UUID hashes to the bucket
+      description: |
+        bucket = first 8 hex digits of sha256(event_id) as an integer, modulo 4096, as three lowercase hex digits;
+        the catalog index carries it ready-made in the detail_chunk column. A root is either a complete chunk or a
+        parts descriptor whose ordered parts (candidate-chunks/{bucket}.part-NNNNNN.json) reassemble it. On GitHub
+        Pages this file is served as {bucket}.json.gz (see /ctas/delivery.json); the manifest's bytes and sha256
+        describe the decompressed JSON.
+      operationId: getCandidateChunk
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{3}$"
+      responses:
+        "200":
+          description: Chunk root (complete chunk or parts descriptor).
+          content:
+            application/json:
+              schema:
+                $ref: schemas/candidate-chunk.schema.json
+  /ctas/data/candidate-chunks/{bucket}.part-{ordinal}.json:
+    get:
+      tags: [catalog]
+      summary: One ordered JSON fragment of an oversized dossier chunk
+      operationId: getCandidateChunkPart
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{3}$"
+        - name: ordinal
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9]{6}$"
+      responses:
+        "200":
+          description: JSON part.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/candidate-json-part.schema.json
+  /ctas/data/alias-index.json:
+    get:
+      tags: [catalog]
+      summary: Every provider-scoped public designation with the CTAS record it is bound to
+      operationId: getAliasIndex
+      responses:
+        "200":
+          description: Alias index.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/alias-index.schema.json
+  /ctas/data/source-universe.json:
+    get:
+      tags: [sources]
+      summary: Every declared source contract with its implementation, operational and representation states
+      operationId: getSourceUniverse
+      responses:
+        "200":
+          description: "Source universe (coverage denominators per source: public_record_counts and public_disposition_counts)."
+          content:
+            application/json:
+              schema:
+                $ref: schemas/source-universe.schema.json
+  /ctas/data/source-matrix-patterns.json:
+    get:
+      tags: [sources]
+      summary: Shared no-evidence source-matrix rows that dossiers reference by pattern id
+      operationId: getSourceMatrixPatterns
+      responses:
+        "200":
+          description: Source-matrix patterns.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/source-matrix-patterns.schema.json
+  /ctas/data/research/manifest.json:
+    get:
+      tags: [research]
+      summary: Every research table export with its checksum, row count and (for ECSV/VOTable) column UCDs, units and descriptions
+      operationId: getResearchManifest
+      responses:
+        "200":
+          description: Research table manifest.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/research-manifest.schema.json
+  /ctas/data/research/{table}.csv:
+    get:
+      tags: [research]
+      summary: CSV research table (events, aliases, sources, tom-targets)
+      operationId: getResearchCsv
+      parameters:
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [events, aliases, sources, tom-targets]
+      responses:
+        "200":
+          description: UTF-8 CSV with RFC 4180 quoting and LF line endings.
+          content:
+            text/csv: {}
+  /ctas/data/research/{table}.ecsv:
+    get:
+      tags: [research]
+      summary: ECSV 1.0 research table with a UCD, unit and description per column
+      operationId: getResearchEcsv
+      parameters:
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [candidates, aliases, sources, tom-targets, source-accounting, release-history]
+      responses:
+        "200":
+          description: ECSV (Astropy APE 6). Column metadata is repeated in research/manifest.json.
+          content:
+            text/ecsv: {}
+  /ctas/data/research/{table}.vot:
+    get:
+      tags: [research]
+      summary: VOTable 1.5 research table with a UCD and VOUnits string per FIELD
+      operationId: getResearchVotable
+      parameters:
+        - name: table
+          in: path
+          required: true
+          description: "events is the long-standing 15-column summary; candidates is the complete catalog-index table."
+          schema:
+            type: string
+            enum: [events, candidates, aliases, sources, tom-targets, source-accounting, release-history]
+      responses:
+        "200":
+          description: VOTable 1.5 TABLEDATA.
+          content:
+            application/x-votable+xml: {}
+  /ctas/data/bulk-downloads.json:
+    get:
+      tags: [research]
+      summary: VOParquet bulk tables (candidates, photometry) published as assets of the rolling GitHub Release "ctas-data-latest"
+      operationId: getBulkDownloads
+      responses:
+        "200":
+          description: "Asset names, sizes, SHA-256 digests, row counts, sort order and download URLs. Verify the SHA-256 after download; an asset can lag the Pages release by one cycle."
+          content:
+            application/json:
+              schema:
+                $ref: schemas/bulk-downloads.schema.json
+  /ctas/data/release-history.json:
+    get:
+      tags: [status]
+      summary: Checksum-addressed public catalog changes, newest first
+      operationId: getReleaseHistory
+      responses:
+        "200":
+          description: Release history.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/release-history.schema.json
+  /ctas/data/link-health.json:
+    get:
+      tags: [status]
+      summary: Recursive structural audit of every exported URL and one sampled live TNS check
+      operationId: getLinkHealth
+      responses:
+        "200":
+          description: Link-health report bound into the certificate after the export.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/link-health.schema.json
+  /ctas/data/certification.json:
+    get:
+      tags: [status]
+      summary: The checksum-bound static-snapshot verification report (every gate, every bound file)
+      operationId: getCertification
+      responses:
+        "200":
+          description: Verification report.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/certification.schema.json
+  /ctas/data/links/manifest.json:
+    get:
+      tags: [interoperability]
+      summary: Every DataLink 1.1 links document with its checksum and the path rule for a CTAS event id
+      operationId: getDataLinkManifest
+      responses:
+        "200":
+          description: DataLink manifest.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/datalink-manifest.schema.json
+  /ctas/data/links/{bucket}.xml:
+    get:
+      tags: [interoperability]
+      summary: IVOA DataLink 1.1 {links} document for every dossier in the bucket
+      description: |
+        A VOTable 1.5 with the DataLink 1.1 columns (ID, access_url, service_def, error_message, description,
+        semantics, content_type, content_length). ID is the CTAS event identifier; a client keeps the rows whose
+        ID matches. Semantics come from the DataLink core vocabulary: #this (the dossier chunk), #documentation
+        (the dossier page, circulars, reports, classification citations), #progenitor (TNS object page, messenger
+        notices and sky maps), #auxiliary (broker and photometry pages, spectra, archive products, host and catalog
+        records), #derivation (the research tables whose row for the event is derived from the dossier). The bucket
+        is the same three-hex-digit bucket as the dossier chunk (detail_chunk in the catalog index); documents are
+        sharded by bucket rather than per event so the Pages tree gains at most 4,096 files, and their content has
+        no release clock, so an unchanged bucket is byte-identical between releases. Buckets without public records
+        have no document.
+      operationId: getDataLink
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9a-f]{3}$"
+      responses:
+        "200":
+          description: DataLink links document.
+          content:
+            application/x-votable+xml;content=datalink: {}
+  /ctas/data/provenance.json:
+    get:
+      tags: [interoperability]
+      summary: W3C PROV-JSON provenance of the build
+      operationId: getProvenance
+      responses:
+        "200":
+          description: Entities (release, database snapshot, upstream sources with retrieval times and parser versions, bound code files, public artifacts), activities (collector run, export), agents and their relations. Deterministic apart from the times it names.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/provenance.schema.json
+  /ctas/data/feed.xml:
+    get:
+      tags: [interoperability]
+      summary: Atom feed of strong new follow-up targets (scripts/ctas_feed.py)
+      operationId: getFeed
+      responses:
+        "200":
+          description: Atom 1.0 feed built from live-summary.json.
+          content:
+            application/atom+xml: {}
+  /ctas/data/observatories.json:
+    get:
+      tags: [interoperability]
+      summary: Observatory definitions used by the observing tools (fixed input, certificate-bound)
+      operationId: getObservatories
+      responses:
+        "200":
+          description: Observatory definitions.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/observatories.schema.json
+  /ctas/data/cloud-run.json:
+    get:
+      tags: [status]
+      summary: Marker of the cloud run that built the release (scripts/cloud_run_marker.py); not part of the certified snapshot
+      operationId: getCloudRunMarker
+      responses:
+        "200":
+          description: Cloud-run marker (present when the release was built by the GitHub Actions publisher).
+          content:
+            application/json:
+              schema:
+                $ref: schemas/cloud-run.schema.json
+  /ctas/delivery.json:
+    get:
+      tags: [status]
+      summary: How the deployed site serves dossier chunks (identity or gzip)
+      operationId: getDelivery
+      responses:
+        "200":
+          description: Delivery note.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/delivery.schema.json
+  /ctas/schema/astro-evidence-core-0.1.0.schema.json:
+    get:
+      tags: [schemas]
+      summary: The frozen AstroEvidence core schema (certificate-bound); the dossier schema references its definitions
+      operationId: getAstroEvidenceSchema
+      responses:
+        "200":
+          description: JSON Schema 2020-12 document.
+          content:
+            application/schema+json: {}
+  /ctas/openapi.yaml:
+    get:
+      tags: [schemas]
+      summary: This document
+      operationId: getOpenApi
+      responses:
+        "200":
+          description: OpenAPI 3.1 description of the static endpoints.
+          content:
+            application/yaml: {}
+  /ctas/schemas/{name}.schema.json:
+    get:
+      tags: [schemas]
+      summary: One response schema (JSON Schema 2020-12)
+      operationId: getSchema
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [common, status, live-summary, catalog-index, catalog-page, catalog-page-manifest, candidate-chunk, candidate-json-part, candidate-chunk-manifest, alias-index, source-universe, source-matrix-patterns, research-manifest, release-history, link-health, certification, bulk-downloads, datalink-manifest, provenance, delivery, observatories, cloud-run]
+      responses:
+        "200":
+          description: JSON Schema document.
+          content:
+            application/schema+json: {}
+  /{asset}:
+    servers:
+      - url: https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/releases/download/ctas-data-latest
+    get:
+      tags: [research]
+      summary: VOParquet bulk asset of the rolling release (names, sizes and SHA-256 in /ctas/data/bulk-downloads.json)
+      operationId: getBulkAsset
+      parameters:
+        - name: asset
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [ctas-candidates.parquet, ctas-photometry.parquet]
+      responses:
+        "200":
+          description: Apache Parquet with IVOA VOParquet 1.0 metadata (IVOA.VOTable-Parquet.version, IVOA.VOTable-Parquet.content), rows sorted by HEALPix order 8 nested index, row groups of 50,000 rows.
+          content:
+            application/vnd.apache.parquet: {}

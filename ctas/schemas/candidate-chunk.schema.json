@@ -1,0 +1,928 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS candidate chunk",
+  "description": "ctas/data/candidate-chunks/<bucket>.json: either a complete dossier chunk (every public candidate whose UUID hashes to the bucket) or, when the chunk would exceed the 4 MiB download budget, a parts descriptor whose ordered parts reassemble it losslessly. Parts (<bucket>.part-NNNNNN.json) follow $defs/part.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/chunk"
+    },
+    {
+      "$ref": "#/$defs/descriptor"
+    }
+  ],
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "name": {
+          "$ref": "common.schema.json#/$defs/nonEmptyString"
+        },
+        "event_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "primary_messenger": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "messenger_channels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ra_deg": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "dec_deg": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "discovery_time": {
+          "$ref": "common.schema.json#/$defs/nullableDateTime"
+        },
+        "discovery_magnitude": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": -30,
+              "maximum": 40
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "classification": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reported_label_kind": {
+          "type": "string"
+        },
+        "ctas_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "score_explanation": {
+          "type": "string"
+        },
+        "score_model": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "type": "string"
+            },
+            "method_version": {
+              "const": "ctas.follow-up-score@3.0.0"
+            },
+            "final_score": {
+              "type": "number"
+            },
+            "score_clock": {
+              "const": "ctas/data/candidate-chunks/manifest.json#/score_clock"
+            },
+            "terms": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "applicable": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "points": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "code",
+                  "applicable",
+                  "points"
+                ],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": [
+            "method_version",
+            "final_score",
+            "score_clock",
+            "terms"
+          ],
+          "additionalProperties": true
+        },
+        "follow_up_counts": {
+          "type": "object",
+          "properties": {
+            "classifications": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "classification_history": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "observations": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "spectra": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "messenger_signals": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "publications": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "publication_revisions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "host_context": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "catalog_counterparts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "archive_products": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "classifications",
+            "observations",
+            "spectra",
+            "messenger_signals",
+            "publications",
+            "host_context",
+            "catalog_counterparts",
+            "archive_products"
+          ],
+          "additionalProperties": false
+        },
+        "follow_up_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "follow_up": {
+          "type": "object",
+          "properties": {
+            "classifications": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "provider"
+                ],
+                "allOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/noBannedKeys"
+                  }
+                ]
+              }
+            },
+            "classification_history": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "provider"
+                ],
+                "allOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/noBannedKeys"
+                  }
+                ]
+              }
+            },
+            "observations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "provider"
+                ],
+                "allOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/noBannedKeys"
+                  }
+                ]
+              }
+            },
+            "spectra": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "provider"
+                ],
+                "allOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/noBannedKeys"
+                  }
+                ]
+              }
+            },
+            "messenger_signals": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "provider"
+                ],
+                "allOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/noBannedKeys"
+                  }
+                ]
+              }
+            },
+            "publications": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "provider"
+                ],
+                "allOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/noBannedKeys"
+                  }
+                ]
+              }
+            },
+            "publication_revisions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "provider"
+                ],
+                "allOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/noBannedKeys"
+                  }
+                ]
+              }
+            },
+            "host_context": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "provider"
+                ],
+                "allOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/noBannedKeys"
+                  }
+                ]
+              }
+            },
+            "catalog_counterparts": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "provider"
+                ],
+                "allOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/noBannedKeys"
+                  }
+                ]
+              }
+            },
+            "archive_products": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "provider"
+                ],
+                "allOf": [
+                  {
+                    "$ref": "common.schema.json#/$defs/noBannedKeys"
+                  }
+                ]
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "photometry_outcomes": {
+          "type": "object",
+          "properties": {
+            "active": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "detections": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "limits": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "forced": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "active",
+            "detections",
+            "limits",
+            "forced"
+          ],
+          "additionalProperties": false
+        },
+        "record_role": {
+          "type": "string"
+        },
+        "ranking_channel": {
+          "type": "string"
+        },
+        "default_leaderboard_eligible": {
+          "type": "boolean"
+        },
+        "record_completeness": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            },
+            "present": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "applicable": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "not_assessed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "fraction": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "components": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "state"
+                ],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": [
+            "label",
+            "present",
+            "applicable",
+            "not_assessed",
+            "components"
+          ],
+          "additionalProperties": true
+        },
+        "designations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source_key": {
+                "type": "string"
+              },
+              "designation": {
+                "type": "string"
+              },
+              "is_preferred": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "source_key",
+              "designation"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source_key": {
+                "type": "string"
+              },
+              "url": {
+                "$ref": "common.schema.json#/$defs/httpsUrl"
+              },
+              "designation": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "source_key",
+              "url"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "identity_resolution": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "schema",
+            "state"
+          ],
+          "additionalProperties": true
+        },
+        "source_coverage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source_id": {
+                "type": "string"
+              },
+              "disposition": {
+                "enum": [
+                  "active-returning-data",
+                  "active-no-recent-messages",
+                  "represented-through-another-provider",
+                  "searched-with-data",
+                  "searched-no-match",
+                  "not-searched",
+                  "scheduled",
+                  "manual-access-required",
+                  "credentials-required",
+                  "temporarily-unavailable",
+                  "rate-limited",
+                  "provider-failure",
+                  "ambiguous-identity",
+                  "incomplete-result",
+                  "rights-blocked",
+                  "not-implemented",
+                  "not-applicable"
+                ]
+              },
+              "retained_record_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "source_id",
+              "disposition",
+              "retained_record_count"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "source_accounting": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "type": "string"
+            },
+            "declaredSources": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "applicableSources": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "executedQueryReceipts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "dataBearingSources": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "applicableSourceIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "outcomeCounts": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "required": [
+            "declaredSources",
+            "applicableSources",
+            "executedQueryReceipts",
+            "dataBearingSources",
+            "applicableSourceIds",
+            "outcomeCounts"
+          ],
+          "additionalProperties": true
+        },
+        "source_matrix": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "ctas.candidate-source-matrix@2.0.0"
+            },
+            "row_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "rows": {
+              "type": "array"
+            },
+            "no_evidence_pattern": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "pattern_document": {
+              "const": "ctas/data/source-matrix-patterns.json"
+            }
+          },
+          "required": [
+            "schema",
+            "row_count",
+            "rows",
+            "pattern_document"
+          ],
+          "additionalProperties": true
+        },
+        "astro_evidence": {
+          "type": "object",
+          "properties": {
+            "projectionSchema": {
+              "const": "ctas.astro-evidence-compatibility@1.0.0"
+            },
+            "coreSchemaName": {
+              "const": "astro-evidence-core"
+            },
+            "coreSchemaVersion": {
+              "const": "0.1.0"
+            },
+            "generatedAt": {
+              "$ref": "common.schema.json#/$defs/dateTime"
+            },
+            "sourceUniverseVersion": {
+              "$ref": "common.schema.json#/$defs/nonEmptyString"
+            },
+            "target": {
+              "$ref": "../schema/astro-evidence-core-0.1.0.schema.json#/$defs/target"
+            },
+            "persistedQueryReceipts": {
+              "type": "array",
+              "items": {
+                "$ref": "../schema/astro-evidence-core-0.1.0.schema.json#/$defs/queryReceipt"
+              }
+            },
+            "conflictSets": {
+              "type": "array",
+              "items": {
+                "$ref": "../schema/astro-evidence-core-0.1.0.schema.json#/$defs/conflictSet"
+              }
+            },
+            "selections": {
+              "type": "array",
+              "items": {
+                "$ref": "../schema/astro-evidence-core-0.1.0.schema.json#/$defs/selection"
+              }
+            },
+            "dataProducts": {
+              "type": "array",
+              "items": {
+                "$ref": "../schema/astro-evidence-core-0.1.0.schema.json#/$defs/dataProduct"
+              }
+            },
+            "analysisRuns": {
+              "type": "array",
+              "items": {
+                "$ref": "../schema/astro-evidence-core-0.1.0.schema.json#/$defs/analysisRun"
+              }
+            },
+            "measurementCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "projectionMethod": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectionSchema",
+            "coreSchemaName",
+            "coreSchemaVersion",
+            "generatedAt",
+            "sourceUniverseVersion",
+            "target",
+            "persistedQueryReceipts",
+            "conflictSets",
+            "selections",
+            "dataProducts",
+            "analysisRuns",
+            "measurementCount",
+            "projectionMethod"
+          ],
+          "additionalProperties": false
+        },
+        "compatibility_provenance": {
+          "type": "object",
+          "properties": {
+            "receiptProvenance": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "receiptId": {
+                    "type": "string"
+                  },
+                  "sourceContractId": {
+                    "type": "string"
+                  },
+                  "executionState": {
+                    "enum": [
+                      "EXECUTED",
+                      "NOT_EXECUTED"
+                    ]
+                  }
+                },
+                "required": [
+                  "receiptId",
+                  "sourceContractId",
+                  "executionState"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "selectionProvenance": {
+              "type": "array"
+            }
+          },
+          "required": [
+            "receiptProvenance",
+            "selectionProvenance"
+          ],
+          "additionalProperties": false
+        },
+        "evidence_timeline": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "entry_id": {
+                "type": "string"
+              },
+              "evidence_type": {
+                "type": "string"
+              },
+              "assertion_kind": {
+                "enum": [
+                  "provider assertion",
+                  "CTAS-derived summary"
+                ]
+              }
+            },
+            "required": [
+              "entry_id",
+              "evidence_type",
+              "assertion_kind"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "science_brief": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "ctas.candidate-science-brief@1.0.0"
+            }
+          },
+          "required": [
+            "schema"
+          ],
+          "additionalProperties": true
+        },
+        "suggested_follow_up": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "ctas-suggested-follow-up.v1"
+            },
+            "claim_boundary": {
+              "const": "Heuristic draft from public evidence; not an exposure-time calculation or observing request."
+            },
+            "objectives": {
+              "type": "array"
+            }
+          },
+          "required": [
+            "schema",
+            "claim_boundary",
+            "objectives"
+          ],
+          "additionalProperties": true
+        },
+        "updated_at": {
+          "$ref": "common.schema.json#/$defs/nullableDateTime"
+        }
+      },
+      "required": [
+        "event_id",
+        "name",
+        "ctas_score",
+        "score_model",
+        "follow_up_counts",
+        "follow_up_total",
+        "record_completeness",
+        "record_role",
+        "ranking_channel",
+        "default_leaderboard_eligible",
+        "designations",
+        "links",
+        "identity_resolution",
+        "source_coverage",
+        "source_accounting",
+        "source_matrix",
+        "astro_evidence",
+        "compatibility_provenance",
+        "evidence_timeline",
+        "science_brief",
+        "suggested_follow_up"
+      ],
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "$ref": "common.schema.json#/$defs/coordinatePair"
+        },
+        {
+          "$ref": "common.schema.json#/$defs/noBannedKeys"
+        },
+        {
+          "not": {
+            "required": [
+              "id"
+            ]
+          }
+        }
+      ]
+    },
+    "chunk": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "ctas.public-candidate-chunk@1.0.0"
+        },
+        "bucket": {
+          "$ref": "common.schema.json#/$defs/bucket"
+        },
+        "candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/candidate"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "bucket",
+        "candidate_count",
+        "candidates"
+      ],
+      "additionalProperties": false
+    },
+    "descriptor": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "ctas.candidate-chunk-parts@1.0.0"
+        },
+        "bucket": {
+          "$ref": "common.schema.json#/$defs/bucket"
+        },
+        "candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/fileEntry"
+          },
+          "minItems": 1
+        },
+        "assembled_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "assembled_sha256": {
+          "$ref": "common.schema.json#/$defs/sha256"
+        }
+      },
+      "required": [
+        "schema",
+        "bucket",
+        "candidate_count",
+        "parts",
+        "assembled_bytes",
+        "assembled_sha256"
+      ],
+      "additionalProperties": true
+    },
+    "part": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "ctas.candidate-json-part@1.0.0"
+        },
+        "bucket": {
+          "$ref": "common.schema.json#/$defs/bucket"
+        },
+        "part": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "json_fragment": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "bucket",
+        "part",
+        "json_fragment"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

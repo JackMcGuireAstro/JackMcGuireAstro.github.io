@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS DataLink manifest",
+  "description": "ctas/data/links/manifest.json: every DataLink 1.1 links document (one VOTable per dossier bucket) with its byte length, SHA-256, record and link counts, and the path rule a client uses to find the document for a CTAS event id.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.datalink-manifest@1.0.0"
+    },
+    "standard": {
+      "const": "ivo://ivoa.net/std/DataLink#links-1.1"
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "statement": {
+      "type": "string"
+    },
+    "path_rule": {
+      "type": "string"
+    },
+    "semantics_vocabulary": {
+      "const": "http://www.ivoa.net/rdf/datalink/core"
+    },
+    "document_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "event_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "link_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^ctas/data/links/[0-9a-f]{3}\\.xml$"
+          },
+          "bucket": {
+            "$ref": "common.schema.json#/$defs/bucket"
+          },
+          "event_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "link_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          }
+        },
+        "required": [
+          "path",
+          "bucket",
+          "event_count",
+          "link_count",
+          "bytes",
+          "sha256"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "standard",
+    "catalog_content_checksum_sha256",
+    "statement",
+    "path_rule",
+    "semantics_vocabulary",
+    "document_count",
+    "event_count",
+    "link_count",
+    "documents"
+  ],
+  "additionalProperties": false
+}

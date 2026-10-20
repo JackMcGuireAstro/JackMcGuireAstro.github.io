@@ -31,7 +31,7 @@ on:
         default: true
 
 permissions:
-  contents: write   # push the ctas-data release branch
+  contents: write   # push the ctas-data release branch; replace the VOParquet assets of the rolling "ctas-data-latest" release
   actions: write    # start "Validate and deploy site"
 
 # One run at a time; a run that starts while another is going waits for it.
@@ -72,6 +72,12 @@ jobs:
         run: |
           python3 -m pip install --quiet --disable-pip-version-check -r backend/requirements-cloud.txt
           python3 -m pip install --quiet --disable-pip-version-check --no-deps -e backend
+      # The exporter's interoperability products (Track 1): VOParquet needs pyarrow (and
+      # pandas for Astropy's Parquet reader in the round-trip tests); the published JSON is
+      # validated against ctas/schemas with check-jsonschema. astropy and
+      # astropy_healpix come with the collector's requirements.
+      - name: Install the exporter's interoperability dependencies
+        run: python3 -m pip install --quiet --disable-pip-version-check "pyarrow>=21,<27" "pandas>=2.2,<4" "check-jsonschema>=0.33,<1"
       - name: Collector settings and git identity
         env:
           BACKEND_ENV: ${{ secrets.CTAS_BACKEND_ENV }}

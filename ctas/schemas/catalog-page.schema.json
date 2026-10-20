@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS catalog page",
+  "description": "ctas/data/catalog-pages/NNNN.json: one bounded page of the compact catalog in catalog-index order.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.public-catalog-page@1.0.0"
+    },
+    "page": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "candidate_columns": {
+      "$ref": "common.schema.json#/$defs/candidateColumns"
+    },
+    "candidate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "candidate_rows": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/candidateRow"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "page",
+    "catalog_content_checksum_sha256",
+    "candidate_columns",
+    "candidate_count",
+    "candidate_rows"
+  ],
+  "additionalProperties": false
+}

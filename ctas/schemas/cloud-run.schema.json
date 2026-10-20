@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS cloud-run marker",
+  "description": "ctas/data/cloud-run.json: which GitHub Actions run built the release, which state archive it restored and when that was saved, and whether the state key still works (scripts/cloud_run_marker.py). Published beside the release for the freshness watchdog; not part of the certified snapshot.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "cloud-run-marker@1"
+    },
+    "generated_at": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "workflow": {
+      "$ref": "common.schema.json#/$defs/nonEmptyString"
+    },
+    "run_id": {
+      "type": ["string", "null"]
+    },
+    "run_url": {
+      "anyOf": [
+        {"$ref": "common.schema.json#/$defs/httpsUrl"},
+        {"type": "null"}
+      ]
+    },
+    "state_asset": {
+      "type": ["string", "null"]
+    },
+    "state_saved_at": {
+      "$ref": "common.schema.json#/$defs/nullableDateTime"
+    },
+    "state_restored_at": {
+      "$ref": "common.schema.json#/$defs/nullableDateTime"
+    },
+    "token_status": {
+      "type": "string"
+    },
+    "token_checked_at": {
+      "$ref": "common.schema.json#/$defs/nullableDateTime"
+    },
+    "token_expires_at": {
+      "$ref": "common.schema.json#/$defs/nullableDateTime"
+    },
+    "token_http_status": {
+      "type": ["integer", "null"]
+    },
+    "token_probe_error": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "generated_at",
+    "workflow"
+  ],
+  "additionalProperties": true
+}

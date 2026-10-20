@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS research table manifest",
+  "description": "ctas/data/research/manifest.json: every research export (CSV, ECSV, VOTable, TOM target table) with its byte length, SHA-256, row count, media type and, for the ECSV/VOTable pairs, the UCD, unit and description of every column.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.research-table-manifest@1.0.0"
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "format_note": {
+      "type": "string"
+    },
+    "tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^ctas/data/research/[a-z-]+\\.(csv|ecsv|vot)$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          },
+          "row_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "datatype": {
+                  "enum": [
+                    "str",
+                    "float",
+                    "int",
+                    "bool",
+                    "json"
+                  ]
+                },
+                "ucd": {
+                  "$ref": "common.schema.json#/$defs/nonEmptyString"
+                },
+                "unit": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "description": {
+                  "$ref": "common.schema.json#/$defs/nonEmptyString"
+                }
+              },
+              "required": [
+                "name",
+                "datatype",
+                "ucd",
+                "unit",
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "path",
+          "bytes",
+          "sha256",
+          "row_count",
+          "media_type",
+          "format",
+          "scope",
+          "limitations"
+        ],
+        "additionalProperties": true
+      },
+      "minItems": 17
+    },
+    "interoperability": {
+      "type": "object",
+      "properties": {
+        "statement": {
+          "type": "string"
+        },
+        "tables": {
+          "const": [
+            "candidates",
+            "aliases",
+            "sources",
+            "tom-targets",
+            "source-accounting",
+            "release-history"
+          ]
+        },
+        "round_trip_problem_count": {
+          "const": 0
+        },
+        "round_trip_problems": {
+          "const": []
+        }
+      },
+      "required": [
+        "statement",
+        "tables",
+        "round_trip_problem_count",
+        "round_trip_problems"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema",
+    "catalog_content_checksum_sha256",
+    "format_note",
+    "tables",
+    "interoperability"
+  ],
+  "additionalProperties": false
+}

@@ -34,6 +34,21 @@ PUBLIC_FILES=(
   ctas/data/research/sources.csv
   ctas/data/research/events.vot
   ctas/data/research/tom-targets.csv
+  ctas/data/research/candidates.ecsv
+  ctas/data/research/candidates.vot
+  ctas/data/research/aliases.ecsv
+  ctas/data/research/aliases.vot
+  ctas/data/research/sources.ecsv
+  ctas/data/research/sources.vot
+  ctas/data/research/tom-targets.ecsv
+  ctas/data/research/tom-targets.vot
+  ctas/data/research/source-accounting.ecsv
+  ctas/data/research/source-accounting.vot
+  ctas/data/research/release-history.ecsv
+  ctas/data/research/release-history.vot
+  ctas/data/bulk-downloads.json
+  ctas/data/links/manifest.json
+  ctas/data/provenance.json
   ctas/data/status.json
   ctas/data/source-universe.json
   ctas/data/release-history.json
@@ -117,10 +132,17 @@ cleanup() {
   if [ -n "$PUBLISH_DB" ]; then
     rm -f -- "$PUBLISH_DB" "$PUBLISH_DB-journal" "$PUBLISH_DB-wal" "$PUBLISH_DB-shm"
   fi
+  # The VOParquet assets live beside the snapshot, outside the Pages tree, only until
+  # they are uploaded (or the run ends); nothing of theirs is kept between runs.
+  if [ -n "${BULK_DIR:-}" ] && [ -z "${CTAS_BULK_DIR:-}" ]; then
+    rm -f -- "$BULK_DIR"/*.parquet 2>/dev/null
+    rmdir "$BULK_DIR" 2>/dev/null
+  fi
   rmdir "$LOCKDIR" 2>/dev/null
   return "$status"
 }
 trap cleanup EXIT
+BULK_DIR=""
 
 [ -d "$SITE" ] || die "website repo not found: $SITE"
 [ -f "$DB" ]   || die "CTAS database not found: $DB"
@@ -328,8 +350,13 @@ fi
 phase_done freeze-database
 
 # ----------------------------------------------------------------- export
+# The VOParquet bulk tables are written outside the Pages tree (next to the frozen
+# database snapshot) and uploaded below as assets of the rolling GitHub Release that
+# ctas/data/bulk-downloads.json names; only that small index enters the release commit.
+BULK_DIR="${CTAS_BULK_DIR:-$SNAPSHOT_DIR/ctas-bulk}"
+mkdir -p "$BULK_DIR" || die "could not prepare the bulk asset folder $BULK_DIR"
 with_release python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
-  --release-base-ref "$DATA_TIP" >>"$LOG" 2>&1 \
+  --release-base-ref "$DATA_TIP" --bulk-dir "$BULK_DIR" >>"$LOG" 2>&1 \
   || die "export failed; nothing committed"
 phase_done export
 python3 scripts/check_ctas_links.py --catalog-index ctas/data/catalog-index.json \
@@ -480,6 +507,46 @@ while IFS= read -r page; do
   [ -n "$page" ] && PUBLIC_FILES+=("$page")
 done <<<"$CATALOG_PAGE_FILES"
 
+# ------------------------------------------------------- collect DataLink files
+# One DataLink 1.1 links document per non-empty dossier bucket, declared with its byte
+# length and SHA-256 by the links manifest the export wrote; nothing else under links/.
+DATALINK_FILES=$(python3 - <<'PYCTASLINKS'
+import hashlib
+import json
+import re
+from pathlib import Path
+
+root = Path.cwd().resolve()
+manifest = json.loads(Path("ctas/data/links/manifest.json").read_text())
+documents = manifest.get("documents")
+if not isinstance(documents, list) or len(documents) != manifest.get("document_count"):
+    raise ValueError("DataLink document count differs from manifest")
+paths, events = [], 0
+seen = set()
+for row in documents:
+    relative = row.get("path")
+    if not isinstance(relative, str) or not re.fullmatch(r"ctas/data/links/[0-9a-f]{3}\.xml", relative):
+        raise ValueError("Unexpected DataLink document path")
+    if relative != f"ctas/data/links/{row.get('bucket')}.xml" or relative in seen:
+        raise ValueError("DataLink document path must match its bucket exactly once")
+    seen.add(relative)
+    target = root / relative
+    if target.is_symlink() or target.resolve() != target or not target.is_file():
+        raise ValueError("DataLink document is missing or is a redirected path: " + relative)
+    raw = target.read_bytes()
+    if len(raw) != row["bytes"] or hashlib.sha256(raw).hexdigest() != row["sha256"]:
+        raise ValueError("DataLink document integrity mismatch: " + relative)
+    events += int(row["event_count"])
+    paths.append(relative)
+if events != manifest.get("event_count"):
+    raise ValueError("DataLink event count differs from manifest")
+print("\n".join(paths))
+PYCTASLINKS
+) || die "DataLink manifest validation failed; nothing committed"
+while IFS= read -r link_document; do
+  [ -n "$link_document" ] && PUBLIC_FILES+=("$link_document")
+done <<<"$DATALINK_FILES"
+
 # ------------------------------------------------- retire superseded artifacts
 # The partition width and the first-screen artifact can change between code
 # releases. Any previously published data file the current manifest no longer
@@ -494,21 +561,24 @@ from pathlib import Path
 
 manifest = json.loads(Path("ctas/data/candidate-chunks/manifest.json").read_text())
 pages = json.loads(Path("ctas/data/catalog-pages/manifest.json").read_text())
+links = json.loads(Path("ctas/data/links/manifest.json").read_text())
 current = {row["path"] for row in manifest.get("chunks", [])}
 current |= {row["path"] for row in manifest.get("parts", [])}
 current |= {row["path"] for row in pages.get("pages", [])}
+current |= {row["path"] for row in links.get("documents", [])}
 current |= {
     "ctas/data/candidate-chunks/manifest.json",
     "ctas/data/catalog-pages/manifest.json",
+    "ctas/data/links/manifest.json",
 }
 tracked = subprocess.run(
     ["git", "ls-files", "ctas/data/candidate-chunks", "ctas/data/catalog-pages",
-     "ctas/data/catalog-bootstrap.json"],
+     "ctas/data/links", "ctas/data/catalog-bootstrap.json"],
     capture_output=True, text=True, check=True,
 ).stdout.split()
 retired = sorted(set(tracked) - current)
 for path in retired:
-    if not re.fullmatch(r"ctas/data/(?:candidate-chunks/[0-9a-f]{2,3}(?:\.part-[0-9]{6})?\.json|catalog-pages/[0-9]{4}\.json|catalog-bootstrap\.json)", path):
+    if not re.fullmatch(r"ctas/data/(?:candidate-chunks/[0-9a-f]{2,3}(?:\.part-[0-9]{6})?\.json|catalog-pages/[0-9]{4}\.json|links/[0-9a-f]{3}\.xml|catalog-bootstrap\.json)", path):
         raise ValueError("Refusing to retire an unexpected tracked path: " + path)
     target = Path(path)
     if target.is_symlink() or target.absolute().resolve() != target.absolute():
@@ -532,10 +602,17 @@ fi
 phase_done validate-detail-pages-and-retirement
 for suite in scripts/test_ctas_static.py scripts/test_ctas_links.py scripts/test_ctas_identity.py \
              scripts/test_ctas_astro_evidence.py scripts/test_ctas_browser.py \
-             scripts/test_ctas_chunks.py scripts/test_ctas_publisher_recovery.py; do
+             scripts/test_ctas_chunks.py scripts/test_ctas_publisher_recovery.py \
+             scripts/test_ctas_interop.py; do
   python3 "$suite" >>"$LOG" 2>&1 || die "$suite failed against the generated release; nothing committed"
   phase_done "$(basename "$suite")"
 done
+# Every published JSON file against its JSON Schema (ctas/schemas, named by
+# ctas/openapi.yaml); the sampling rule for the 4,096 chunk roots is printed by the
+# validator and stated in its docstring.
+python3 scripts/validate_ctas_schemas.py >>"$LOG" 2>&1 \
+  || die "published JSON does not validate against ctas/schemas; nothing committed"
+phase_done validate_ctas_schemas.py
 # Compare every exported ingest score/factor record with this cycle's frozen DB.
 python3 scripts/test_ctas_ingest_provenance.py --database "$PUBLISH_DB" --data-dir ctas/data >>"$LOG" 2>&1 \
   || die "ingest-score provenance differs from the frozen database; nothing committed"
@@ -639,6 +716,43 @@ if [ "$DRY" -eq 1 ]; then
   discard_generated_files
   exit 0
 fi
+
+# ------------------------------------------------------------ bulk assets
+# The VOParquet tables go to the rolling GitHub Release named by bulk-downloads.json
+# (tag "ctas-data-latest"), not into the Pages tree: Release assets have no bandwidth limit and
+# no 1 GB site budget. The release is created when missing and each asset is replaced
+# (--clobber). An upload failure is reported, not fatal: the Pages release carries the
+# asset SHA-256 digests, so a reader can tell a lagging asset from the current one,
+# and the next cycle uploads again. CTAS_RELEASE_TOKEN (the workflow token, contents:
+# write) authenticates gh; without gh or a token the step is skipped and said so.
+upload_bulk_assets() {
+  local tag repo asset count=0
+  tag=$(python3 -c "import json;print(json.load(open('ctas/data/bulk-downloads.json'))['release_tag'])" 2>/dev/null) \
+    || { say "WARN  bulk-downloads.json has no release tag; VOParquet assets not uploaded"; return 0; }
+  repo="${CTAS_BULK_RELEASE_REPO:-$(git remote get-url origin 2>/dev/null | sed -E 's#^(git@github\.com:|https://github\.com/)##; s#\.git$##')}"
+  [ -n "$repo" ] || { say "WARN  could not name the GitHub repository; VOParquet assets not uploaded"; return 0; }
+  command -v gh >/dev/null 2>&1 || { say "no GitHub CLI on this publisher; VOParquet assets not uploaded"; return 0; }
+  if [ -n "${CTAS_RELEASE_TOKEN:-}" ]; then export GH_TOKEN="$CTAS_RELEASE_TOKEN"; fi
+  if ! gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
+    gh release create "$tag" --repo "$repo" --title "CTAS bulk data (rolling)" --latest=false \
+      --notes "Rolling VOParquet bulk tables of the latest certified CTAS release. Names, sizes and SHA-256 digests: https://jackmcguireastro.github.io/ctas/data/bulk-downloads.json. Replaced on every release; verify the digest." >>"$LOG" 2>&1 \
+      || { say "WARN  could not create the $tag release on $repo; VOParquet assets not uploaded"; return 0; }
+  fi
+  local bytes total=0 sizes=""
+  for asset in "$BULK_DIR"/*.parquet; do
+    [ -f "$asset" ] || continue
+    bytes=$(wc -c <"$asset" | tr -d ' ')
+    gh release upload "$tag" "$asset" --repo "$repo" --clobber >>"$LOG" 2>&1 \
+      || { say "WARN  upload of $(basename "$asset") ($bytes bytes) to release $tag failed; the previous asset stays until the next cycle"; return 0; }
+    count=$((count + 1))
+    total=$((total + bytes))
+    sizes="$sizes $(basename "$asset")=$bytes"
+  done
+  # Size log line: one per release, so the asset growth can be read from the run logs.
+  say "uploaded $count VOParquet asset(s), $total bytes, to release $tag of $repo:$sizes"
+}
+upload_bulk_assets
+phase_done upload-bulk-assets
 
 # ----------------------------------------------------------------- publish
 # Replace the data branch with one commit holding exactly the allowlisted release

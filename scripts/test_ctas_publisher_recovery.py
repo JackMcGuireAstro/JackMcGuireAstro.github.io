@@ -433,8 +433,15 @@ class DetailAllowlistTests(unittest.TestCase):
         pages = self.site / "ctas/data/catalog-pages"
         pages.mkdir()
         (pages / "manifest.json").write_text(json.dumps({"pages": [], "page_count": 0, "candidate_count": 0}))
+        # The DataLink documents are collected from their manifest the same way (Track 1);
+        # an empty release declares none, and a stale document is retired like a stale part.
+        links = self.site / "ctas/data/links"
+        links.mkdir()
+        (links / "manifest.json").write_text(json.dumps({"documents": [], "document_count": 0, "event_count": 0}))
         obsolete = "ctas/data/candidate-chunks/000.part-999999.json"
         (self.site / obsolete).write_text("old generated part")
+        obsolete_link = "ctas/data/links/abc.xml"
+        (self.site / obsolete_link).write_text("old generated links document")
         def git(*args):
             return subprocess.run(["git", *args], cwd=self.site, check=True,
                                   text=True, capture_output=True).stdout.strip()
@@ -449,12 +456,14 @@ class DetailAllowlistTests(unittest.TestCase):
         publisher = (ROOT / "scripts/publish_ctas.sh").read_text()
         block = publisher[publisher.index("# ----------------------------------------------------------- collect detail files"):
                           publisher.index("# ------------------------------------------------------------------ tests")]
-        script = ('set -euo pipefail\nPUBLIC_FILES=(ctas/data/candidate-chunks/manifest.json ctas/data/catalog-pages/manifest.json)\n'
+        script = ('set -euo pipefail\nPUBLIC_FILES=(ctas/data/candidate-chunks/manifest.json ctas/data/catalog-pages/manifest.json ctas/data/links/manifest.json)\n'
                   'die() { echo "$*" >&2; exit 1; }\nsay() { :; }\n' + block +
                   '\ngit add -- "${PUBLIC_FILES[@]}"\ngit commit -qm "fixed release"\n')
         result = subprocess.run(["/bin/bash", "-c", script], cwd=self.site, text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(git("ls-files", obsolete), "")
+        self.assertEqual(git("ls-files", obsolete_link), "")
+        self.assertFalse((self.site / obsolete_link).exists())
         for row in self.manifest["parts"]:
             self.assertEqual(git("ls-files", row["path"]), row["path"])
         self.assertEqual(git("ls-files", "private-notes.txt"), "")

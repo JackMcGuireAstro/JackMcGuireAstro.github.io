@@ -1,0 +1,330 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS source universe",
+  "description": "ctas/data/source-universe.json: every declared source contract with its implementation, operational and representation states. Families and states are controlled vocabularies.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.public-source-universe@1.1.0"
+    },
+    "generated_at": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "claim_boundary": {
+      "type": "string"
+    },
+    "state_vocabulary": {
+      "const": [
+        "active-returning-data",
+        "active-no-recent-messages",
+        "represented-through-another-provider",
+        "searched-with-data",
+        "searched-no-match",
+        "not-searched",
+        "scheduled",
+        "manual-access-required",
+        "credentials-required",
+        "temporarily-unavailable",
+        "rate-limited",
+        "provider-failure",
+        "ambiguous-identity",
+        "incomplete-result",
+        "rights-blocked",
+        "not-implemented",
+        "not-applicable"
+      ]
+    },
+    "implementation_state_vocabulary": {
+      "const": [
+        "implemented",
+        "implemented-credentials-required",
+        "implemented-topic-authorization-required",
+        "implemented-user-authorization-required",
+        "manual-only",
+        "archival-only",
+        "represented-through-provider",
+        "generic-import-supported",
+        "documented-not-implemented",
+        "interface-review-required",
+        "blocked-policy",
+        "blocked-deployment-access",
+        "blocked-user-authorization"
+      ]
+    },
+    "representation_state_vocabulary": {
+      "const": [
+        "direct",
+        "through-provider",
+        "dispositions-only",
+        "none"
+      ]
+    },
+    "source_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "family_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "survey_source_aliases": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_key": {
+            "$ref": "common.schema.json#/$defs/nonEmptyString"
+          },
+          "name": {
+            "$ref": "common.schema.json#/$defs/nonEmptyString"
+          },
+          "organization_or_facility": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_family": {
+            "type": "string"
+          },
+          "primary_family": {
+            "type": "string"
+          },
+          "secondary_families": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "data_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "product_contracts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "topic_contracts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "access_mode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "protocol": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "documentation_url": {
+            "$ref": "common.schema.json#/$defs/nullableHttpsUrl"
+          },
+          "rights_or_public_access_basis": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "authentication_requirement": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "query_scope": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rate_or_cadence_limit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "connector_implementation_state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "implementation_state": {
+            "enum": [
+              "implemented",
+              "implemented-credentials-required",
+              "implemented-topic-authorization-required",
+              "implemented-user-authorization-required",
+              "manual-only",
+              "archival-only",
+              "represented-through-provider",
+              "generic-import-supported",
+              "documented-not-implemented",
+              "interface-review-required",
+              "blocked-policy",
+              "blocked-deployment-access",
+              "blocked-user-authorization"
+            ]
+          },
+          "operational_state": {
+            "enum": [
+              "active-returning-data",
+              "active-no-recent-messages",
+              "represented-through-another-provider",
+              "searched-with-data",
+              "searched-no-match",
+              "not-searched",
+              "scheduled",
+              "manual-access-required",
+              "credentials-required",
+              "temporarily-unavailable",
+              "rate-limited",
+              "provider-failure",
+              "ambiguous-identity",
+              "incomplete-result",
+              "rights-blocked",
+              "not-implemented",
+              "not-applicable"
+            ]
+          },
+          "representation_state": {
+            "enum": [
+              "direct",
+              "through-provider",
+              "dispositions-only",
+              "none"
+            ]
+          },
+          "last_successful_response": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_successful_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_attempt_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "public_record_counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "public_disposition_counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "represented_directly": {
+            "type": "boolean"
+          },
+          "represented_through": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "known_limitations": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_verified": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contract_version": {
+            "type": "string"
+          },
+          "contract_checksum_sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          }
+        },
+        "required": [
+          "source_key",
+          "name",
+          "source_family",
+          "primary_family",
+          "data_types",
+          "implementation_state",
+          "operational_state",
+          "representation_state",
+          "public_record_counts",
+          "public_disposition_counts",
+          "represented_directly",
+          "contract_version",
+          "contract_checksum_sha256"
+        ],
+        "additionalProperties": true,
+        "allOf": [
+          {
+            "$ref": "common.schema.json#/$defs/noBannedKeys"
+          }
+        ]
+      }
+    },
+    "contract_set_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "definition_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "artifact_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    }
+  },
+  "required": [
+    "schema",
+    "generated_at",
+    "claim_boundary",
+    "state_vocabulary",
+    "implementation_state_vocabulary",
+    "representation_state_vocabulary",
+    "source_count",
+    "family_count",
+    "survey_source_aliases",
+    "sources",
+    "contract_set_checksum_sha256",
+    "definition_checksum_sha256",
+    "artifact_checksum_sha256"
+  ],
+  "additionalProperties": false
+}

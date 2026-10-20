@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS source-matrix patterns",
+  "description": "ctas/data/source-matrix-patterns.json: the shared no-evidence source-matrix rows that dossiers reference by pattern id instead of repeating.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.public-source-matrix-patterns@1.0.0"
+    },
+    "generated_at": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "statement": {
+      "type": "string"
+    },
+    "row_keys": {
+      "const": [
+        "sourceContractId",
+        "sourceName",
+        "documentationUrl",
+        "applicabilityRule",
+        "currentQueryOutcome",
+        "currentQueryCheckedAt",
+        "executedReceiptCount",
+        "retainedRecordCount",
+        "retainedRecordTypes",
+        "retainedEvidenceLatestAt",
+        "retainedEvidenceState"
+      ]
+    },
+    "pattern_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "patterns": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[0-9a-f]{16}$"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "sourceContractId": {},
+            "sourceName": {},
+            "documentationUrl": {},
+            "applicabilityRule": {},
+            "currentQueryOutcome": {},
+            "currentQueryCheckedAt": {},
+            "executedReceiptCount": {},
+            "retainedRecordCount": {},
+            "retainedRecordTypes": {},
+            "retainedEvidenceLatestAt": {},
+            "retainedEvidenceState": {}
+          },
+          "required": [
+            "sourceContractId",
+            "currentQueryOutcome"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "generated_at",
+    "catalog_content_checksum_sha256",
+    "statement",
+    "row_keys",
+    "pattern_count",
+    "patterns"
+  ],
+  "additionalProperties": false
+}

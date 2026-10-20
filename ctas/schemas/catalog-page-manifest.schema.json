@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS catalog page manifest",
+  "description": "ctas/data/catalog-pages/manifest.json: the ordered, checksum-bound list of complete-catalog pages.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.public-catalog-page-manifest@1.0.0"
+    },
+    "generated_at": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "statement": {
+      "type": "string"
+    },
+    "candidate_columns": {
+      "$ref": "common.schema.json#/$defs/candidateColumns"
+    },
+    "candidate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "page_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "page_max_bytes": {
+      "const": 1048576
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^ctas/data/catalog-pages/[0-9]{4}\\.json$"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "candidate_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          },
+          "first_event_id": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          "last_event_id": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          }
+        },
+        "required": [
+          "path",
+          "page",
+          "candidate_count",
+          "bytes",
+          "sha256",
+          "first_event_id",
+          "last_event_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "complete_index": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "const": "ctas/data/catalog-index.json"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "$ref": "common.schema.json#/$defs/sha256"
+        }
+      },
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema",
+    "generated_at",
+    "catalog_content_checksum_sha256",
+    "statement",
+    "candidate_columns",
+    "candidate_count",
+    "page_count",
+    "page_max_bytes",
+    "pages",
+    "complete_index"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS candidate JSON part",
+  "description": "ctas/data/candidate-chunks/<bucket>.part-NNNNNN.json: one ordered fragment of an oversized dossier chunk; the descriptor root lists the fragments and the assembled byte length and SHA-256.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.candidate-json-part@1.0.0"
+    },
+    "bucket": {
+      "$ref": "common.schema.json#/$defs/bucket"
+    },
+    "part": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "json_fragment": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "bucket",
+    "part",
+    "json_fragment"
+  ],
+  "additionalProperties": true
+}

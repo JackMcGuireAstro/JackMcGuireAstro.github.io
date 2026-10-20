@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS complete-catalog manifest",
+  "description": "ctas/data/candidate-chunks/manifest.json: the exact, checksum-bound reconstruction contract of the complete catalog (4096 chunk roots, their parts, the catalog index, the release score clock).",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.public-complete-catalog-manifest@1.1.0"
+    },
+    "schema_version": {
+      "const": 2
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "candidate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "chunk_count": {
+      "const": 4096
+    },
+    "score_clock": {
+      "$ref": "common.schema.json#/$defs/scoreClock"
+    },
+    "catalog_index": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "const": "ctas/data/catalog-index.json"
+        },
+        "candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "$ref": "common.schema.json#/$defs/sha256"
+        },
+        "ordering_field": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "candidate_count",
+        "bytes",
+        "sha256",
+        "ordering_field"
+      ],
+      "additionalProperties": false
+    },
+    "assembled_candidates_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "reconstruction": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "canonical_json": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "contract_version",
+        "steps",
+        "canonical_json"
+      ],
+      "additionalProperties": false
+    },
+    "chunks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^ctas/data/candidate-chunks/[0-9a-f]{3}\\.json$"
+          },
+          "candidate_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          }
+        },
+        "required": [
+          "path",
+          "candidate_count",
+          "bytes",
+          "sha256"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 4096,
+      "maxItems": 4096
+    },
+    "parts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^ctas/data/candidate-chunks/[0-9a-f]{3}\\.part-[0-9]{6}\\.json$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          }
+        },
+        "required": [
+          "path",
+          "bytes",
+          "sha256"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "schema_version",
+    "catalog_content_checksum_sha256",
+    "candidate_count",
+    "chunk_count",
+    "score_clock",
+    "catalog_index",
+    "assembled_candidates_checksum_sha256",
+    "reconstruction",
+    "chunks",
+    "parts"
+  ],
+  "additionalProperties": false
+}

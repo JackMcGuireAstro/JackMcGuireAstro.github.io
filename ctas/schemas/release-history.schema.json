@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS release history",
+  "description": "ctas/data/release-history.json: checksum-addressed public catalog changes, newest first (at most 24).",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.public-release-history@1.0.0"
+    },
+    "generated_at": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "claim_boundary": {
+      "type": "string"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "published_at": {
+            "$ref": "common.schema.json#/$defs/dateTime"
+          },
+          "change_kind": {
+            "enum": [
+              "candidate-intake",
+              "record-update"
+            ]
+          },
+          "previous_candidate_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "candidate_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "added_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "removed_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "changed_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "added_source_summary": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "sample_added": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12
+          },
+          "sample_removed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12
+          },
+          "summary": {
+            "type": "string"
+          },
+          "catalog_content_checksum_sha256": {
+            "$ref": "common.schema.json#/$defs/sha256"
+          },
+          "previous_catalog_content_checksum_sha256": {
+            "$ref": "common.schema.json#/$defs/nullableSha256"
+          },
+          "base_commit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "history_basis": {
+            "enum": [
+              "git-verified-public-candidate-count-transition",
+              "semantic-diff-from-public-git-base"
+            ]
+          }
+        },
+        "required": [
+          "published_at",
+          "change_kind",
+          "candidate_count",
+          "added_count",
+          "removed_count",
+          "summary",
+          "catalog_content_checksum_sha256",
+          "history_basis"
+        ],
+        "additionalProperties": true
+      },
+      "maxItems": 24
+    }
+  },
+  "required": [
+    "schema",
+    "generated_at",
+    "claim_boundary",
+    "entries"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,454 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS status",
+  "description": "ctas/data/status.json: the release heartbeat, headline statistics, source states, the verification summary and the paths of every other artifact. New keys are only ever added (rule N1).",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "pipeline_status": {
+      "enum": [
+        "ok",
+        "degraded"
+      ]
+    },
+    "origin": {
+      "const": "local-snapshot"
+    },
+    "last_successful_update": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "export_checked_at": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "valid_until": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "latest_record_update": {
+      "$ref": "common.schema.json#/$defs/nullableDateTime"
+    },
+    "candidate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "publication_state_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "degraded_source_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "cadence": {
+      "type": "string"
+    },
+    "statistics": {
+      "$ref": "common.schema.json#/$defs/statistics"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "$ref": "common.schema.json#/$defs/nonEmptyString"
+          },
+          "label": {
+            "type": "string"
+          },
+          "record_counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "required": [
+          "source",
+          "label"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "surveys": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/surveyCount"
+      }
+    },
+    "source_universe": {
+      "$ref": "common.schema.json#/$defs/sourceUniverseSummary"
+    },
+    "source_accounting": {
+      "$ref": "common.schema.json#/$defs/sourceAccountingTotals"
+    },
+    "local_store_exceptions": {
+      "type": "object",
+      "properties": {
+        "statement": {
+          "type": "string"
+        },
+        "failure_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unreadable_event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "unreadable_event_ids": {
+                "type": "array",
+                "items": {
+                  "$ref": "common.schema.json#/$defs/uuid"
+                }
+              },
+              "unreadable_event_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "unreadable_event_ids"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "statement",
+        "failure_count",
+        "unreadable_event_count",
+        "failures"
+      ],
+      "additionalProperties": true
+    },
+    "static_snapshot_verification": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "verified-static-snapshot",
+            "verification-failed",
+            "publication-binding-pending"
+          ]
+        },
+        "schema": {
+          "const": "ctas.static-snapshot-verification@1.1.0"
+        },
+        "passed_check_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "check_count": {
+          "type": "integer",
+          "minimum": 43
+        },
+        "failed_gate_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "report_checksum_sha256": {
+          "$ref": "common.schema.json#/$defs/sha256"
+        },
+        "valid_until": {
+          "$ref": "common.schema.json#/$defs/dateTime"
+        },
+        "content_release_id": {
+          "$ref": "common.schema.json#/$defs/sha256"
+        }
+      },
+      "required": [
+        "status",
+        "schema",
+        "passed_check_count",
+        "check_count",
+        "failed_gate_ids",
+        "report_checksum_sha256",
+        "content_release_id"
+      ],
+      "additionalProperties": true
+    },
+    "artifacts": {
+      "type": "object",
+      "properties": {
+        "catalog_index": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/catalog-index.json"
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": true
+        },
+        "alias_index": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/alias-index.json"
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": true
+        },
+        "complete_catalog_manifest": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/candidate-chunks/manifest.json"
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": true
+        },
+        "research_tables": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/research/manifest.json"
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": true
+        },
+        "source_universe": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/source-universe.json"
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": true
+        },
+        "source_matrix_patterns": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/source-matrix-patterns.json"
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": true
+        },
+        "release_history": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/release-history.json"
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": true
+        },
+        "link_health": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/link-health.json"
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/nullableSha256"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": true
+        },
+        "certification": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/certification.json"
+            },
+            "report_checksum_sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "path",
+            "report_checksum_sha256"
+          ],
+          "additionalProperties": true
+        },
+        "bulk_downloads": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/bulk-downloads.json"
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": true
+        },
+        "datalink_manifest": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/links/manifest.json"
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": true
+        },
+        "provenance": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/provenance.json"
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": true
+        },
+        "api_description": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/openapi.yaml"
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/nullableSha256"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "catalog_index",
+        "alias_index",
+        "complete_catalog_manifest",
+        "research_tables",
+        "source_universe",
+        "source_matrix_patterns",
+        "release_history",
+        "link_health",
+        "certification",
+        "bulk_downloads",
+        "datalink_manifest",
+        "provenance"
+      ],
+      "additionalProperties": true
+    },
+    "provenance_path": {
+      "const": "ctas/data/provenance.json"
+    },
+    "api_description_path": {
+      "const": "ctas/openapi.yaml"
+    },
+    "bulk_downloads_path": {
+      "const": "ctas/data/bulk-downloads.json"
+    },
+    "datalink_manifest_path": {
+      "const": "ctas/data/links/manifest.json"
+    }
+  },
+  "required": [
+    "schema_version",
+    "pipeline_status",
+    "origin",
+    "last_successful_update",
+    "export_checked_at",
+    "valid_until",
+    "candidate_count",
+    "catalog_content_checksum_sha256",
+    "publication_state_checksum_sha256",
+    "degraded_source_count",
+    "cadence",
+    "statistics",
+    "sources",
+    "surveys",
+    "source_universe",
+    "source_accounting",
+    "local_store_exceptions",
+    "static_snapshot_verification",
+    "artifacts",
+    "provenance_path",
+    "api_description_path",
+    "bulk_downloads_path",
+    "datalink_manifest_path"
+  ],
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/noBannedKeys"
+    }
+  ]
+}

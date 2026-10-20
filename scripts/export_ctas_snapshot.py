@@ -65,6 +65,29 @@ try:
 except ModuleNotFoundError:
     from scripts.ctas_chunks import encode_chunk, decode_chunk
 
+
+def interop():
+    """The IVOA export module (scripts/ctas_interop.py), imported on first use.
+
+    It needs astropy, astropy_healpix and pyarrow, which the cloud publisher installs;
+    the read-only export, scoring and the tests that never serialize a release do
+    not, so the import is deferred and a missing dependency is named plainly.
+    """
+
+    try:
+        import ctas_interop
+    except ModuleNotFoundError as exc:
+        if exc.name in {"ctas_interop", "scripts.ctas_interop"} or exc.name is None:
+            from scripts import ctas_interop  # type: ignore[no-redef]
+        else:
+            raise ModuleNotFoundError(
+                f"the interoperability exports need the {exc.name} package "
+                "(pip install astropy astropy-healpix pyarrow); see requirements in "
+                ".github/workflows/ctas-cloud.yml"
+            ) from exc
+    return ctas_interop
+
+
 SCHEMA_VERSION = 2
 
 # 1.1.0 adds definition_checksum_sha256 (the contracts without operational state).
@@ -90,6 +113,19 @@ CANDIDATE_MANIFEST_READABLE_SCHEMAS = frozenset({
 # both the lazy-detail index and the authoritative complete-catalog download.
 CANDIDATE_MANIFEST_SCHEMA = CANDIDATE_DOWNLOAD_MANIFEST_SCHEMA
 RELEASE_HISTORY_SCHEMA = "ctas.public-release-history@1.0.0"
+# Track 1 (Framework v2, 2026-10-19): IVOA-facing exports beside the JSON release.
+# ECSV and VOTable 1.5 tables live in the Pages tree with the CSV set; the VOParquet
+# bulk tables are assets of the rolling GitHub Release named below, indexed from
+# the Pages tree by bulk-downloads.json; DataLink documents live under links/.
+RESEARCH_INTEROP_TABLES = ("candidates", "aliases", "sources", "tom-targets", "source-accounting", "release-history")
+BULK_DOWNLOADS_PATH = "ctas/data/bulk-downloads.json"
+BULK_RELEASE_TAG = "ctas-data-latest"
+BULK_RELEASE_REPOSITORY = "JackMcGuireAstro/JackMcGuireAstro.github.io"
+BULK_CANDIDATES_ASSET = "ctas-candidates.parquet"
+BULK_PHOTOMETRY_ASSET = "ctas-photometry.parquet"
+DATALINK_MANIFEST_PATH = "ctas/data/links/manifest.json"
+PROVENANCE_PATH = "ctas/data/provenance.json"
+INTEROP_GATE_ID = "interoperability-exports-round-trip"
 CANDIDATE_BUCKET_COUNT = 4096
 SNAPSHOT_VALIDITY_MINUTES = 90  # status.valid_until; see the payload below
 LIVE_SUMMARY_SCHEMA = "ctas.public-live-summary@1.0.0"
@@ -165,9 +201,40 @@ REQUIRED_PUBLIC_ARTIFACTS = (
     "ctas/data/live-summary.json", "ctas/data/catalog-pages/manifest.json", "ctas/data/catalog-index.json",
     "ctas/data/alias-index.json", "ctas/data/research/manifest.json",
     "ctas/data/research/events.vot", "ctas/data/research/tom-targets.csv",
+    *(f"ctas/data/research/{table}.ecsv" for table in RESEARCH_INTEROP_TABLES),
+    *(f"ctas/data/research/{table}.vot" for table in RESEARCH_INTEROP_TABLES),
     "ctas/data/candidate-chunks/manifest.json",
     "ctas/data/source-universe.json", LINK_HEALTH_PATH,
     SOURCE_MATRIX_PATTERNS_PATH, "ctas/data/release-history.json",
+    BULK_DOWNLOADS_PATH, DATALINK_MANIFEST_PATH, PROVENANCE_PATH,
+)
+# The machine description of the static endpoints and the JSON Schemas it references
+# are code: they are bound by the certificate and validated against every published
+# JSON file by scripts/validate_ctas_schemas.py.
+API_DESCRIPTION_PATHS = (
+    "ctas/openapi.yaml",
+    "ctas/schemas/status.schema.json",
+    "ctas/schemas/live-summary.schema.json",
+    "ctas/schemas/catalog-index.schema.json",
+    "ctas/schemas/catalog-page.schema.json",
+    "ctas/schemas/catalog-page-manifest.schema.json",
+    "ctas/schemas/candidate-chunk.schema.json",
+    "ctas/schemas/candidate-json-part.schema.json",
+    "ctas/schemas/candidate-chunk-manifest.schema.json",
+    "ctas/schemas/alias-index.schema.json",
+    "ctas/schemas/source-universe.schema.json",
+    "ctas/schemas/source-matrix-patterns.schema.json",
+    "ctas/schemas/research-manifest.schema.json",
+    "ctas/schemas/release-history.schema.json",
+    "ctas/schemas/link-health.schema.json",
+    "ctas/schemas/certification.schema.json",
+    "ctas/schemas/bulk-downloads.schema.json",
+    "ctas/schemas/datalink-manifest.schema.json",
+    "ctas/schemas/provenance.schema.json",
+    "ctas/schemas/delivery.schema.json",
+    "ctas/schemas/observatories.schema.json",
+    "ctas/schemas/cloud-run.schema.json",
+    "ctas/schemas/common.schema.json",
 )
 # Code and fixed-input files the verification report binds beside the generated data.
 BOUND_CODE_PATHS = (
@@ -177,10 +244,12 @@ BOUND_CODE_PATHS = (
     "ctas/data/observatories.json",
     "ctas/research/README.md", "ctas/research/ctas-quickstart.ipynb",
     "ctas/schema/astro-evidence-core-0.1.0.schema.json",
-    "scripts/export_ctas_snapshot.py", "scripts/ctas_astro_evidence.py",
+    *API_DESCRIPTION_PATHS,
+    "scripts/export_ctas_snapshot.py", "scripts/ctas_astro_evidence.py", "scripts/ctas_interop.py",
     "scripts/ctas_chunks.py", "scripts/test_ctas_chunks.py", "scripts/test_ctas_chunk_loader.js",
     "scripts/test_ctas_publisher_recovery.py",
     "scripts/check_ctas_links.py", "scripts/rebuild_ctas_release_history.py",
+    "scripts/validate_ctas_schemas.py", "scripts/test_ctas_interop.py",
     "scripts/test_ctas_static.py", "scripts/test_ctas_catalog_model.js",
     "scripts/test_ctas_links.py", "scripts/test_ctas_astro_evidence.py",
     "scripts/test_ctas_identity.py", "scripts/test_ctas_browser.py", "scripts/test_ctas_release_browser.js",
@@ -3261,11 +3330,133 @@ def _tom_targets_artifact(candidates: list[dict[str, Any]]) -> tuple[bytes, int,
     return _csv_artifact(columns, rows), len(rows), max_aliases
 
 
+def _tom_target_rows(candidates: list[dict[str, Any]]) -> tuple[list[str], list[list[Any]]]:
+    """The TOM target table as (columns, rows): the rows behind tom-targets.csv."""
+
+    raw, _count, _aliases = _tom_targets_artifact(candidates)
+    reader = csv.reader(io.StringIO(raw.decode("utf-8"), newline=""))
+    columns = next(reader)
+    rows: list[list[Any]] = []
+    numeric = {"ra", "dec", "epoch", "ctas_score"}
+    for text_row in reader:
+        row: list[Any] = []
+        for column, value in zip(columns, text_row):
+            if column in numeric:
+                row.append(float(value) if value != "" else None)
+            else:
+                row.append(value if value != "" else None)
+        rows.append(row)
+    return columns, rows
+
+
+def source_accounting_rows(candidates: list[dict[str, Any]]) -> list[list[Any]]:
+    """One row per candidate: the per-record source accounting the dossiers carry."""
+
+    rows: list[list[Any]] = []
+    for candidate in candidates:
+        accounting = candidate.get("source_accounting") or {}
+        outcomes = accounting.get("outcomeCounts") or {}
+        rows.append([
+            candidate.get("event_id"), candidate.get("name"),
+            accounting.get("declaredSources"), accounting.get("applicableSources"),
+            accounting.get("executedQueryReceipts"), accounting.get("dataBearingSources"),
+            *(int(outcomes.get(outcome) or 0) for outcome in interop().SOURCE_ACCOUNTING_OUTCOMES),
+        ])
+    return rows
+
+
+def release_history_rows(release_history: dict[str, Any]) -> list[list[Any]]:
+    specs = interop().RELEASE_HISTORY_COLUMN_SPECS
+    return [[entry.get(spec.name) for spec in specs] for entry in release_history.get("entries", [])]
+
+
+def interop_table_set(
+    candidates: list[dict[str, Any]], source_universe: dict[str, Any],
+    candidate_rows: list[list[Any]], release_history: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """Every public research table as (specs, rows, description) for the IVOA writers.
+
+    ``candidates`` is the catalog index's candidate table (with the release score
+    clock); ``sources`` the complete source universe; ``source-accounting`` and
+    ``release-history`` the two public tables that existed only as JSON until
+    Track 1. The CSV set stays exactly as published.
+    """
+
+    io_module = interop()
+    alias_rows = [
+        [candidate["event_id"], row.get("source_key"), row.get("designation"), bool(row.get("ambiguous"))]
+        for candidate in candidates for row in candidate.get("designations", [])
+        if row.get("designation")
+    ]
+    source_rows = [
+        [row.get(spec.name) for spec in io_module.SOURCE_COLUMN_SPECS]
+        for row in source_universe.get("sources", [])
+    ]
+    tom_columns, tom_rows = _tom_target_rows(candidates)
+    return {
+        "candidates": {
+            "specs": io_module.EVENT_COLUMN_SPECS,
+            "rows": candidate_rows,
+            "name": "ctas_candidates",
+            "description": (
+                "One row per public CTAS candidate: the catalog-index candidate table of this "
+                "release with its score clock. The CTAS score is an operational follow-up "
+                "ordering aid, not a probability, classification confidence or measure of "
+                "scientific importance. Complete evidence stays in the dossier chunks."
+            ),
+            "scope": "The complete catalog-index candidate table (every CATALOG_CANDIDATE_COLUMNS column) with the release score clock.",
+        },
+        "aliases": {
+            "specs": io_module.ALIAS_COLUMN_SPECS,
+            "rows": alias_rows,
+            "name": "ctas_aliases",
+            "description": "Provider-scoped public designations bound to CTAS event identifiers. An alias is a retained assertion, not independent identity validation.",
+            "scope": "Provider-scoped public designations linked to CTAS event identifiers.",
+        },
+        "sources": {
+            "specs": io_module.SOURCE_COLUMN_SPECS,
+            "rows": source_rows,
+            "name": "ctas_source_universe",
+            "description": "The declared CTAS source universe of this release: one row per source contract with its implementation, operational and representation states, retrieval times and public record counts.",
+            "scope": "The complete source universe (every contract field, lists as JSON text).",
+        },
+        "tom-targets": {
+            "specs": io_module.tom_target_column_specs(tom_columns),
+            "rows": tom_rows,
+            "name": "ctas_tom_targets",
+            "description": "TOM Toolkit base target-import table: public CTAS candidates with complete valid ICRS coordinates. Importing it does not request telescope observations.",
+            "scope": "Public CTAS candidates with complete valid ICRS coordinates, in TOM Toolkit base-import columns.",
+        },
+        "source-accounting": {
+            "specs": io_module.SOURCE_ACCOUNTING_COLUMN_SPECS,
+            "rows": source_accounting_rows(candidates),
+            "name": "ctas_source_accounting",
+            "description": "Per-record source accounting: declared, applicable, executed and data-bearing sources and the count of applicable sources in each current query outcome. Outcomes are the honest measure of how far each record was searched.",
+            "scope": "One row per public candidate with its source accounting and query-outcome counts.",
+        },
+        "release-history": {
+            "specs": io_module.RELEASE_HISTORY_COLUMN_SPECS,
+            "rows": release_history_rows(release_history),
+            "name": "ctas_release_history",
+            "description": "Checksum-addressed public catalog changes, newest first. Counts describe public CTAS catalog changes, not independent discoveries or scientific validation.",
+            "scope": "The public release history entries of this release.",
+        },
+    }
+
+
 def research_table_artifacts(
     candidates: list[dict[str, Any]], source_universe: dict[str, Any],
     catalog_content_checksum_sha256: str,
+    candidate_rows: list[list[Any]] | None = None,
+    release_history: dict[str, Any] | None = None,
 ) -> tuple[dict[str, bytes], dict[str, Any], bytes]:
-    """Build normalized and astronomy-interoperable research artifacts."""
+    """Build normalized and astronomy-interoperable research artifacts.
+
+    With ``candidate_rows`` and ``release_history`` the ECSV and VOTable 1.5 pair of
+    every public research table is built as well (see ``interop_table_set``) and each
+    pair is read back with Astropy; a round-trip difference is a problem under the
+    manifest key ``round_trip_problems`` and fails the interoperability gate.
+    """
 
     event_columns = list(CATALOG_CANDIDATE_COLUMNS)
     event_rows = [compact_candidate_row(candidate) for candidate in candidates]
@@ -3292,6 +3483,49 @@ def research_table_artifacts(
         "ctas/data/research/events.vot": events_votable_raw,
         "ctas/data/research/tom-targets.csv": tom_targets_raw,
     }
+    interop_metadata: dict[str, dict[str, Any]] = {}
+    round_trip_problems: list[str] = []
+    if candidate_rows is not None and release_history is not None:
+        io_module = interop()
+        params = {"catalog_content_checksum_sha256": catalog_content_checksum_sha256}
+        table_set = interop_table_set(candidates, source_universe, candidate_rows, release_history)
+        registry_problems = interop_column_registry_problems(table_set)
+        if registry_problems:
+            # A column without metadata is a release defect, not a warning: the export stops.
+            raise RuntimeError("interoperability column registry: " + "; ".join(registry_problems))
+        for table_id in RESEARCH_INTEROP_TABLES:
+            table = table_set[table_id]
+            astropy_table = io_module.build_table(
+                table["specs"], table["rows"], name=table["name"], description=table["description"],
+                meta={**params, "claim_boundary": io_module.INTEROP_CLAIM},
+            )
+            ecsv_raw = io_module.ecsv_bytes(astropy_table)
+            votable_raw = io_module.votable_bytes(astropy_table, params=params)
+            artifacts[f"ctas/data/research/{table_id}.ecsv"] = ecsv_raw
+            artifacts[f"ctas/data/research/{table_id}.vot"] = votable_raw
+            round_trip_problems.extend(io_module.round_trip_problems(
+                table_id, table["specs"], table["rows"], ecsv=ecsv_raw, votable=votable_raw,
+            ))
+            columns = [
+                {"name": spec.name, "datatype": spec.dtype, "ucd": spec.ucd, "unit": spec.vounit, "description": spec.description}
+                for spec in table["specs"]
+            ]
+            shared = {
+                "row_count": len(table["rows"]),
+                "scope": table["scope"],
+                "table_name": table["name"],
+                "column_count": len(columns),
+                "columns": columns,
+                "absent_value_convention": "numbers and booleans are masked; text columns are empty; JSON-typed columns hold compact JSON text",
+                "coordinate_frame": "ICRS",
+                "limitations": [io_module.INTEROP_CLAIM],
+            }
+            interop_metadata[f"ctas/data/research/{table_id}.ecsv"] = {
+                **shared, "media_type": "text/ecsv; charset=utf-8", "format": io_module.ECSV_FORMAT_NOTE,
+            }
+            interop_metadata[f"ctas/data/research/{table_id}.vot"] = {
+                **shared, "media_type": "application/x-votable+xml", "format": io_module.VOTABLE_FORMAT_NOTE,
+            }
     artifact_metadata = {
         "ctas/data/research/events.csv": {
             "row_count": len(event_rows),
@@ -3341,6 +3575,7 @@ def research_table_artifacts(
             ],
         },
     }
+    artifact_metadata.update(interop_metadata)
     manifest = {
         "schema": RESEARCH_TABLE_MANIFEST_SCHEMA,
         "catalog_content_checksum_sha256": catalog_content_checksum_sha256,
@@ -3359,9 +3594,202 @@ def research_table_artifacts(
             for path, raw in sorted(artifacts.items())
         ],
     }
+    if interop_metadata:
+        manifest["interoperability"] = {
+            "statement": (
+                "Every public research table is also published as ECSV 1.0 and VOTable 1.5 with a "
+                "UCD on every column, a VOUnits string on every column that carries a physical unit "
+                "and a description per column; each file was read back with Astropy and compared "
+                "cell by cell with its JSON source before this release was certified. Bulk VOParquet "
+                "tables are listed in " + BULK_DOWNLOADS_PATH + "; DataLink links documents in " + DATALINK_MANIFEST_PATH + "."
+            ),
+            "tables": list(RESEARCH_INTEROP_TABLES),
+            "round_trip_problem_count": len(round_trip_problems),
+            "round_trip_problems": round_trip_problems[:20],
+        }
     manifest_raw = (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode()
     artifacts["ctas/data/research/manifest.json"] = manifest_raw
     return artifacts, manifest, manifest_raw
+
+
+def photometry_rows(candidates: list[dict[str, Any]]) -> list[list[Any]]:
+    """Every retained public photometric observation as one flat row.
+
+    The row keeps the provider, the CTAS receipt identifiers and the provider's own
+    flags. Limits stay explicit: ``detection`` is the provider's flag and
+    ``is_upper_limit`` is true exactly when there is no detection and a limiting
+    magnitude is retained; ``magnitude`` is absent for limits rather than NaN.
+    Rows are ordered by the event's HEALPix order-8 index, then event, time and
+    assertion so the Parquet row groups are sky-local.
+    """
+
+    io_module = interop()
+    specs = io_module.PHOTOMETRY_COLUMN_SPECS
+    rows: list[list[Any]] = []
+    for candidate in candidates:
+        pixel = io_module.healpix_index(candidate.get("ra_deg"), candidate.get("dec_deg"))
+        for observation in (candidate.get("follow_up") or {}).get("observations", []):
+            detection = observation.get("detection") in (True, 1)
+            limiting = observation.get("limiting_magnitude")
+            try:
+                has_limit = limiting not in (None, "") and math.isfinite(float(limiting))
+            except (TypeError, ValueError):
+                has_limit = False
+            values = {
+                io_module.HEALPIX_COLUMN: pixel,
+                "event_id": candidate.get("event_id"),
+                "name": candidate.get("name"),
+                "ra_deg": candidate.get("ra_deg"),
+                "dec_deg": candidate.get("dec_deg"),
+                "provider": provider_source_key(observation.get("provider")) or None,
+                "detection": detection,
+                "is_upper_limit": (not detection) and has_limit,
+                "difference_photometry": observation.get("difference_photometry") in (True, 1),
+                "superseded": observation.get("superseded") in (True, 1),
+                "retracted": observation.get("retracted") in (True, 1),
+                "quality_flags": observation.get("quality_flags") if isinstance(observation.get("quality_flags"), list) else (
+                    [observation["quality_flags"]] if observation.get("quality_flags") not in (None, "") else None
+                ),
+            }
+            row = []
+            for spec in specs:
+                if spec.name in values:
+                    row.append(values[spec.name])
+                else:
+                    row.append(observation.get(spec.name))
+            rows.append(row)
+    return io_module.sort_rows_by_healpix(rows, specs, ("event_id", "mjd", "assertion_id"))
+
+
+def bulk_artifacts(
+    candidates: list[dict[str, Any]], candidate_rows: list[list[Any]],
+    catalog_content_checksum_sha256: str, generated_at: str,
+) -> tuple[dict[str, bytes], dict[str, Any], bytes, list[str]]:
+    """The VOParquet release assets and the Pages-tree index that names them."""
+
+    io_module = interop()
+    params = {"catalog_content_checksum_sha256": catalog_content_checksum_sha256}
+    column_index = {name: position for position, name in enumerate(CATALOG_CANDIDATE_COLUMNS)}
+    bulk_candidate_rows = io_module.sort_rows_by_healpix([
+        [io_module.healpix_index(row[column_index["ra_deg"]], row[column_index["dec_deg"]]), *row]
+        for row in candidate_rows
+    ], io_module.CANDIDATE_BULK_COLUMN_SPECS, ("event_id",))
+    bulk_photometry_rows = photometry_rows(candidates)
+    tables = (
+        (BULK_CANDIDATES_ASSET, "candidates", io_module.CANDIDATE_BULK_COLUMN_SPECS, bulk_candidate_rows, "ctas_candidates",
+         "One row per public CTAS candidate (the catalog-index candidate table with the release score clock), sorted by HEALPix order 8 nested index."),
+        (BULK_PHOTOMETRY_ASSET, "photometry", io_module.PHOTOMETRY_COLUMN_SPECS, bulk_photometry_rows, "ctas_photometry",
+         "Every retained public photometric observation and limit with its provider and CTAS receipt identifiers, sorted by the event's HEALPix order 8 nested index."),
+    )
+    files: dict[str, bytes] = {}
+    assets: list[dict[str, Any]] = []
+    problems: list[str] = []
+    for asset_name, table_id, specs, rows, table_name, description in tables:
+        # Built straight from the rows: an Astropy table of 145,000 text rows would
+        # hold 4 bytes per character of the longest value in every column.
+        raw = io_module.voparquet_bytes(specs=specs, rows=rows, params=params, name=table_name, description=description)
+        files[asset_name] = raw
+        problems.extend(io_module.parquet_problems(table_id, specs, rows, raw))
+        assets.append({
+            "name": asset_name,
+            "table": table_id,
+            "table_name": table_name,
+            "bytes": len(raw),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "media_type": "application/vnd.apache.parquet",
+            "format": io_module.VOPARQUET_FORMAT_NOTE,
+            "voparquet_version": io_module.VOPARQUET_VERSION,
+            "row_count": len(rows),
+            "row_group_rows": io_module.PARQUET_ROW_GROUP_ROWS,
+            "sort": [io_module.HEALPIX_COLUMN, "event_id"] + (["mjd", "assertion_id"] if table_id == "photometry" else []),
+            "healpix": {"order": io_module.HEALPIX_ORDER, "scheme": "nested", "column": io_module.HEALPIX_COLUMN},
+            "columns": [spec.name for spec in specs],
+            "catalog_content_checksum_sha256": catalog_content_checksum_sha256,
+        })
+    document = io_module.bulk_downloads_document(
+        catalog_content_checksum_sha256=catalog_content_checksum_sha256, generated_at=generated_at,
+        repository=BULK_RELEASE_REPOSITORY, release_tag=BULK_RELEASE_TAG, assets=assets,
+    )
+    raw = (json.dumps(document, indent=2, sort_keys=True) + "\n").encode()
+    return files, document, raw, problems
+
+
+def restored_state_asset(marker_path: str | None) -> dict[str, Any] | None:
+    """Which state archive the cloud runner restored, from its cloud-run marker.
+
+    The marker (scripts/cloud_run_marker.py; CTAS_CLOUD_RUN_MARKER in the publisher's
+    environment) names the state asset, when it was saved and when it was restored.
+    Without a marker (a local publisher or a test) there is no state asset to name.
+    """
+
+    if not marker_path:
+        return None
+    try:
+        marker = json.loads(Path(marker_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(marker, dict) or not marker.get("state_asset"):
+        return None
+    return {
+        "asset": str(marker["state_asset"]),
+        "saved_at": marker.get("state_saved_at"),
+        "restored_at": marker.get("state_restored_at"),
+        "workflow": marker.get("workflow"),
+        "run_id": marker.get("run_id"),
+        "run_url": marker.get("run_url"),
+    }
+
+
+def interop_column_registry_problems(table_set: dict[str, dict[str, Any]]) -> list[str]:
+    """Every column of every IVOA export must have a registry entry (UCD, description, datatype).
+
+    The candidate table's registry must name exactly CATALOG_CANDIDATE_COLUMNS in order,
+    so a new catalog column cannot be published without its metadata.
+    """
+
+    problems: list[str] = []
+    expected = list(CATALOG_CANDIDATE_COLUMNS)
+    names = [spec.name for spec in table_set["candidates"]["specs"]]
+    if names != expected:
+        missing = [name for name in expected if name not in names]
+        extra = [name for name in names if name not in expected]
+        problems.append(
+            "column-metadata registry for the candidate table does not match CATALOG_CANDIDATE_COLUMNS"
+            f" (missing {missing}, extra {extra})"
+        )
+    for table_id, table in table_set.items():
+        seen: set[str] = set()
+        for spec in table["specs"]:
+            if not spec.name or spec.name in seen:
+                problems.append(f"{table_id}: duplicate or empty column name {spec.name!r}")
+            seen.add(spec.name)
+            if not spec.ucd or not spec.description or spec.dtype not in {"str", "float", "int", "bool", "json"}:
+                problems.append(f"{table_id}: column {spec.name} lacks a UCD, description or datatype")
+        width = len(table["specs"])
+        if any(len(row) != width for row in table["rows"]):
+            problems.append(f"{table_id}: a row does not have {width} cells (registry and rows disagree)")
+    return problems
+
+
+def database_identity(db_path: Path, candidates: list[dict[str, Any]], counts: dict[str, Any]) -> dict[str, Any]:
+    """What the provenance names the frozen database by: content hash, size and counts."""
+
+    io_module = interop()
+    try:
+        size = db_path.stat().st_size
+        digest = io_module.sha256_file(db_path)
+    except OSError:
+        size, digest = None, None
+    return {
+        "sha256": digest,
+        "bytes": size,
+        "event_count": counts.get("total_real_events"),
+        "eligible_public_event_count": counts.get("eligible_public_events"),
+        "latest_record_update": max(
+            (row.get("updated_at") or row.get("discovery_time") or "" for row in candidates), default="",
+        ) or None,
+        "access": "read-only SQLite (mode=ro); nothing written",
+    }
 
 
 def canonical_candidate_list_bytes(candidates: list[dict[str, Any]]) -> bytes:
@@ -4076,6 +4504,12 @@ def main() -> int:
     )
     ap.add_argument("--dry-run", action="store_true",
                     help="print a summary and sample; write nothing")
+    ap.add_argument(
+        "--bulk-dir", default=None,
+        help="where the VOParquet release assets are written (never inside the Pages tree; "
+             "default: a ctas-bulk folder in the system temporary directory). The publisher "
+             "uploads them to the rolling GitHub Release named in ctas/data/bulk-downloads.json",
+    )
     ap.add_argument(
         "--rebind-link-health", action="store_true",
         help="do not export; bind the link-health artifact beside an export already in "
@@ -4826,11 +5260,89 @@ def main() -> int:
     live_summary_raw = (
         json.dumps(live_summary, sort_keys=True, separators=(",", ":")) + "\n"
     ).encode()
+    site_root = Path(__file__).resolve().parents[1]
+    # The release history is compared against the published base before the research
+    # tables are built, because the ECSV/VOTable pair of the history is one of them.
+    try:
+        release_history_raw_from_ref = git_blob(
+            site_root, args.release_base_ref, "ctas/data/release-history.json"
+        )
+        release_history = json.loads(release_history_raw_from_ref) if release_history_raw_from_ref else None
+    except (TypeError, json.JSONDecodeError):
+        release_history = None
+    if not isinstance(release_history, dict):
+        release_history = {"schema": RELEASE_HISTORY_SCHEMA, "entries": []}
+    if release_history.get("schema") != RELEASE_HISTORY_SCHEMA or not isinstance(release_history.get("entries"), list):
+        release_history = {"schema": RELEASE_HISTORY_SCHEMA, "entries": []}
+
+    previous_snapshot = git_catalog_document(site_root, args.release_base_ref)
+    clock.done("read-previous-release")
+    previous_checksum = (
+        catalog_semantic_checksum(previous_snapshot.get("candidates", []))
+        if previous_snapshot else None
+    )
+    if previous_snapshot and previous_checksum != payload["catalog_content_checksum_sha256"]:
+        previous_by_name = {
+            str(row.get("name")): row for row in previous_snapshot.get("candidates", []) if row.get("name")
+        }
+        current_by_name = {str(row["name"]): row for row in candidates}
+        added = sorted(set(current_by_name) - set(previous_by_name))
+        removed = sorted(set(previous_by_name) - set(current_by_name))
+        changed = sorted(
+            name for name in set(current_by_name) & set(previous_by_name)
+            if current_by_name[name] != previous_by_name[name]
+        )
+        survey_counts_for_added: dict[str, int] = {}
+        for name in added:
+            survey = str(current_by_name[name].get("discovery_survey") or "source not recorded")
+            survey_counts_for_added[survey] = survey_counts_for_added.get(survey, 0) + 1
+        if added or removed:
+            summary = (
+                f"{len(added):+d} public candidate records and {len(removed)} removals; "
+                "source-reported records are not necessarily newly discovered events."
+            )
+            change_kind = "candidate-intake"
+        else:
+            summary = f"Public metadata or evidence changed for {len(changed)} existing candidate records."
+            change_kind = "record-update"
+        entry = {
+            "published_at": payload["generated_at"],
+            "change_kind": change_kind,
+            "previous_candidate_count": len(previous_by_name),
+            "candidate_count": len(current_by_name),
+            "added_count": len(added),
+            "removed_count": len(removed),
+            "changed_count": len(changed),
+            "added_source_summary": dict(sorted(survey_counts_for_added.items())),
+            "sample_added": added[:12],
+            "sample_removed": removed[:12],
+            "summary": summary,
+            "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
+            "previous_catalog_content_checksum_sha256": previous_checksum,
+            "base_commit": git_ref(site_root, args.release_base_ref),
+            "history_basis": "semantic-diff-from-public-git-base",
+        }
+        existing_checksums = {
+            row.get("catalog_content_checksum_sha256") for row in release_history["entries"]
+        }
+        if entry["catalog_content_checksum_sha256"] not in existing_checksums:
+            release_history["entries"].insert(0, entry)
+            release_history["entries"] = release_history["entries"][:24]
+    release_history["generated_at"] = (
+        release_history["entries"][0]["published_at"] if release_history["entries"] else payload["generated_at"]
+    )
+    release_history["claim_boundary"] = (
+        "Counts describe public CTAS catalog changes, not independent discoveries or scientific validation."
+    )
+    release_history_raw = (
+        json.dumps(release_history, indent=2, sort_keys=True) + "\n"
+    ).encode()
     alias_index, alias_index_raw = alias_index_artifact(
         candidates, payload["catalog_content_checksum_sha256"],
     )
     research_files, research_manifest, research_manifest_raw = research_table_artifacts(
         candidates, source_universe, payload["catalog_content_checksum_sha256"],
+        candidate_rows, release_history,
     )
     candidate_manifest, candidate_manifest_raw = complete_catalog_manifest_artifact(
         candidates,
@@ -4844,17 +5356,37 @@ def main() -> int:
     )
 
     clock.done("serialize-indexes")
+    # Track 1 interoperability products: the VOParquet release assets with their
+    # Pages-tree index, and one DataLink links document per dossier bucket.
+    bulk_files, bulk_downloads, bulk_downloads_raw, bulk_problems = bulk_artifacts(
+        candidates, candidate_rows, payload["catalog_content_checksum_sha256"], payload["generated_at"],
+    )
+    datalink_files, datalink_manifest, datalink_manifest_raw = interop().datalink_artifacts(
+        bucket_rows, payload["catalog_content_checksum_sha256"],
+    )
+    interop_problems = list((research_manifest.get("interoperability") or {}).get("round_trip_problems") or [])
+    interop_problems.extend(bulk_problems)
+    for datalink_path, datalink_raw in sorted(datalink_files.items()):
+        datalink_document_problems = interop().datalink_problems(datalink_raw)
+        if datalink_document_problems:
+            interop_problems.extend(f"{datalink_path}: {problem}" for problem in datalink_document_problems)
+            break
+    clock.done("interoperability-exports")
     problems = validate(payload) + projection_problems
     problems.extend(recursive_safety_problems(source_universe, "source-universe"))
     problems.extend(recursive_safety_problems(catalog_index, "catalog-index"))
     problems.extend(recursive_safety_problems(alias_index, "alias-index"))
     problems.extend(recursive_safety_problems(research_manifest, "research-manifest"))
     problems.extend(recursive_safety_problems(candidate_manifest, "candidate-manifest"))
+    problems.extend(recursive_safety_problems(release_history, "release-history"))
+    problems.extend(recursive_safety_problems(bulk_downloads, "bulk-downloads"))
+    problems.extend(recursive_safety_problems(datalink_manifest, "datalink-manifest"))
     if problems:
         print("export failed validation:", file=sys.stderr)
         for p in problems[:20]:
             print("  -", p, file=sys.stderr)
         return 1
+    clock.done("validate")
 
     degraded_source_states = {"temporarily-unavailable", "rate-limited", "provider-failure"}
     degraded_sources = [
@@ -4931,7 +5463,6 @@ def main() -> int:
 
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    site_root = Path(__file__).resolve().parents[1]
     source_universe_raw = (json.dumps(source_universe, indent=2, sort_keys=True) + "\n").encode()
     source_matrix_pattern_document = {
         "schema": SOURCE_MATRIX_PATTERN_SCHEMA,
@@ -4949,87 +5480,6 @@ def main() -> int:
     source_matrix_patterns_raw = (
         json.dumps(source_matrix_pattern_document, sort_keys=True, separators=(",", ":")) + "\n"
     ).encode()
-    try:
-        release_history_raw_from_ref = git_blob(
-            site_root, args.release_base_ref, "ctas/data/release-history.json"
-        )
-        release_history = json.loads(release_history_raw_from_ref) if release_history_raw_from_ref else None
-    except (TypeError, json.JSONDecodeError):
-        release_history = None
-    if not isinstance(release_history, dict):
-        release_history = {"schema": RELEASE_HISTORY_SCHEMA, "entries": []}
-    if release_history.get("schema") != RELEASE_HISTORY_SCHEMA or not isinstance(release_history.get("entries"), list):
-        release_history = {"schema": RELEASE_HISTORY_SCHEMA, "entries": []}
-
-    clock.done("validate")
-    previous_snapshot = git_catalog_document(site_root, args.release_base_ref)
-    clock.done("read-previous-release")
-    previous_checksum = (
-        catalog_semantic_checksum(previous_snapshot.get("candidates", []))
-        if previous_snapshot else None
-    )
-    if previous_snapshot and previous_checksum != payload["catalog_content_checksum_sha256"]:
-        previous_by_name = {
-            str(row.get("name")): row for row in previous_snapshot.get("candidates", []) if row.get("name")
-        }
-        current_by_name = {str(row["name"]): row for row in candidates}
-        added = sorted(set(current_by_name) - set(previous_by_name))
-        removed = sorted(set(previous_by_name) - set(current_by_name))
-        changed = sorted(
-            name for name in set(current_by_name) & set(previous_by_name)
-            if current_by_name[name] != previous_by_name[name]
-        )
-        survey_counts_for_added: dict[str, int] = {}
-        for name in added:
-            survey = str(current_by_name[name].get("discovery_survey") or "source not recorded")
-            survey_counts_for_added[survey] = survey_counts_for_added.get(survey, 0) + 1
-        if added or removed:
-            summary = (
-                f"{len(added):+d} public candidate records and {len(removed)} removals; "
-                "source-reported records are not necessarily newly discovered events."
-            )
-            change_kind = "candidate-intake"
-        else:
-            summary = f"Public metadata or evidence changed for {len(changed)} existing candidate records."
-            change_kind = "record-update"
-        entry = {
-            "published_at": payload["generated_at"],
-            "change_kind": change_kind,
-            "previous_candidate_count": len(previous_by_name),
-            "candidate_count": len(current_by_name),
-            "added_count": len(added),
-            "removed_count": len(removed),
-            "changed_count": len(changed),
-            "added_source_summary": dict(sorted(survey_counts_for_added.items())),
-            "sample_added": added[:12],
-            "sample_removed": removed[:12],
-            "summary": summary,
-            "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
-            "previous_catalog_content_checksum_sha256": previous_checksum,
-            "base_commit": git_ref(site_root, args.release_base_ref),
-            "history_basis": "semantic-diff-from-public-git-base",
-        }
-        existing_checksums = {
-            row.get("catalog_content_checksum_sha256") for row in release_history["entries"]
-        }
-        if entry["catalog_content_checksum_sha256"] not in existing_checksums:
-            release_history["entries"].insert(0, entry)
-            release_history["entries"] = release_history["entries"][:24]
-    release_history["generated_at"] = (
-        release_history["entries"][0]["published_at"] if release_history["entries"] else payload["generated_at"]
-    )
-    release_history["claim_boundary"] = (
-        "Counts describe public CTAS catalog changes, not independent discoveries or scientific validation."
-    )
-    release_history_raw = (
-        json.dumps(release_history, indent=2, sort_keys=True) + "\n"
-    ).encode()
-    problems.extend(recursive_safety_problems(release_history, "release-history"))
-    if problems:
-        print("export failed validation:", file=sys.stderr)
-        for problem in problems[:20]:
-            print("  -", problem, file=sys.stderr)
-        return 1
     link_health_path = out / "link-health.json"
     try:
         link_health = json.loads(link_health_path.read_text()) if link_health_path.exists() else None
@@ -5056,6 +5506,57 @@ def main() -> int:
         for path in code_paths
     )
     clock.done("release-history-and-code-binding")
+    # W3C PROV-JSON for this build: sources with their retrieval times and parser
+    # versions, the frozen database, the bound code hashes, the release checksum.
+    provenance = interop().provenance_document(
+        generated_at=payload["generated_at"],
+        catalog_content_checksum_sha256=payload["catalog_content_checksum_sha256"],
+        publication_state_checksum_sha256=publication_state_checksum,
+        candidate_count=len(candidates),
+        source_universe=source_universe,
+        candidates=candidates,
+        database=database_identity(db, candidates, counts),
+        code_hashes={path: hashlib.sha256(raw).hexdigest() for path, raw in sorted(working_code.items())},
+        collector=interop().git_identity(),
+        site={
+            "commit": git_ref(site_root, "HEAD"),
+            "origin_main_commit": git_ref(site_root, "origin/main"),
+            "release_base_commit": git_ref(site_root, args.release_base_ref),
+            "repository": BULK_RELEASE_REPOSITORY,
+        },
+        state_asset=restored_state_asset(os.environ.get("CTAS_CLOUD_RUN_MARKER")),
+        versions={
+            "exporter_schema_version": SCHEMA_VERSION,
+            "certificate_schema": CERTIFICATE_SCHEMA,
+            "score_method_version": SCORE_METHOD_VERSION,
+            "source_universe_schema": source_universe.get("schema"),
+            "candidate_manifest_schema": CANDIDATE_MANIFEST_SCHEMA,
+        },
+        artifacts={
+            path: {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)}
+            for path, raw in (
+                (LIVE_SUMMARY_PATH, live_summary_raw),
+                (CATALOG_PAGE_MANIFEST_PATH, catalog_page_manifest_raw),
+                ("ctas/data/catalog-index.json", catalog_index_raw),
+                ("ctas/data/alias-index.json", alias_index_raw),
+                ("ctas/data/candidate-chunks/manifest.json", candidate_manifest_raw),
+                ("ctas/data/research/manifest.json", research_manifest_raw),
+                ("ctas/data/source-universe.json", source_universe_raw),
+                (SOURCE_MATRIX_PATTERNS_PATH, source_matrix_patterns_raw),
+                ("ctas/data/release-history.json", release_history_raw),
+                (BULK_DOWNLOADS_PATH, bulk_downloads_raw),
+                (DATALINK_MANIFEST_PATH, datalink_manifest_raw),
+            )
+        },
+    )
+    provenance_raw = (json.dumps(provenance, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    interop_problems.extend(interop().provenance_problems(
+        json.loads(provenance_raw),
+        catalog_content_checksum_sha256=payload["catalog_content_checksum_sha256"],
+        source_keys={str(row["source_key"]) for row in source_universe_rows},
+    ))
+    interop_problems.extend(recursive_safety_problems(provenance, "provenance"))
+    clock.done("provenance")
     bound_files = {
         # Bind the exact working bytes that generated this report. Separate
         # gates below honestly fail while those bytes differ from HEAD/origin.
@@ -5072,6 +5573,10 @@ def main() -> int:
         "ctas/data/source-universe.json": source_universe_raw,
         SOURCE_MATRIX_PATTERNS_PATH: source_matrix_patterns_raw,
         "ctas/data/release-history.json": release_history_raw,
+        BULK_DOWNLOADS_PATH: bulk_downloads_raw,
+        DATALINK_MANIFEST_PATH: datalink_manifest_raw,
+        **datalink_files,
+        PROVENANCE_PATH: provenance_raw,
     }
 
     if link_health_raw:
@@ -5491,6 +5996,39 @@ def main() -> int:
         or -30 <= float(candidate["discovery_magnitude"]) <= 40
         for candidate in candidates
     )
+    interop_expected_paths = [
+        *(f"ctas/data/research/{table}.{suffix}" for table in RESEARCH_INTEROP_TABLES for suffix in ("ecsv", "vot")),
+        BULK_DOWNLOADS_PATH, DATALINK_MANIFEST_PATH, PROVENANCE_PATH,
+    ]
+    interop_integrity = (
+        not interop_problems
+        and all(path in bound_files and bound_files[path] for path in interop_expected_paths)
+        and (research_manifest.get("interoperability") or {}).get("round_trip_problem_count") == 0
+        and all(
+            row["path"] in bound_files
+            and row["bytes"] == len(bound_files[row["path"]])
+            and row["sha256"] == hashlib.sha256(bound_files[row["path"]]).hexdigest()
+            for row in datalink_manifest.get("documents", [])
+        )
+        and datalink_manifest.get("event_count") == len(candidates)
+        and {row["path"] for row in datalink_manifest.get("documents", [])} == set(datalink_files)
+        and bool(bulk_downloads.get("assets"))
+        and all(
+            asset["name"] in bulk_files
+            and asset["bytes"] == len(bulk_files[asset["name"]])
+            and asset["sha256"] == hashlib.sha256(bulk_files[asset["name"]]).hexdigest()
+            for asset in bulk_downloads["assets"]
+        )
+        and set(bulk_files) == {asset["name"] for asset in bulk_downloads["assets"]}
+    )
+    interop_evidence = (
+        f"{len(RESEARCH_INTEROP_TABLES)} research tables as ECSV 1.0 and VOTable 1.5 with UCDs and VOUnits read back by "
+        f"Astropy cell for cell; {len(bulk_files)} VOParquet release assets read back by pyarrow and Astropy with their "
+        f"VOTable metadata and HEALPix order; {len(datalink_files)} DataLink 1.1 documents covering "
+        f"{datalink_manifest.get('event_count', 0)} records; PROV-JSON provenance names "
+        f"{sum(1 for key in provenance.get('entity', {}) if key.startswith('ctas:source/'))} sources"
+        + (f"; problems: {'; '.join(interop_problems[:3])}" if interop_problems else "")
+    )
     release_history_checksums = [
         row.get("catalog_content_checksum_sha256") for row in release_history.get("entries", [])
     ]
@@ -5544,6 +6082,7 @@ def main() -> int:
         gate("source-matrix-round-trip-integrity", source_matrix_round_trip, f"{len(candidates)} source matrices reproduce exactly from {len(source_matrix_patterns)} shared no-evidence patterns"),
         gate("alias-index-integrity", alias_integrity, f"{alias_index.get('alias_count', 0)} provider-scoped aliases bound to the catalog checksum"),
         gate("research-table-integrity", research_integrity, f"{len(research_manifest.get('tables', []))} research tables and interoperability exports checksum-bound to the catalog"),
+        gate(INTEROP_GATE_ID, interop_integrity, interop_evidence),
         gate("derived-magnitude-safety", magnitude_safety, f"{payload['statistics']['magnitude_values_excluded']} implausible source values retained only as flagged raw reports"),
         gate("release-history-integrity", release_history_integrity, f"{len(release_history['entries'])} checksum-addressed public catalog changes"),
         gate("coordinate-integrity", coordinate_contract, "coordinate pairs are complete/absent and within ICRS degree ranges"),
@@ -5605,7 +6144,17 @@ def main() -> int:
         "release_history": {"path": "ctas/data/release-history.json", "sha256": hashlib.sha256(release_history_raw).hexdigest()},
         "link_health": {"path": LINK_HEALTH_PATH, "sha256": hashlib.sha256(link_health_raw).hexdigest() if link_health_raw else None},
         "certification": {"path": "ctas/data/certification.json", "report_checksum_sha256": certificate["report_checksum_sha256"]},
+        "bulk_downloads": {"path": BULK_DOWNLOADS_PATH, "sha256": hashlib.sha256(bulk_downloads_raw).hexdigest()},
+        "datalink_manifest": {"path": DATALINK_MANIFEST_PATH, "sha256": hashlib.sha256(datalink_manifest_raw).hexdigest()},
+        "provenance": {"path": PROVENANCE_PATH, "sha256": hashlib.sha256(provenance_raw).hexdigest()},
+        "api_description": {"path": "ctas/openapi.yaml", "sha256": hashlib.sha256(working_code["ctas/openapi.yaml"]).hexdigest() if "ctas/openapi.yaml" in working_code else None},
     }
+    # New top-level keys only (rule N1): the PROV-JSON document and the machine
+    # description of the endpoints, both bound by the certificate above.
+    status["provenance_path"] = PROVENANCE_PATH
+    status["api_description_path"] = "ctas/openapi.yaml"
+    status["bulk_downloads_path"] = BULK_DOWNLOADS_PATH
+    status["datalink_manifest_path"] = DATALINK_MANIFEST_PATH
     status_raw = (json.dumps(status, indent=2, sort_keys=True) + "\n").encode()
     certificate_raw = (json.dumps(certificate, indent=2, sort_keys=True) + "\n").encode()
     final_public_bytes = {
@@ -5641,6 +6190,21 @@ def main() -> int:
         write_output_artifact(out, relative, raw)
     for relative, raw in research_files.items():
         write_output_artifact(out, relative, raw)
+    for relative, raw in {**datalink_files, DATALINK_MANIFEST_PATH: datalink_manifest_raw}.items():
+        write_output_artifact(out, relative, raw)
+    atomic_write(out / "bulk-downloads.json", bulk_downloads_raw)
+    atomic_write(out / "provenance.json", provenance_raw)
+    # The VOParquet assets never enter the Pages tree: the publisher uploads them to
+    # the rolling GitHub Release that bulk-downloads.json names.
+    import tempfile
+
+    bulk_dir = Path(args.bulk_dir) if args.bulk_dir else Path(tempfile.gettempdir()) / "ctas-bulk"
+    bulk_dir.mkdir(parents=True, exist_ok=True)
+    for stale in bulk_dir.glob("*.parquet"):
+        if stale.name not in bulk_files:
+            stale.unlink(missing_ok=True)
+    for asset_name, raw in bulk_files.items():
+        atomic_write(bulk_dir / asset_name, raw)
     atomic_write(out / "status.json", status_raw)
     atomic_write(out / "source-universe.json", source_universe_raw)
     atomic_write(out / "source-matrix-patterns.json", source_matrix_patterns_raw)
@@ -5648,6 +6212,13 @@ def main() -> int:
     atomic_write(out / "certification.json", certificate_raw)
     print(f"first screen    : {len(live_summary_raw)} bytes live-summary.json ({len(summary_ids)} records)")
     print(f"complete catalog: {len(catalog_index_raw)} bytes across {len(catalog_pages)} pages")
+    interop_pages_bytes = sum(len(bound_files[path]) for path in interop_expected_paths) + sum(map(len, datalink_files.values()))
+    print(
+        f"interoperability: {interop_pages_bytes} bytes added to the Pages tree "
+        f"({len(RESEARCH_INTEROP_TABLES) * 2} ECSV/VOTable tables, {len(datalink_files)} DataLink documents "
+        f"{sum(map(len, datalink_files.values()))} bytes, provenance {len(provenance_raw)} bytes); "
+        f"{sum(map(len, bulk_files.values()))} bytes of VOParquet in {bulk_dir} for the release assets"
+    )
     print(f"\nwrote compact bootstrap/index, alias index, research tables, complete-catalog manifest, {len(chunk_raw)} checksum-bound detail chunks with {len(part_raw)} supplemental parts, status, source universe, history, and verification report")
     clock.done("write-files")
     print(clock.report())

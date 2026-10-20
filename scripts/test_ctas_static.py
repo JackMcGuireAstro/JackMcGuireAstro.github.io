@@ -999,6 +999,11 @@ class PublisherPageAllowlistTests(unittest.TestCase):
         chunks = self.site / "ctas/data/candidate-chunks"
         chunks.mkdir()
         (chunks / "manifest.json").write_text('{"chunks": []}')
+        # The DataLink block that follows the page block collects from its own manifest
+        # (Track 1); an empty release declares no documents.
+        links = self.site / "ctas/data/links"
+        links.mkdir()
+        (links / "manifest.json").write_text('{"documents": [], "document_count": 0, "event_count": 0}')
         self.git("init", "-q")
         self.git("config", "user.name", "CTAS fixture")
         self.git("config", "user.email", "ctas-fixture@example.invalid")
@@ -1353,6 +1358,13 @@ class CertificateAndArtifactTests(unittest.TestCase):
             "scripts/test_ctas_astro_evidence.py",
             "scripts/test_ctas_identity.py",
             "scripts/test_ctas_browser.py",
+            "scripts/ctas_interop.py",
+            "scripts/test_ctas_interop.py",
+            "scripts/validate_ctas_schemas.py",
+            "ctas/openapi.yaml",
+            "ctas/schemas/common.schema.json",
+            "ctas/schemas/candidate-chunk.schema.json",
+            "ctas/schemas/status.schema.json",
         ):
             self.assertIn(relative, self.certificate["files"])
             self.assertEqual(
@@ -1685,8 +1697,32 @@ class CertificateAndArtifactTests(unittest.TestCase):
             "ctas/data/research/sources.csv",
             "ctas/data/research/events.vot",
             "ctas/data/research/tom-targets.csv",
+        } | {
+            # Track 1 (2026-10-19): an ECSV 1.0 and VOTable 1.5 pair for every public
+            # research table, including the three that existed only as JSON before.
+            f"ctas/data/research/{table}.{suffix}"
+            for table in EXPORTER.RESEARCH_INTEROP_TABLES for suffix in ("ecsv", "vot")
         }
         self.assertEqual(set(tables), required)
+        # Five tables before Track 1; seventeen with the six ECSV/VOTable pairs.
+        self.assertEqual(len(tables), 17)
+        self.assertEqual(len(EXPORTER.RESEARCH_INTEROP_TABLES), 6)
+        self.assertEqual(self.research_manifest["interoperability"]["round_trip_problem_count"], 0)
+        for table in EXPORTER.RESEARCH_INTEROP_TABLES:
+            for suffix in ("ecsv", "vot"):
+                columns = tables[f"ctas/data/research/{table}.{suffix}"]["columns"]
+                self.assertTrue(columns)
+                self.assertTrue(all(column["ucd"] and column["description"] for column in columns))
+        votable_15 = ET.parse(ROOT / "ctas/data/research/candidates.vot").getroot()
+        self.assertEqual(votable_15.get("version"), "1.5")
+        self.assertEqual(
+            [field.get("name") for field in votable_15.findall(".//{*}FIELD")],
+            list(EXPORTER.CATALOG_CANDIDATE_COLUMNS),
+        )
+        self.assertTrue(all(field.get("ucd") for field in votable_15.findall(".//{*}FIELD")))
+        self.assertEqual(len(votable_15.findall(".//{*}TR")), self.snapshot["candidate_count"])
+        ecsv_header = (ROOT / "ctas/data/research/candidates.ecsv").read_text(encoding="utf-8").splitlines()[0]
+        self.assertEqual(ecsv_header, "# %ECSV 1.0")
         manifest_raw = (self.data_dir / "research/manifest.json").read_bytes()
         self.assertEqual(
             self.status["artifacts"]["research_tables"],
@@ -1789,11 +1825,27 @@ class CertificateAndArtifactTests(unittest.TestCase):
             "catalog-pages/manifest.json", "source-matrix-patterns.json",
             "research/manifest.json", "research/events.csv", "research/aliases.csv",
             "research/sources.csv", "research/events.vot", "research/tom-targets.csv",
-            "candidate-chunks/manifest.json",
+            "research/candidates.ecsv", "research/candidates.vot", "research/aliases.ecsv",
+            "research/sources.vot", "research/tom-targets.ecsv", "research/source-accounting.vot",
+            "research/release-history.ecsv",
+            "candidate-chunks/manifest.json", "bulk-downloads.json", "links/manifest.json", "provenance.json",
             "status.json", "source-universe.json", "release-history.json",
             "link-health.json", "certification.json",
         ):
             self.assertIn(name, publisher)
+        # Track 1: DataLink documents are collected from their manifest like pages and
+        # chunks, the VOParquet assets go to the rolling GitHub Release after the tests
+        # and before the data-branch push, and every JSON file is schema-checked.
+        self.assertIn('DATALINK_FILES=$(python3', publisher)
+        self.assertIn('PUBLIC_FILES+=("$link_document")', publisher)
+        self.assertIn('--bulk-dir "$BULK_DIR"', publisher)
+        self.assertIn('scripts/validate_ctas_schemas.py', publisher)
+        self.assertIn('scripts/test_ctas_interop.py', publisher)
+        self.assertIn('gh release upload "$tag" "$asset" --repo "$repo" --clobber', publisher)
+        self.assertLess(publisher.index('scripts/validate_ctas_schemas.py'), publisher.index('upload_bulk_assets\n'))
+        self.assertLess(publisher.index('if [ "$DRY" -eq 1 ]; then'), publisher.index('upload_bulk_assets\n'))
+        self.assertLess(publisher.index('upload_bulk_assets\n'), publisher.index('scripts/data_branch.sh publish "$DATA_STORE"'))
+        self.assertIn('links/[0-9a-f]{3}\\.xml', publisher)
         self.assertNotIn("candidates.json", publisher)
         self.assertIn("--catalog-index ctas/data/catalog-index.json", publisher)
         self.assertIn("--candidate-manifest ctas/data/candidate-chunks/manifest.json", publisher)
@@ -1903,6 +1955,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
             (ROOT / "ctas/data/candidates.json").exists(),
             "the retired oversized monolith must not remain publicly reachable",
         )
+        datalink_manifest = json.loads((self.data_dir / "links/manifest.json").read_text())
         explicit = [
             "ctas/data/live-summary.json", "ctas/data/catalog-index.json",
             "ctas/data/catalog-pages/manifest.json", "ctas/data/source-matrix-patterns.json",
@@ -1910,8 +1963,11 @@ class CertificateAndArtifactTests(unittest.TestCase):
             "ctas/data/candidate-chunks/manifest.json",
             "ctas/data/status.json", "ctas/data/source-universe.json",
             "ctas/data/release-history.json", "ctas/data/link-health.json",
-            "ctas/data/certification.json",
+            "ctas/data/certification.json", EXPORTER.BULK_DOWNLOADS_PATH,
+            EXPORTER.DATALINK_MANIFEST_PATH, EXPORTER.PROVENANCE_PATH,
         ] + [row["path"] for row in self.research_manifest["tables"]] + [
+            row["path"] for row in datalink_manifest["documents"]
+        ] + [
             f"ctas/data/candidate-chunks/{index:03x}.json"
             for index in range(EXPORTER.CANDIDATE_BUCKET_COUNT)
         ]
@@ -2029,6 +2085,47 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertGreaterEqual(len(signals), 2)
         self.assertTrue(any(row.get("retracted") for row in signals))
         self.assertTrue(any(row.get("supersedes_provider_signal_id") for row in signals))
+
+    def test_interoperability_products_are_certified(self):
+        gates = {gate["id"]: gate for gate in self.certificate["gates"]}
+        self.assertGreaterEqual(len(gates), 43)
+        self.assertEqual(self.status["static_snapshot_verification"]["check_count"], len(gates))
+        self.assertIn(EXPORTER.INTEROP_GATE_ID, gates)
+        self.assertTrue(gates[EXPORTER.INTEROP_GATE_ID]["passed"], gates[EXPORTER.INTEROP_GATE_ID]["evidence"])
+        self.assertEqual(self.status["provenance_path"], EXPORTER.PROVENANCE_PATH)
+        self.assertEqual(self.status["bulk_downloads_path"], EXPORTER.BULK_DOWNLOADS_PATH)
+        self.assertEqual(self.status["datalink_manifest_path"], EXPORTER.DATALINK_MANIFEST_PATH)
+        for key, path in (
+            ("provenance", EXPORTER.PROVENANCE_PATH), ("bulk_downloads", EXPORTER.BULK_DOWNLOADS_PATH),
+            ("datalink_manifest", EXPORTER.DATALINK_MANIFEST_PATH),
+        ):
+            raw = (ROOT / path).read_bytes()
+            self.assertEqual(self.status["artifacts"][key], {"path": path, "sha256": hashlib.sha256(raw).hexdigest()})
+            self.assertEqual(self.certificate["files"][path]["sha256"], hashlib.sha256(raw).hexdigest())
+        datalink_manifest = json.loads((self.data_dir / "links/manifest.json").read_text())
+        self.assertEqual(datalink_manifest["event_count"], self.snapshot["candidate_count"])
+        self.assertEqual(datalink_manifest["catalog_content_checksum_sha256"], self.snapshot["catalog_content_checksum_sha256"])
+        for row in datalink_manifest["documents"]:
+            raw = (ROOT / row["path"]).read_bytes()
+            self.assertEqual((len(raw), hashlib.sha256(raw).hexdigest()), (row["bytes"], row["sha256"]), row["path"])
+            self.assertIn(row["path"], self.certificate["files"])
+            self.assertNotIn(self.snapshot["catalog_content_checksum_sha256"].encode(), raw, "per-bucket DataLink documents carry no release clock")
+        buckets = {EXPORTER.candidate_bucket(candidate["event_id"]) for candidate in self.snapshot["candidates"]}
+        self.assertEqual({row["bucket"] for row in datalink_manifest["documents"]}, buckets)
+        bulk = json.loads((self.data_dir / "bulk-downloads.json").read_text())
+        self.assertEqual(bulk["catalog_content_checksum_sha256"], self.snapshot["catalog_content_checksum_sha256"])
+        self.assertEqual({asset["name"] for asset in bulk["assets"]}, {EXPORTER.BULK_CANDIDATES_ASSET, EXPORTER.BULK_PHOTOMETRY_ASSET})
+        candidates_asset = next(asset for asset in bulk["assets"] if asset["name"] == EXPORTER.BULK_CANDIDATES_ASSET)
+        self.assertEqual(candidates_asset["row_count"], self.snapshot["candidate_count"])
+        self.assertFalse(list((ROOT / "ctas").rglob("*.parquet")), "VOParquet assets never enter the Pages tree")
+        provenance = json.loads((self.data_dir / "provenance.json").read_text())
+        self.assertIn("ctas:release/" + self.snapshot["catalog_content_checksum_sha256"], provenance["entity"])
+        self.assertEqual(
+            {key[len("ctas:source/"):] for key in provenance["entity"] if key.startswith("ctas:source/")},
+            {row["source_key"] for row in self.universe["sources"]},
+        )
+        for path in EXPORTER.API_DESCRIPTION_PATHS:
+            self.assertIn(path, self.certificate["files"], path)
 
     def test_release_history_is_unique_and_git_grounded(self):
         history = json.loads((self.data_dir / "release-history.json").read_text())

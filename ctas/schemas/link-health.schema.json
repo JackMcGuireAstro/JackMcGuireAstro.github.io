@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS link health",
+  "description": "ctas/data/link-health.json: the recursive structural audit of every exported URL and the one sampled live TNS check (scripts/check_ctas_links.py), bound into the certificate after the export.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.link-health@1.0.0"
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "checked_at": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "claim_boundary": {
+      "type": "string"
+    },
+    "structural_status": {
+      "type": "string"
+    },
+    "structural_problem_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "structural_problems": {
+      "type": "array"
+    },
+    "live_status": {
+      "type": "string"
+    },
+    "live_status_scope": {
+      "type": "string"
+    },
+    "canonical_tns_link_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "distinct_canonical_tns_object_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "checked_candidate_link_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "recursive_external_link_audit": {
+      "type": "object",
+      "properties": {
+        "distinct_url_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "url_occurrence_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "role_counts": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "distinct_url_count",
+        "url_occurrence_count"
+      ],
+      "additionalProperties": true
+    },
+    "representative_tns": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string"
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "additionalProperties": true
+    },
+    "report_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    }
+  },
+  "required": [
+    "schema",
+    "catalog_content_checksum_sha256",
+    "checked_at",
+    "structural_status",
+    "structural_problem_count",
+    "live_status",
+    "recursive_external_link_audit",
+    "report_checksum_sha256"
+  ],
+  "additionalProperties": true
+}

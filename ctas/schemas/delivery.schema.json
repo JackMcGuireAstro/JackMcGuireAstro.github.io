@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS delivery",
+  "description": "ctas/delivery.json: how the deployed site serves dossier chunks (identity on main and previews, gzip on GitHub Pages).",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.delivery@1.0.0"
+    },
+    "candidate_chunk_encoding": {
+      "enum": [
+        "identity",
+        "gzip"
+      ]
+    },
+    "note": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "candidate_chunk_encoding"
+  ],
+  "additionalProperties": false
+}

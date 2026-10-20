@@ -1,0 +1,389 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS live summary",
+  "description": "ctas/data/live-summary.json: the first-screen document (leaderboard, recent reports, sky rows) with the release identity of the complete catalog; never more than 2 MiB.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.public-live-summary@1.0.0"
+    },
+    "schema_version": {
+      "const": 2
+    },
+    "catalog_as_of": {
+      "$ref": "common.schema.json#/$defs/nullableDateTime"
+    },
+    "latest_record_update": {
+      "$ref": "common.schema.json#/$defs/nullableDateTime"
+    },
+    "origin": {
+      "const": "local-snapshot"
+    },
+    "cadence": {
+      "type": "string"
+    },
+    "candidate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "catalog_content_checksum_sha256": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "recent_stream": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/recentStreamEntry"
+      }
+    },
+    "provider_statistics": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/providerStatistic"
+      }
+    },
+    "surveys": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/surveyCount"
+      }
+    },
+    "source_universe": {
+      "$ref": "common.schema.json#/$defs/sourceUniverseSummary"
+    },
+    "source_accounting": {
+      "$ref": "common.schema.json#/$defs/sourceAccountingTotals"
+    },
+    "detail_manifest": {
+      "const": "ctas/data/candidate-chunks/manifest.json"
+    },
+    "alias_index": {
+      "const": "ctas/data/alias-index.json"
+    },
+    "research_tables": {
+      "const": "ctas/data/research/manifest.json"
+    },
+    "summary_record_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "release": {
+      "type": "object",
+      "properties": {
+        "catalog_content_checksum_sha256": {
+          "$ref": "common.schema.json#/$defs/sha256"
+        },
+        "source_universe_contract_set": {
+          "$ref": "common.schema.json#/$defs/sha256"
+        },
+        "score_method_version": {
+          "const": "ctas.follow-up-score@3.0.0"
+        },
+        "record_role_method_version": {
+          "type": "string"
+        },
+        "source_matrix_schema": {
+          "const": "ctas.candidate-source-matrix@2.0.0"
+        }
+      },
+      "required": [
+        "catalog_content_checksum_sha256",
+        "source_universe_contract_set",
+        "score_method_version"
+      ],
+      "additionalProperties": true
+    },
+    "clocks": {
+      "type": "object",
+      "properties": {
+        "last_ingestion_check": {
+          "$ref": "common.schema.json#/$defs/dateTime"
+        },
+        "last_successful_publication": {
+          "$ref": "common.schema.json#/$defs/dateTime"
+        },
+        "valid_until": {
+          "$ref": "common.schema.json#/$defs/dateTime"
+        },
+        "cadence": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "last_ingestion_check",
+        "last_successful_publication",
+        "valid_until"
+      ],
+      "additionalProperties": true
+    },
+    "statistics": {
+      "$ref": "common.schema.json#/$defs/statistics"
+    },
+    "record_role_counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "ranking_channel_counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "candidate_columns": {
+      "$ref": "common.schema.json#/$defs/candidateColumns"
+    },
+    "candidate_rows": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/candidateRow"
+      }
+    },
+    "leaderboard": {
+      "type": "object",
+      "properties": {
+        "policy": {
+          "type": "string"
+        },
+        "limit": {
+          "const": 100
+        },
+        "event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          }
+        }
+      },
+      "required": [
+        "policy",
+        "limit",
+        "event_ids"
+      ],
+      "additionalProperties": true
+    },
+    "channel_leaderboards": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        }
+      }
+    },
+    "recent_reports": {
+      "type": "object",
+      "properties": {
+        "window_hours": {
+          "const": 24
+        },
+        "clock": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "newest_event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          }
+        },
+        "event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          }
+        }
+      },
+      "required": [
+        "window_hours",
+        "count",
+        "event_ids"
+      ],
+      "additionalProperties": true
+    },
+    "material_evidence_updates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "$ref": "common.schema.json#/$defs/uuid"
+          },
+          "at": {
+            "type": "string"
+          },
+          "at_clock": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "at",
+          "at_clock"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "sky": {
+      "type": "object",
+      "properties": {
+        "clock": {
+          "type": "string"
+        },
+        "windows": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "plotted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unlocalized": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "plotted",
+              "unlocalized"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array"
+          }
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "clock",
+        "windows",
+        "counts",
+        "columns",
+        "rows"
+      ],
+      "additionalProperties": true
+    },
+    "complete_catalog": {
+      "type": "object",
+      "properties": {
+        "statement": {
+          "type": "string"
+        },
+        "candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "page_manifest": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/catalog-pages/manifest.json"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            },
+            "page_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "path",
+            "bytes",
+            "sha256",
+            "page_count"
+          ],
+          "additionalProperties": true
+        },
+        "complete_index": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/catalog-index.json"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "path",
+            "bytes",
+            "sha256"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "statement",
+        "candidate_count",
+        "page_manifest",
+        "complete_index"
+      ],
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "schema",
+    "schema_version",
+    "candidate_count",
+    "catalog_content_checksum_sha256",
+    "recent_stream",
+    "provider_statistics",
+    "surveys",
+    "source_universe",
+    "source_accounting",
+    "detail_manifest",
+    "alias_index",
+    "research_tables",
+    "summary_record_count",
+    "release",
+    "clocks",
+    "statistics",
+    "candidate_columns",
+    "candidate_rows",
+    "leaderboard",
+    "channel_leaderboards",
+    "recent_reports",
+    "material_evidence_updates",
+    "sky",
+    "complete_catalog"
+  ],
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/noBannedKeys"
+    }
+  ]
+}
