@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/status-exceptions.schema.json",
+  "title": "worldsindex-status-exceptions.v1",
+  "description": "worldsindex/data/controversial-retracted-excluded.json.gz: every object a source flags as controversial, retracted or refuted, or dispositions as a false positive, and every object whose sources disagree on status, with the reasons (source record, source status, mapping rule).",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "worldsindex-status-exceptions.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "atlasProjectionId": {
+      "type": "string"
+    },
+    "categories": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "objects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "objectId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "hostName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "atlasStatus": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "enum": [
+                "controversial",
+                "retracted",
+                "excluded-false-positive",
+                "status-conflict",
+                "unresolved-source-conflict"
+              ]
+            }
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sourceId": {
+                  "type": "string"
+                },
+                "sourceRecordId": {
+                  "type": "string"
+                },
+                "sourceStatus": {
+                  "type": "string"
+                },
+                "normalized": {
+                  "type": "string"
+                },
+                "rule": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceRecordId",
+                "sourceStatus",
+                "normalized",
+                "rule"
+              ],
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "objectId",
+          "name",
+          "atlasStatus",
+          "categories",
+          "reasons"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "atlasProjectionId",
+    "categories",
+    "counts",
+    "objects"
+  ],
+  "additionalProperties": true
+}

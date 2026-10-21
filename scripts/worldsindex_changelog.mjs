@@ -73,7 +73,9 @@ export function loadPreviousRelease({ gitDir, ref }) {
   const feed = parseMaybeGzipJson(gitBlob(gitDir, commit, 'worldsindex/data/feed.json'));
   const objectsEcsv = gitBlob(gitDir, commit, 'worldsindex/data/exports/objects.ecsv.gz');
   const objectRows = objectsEcsv ? parseEcsv(gunzipSync(objectsEcsv).toString('utf8')) : null;
-  return { ref, commit, manifest, catalogIndex, sourceCoverage, sourceMonitor, feed, objectRows };
+  // Track 2a: the previous release's conflict index (absent before Track 2a; then nothing is "new").
+  const conflictIndex = parseMaybeGzipJson(gitBlob(gitDir, commit, 'worldsindex/data/conflict-index.json.gz'));
+  return { ref, commit, manifest, catalogIndex, sourceCoverage, sourceMonitor, feed, objectRows, conflictIndex };
 }
 
 // ------------------------------------------------------------------ the diff
@@ -82,7 +84,24 @@ const byId = (objects) => new Map((objects ?? []).map((object) => [object.object
 const sortById = (a, b) => (a.objectId < b.objectId ? -1 : a.objectId > b.objectId ? 1 : 0);
 
 /**
- * current: { manifest, catalogIndex, sourceCoverage, sourceMonitor, detailCounts: Map objectId -> {records, spectra} }
+ * Conflict sets that entered or left conflict between two releases (Track 2a). Both indexes are
+ * worldsindex-conflict-index.v1 ({sets: [[objectId, propertyCode, relation, maxSigma]]}); null when
+ * either release has none (the comparison is then not computable, never "nothing changed").
+ */
+export function diffConflicts(currentIndex, previousIndex, objectsById = new Map()) {
+  if (!currentIndex) return null;
+  if (!previousIndex) return { comparable: false, note: 'The previous release has no conflict index (it predates conflict sets); no conflict is listed as new or resolved.', new: { count: 0, truncated: false, entries: [] }, resolved: { count: 0, truncated: false, entries: [] } };
+  const key = (entry) => `${entry[0]}\u0000${entry[1]}`;
+  const before = new Map(previousIndex.sets.map((entry) => [key(entry), entry]));
+  const now = new Map(currentIndex.sets.map((entry) => [key(entry), entry]));
+  const describe = (entry) => { const object = objectsById.get(entry[0]); return { objectId: entry[0], name: object?.name ?? entry[0], propertyCode: entry[1], relation: entry[2], maxSigma: entry[3] ?? null }; };
+  const fresh = [...now].filter(([k]) => !before.has(k)).map(([, entry]) => describe(entry));
+  const resolved = [...before].filter(([k]) => !now.has(k)).map(([, entry]) => describe(entry));
+  return { comparable: true, note: 'A conflict is new when the set (object x property) is in conflict in this release and was not in the previous one; resolved when the reverse. A set that disappeared with its object counts as resolved.', new: cap(fresh), resolved: cap(resolved) };
+}
+
+/**
+ * current: { manifest, catalogIndex, sourceCoverage, sourceMonitor, detailCounts: Map objectId -> {records, spectra}, conflictIndex? }
  * previous: loadPreviousRelease() result or null.
  */
 export function diffReleases(current, previous) {
@@ -105,6 +124,11 @@ export function diffReleases(current, previous) {
     sources: { changes: empty, monitor: empty },
     summary: { added: 0, removed: 0, promotions: 0, demotions: 0, otherStatusChanges: 0, identityChanges: 0, objectsWithRowsAdded: null, rowsAdded: null, objectsWithSpectraAdded: null, spectraAdded: null, sourceChanges: 0, monitorChanges: 0 },
   };
+  if (current.conflictIndex) {
+    changelog.conflicts = diffConflicts(current.conflictIndex, previous?.catalogIndex ? previous.conflictIndex ?? null : null, byId(current.catalogIndex.objects));
+    changelog.summary.newConflicts = changelog.conflicts.comparable ? changelog.conflicts.new.count : null;
+    changelog.summary.resolvedConflicts = changelog.conflicts.comparable ? changelog.conflicts.resolved.count : null;
+  }
   if (!previous?.catalogIndex) return changelog;
 
   const now = byId(current.catalogIndex.objects);
@@ -169,7 +193,9 @@ export function diffReleases(current, previous) {
 
   changelog.objects = { added: cap(added), removed: cap(removed), statusChanges: cap(status), promotions: cap(promotions), demotions: cap(demotions), identityChanges: cap(identity), rowsAdded, spectraAdded };
   changelog.sources = { changes: cap(sourceChanges), monitor: cap(monitorChanges) };
+  const conflictSummary = changelog.conflicts ? { newConflicts: changelog.summary.newConflicts, resolvedConflicts: changelog.summary.resolvedConflicts } : {};
   changelog.summary = {
+    ...conflictSummary,
     added: added.length, removed: removed.length, promotions: promotions.length, demotions: demotions.length, otherStatusChanges: status.length - promotions.length - demotions.length,
     identityChanges: identity.length, objectsWithRowsAdded: rowsAdded ? rowsAdded.count : null, rowsAdded: rowsAdded ? rowsAdded.rows : null,
     objectsWithSpectraAdded: spectraAdded ? spectraAdded.count : null, spectraAdded: spectraAdded ? spectraAdded.rows : null,
@@ -199,6 +225,7 @@ export function renderChangelogMarkdown(changelog) {
     parts.push(summary.rowsAdded === null ? 'native rows added: not computable (the previous release had no object export)' : `${n(summary.rowsAdded)} native rows added on ${plural(summary.objectsWithRowsAdded, 'object')}`);
     parts.push(summary.spectraAdded === null ? 'spectra added: not computable' : `${n(summary.spectraAdded)} spectrum rows added on ${plural(summary.objectsWithSpectraAdded, 'object')}`);
     parts.push(`${plural(summary.sourceChanges, 'source-state change')}`, `${plural(summary.monitorChanges, 'provider-monitor change')}`);
+    if (changelog.conflicts) parts.push(changelog.conflicts.comparable ? `${plural(summary.newConflicts, 'new conflict')} and ${plural(summary.resolvedConflicts, 'resolved conflict')} between sources` : 'conflicts between sources: not comparable (the previous release has no conflict index)');
     lines.push(`${parts.join('; ')}.`);
   }
   const section = (title, block, format) => {
@@ -218,6 +245,11 @@ export function renderChangelogMarkdown(changelog) {
   section('Spectra added', objects.spectraAdded, (item) => `${named(item)}: ${item.from} -> ${item.to} spectrum rows`);
   section('Source-state changes', sources.changes, (item) => `${item.sourceId} (${item.kind}): ${item.detail}`);
   section('Provider-monitor changes', sources.monitor, (item) => `${item.sourceId ?? 'monitor'} (${item.kind}): ${item.detail}`);
+  const conflict = (item) => `${named(item)}: ${item.propertyCode.replaceAll('_', ' ')} (${item.relation}${item.maxSigma === null || item.maxSigma === undefined ? '' : `, max ${item.maxSigma} sigma`})`;
+  if (changelog.conflicts?.comparable) {
+    section('New conflicts between sources', changelog.conflicts.new, conflict);
+    section('Resolved conflicts between sources', changelog.conflicts.resolved, conflict);
+  }
   lines.push('', '---', '', 'Generated by the WorldsIndex static builder from the two releases\' own files; no clock other than the release time is used. Source membership is not independent confirmation.');
   return `${lines.join('\n')}\n`;
 }

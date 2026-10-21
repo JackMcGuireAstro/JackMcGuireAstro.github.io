@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/conflict-summary.schema.json",
+  "title": "worldsindex-conflict-summary.v1",
+  "description": "worldsindex/data/conflict-summary.json: release-wide counts of the conflict sets: rows, sets, pairs per relation and verdict, per property, per source pair (most inconsistent first), selections by basis and formula, reconciliation flags, time-evolution points and the exceptions list.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "worldsindex-conflict-summary.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "atlasProjectionId": {
+      "type": "string"
+    },
+    "policy": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "sigmaThreshold": {
+          "type": "number"
+        },
+        "relationVocabulary": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "statistically-inconsistent",
+              "method-incompatible",
+              "definition-incompatible",
+              "epoch-dependent",
+              "identity-ambiguity",
+              "status-conflict",
+              "revision-or-retraction",
+              "not-yet-assessed"
+            ]
+          }
+        },
+        "selectionRule": {
+          "type": "string"
+        },
+        "periodMismatchFraction": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "version",
+        "sigmaThreshold",
+        "relationVocabulary",
+        "selectionRule"
+      ],
+      "additionalProperties": true
+    },
+    "objects": {
+      "type": "integer"
+    },
+    "assertionRows": {
+      "type": "integer"
+    },
+    "conflictSets": {
+      "type": "integer"
+    },
+    "multiRowSets": {
+      "type": "integer"
+    },
+    "setsInConflict": {
+      "type": "integer"
+    },
+    "objectsInConflict": {
+      "type": "integer"
+    },
+    "pairs": {
+      "type": "integer"
+    },
+    "pairsByRelation": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "pairsByVerdict": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "byProperty": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+    "bySource": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "sourcePairs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "pairs": {
+            "type": "integer"
+          },
+          "inconsistent": {
+            "type": "integer"
+          },
+          "consistent": {
+            "type": "integer"
+          },
+          "notComparable": {
+            "type": "integer"
+          },
+          "byRelation": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "sources",
+          "pairs",
+          "inconsistent",
+          "consistent",
+          "notComparable"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "selections": {
+      "type": "object"
+    },
+    "flags": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "statusConflicts": {
+      "type": "integer"
+    },
+    "evolution": {
+      "type": "object"
+    },
+    "exceptions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "atlasProjectionId",
+    "policy",
+    "objects",
+    "assertionRows",
+    "conflictSets",
+    "setsInConflict",
+    "pairsByRelation",
+    "byProperty",
+    "sourcePairs",
+    "selections",
+    "flags"
+  ],
+  "additionalProperties": true
+}

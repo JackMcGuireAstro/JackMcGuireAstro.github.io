@@ -674,6 +674,18 @@
         },
         "monitorChanges": {
           "type": "integer"
+        },
+        "newConflicts": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "resolvedConflicts": {
+          "type": [
+            "integer",
+            "null"
+          ]
         }
       },
       "required": [
@@ -685,6 +697,129 @@
         "sourceChanges"
       ],
       "additionalProperties": true
+    },
+    "conflicts": {
+      "description": "Track 2a (additive): conflict sets that entered (new) or left (resolved) conflict since the previous release; not comparable when the previous release has no conflict index.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "comparable": {
+              "type": "boolean"
+            },
+            "note": {
+              "type": "string"
+            },
+            "new": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "truncated": {
+                  "type": "boolean"
+                },
+                "entries": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "objectId": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "propertyCode": {
+                        "type": "string"
+                      },
+                      "relation": {
+                        "type": "string"
+                      },
+                      "maxSigma": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "objectId",
+                      "propertyCode",
+                      "relation"
+                    ],
+                    "additionalProperties": true
+                  }
+                }
+              },
+              "required": [
+                "count",
+                "truncated",
+                "entries"
+              ],
+              "additionalProperties": true
+            },
+            "resolved": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "truncated": {
+                  "type": "boolean"
+                },
+                "entries": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "objectId": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "propertyCode": {
+                        "type": "string"
+                      },
+                      "relation": {
+                        "type": "string"
+                      },
+                      "maxSigma": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "objectId",
+                      "propertyCode",
+                      "relation"
+                    ],
+                    "additionalProperties": true
+                  }
+                }
+              },
+              "required": [
+                "count",
+                "truncated",
+                "entries"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "comparable",
+            "new",
+            "resolved"
+          ],
+          "additionalProperties": true
+        }
+      ]
     }
   },
   "required": [

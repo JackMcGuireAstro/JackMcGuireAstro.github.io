@@ -159,6 +159,37 @@ function renderMachine(manifest, exportsIndex, bulk, changelog, provenance) {
   set('provenance-summary', `<p class="table-summary">${provenance ? `W3C PROV-JSON for this build (${esc(manifest?.provenanceSchemaVersion || provenance.schemaVersion || '')}): ${n(artifactCount)} entities (the release, every artifact with its SHA-256, the atlas projection, the declared sources with contract and parser version, the identity rules and reviewed pins). ` : 'No provenance.json is published with this release. '}<a href="data/provenance.json">provenance.json</a></p>`);
 }
 
+// ---- Controversial, retracted and excluded objects (Framework v2, Track 2a) -------------------
+export const EXCEPTION_LABELS = { controversial: 'controversial', retracted: 'retracted or refuted', 'excluded-false-positive': 'excluded: false positive', 'status-conflict': 'sources disagree on status', 'unresolved-source-conflict': 'unresolved source conflict' };
+export const EXCEPTION_ROW_CAP = 300;
+/** Objects of one category (or all), in the file's order. */
+export function exceptionRows(list, category = 'all') {
+  return (list?.objects || []).filter((item) => category === 'all' || item.categories.includes(category));
+}
+function exceptionTable(list, category) {
+  const rows = exceptionRows(list, category);
+  const shown = rows.slice(0, EXCEPTION_ROW_CAP);
+  return `<p class="table-summary" aria-live="polite">${n(rows.length)} object${rows.length === 1 ? '' : 's'}${category === 'all' ? '' : ` in “${esc(EXCEPTION_LABELS[category] || category)}”`}; ${rows.length > shown.length ? `the first ${n(shown.length)} are listed (the file holds every one)` : 'all are listed'}.</p>`
+    + `<div class="table-wrap" tabindex="0" role="region" aria-label="Controversial, retracted and excluded objects"><table><thead><tr><th scope="col">Object</th><th scope="col">Release status</th><th scope="col">Categories</th><th scope="col">Reasons (source: source status)</th></tr></thead><tbody>${shown.map((item) => `<tr><td><a href="./?object=${encodeURIComponent(item.objectId)}&amp;section=object">${esc(item.name)}</a><small>${esc(item.objectId)}</small></td><td>${esc(item.atlasStatus)}</td><td>${item.categories.map((c) => esc(EXCEPTION_LABELS[c] || c)).join('; ')}</td><td>${item.reasons.map((reason) => `${esc(reason.sourceId)}: ${esc(reason.sourceStatus)} → ${esc(reason.normalized)}`).join('<br>')}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function renderExceptions(manifest, data) {
+  const block = manifest?.conflictSets;
+  if (!block?.exceptionsPath) { set('exceptions-summary', '<p class="table-summary">This release publishes no controversial, retracted and excluded list (it carries no conflict sets).</p>'); return; }
+  const counts = block.exceptions || {};
+  set('exceptions-summary', `<p class="table-summary">${Object.entries(EXCEPTION_LABELS).map(([key, label]) => `${n(counts[key] || 0)} ${esc(label)}`).join(' · ')}. An object can be in several categories; each reason names the source record and the source's own words. <a href="data/${esc(block.exceptionsPath)}">${esc(block.exceptionsPath)}</a></p><p><button type="button" class="text-link" id="exceptions-load">Show the list</button></p>`);
+  const button = document.getElementById('exceptions-load');
+  button?.addEventListener('click', async () => {
+    button.disabled = true;
+    set('exceptions-table', '<p class="table-summary" role="status">Reading the list…</p>');
+    const list = await data(block.exceptionsPath, { gzip: true });
+    if (!list) { set('exceptions-table', '<p class="table-summary">The list could not be read.</p>'); button.disabled = false; return; }
+    const options = ['all', ...Object.keys(EXCEPTION_LABELS)].map((key) => `<option value="${esc(key)}">${esc(key === 'all' ? 'All categories' : EXCEPTION_LABELS[key])}</option>`).join('');
+    set('exceptions-table', `<div class="exceptions-controls"><label>Category<select id="exceptions-category">${options}</select></label></div><div id="exceptions-rows">${exceptionTable(list, 'all')}</div>`);
+    document.getElementById('exceptions-category')?.addEventListener('change', (event) => set('exceptions-rows', exceptionTable(list, event.target.value)));
+    button.hidden = true;
+  });
+}
+
 async function init() {
   const base = new URL('../', import.meta.url);
   const data = (path, options) => getJson(new URL(`data/${path}`, base), options);
@@ -170,6 +201,7 @@ async function init() {
   renderMonitor(monitor);
   renderIdentity(manifest);
   renderMachine(manifest, exportsIndex, bulk, changelog, provenance);
+  renderExceptions(manifest, data);
   const loaded = document.getElementById('status-loading');
   if (loaded) loaded.hidden = true;
 }

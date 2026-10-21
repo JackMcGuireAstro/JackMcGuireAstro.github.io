@@ -8,7 +8,8 @@ are the contract readers can rely on. This step runs check-jsonschema over the r
   ephemerides, source coverage, source monitor, light-curve index and every light curve,
   bulk downloads, exports index, provenance, changelog, feed, and the cloud-run marker
   and the check history when present;
-* the 256 detail shards sampled within a time budget (default 30 s, WORLDSINDEX_SCHEMA_BUDGET_SECONDS):
+* the 256 detail shards and (Track 2a) the 256 conflict-set shards, each kind sampled within a time
+  budget (default 30 s each, WORLDSINDEX_SCHEMA_BUDGET_SECONDS):
   shards are taken in a deterministic order that starts at an offset derived from the
   release's atlas digest, so successive releases sample different shards while one
   release always samples the same ones; the shards validated are printed.
@@ -55,7 +56,15 @@ SCHEMA_FOR = [
     (r"^cloud-run\.json$", "cloud-run.schema.json"),
     (r"^check-history\.json$", "check-history.schema.json"),
     (r"^details/[0-9a-f]{2}\.json\.gz$", "details-shard.schema.json"),
+    # Framework v2 Track 2a: conflict sets (sharded like details/, sampled within the same budget),
+    # their summary and index, and the controversial / retracted / excluded list.
+    (r"^conflicts/[0-9a-f]{2}\.json\.gz$", "conflict-sets-shard.schema.json"),
+    (r"^conflict-summary\.json$", "conflict-summary.schema.json"),
+    (r"^conflict-index\.json\.gz$", "conflict-index.schema.json"),
+    (r"^controversial-retracted-excluded\.json\.gz$", "status-exceptions.schema.json"),
 ]
+# Sharded record types: validated by a deterministic sample within the time budget, not in full.
+SHARDED = ("details-shard.schema.json", "conflict-sets-shard.schema.json")
 NOT_JSON = re.compile(r"\.(ecsv\.gz|vot\.gz|md|xml)$")
 
 
@@ -172,7 +181,9 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             schema = schema_for(rel)
             assert schema
-            if schema == "details-shard.schema.json":
+            if schema in SHARDED:
+                if rel not in declared:
+                    failures.append(f"{rel}: published but not declared by the manifest")
                 shards.append(rel)
                 continue
             # The publisher's own files beside the release (cloud-run marker, check history)
@@ -193,28 +204,42 @@ def main(argv: list[str] | None = None) -> int:
             for file in files:
                 file.unlink(missing_ok=True)
         top_seconds = time.monotonic() - started
-        # Detail shards: deterministic sample within the budget, starting at an offset from the atlas digest.
+        # Shards (detail, conflict-set): per kind, a deterministic sample within the budget, starting at
+        # an offset derived from the atlas digest.
         shards.sort()
-        offset = int(hashlib.sha256(str(manifest.get("atlasSha256", "")).encode()).hexdigest()[:2], 16) % max(1, len(shards))
-        ordered = shards[offset:] + shards[:offset]
+        offset_seed = int(hashlib.sha256(str(manifest.get("atlasSha256", "")).encode()).hexdigest()[:2], 16)
+        reports: list[str] = []
         sampled: list[str] = []
-        shard_started = time.monotonic()
-        for rel in ordered:
-            if time.monotonic() - shard_started > args.budget:
-                break
-            file = materialize(data, rel, scratch)
-            ok, output = run_check(schemas / "details-shard.schema.json", schemas, [file])
-            file.unlink(missing_ok=True)
-            sampled.append(rel)
-            if not ok:
-                failures.append(f"{rel}: {output.splitlines()[-1] if output else 'validation failed'}")
-                for line in output.splitlines():
-                    if "::" in line:
-                        failures.append("  " + line.strip())
-        shard_seconds = time.monotonic() - shard_started
-    print(f"schemas: {validated} top-level JSON files validated fully in {top_seconds:.1f}s; "
-          f"{len(sampled)} of {len(shards)} detail shards sampled in {shard_seconds:.1f}s (budget {args.budget:g}s, starting at {ordered[0] if ordered else 'none'}): "
-          + ", ".join(Path(rel).stem.split('.')[0] for rel in sampled))
+        ordered: list[str] = []
+        shard_seconds = 0.0
+        for kind in SHARDED:
+            kind_shards = [rel for rel in shards if schema_for(rel) == kind]
+            if not kind_shards:
+                continue
+            offset = offset_seed % len(kind_shards)
+            kind_ordered = kind_shards[offset:] + kind_shards[:offset]
+            ordered.extend(kind_ordered)
+            kind_sampled: list[str] = []
+            shard_started = time.monotonic()
+            for rel in kind_ordered:
+                if time.monotonic() - shard_started > args.budget:
+                    break
+                file = materialize(data, rel, scratch)
+                ok, output = run_check(schemas / kind, schemas, [file])
+                file.unlink(missing_ok=True)
+                kind_sampled.append(rel)
+                if not ok:
+                    failures.append(f"{rel}: {output.splitlines()[-1] if output else 'validation failed'}")
+                    for line in output.splitlines():
+                        if "::" in line:
+                            failures.append("  " + line.strip())
+            elapsed = time.monotonic() - shard_started
+            shard_seconds += elapsed
+            sampled.extend(kind_sampled)
+            label = "detail" if kind == "details-shard.schema.json" else "conflict-set"
+            reports.append(f"{len(kind_sampled)} of {len(kind_shards)} {label} shards sampled in {elapsed:.1f}s (budget {args.budget:g}s, starting at {kind_ordered[0]}): "
+                           + ", ".join(Path(rel).stem.split('.')[0] for rel in kind_sampled))
+    print(f"schemas: {validated} top-level JSON files validated fully in {top_seconds:.1f}s; " + ("; ".join(reports) if reports else "no shards published"))
     if failures:
         print("FAIL  published JSON does not match worldsindex/schemas:")
         for failure in failures:

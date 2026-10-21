@@ -73,9 +73,10 @@ group_worldsindex_static() {
   check worldsindex.front.photometry node scripts/test_worldsindex_photometry.mjs
   check worldsindex.front-syntax node_check worldsindex/assets/lightcurves.js worldsindex/assets/app.js \
     worldsindex/assets/science.js worldsindex/assets/live-mast.js worldsindex/assets/live-nasa.js \
-    worldsindex/assets/live-sources.js worldsindex/assets/ephemeris.js worldsindex/assets/sky.js worldsindex/assets/status.js
+    worldsindex/assets/live-sources.js worldsindex/assets/ephemeris.js worldsindex/assets/sky.js worldsindex/assets/status.js \
+    worldsindex/assets/compare.js
   check worldsindex.tooling-syntax node_check scripts/build_worldsindex_static.mjs scripts/worldsindex_transit_ephemerides.mjs \
-    scripts/worldsindex_interop.mjs scripts/worldsindex_changelog.mjs scripts/worldsindex_provenance.mjs scripts/worldsindex_contributions.mjs
+    scripts/worldsindex_interop.mjs scripts/worldsindex_changelog.mjs scripts/worldsindex_provenance.mjs scripts/worldsindex_contributions.mjs scripts/worldsindex_conflicts.mjs
   check worldsindex.test_worldsindex_publisher_recovery python3 scripts/test_worldsindex_publisher_recovery.py
   check worldsindex.front.live-mast node scripts/test_worldsindex_live_mast.mjs
   check worldsindex.front.live-nasa node scripts/test_worldsindex_live_nasa.mjs
@@ -83,6 +84,7 @@ group_worldsindex_static() {
   check worldsindex.front.ephemerides node scripts/test_worldsindex_ephemerides.mjs
   check worldsindex.test_worldsindex_interop_js node --test scripts/test_worldsindex_interop.mjs
   check worldsindex.test_worldsindex_front node --test scripts/test_worldsindex_front.mjs
+  check worldsindex.test_worldsindex_compare node --test scripts/test_worldsindex_compare.mjs
 }
 
 group_worldsindex_interop() {
@@ -146,6 +148,7 @@ group_browser() {
   check browser.worldsindex_lightcurves python3 scripts/test_worldsindex_lightcurves_browser.py
   check browser.worldsindex_live_sources python3 scripts/test_worldsindex_live_sources_browser.py
   check browser.worldsindex_sky python3 scripts/test_worldsindex_sky_browser.py
+  check browser.worldsindex_compare python3 scripts/test_worldsindex_compare_browser.py
 }
 
 group_tooling() {

@@ -272,6 +272,114 @@
     },
     "scientificBoundary": {
       "type": "string"
+    },
+    "conflictSets": {
+      "description": "Track 2a (additive): conflict sets, selections and the exceptions list of this release; null when the builder supplied none (then no Compare tab).",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "schemaVersion": {
+              "const": "worldsindex-conflict-sets.v1"
+            },
+            "generatedAt": {
+              "$ref": "common.schema.json#/$defs/isoDateTime"
+            },
+            "policyVersion": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "sigmaThreshold": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "selectionRule": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "relationVocabulary": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "statistically-inconsistent",
+                  "method-incompatible",
+                  "definition-incompatible",
+                  "epoch-dependent",
+                  "identity-ambiguity",
+                  "status-conflict",
+                  "revision-or-retraction",
+                  "not-yet-assessed"
+                ]
+              }
+            },
+            "shardPathPattern": {
+              "const": "conflicts/{shard}.json.gz"
+            },
+            "shards": {
+              "const": 256
+            },
+            "objects": {
+              "type": "integer"
+            },
+            "assertionRows": {
+              "type": "integer"
+            },
+            "multiRowSets": {
+              "type": "integer"
+            },
+            "setsInConflict": {
+              "type": "integer"
+            },
+            "objectsInConflict": {
+              "type": "integer"
+            },
+            "selectedValues": {
+              "type": "integer"
+            },
+            "summaryPath": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "exceptionsPath": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "indexPath": {
+              "type": "string"
+            },
+            "exceptions": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "boundary": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "schemaVersion",
+            "shardPathPattern",
+            "shards",
+            "objects",
+            "indexPath"
+          ],
+          "additionalProperties": true
+        }
+      ]
     }
   },
   "required": [

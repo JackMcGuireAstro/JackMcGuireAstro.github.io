@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/conflict-index.schema.json",
+  "title": "worldsindex-conflict-index.v1",
+  "description": "worldsindex/data/conflict-index.json.gz: every conflict set in conflict in this release as [objectId, propertyCode, relation, maxSigma]; the base of the changelog's new and resolved conflicts.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "worldsindex-conflict-index.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "atlasProjectionId": {
+      "type": "string"
+    },
+    "sigmaThreshold": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "columns": {
+      "const": [
+        "objectId",
+        "propertyCode",
+        "relation",
+        "maxSigma"
+      ]
+    },
+    "sets": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "statistically-inconsistent",
+              "method-incompatible",
+              "definition-incompatible",
+              "epoch-dependent",
+              "identity-ambiguity",
+              "status-conflict",
+              "revision-or-retraction",
+              "not-yet-assessed"
+            ]
+          },
+          {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        ],
+        "minItems": 4,
+        "maxItems": 4
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "generatedAt",
+    "atlasProjectionId",
+    "columns",
+    "sets"
+  ],
+  "additionalProperties": true
+}

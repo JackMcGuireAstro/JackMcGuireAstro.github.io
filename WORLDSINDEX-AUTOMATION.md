@@ -398,3 +398,59 @@ interactive atlas of the filtered objects. Both load nothing until opened:
 Tests: `node --test scripts/test_worldsindex_front.mjs` (pure helpers) and
 `python3 scripts/test_worldsindex_sky_browser.py` (Playwright; Aladin, the image services
 and the SAMP hub stubbed locally; axe-core when installed).
+
+## Conflict sets, selections and the Compare tab (Framework v2, Track 2a)
+
+The ExoNexus builder derives, from the atlas and the frozen snapshots, one row per **source
+assertion** (one source, one record, one property: NASA PS per publication, PSCompPars, TOI,
+KOI, K2, Exoplanet.eu, OEC, Gaia DR3 planetary transits, CoRoT, and the frozen NASA
+transiting-planet and microlensing tables), normalised in unit, definition and time frame
+without touching the source's own value, and compares every pair of rows of a property only
+after identity, definition, unit, frame/epoch and method are assessed. Pairs carry a relation
+from the contract vocabulary (`statistically-inconsistent`, `method-incompatible`,
+`definition-incompatible`, `epoch-dependent`, `identity-ambiguity`, `status-conflict`,
+`revision-or-retraction`, `not-yet-assessed`) and comparable rows a verdict at k = 3 combined
+sigma. Selections follow rule `nasa-pscomppars-like.v1` (the most recent default parameter set,
+gaps filled from the latest publication, closed-form values labelled "calculated" with formula
+and inputs); each is a *selection, not a measurement*, with rule, selector `builder`, date,
+review state `unreviewed`, chosen rows and reason, and never replaces or averages a source row.
+Reconciliation flags follow Exo-MerCat's published rules (period mismatch over 10 %, fallback
+merge, duplicate and misnamed entries, status reconciliation).
+
+`scripts/worldsindex_conflicts.mjs` turns the builder's `public/data/conflict-sets.ndjson.gz`
+into release artifacts, streaming (the product is about 640 MB as JSON):
+
+- `conflicts/<xx>.json.gz` — 256 shards keyed like `details/` (sha256 of the object id), so
+  the Compare tab fetches one file of about 200 kB;
+- `conflict-summary.json` — counts per property, relation, verdict and source pair;
+- `conflict-index.json.gz` — every set in conflict, the base of the changelog's **new** and
+  **resolved conflicts** (`changelog.json` `conflicts`, `summary.newConflicts/resolvedConflicts`);
+- `controversial-retracted-excluded.json.gz` — every object a source flags as controversial,
+  retracted or refuted, or dispositions as a false positive, and every status conflict, with
+  the reasons; the status page lists it on request;
+- the flat **`conflicts`** and **`selections`** export tables (ECSV/VOTable, registered with
+  UCDs in `scripts/worldsindex_interop.mjs`); PROV-JSON names the conflict sets, the comparison
+  policy and the selection rule (a `prov:Plan`).
+
+All of it is optional: a builder without the product gives a release with
+`manifest.conflictSets = null`, no Compare tab and no new tables, exactly as before.
+
+The **Compare** tab on every object (`worldsindex/assets/compare.js`, imported only when the
+tab opens; the button is hidden without `manifest.conflictSets`) shows one row per source
+assertion with the original and normalised value, uncertainty or limit (limits and ranges in
+words and with a shape), the time system and frame beside every epoch, method or instrument,
+source and reference (bibcode link), compatibility with the selected row and the row's state,
+the selection row above them, every row when the property is in conflict, a candidate-solutions
+toggle otherwise, filters by method, date, source and state, a display-unit toggle
+(R⊕/R♃, M⊕/M♃, days/years, au/R☉) that never changes the original value, "export exactly these
+rows" as ECSV and VOTable built in the browser with the release's column conventions plus a
+manifest (filters, release digest, file SHA-256) and a citation list, copy/download per
+property, and a time-evolution plot with its table for each property with two or more dated
+publications.
+
+Tests: `scripts/test_worldsindex_compare.mjs` (rendering, filters, unit toggle, export rows ==
+visible rows, sharding, changelog), `scripts/test_worldsindex_compare_browser.py` (lazy loading,
+a known conflict, filters, export, outline, no sideways scroll, axe), and the conflict checks in
+`test_worldsindex_static.py`, `test_worldsindex_interop.py` and `validate_worldsindex_schemas.py`
+(schemas `conflict-sets-shard`, `conflict-summary`, `conflict-index`, `status-exceptions`; the
+conflict shards are sampled within the same time budget as the detail shards).

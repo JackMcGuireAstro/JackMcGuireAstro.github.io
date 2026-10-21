@@ -8,7 +8,7 @@
   <link rel="canonical" href="https://jackmcguireastro.github.io/worldsindex/status.html">
   <link rel="alternate" type="application/feed+json" title="WorldsIndex release changes (JSON Feed)" href="data/feed.json">
   <link rel="alternate" type="application/atom+xml" title="WorldsIndex release changes (Atom)" href="data/feed.xml">
-  <link rel="stylesheet" href="assets/app.css?v=20261020">
+  <link rel="stylesheet" href="assets/app.css?v=20261021">
   <title>WorldsIndex · Release status</title>
 <link rel="stylesheet" href="../assets/css/continuity.css?v=20260920">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
@@ -68,6 +68,13 @@
       <div id="identity-table"><p class="table-summary">Reading manifest.json…</p></div>
     </section>
 
+    <section aria-labelledby="exceptions-title">
+      <h2 id="exceptions-title">Controversial, retracted and excluded objects</h2>
+      <p class="plain-language-summary">Objects a source flags as controversial, retracted or refuted, or dispositions as a false positive, and objects whose sources disagree on status. Each entry gives the reasons with the source record and the source's own status; nothing is hidden from the catalog because of it. The list is read only when you ask for it.</p>
+      <div id="exceptions-summary"><p class="table-summary">Reading manifest.json…</p></div>
+      <div id="exceptions-table"></div>
+    </section>
+
     <section aria-labelledby="machine-title">
       <h2 id="machine-title">Machine-readable description</h2>
       <ul class="status-links">
@@ -100,6 +107,10 @@
         <li><a href="schemas/provenance.schema.json">provenance</a></li>
         <li><a href="schemas/changelog.schema.json">changelog</a></li>
         <li><a href="schemas/feed.schema.json">feed</a></li>
+        <li><a href="schemas/conflict-sets-shard.schema.json">conflict-sets-shard</a></li>
+        <li><a href="schemas/conflict-summary.schema.json">conflict-summary</a></li>
+        <li><a href="schemas/conflict-index.schema.json">conflict-index</a></li>
+        <li><a href="schemas/status-exceptions.schema.json">status-exceptions</a></li>
         <li><a href="schemas/common.schema.json">common definitions</a></li>
       </ul>
       <h3 id="exports-title">Exports</h3>
@@ -114,6 +125,6 @@
   </main>
 
   <footer><p><strong>WorldsIndex</strong><span>Powered by ExoNexus</span></p><p>Versioned evidence · source-native measurements · reproducible downloads</p><nav class="footer-data-links" aria-label="WorldsIndex release data"><a href="status.html" aria-current="page">Status</a><a href="data/changelog.md">Changelog</a><a href="data/feed.json" type="application/feed+json">Feed (JSON)</a><a href="data/feed.xml" type="application/atom+xml">Feed (Atom)</a><a href="data/exports/index.json">Exports</a><a href="openapi.yaml">OpenAPI</a><a href="#schemas">Schemas</a></nav><nav aria-label="Jack McGuire website"><a href="../index.html">Home</a><a href="../qualquest/">QualQuest</a><a href="./">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="../cv.pdf" target="_blank" rel="noopener">CV (PDF)</a></nav></footer>
-  <script type="module" src="assets/status.js?v=20261020"></script>
+  <script type="module" src="assets/status.js?v=20261021"></script>
 </body>
 </html>

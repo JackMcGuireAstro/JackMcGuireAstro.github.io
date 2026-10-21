@@ -167,6 +167,10 @@ def check_sorted_by_healpix(table_name: str, table: Table, tie: str) -> None:
     assert keys == sorted(keys), f"{table_name}: rows are not sorted by HEALPix then {tie}"
 
 
+def provenance_entities(data: Path) -> dict:
+    return json.loads((data / "provenance.json").read_text())["entity"]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--data", default=str(ROOT / "worldsindex" / "data"))
@@ -363,6 +367,40 @@ def main(argv: list[str] | None = None) -> int:
     elif bulk["assets"]:
         print("note: no --assets directory; the VOParquet round trip was not run")
 
+    # ---- Track 2a: conflicts and selections against the conflict-set shards they were flattened from
+    conflict_checked = 0
+    if manifest.get("conflictSets"):
+        assert "conflicts" in tables and "selections" in tables, "a release with conflict sets exports both tables"
+        conflicts, selections = tables["conflicts"], tables["selections"]
+        c_cells = {name: cells(conflicts[name]) for name in conflicts.colnames}
+        s_cells = {name: cells(selections[name]) for name in selections.colnames}
+        vocabulary = {"statistically-inconsistent", "method-incompatible", "definition-incompatible", "epoch-dependent", "identity-ambiguity", "status-conflict", "revision-or-retraction", "not-yet-assessed"}
+        assert set(c_cells["relation"]) <= vocabulary | {None}, set(c_cells["relation"]) - vocabulary
+        assert set(s_cells["row_kind"]) == {"selection, not a measurement"}
+        assert set(s_cells["basis"]) <= {"default-solution", "filled-from-publication", "calculated"}
+        assert set(s_cells["rule_id"]) == {"nasa-pscomppars-like"} and set(s_cells["review_state"]) == {"unreviewed"} and set(s_cells["selector"]) == {"builder"}
+        for unit in set(c_cells["canonical_unit"]) | set(s_cells["unit"]):
+            if unit not in (None, "", "percent"):
+                u.Unit(unit, format="vounit")
+        assert all(calc == (formula is not None) for calc, formula in zip(s_cells["calculated"], s_cells["formula_id"])), "calculated values name their formula"
+        assert sum(1 for flag in c_cells["in_conflict"] if flag) == manifest["conflictSets"]["setsInConflict"] + sum(1 for code, flag in zip(c_cells["property_code"], c_cells["in_conflict"]) if code == "object_status" and flag)
+        check_sorted_by_healpix("conflicts", conflicts, "object_id")
+        check_sorted_by_healpix("selections", selections, "object_id")
+        # Every selection row of a sample of shards is the shard's selection, value for value.
+        by_selection = {sid: (value, record_ids) for sid, value, record_ids in zip(s_cells["selection_id"], s_cells["value"], s_cells["chosen_source_record_ids"])}
+        for shard_name in ("00", "7f", "ff"):
+            shard = read_gzip_json(data / "conflicts" / f"{shard_name}.json.gz")
+            for product in shard.values():
+                for prop in product["properties"]:
+                    for selection in prop["selections"]:
+                        if selection["basis"] == "not-available":
+                            assert selection["id"] not in by_selection
+                            continue
+                        value, record_ids = by_selection[selection["id"]]
+                        assert same(value, selection["value"]) and record_ids == " ".join(selection["chosenSourceRecordIds"]), selection["id"]
+                        conflict_checked += 1
+        assert any(key.startswith("wi:conflict-sets/") for key in provenance_entities(data)), "provenance names the conflict sets"
+
     # ---- feeds, changelog and provenance coherence
     feed = json.loads((data / "feed.json").read_text())
     atom = ET.fromstring((data / "feed.xml").read_bytes())
@@ -385,7 +423,7 @@ def main(argv: list[str] | None = None) -> int:
     assert any(key.startswith("wi:identity-rules/") for key in provenance["entity"])
 
     print(f"WorldsIndex interop round trip passed: {len(index['tables'])} tables as ECSV 1.0 and VOTable 1.5 ({sum(e['rows'] for e in index['tables'].values()):,} rows), "
-          f"{checked:,} measurement rows joined to their native records, {parquet_checked} VOParquet asset(s) checked, {len(feed['items'])} feed items.")
+          f"{checked:,} measurement rows joined to their native records, {parquet_checked} VOParquet asset(s) checked, {len(feed['items'])} feed items, {conflict_checked:,} selections matched to their conflict shards.")
     return 0
 
 

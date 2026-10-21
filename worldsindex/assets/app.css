@@ -480,3 +480,41 @@ footer nav a { display: inline-flex; align-items: center; min-height: 44px; colo
 .status-page .state-pill[data-state="ok"]{border-color:var(--green,#4fc79a);color:#9ff0cc}.status-page .state-pill[data-state="warn"]{border-color:var(--gold,#e8a93a);color:#ffd98a}.status-page .state-pill[data-state="bad"]{border-color:#f48b8b;color:#ffb3b3}
 @media (max-width:760px){.sky-atlas-stage{height:60vw;min-height:240px}}
 @media print{.sky-atlas-stage,.sky-tools-actions{display:none}}
+
+/* Framework v2 Track 2a: Compare tab (worldsindex/assets/compare.js) and the exceptions list on the status page. */
+.visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.compare-controls{margin:.6rem 0 1rem;border:1px solid var(--line);border-radius:var(--radius-small);background:rgba(5,12,21,.35)}
+.compare-controls .filter-grid{border-top:0}
+.compare-controls .check{display:flex;align-items:center;gap:.5rem;padding:0 1rem .6rem;color:var(--text);font-size:.82rem}
+.compare-controls .check input{width:auto;margin:0}
+.compare-controls .fineprint{padding:0 1rem .8rem;margin:0}
+.unit-toggles{display:flex;flex-wrap:wrap;gap:.6rem;padding:0 1rem .7rem}
+.unit-toggle{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;min-width:0;margin:0;padding:.35rem .6rem;border:1px solid var(--line);border-radius:8px}
+.unit-toggle legend{padding:0 .3rem;color:var(--muted);font:9px var(--mono);letter-spacing:.07em;text-transform:uppercase}
+.unit-toggle label{display:inline-flex;align-items:center;gap:.3rem;color:var(--text);font-size:.82rem}
+.compare-export,.subsection-actions{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem;margin:.6rem 0}
+.compare-export button{padding:.5rem .8rem;border:1px solid var(--line-strong);border-radius:999px;background:#0d1d2d;color:var(--text);font-size:.76rem;cursor:pointer}
+.compare-export button:hover,.compare-export button:focus-visible{border-color:var(--cyan)}
+.compare-export .fineprint{flex-basis:100%;margin:0}
+.compare-property{margin-top:1.6rem}
+.compare-property h3{margin:0 0 .3rem;font-size:1.05rem}
+.compare-table td{min-width:7.5rem;overflow-wrap:anywhere}
+.compare-table td code{white-space:normal;overflow-wrap:anywhere}
+.compare-table .selection-row td{background:rgba(232,169,58,.09);border-top:2px dashed var(--gold)}
+.compare-table tr[data-inconsistent] td:first-child{box-shadow:inset 3px 0 0 var(--red)}
+.state-tag{display:inline-block;margin:.1rem 0;padding:.1rem .4rem;border:1px solid var(--line-strong);border-radius:999px;color:var(--text);font:10px/1.4 var(--mono)}
+.conflict-flag{color:#ffc9bf}
+.limit-shape{display:inline-block;min-width:1em;color:var(--cyan-bright)}
+.row-number{color:var(--muted);font:10px var(--mono)}
+.evolution{margin:1rem 0 0;padding:.8rem;border:1px solid var(--line);border-radius:var(--radius-small)}
+.evolution figcaption{margin-bottom:.4rem;color:var(--text);font-size:.86rem;font-weight:600}
+.evolution-plot{display:block;width:100%;max-width:640px;height:auto}
+.evolution-plot .evo-axis{stroke:var(--line-strong);stroke-width:1}
+.evolution-plot .evo-grid{stroke:var(--line);stroke-width:1}
+.evolution-plot .evo-tick{fill:var(--muted);font:10px var(--mono)}
+.evolution-plot .evo-point{fill:var(--cyan);stroke:#04121c;stroke-width:1}
+.evolution-plot .evo-limit{fill:none;stroke:var(--gold);stroke-width:2}
+.evolution-plot .evo-bar{stroke:var(--cyan);stroke-width:1.5}
+.status-page .exceptions-controls{display:flex;flex-wrap:wrap;gap:.6rem;align-items:end;margin:.5rem 0}
+.status-page .exceptions-controls label{display:flex;flex-direction:column;gap:.25rem;color:var(--muted);font-size:.8rem}
+.status-page .exceptions-controls select{min-height:40px;padding:.4rem .6rem;border:1px solid var(--line);border-radius:8px;background:var(--panel-solid);color:var(--text)}

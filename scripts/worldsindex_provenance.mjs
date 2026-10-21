@@ -24,7 +24,8 @@ const clean = (object) => Object.fromEntries(Object.entries(object).filter(([, v
  *   generatedAt, manifest (without artifacts for provenance.json itself), artifacts: {path: {bytes, sha256}},
  *   atlas: {projectionId, generatedAt, schemaVersion, sourceSnapshots}, registry: {sources: {version, entries}, methods: {version}},
  *   sourceCoverage|null, sourceMonitor|null, identity: {rulesVersion, contract: {reviewedAt, reviewedBy, snapshotId}, pins: [...]},
- *   builder: {commit, version, name}, site: {commit, repository}, stateAsset|null (cloud-run marker), releaseAssets: [{name, bytes, sha256, downloadUrl}]
+ *   builder: {commit, version, name}, site: {commit, repository}, stateAsset|null (cloud-run marker), releaseAssets: [{name, bytes, sha256, downloadUrl}],
+ *   conflicts|null (Track 2a: the manifest's conflictSets block plus `paths`, the artifacts derived from the conflict product)
  * }
  */
 export function provenanceDocument(input) {
@@ -122,6 +123,26 @@ export function provenanceDocument(input) {
     relate(used, 'u', { 'prov:activity': buildId, 'prov:entity': stateId });
   }
 
+  if (input.conflicts) {
+    // Track 2a: the conflict sets are derived by the ExoNexus builder from the atlas and the frozen
+    // snapshots; the selection rule is a versioned plan (prov:Plan) the derivation followed.
+    const conflictId = `wi:conflict-sets/${input.atlas.projectionId}`;
+    const conflictActivityId = `wi:activity/conflict-sets/${input.atlas.projectionId}`;
+    const ruleId = `wi:selection-rule/${input.conflicts.selectionRule}`;
+    const policyId = `wi:conflict-policy/${input.conflicts.policyVersion}`;
+    entity[conflictId] = clean({ 'prov:type': 'wi:ConflictSets', 'prov:label': `Conflict sets for atlas ${input.atlas.projectionId}`, 'prov:generatedAtTime': when(input.conflicts.generatedAt), 'wi:schemaVersion': input.conflicts.schemaVersion, 'wi:objects': input.conflicts.objects, 'wi:assertionRows': input.conflicts.assertionRows, 'wi:multiRowSets': input.conflicts.multiRowSets, 'wi:setsInConflict': input.conflicts.setsInConflict, 'wi:selectedValues': input.conflicts.selectedValues });
+    entity[ruleId] = clean({ 'prov:type': 'prov:Plan', 'prov:label': `Selection rule ${input.conflicts.selectionRule}: most recent default parameter set, gaps filled from the latest publication, closed-form values labelled calculated; a selection, not a measurement`, 'wi:selector': 'builder', 'wi:reviewState': 'unreviewed' });
+    entity[policyId] = clean({ 'prov:type': 'prov:Plan', 'prov:label': `Comparison policy ${input.conflicts.policyVersion}: unit, definition, frame, epoch and identity assessed before any verdict; k = ${input.conflicts.sigmaThreshold} sigma`, 'wi:sigmaThreshold': input.conflicts.sigmaThreshold, 'wi:relationVocabulary': (input.conflicts.relationVocabulary ?? []).join(' ') });
+    activity[conflictActivityId] = clean({ 'prov:type': 'wi:ConflictSetDerivation', 'prov:label': 'ExoNexus conflict sets, selections and reconciliation flags (scripts/build-conflict-sets.ts)', 'prov:endedAtTime': when(input.conflicts.generatedAt), 'wi:builderCommit': input.builder.commit ?? undefined });
+    relate(used, 'u', { 'prov:activity': conflictActivityId, 'prov:entity': atlasId });
+    relate(used, 'u', { 'prov:activity': conflictActivityId, 'prov:entity': ruleId, 'prov:role': 'selection-rule' });
+    relate(used, 'u', { 'prov:activity': conflictActivityId, 'prov:entity': policyId, 'prov:role': 'comparison-policy' });
+    relate(wasGeneratedBy, 'g', { 'prov:entity': conflictId, 'prov:activity': conflictActivityId });
+    relate(wasAssociatedWith, 'a', { 'prov:activity': conflictActivityId, 'prov:agent': exonexus, 'prov:plan': ruleId });
+    relate(used, 'u', { 'prov:activity': buildId, 'prov:entity': conflictId });
+    for (const path of input.conflicts.paths ?? []) if (input.artifacts[path]) relate(wasDerivedFrom, 'd', { 'prov:generatedEntity': `wi:artifact/${path}`, 'prov:usedEntity': conflictId });
+    for (const table of ['conflicts', 'selections']) for (const format of ['ecsv', 'vot']) { const path = `exports/${table}.${format}.gz`; if (input.artifacts[path]) relate(wasDerivedFrom, 'd', { 'prov:generatedEntity': `wi:artifact/${path}`, 'prov:usedEntity': conflictId }); }
+  }
   activity[atlasActivityId] = clean({ 'prov:type': 'wi:AtlasGeneration', 'prov:label': 'ExoNexus atlas generation (npm run sky:generate)', 'prov:endedAtTime': when(input.atlas.generatedAt), 'wi:builderCommit': input.builder.commit ?? undefined, 'wi:builderVersion': input.builder.version ?? undefined });
   activity[buildId] = clean({ 'prov:type': 'wi:StaticBuild', 'prov:label': 'WorldsIndex static release build (scripts/build_worldsindex_static.mjs)', 'prov:endedAtTime': when(input.generatedAt), 'wi:siteCommit': input.site.commit ?? undefined, 'wi:builderCommit': input.builder.commit ?? undefined, 'wi:repository': input.site.repository ?? undefined });
   if (monitorActivityId) {

@@ -12,6 +12,7 @@ import * as interop from './worldsindex_interop.mjs';
 import { atomFeed, CHANGELOG_SCHEMA_VERSION, diffReleases, jsonFeed, loadPreviousRelease, renderChangelogMarkdown } from './worldsindex_changelog.mjs';
 import { provenanceDocument, PROVENANCE_SCHEMA_VERSION } from './worldsindex_provenance.mjs';
 import { acceptSourceContributions, describeSourceContributions } from './worldsindex_contributions.mjs';
+import { buildConflictArtifacts, manifestBlock as conflictManifestBlock } from './worldsindex_conflicts.mjs';
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const sourceRoot = resolve(process.env.WORLDSINDEX_SOURCE_DIR ?? '/Users/johnmcguire/Documents/Codex/CTAS and WorldsIndex/WorldsIndex Development/work/worldsindex');
@@ -376,6 +377,14 @@ await mkdir(exportsRoot, { recursive: true });
 const detectionsById = new Map(atlas.detections.map((detection) => [detection.objectId, detection]));
 const detailCounts = new Map([...details].map(([objectId, detail]) => [objectId, { records: detail.records.length, spectra: detail.records.filter((record) => record.sourceId === 'nasa-atmospheric-spectroscopy').length }]));
 const identityRulesVersion = await readFile(join(sourceRoot, 'data/atlas/release-contract.json'), 'utf8').then((text) => JSON.parse(text)?.sources?.['exoplanet-eu']?.identityRulesVersion ?? null).catch(() => null);
+// ---- Conflict sets and selections (Framework v2, Track 2a) -----------------------------------
+// The builder's per-object worldsindex-conflict-sets.v1 product, sharded like details/ so the
+// Compare tab fetches one file; the summary, the controversial/retracted/excluded list and the
+// conflict index beside it; flat `conflicts` and `selections` export tables. Optional: a builder
+// without the product gives a release with no conflict block (manifest.conflictSets = null).
+const { artifacts: conflictArtifacts, reason: conflictReason } = await buildConflictArtifacts({ sourceRoot, outputRoot, atlas, detectionsById });
+if (conflictArtifacts) console.log(`conflict sets: ${conflictArtifacts.counts.objects.toLocaleString()} objects, ${conflictArtifacts.counts.multiRowSets.toLocaleString()} multi-row sets, ${conflictArtifacts.counts.setsInConflict.toLocaleString()} in conflict, ${conflictArtifacts.counts.selectedValues.toLocaleString()} selected values`);
+else console.warn(`conflict sets not published: ${conflictReason}`);
 const exportTables = {
   objects: interop.objectsTable(catalogObjects, detectionsById, detailCounts),
   measurements: interop.measurementsTable(details, detectionsById),
@@ -383,6 +392,7 @@ const exportTables = {
   ...(sourceCoverage ? { source_coverage: interop.sourceCoverageTable(sourceCoverage) } : {}),
   identity_states: interop.identityStatesTable(catalogObjects, identityRulesVersion ?? ''),
   references: interop.referencesTable(details),
+  ...(conflictArtifacts ? conflictArtifacts.tables : {}),
 };
 const exportMeta = { release_atlas_generated_at: atlas.generatedAt, atlas_projection_id: atlas.projectionId, source_universe_version: registry.sources.version, site: `${interop.SITE_BASE_URL}/worldsindex/` };
 const exportIndex = { schemaVersion: interop.EXPORTS_SCHEMA_VERSION, generatedAt: atlas.generatedAt, atlasProjectionId: atlas.projectionId, formats: { ecsv: interop.ECSV_FORMAT_NOTE, votable: interop.VOTABLE_FORMAT_NOTE }, claimBoundary: interop.INTEROP_CLAIM, tables: {} };
@@ -434,7 +444,7 @@ const baseRef = process.env.WORLDSINDEX_RELEASE_BASE_REF || 'origin/worldsindex-
 const previousRelease = loadPreviousRelease({ gitDir: baseGitDir, ref: baseRef });
 const sourceMonitorNow = await readFile(join(outputRoot, 'source-monitor.json'), 'utf8').then(JSON.parse).catch(() => null);
 const preManifest = { generatedAt: releaseGeneratedAt, atlasGeneratedAt: atlas.generatedAt, objectCount: atlas.coverage.objects, detailRecordCount: [...details.values()].reduce((sum, item) => sum + item.records.length, 0) };
-const changelog = diffReleases({ manifest: preManifest, catalogIndex, sourceCoverage, sourceMonitor: sourceMonitorNow, detailCounts }, previousRelease);
+const changelog = diffReleases({ manifest: preManifest, catalogIndex, sourceCoverage, sourceMonitor: sourceMonitorNow, detailCounts, conflictIndex: conflictArtifacts?.conflictIndex ?? null }, previousRelease);
 await writeFile(join(outputRoot, 'changelog.json'), `${JSON.stringify(changelog, null, 2)}\n`);
 await writeFile(join(outputRoot, 'changelog.md'), renderChangelogMarkdown(changelog));
 const feed = jsonFeed(changelog, previousRelease?.feed ?? null);
@@ -457,6 +467,7 @@ const artifactPaths = [
   'feed.json',
   'feed.xml',
   ...[...buckets.keys()].sort().map((bucket) => `details/${bucket}.json.gz`),
+  ...(conflictArtifacts?.paths ?? []),
 ].sort();
 const artifactsBeforeProvenance = Object.fromEntries(await Promise.all(artifactPaths.map(describeArtifact)));
 
@@ -480,6 +491,7 @@ const provenance = provenanceDocument({
   builder: { commit: gitHead(sourceRoot), version: builderPackage.version ?? null, name: builderPackage.description ?? 'ExoNexus (WorldsIndex builder)' },
   site: { commit: gitHead(siteRoot), repository: releaseRepository },
   stateAsset: cloudRunMarker, releaseAssets,
+  conflicts: conflictArtifacts ? { ...conflictManifestBlock(conflictArtifacts), paths: conflictArtifacts.paths } : null,
 });
 await writeFile(join(outputRoot, 'provenance.json'), `${JSON.stringify(provenance, null, 2)}\n`);
 artifactPaths.push('provenance.json');
@@ -519,6 +531,8 @@ const manifest = {
   provenanceSchemaVersion: PROVENANCE_SCHEMA_VERSION,
   changelog: { path: 'changelog.json', markdownPath: 'changelog.md', schemaVersion: CHANGELOG_SCHEMA_VERSION, comparable: changelog.comparable, previousReleaseCommit: previousRelease?.commit ?? null, summary: changelog.summary },
   feeds: { json: 'feed.json', atom: 'feed.xml', items: feed.items.length },
+  // Framework v2 Track 2a (additive): conflict sets, selections, reconciliation flags and the exceptions list.
+  conflictSets: conflictArtifacts ? conflictManifestBlock(conflictArtifacts) : null,
   artifacts,
   scientificBoundary: 'Static public catalog projection. Source membership is not independent confirmation; source-composite values are not self-consistent publication solutions; catalog projections are not completeness-corrected populations.',
 };

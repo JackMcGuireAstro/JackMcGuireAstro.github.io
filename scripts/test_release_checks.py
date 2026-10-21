@@ -280,7 +280,7 @@ class WiringTests(unittest.TestCase):
         self.assertTrue(net.is_third_party_load_failure("Failed to load resource: net::ERR_BLOCKED_BY_CLIENT"))
         self.assertFalse(net.is_third_party_load_failure("Uncaught TypeError: x is undefined"))
         suites = sorted(p for p in (ROOT / "scripts").glob("test_*browser*.py") if "chromium.launch()" in p.read_text())
-        self.assertEqual(len(suites), 7)
+        self.assertEqual(len(suites), 8)
         for path in suites:
             text = path.read_text()
             launches = text.count("chromium.launch()")

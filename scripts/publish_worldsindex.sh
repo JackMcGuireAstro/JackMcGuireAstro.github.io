@@ -47,13 +47,19 @@ PUBLIC_FILES=(
   worldsindex/data/changelog.md
   worldsindex/data/feed.json
   worldsindex/data/feed.xml
+  # Framework v2 Track 2a: conflict sets (256 shards below), their summary and index, and the
+  # controversial / retracted / excluded list (scripts/worldsindex_conflicts.mjs). Optional outputs:
+  # an allowlisted path the build did not write is simply not committed.
+  worldsindex/data/conflict-summary.json
+  worldsindex/data/conflict-index.json.gz
+  worldsindex/data/controversial-retracted-excluded.json.gz
 )
-for export_table in objects measurements transit_ephemerides source_coverage identity_states references; do
+for export_table in objects measurements transit_ephemerides source_coverage identity_states references conflicts selections; do
   PUBLIC_FILES+=("worldsindex/data/exports/$export_table.ecsv.gz" "worldsindex/data/exports/$export_table.vot.gz")
 done
 for bucket_index in {0..255}; do
   printf -v bucket '%02x' "$bucket_index"
-  PUBLIC_FILES+=("worldsindex/data/details/$bucket.json.gz")
+  PUBLIC_FILES+=("worldsindex/data/details/$bucket.json.gz" "worldsindex/data/conflicts/$bucket.json.gz")
 done
 
 mkdir -p "$LOG_DIR"
@@ -166,6 +172,7 @@ INPUT_STAMP="$LOG_DIR/.published-inputs.sha256"
 input_fingerprint() {
   {
     for file in "$SOURCE/public/data/lightcurves/index.json" "$SOURCE/public/data/sky-detections.json.gz" "$SOURCE/public/data/sync/latest.json" \
+                "$SOURCE/public/data/conflict-summary.json" "$SITE/scripts/worldsindex_conflicts.mjs" "$SITE/worldsindex/assets/compare.js" "$SITE/worldsindex/assets/status.js" "$SITE/worldsindex/status.html" \
                 "$SOURCE/data/snapshots/exoplanet-eu/ACTIVE.json" "$SOURCE/data/atlas/release-contract.json" \
                 "$SOURCE/outputs/promotion/exoplanet-eu/latest.json" \
                 "$SITE/scripts/build_worldsindex_static.mjs" "$SITE/scripts/worldsindex_transit_ephemerides.mjs" "$SITE/worldsindex/assets/ephemeris.js" \
@@ -349,10 +356,12 @@ PY_OBSERVATIONS
 )
 check worldsindex.test_worldsindex_static in_site python3 scripts/test_worldsindex_static.py \
   || block "static release validation failed"
-check worldsindex.front-syntax in_site node_check worldsindex/assets/app.js worldsindex/assets/sky.js worldsindex/assets/status.js \
+check worldsindex.front-syntax in_site node_check worldsindex/assets/app.js worldsindex/assets/sky.js worldsindex/assets/status.js worldsindex/assets/compare.js \
   || block "static release validation failed: a front-end script does not parse"
 check worldsindex.test_worldsindex_front in_site node --test scripts/test_worldsindex_front.mjs \
   || block "static release validation failed: front-end helpers"
+check worldsindex.test_worldsindex_compare in_site node --test scripts/test_worldsindex_compare.mjs \
+  || block "static release validation failed: Compare tab and conflict sets"
 check worldsindex.whitespace in_site git diff --check \
   || block "static release validation failed: whitespace"
 # Track 1 gates: the exports read back with Astropy and pyarrow cell for cell (values, units,

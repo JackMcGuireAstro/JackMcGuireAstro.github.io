@@ -35,6 +35,8 @@ tags:
     description: ECSV 1.0 and VOTable 1.5 tables with UCDs and VOUnits, and the VOParquet release assets.
   - name: observations
     description: Retained observation products (light curves).
+  - name: conflicts
+    description: Conflict sets (one row per source assertion, relations at k sigma), selections (a selection, not a measurement), reconciliation flags and the controversial / retracted / excluded list (Framework v2, Track 2a).
 components:
   schemas:
     Manifest:
@@ -71,6 +73,14 @@ components:
       $ref: schemas/changelog.schema.json
     Feed:
       $ref: schemas/feed.schema.json
+    ConflictSetsShard:
+      $ref: schemas/conflict-sets-shard.schema.json
+    ConflictSummary:
+      $ref: schemas/conflict-summary.schema.json
+    ConflictIndex:
+      $ref: schemas/conflict-index.schema.json
+    StatusExceptions:
+      $ref: schemas/status-exceptions.schema.json
   parameters:
     shard:
       name: shard
@@ -87,7 +97,7 @@ components:
       description: Export table name (exports/index.json lists them with their columns).
       schema:
         type: string
-        enum: [objects, measurements, transit_ephemerides, source_coverage, identity_states, references]
+        enum: [objects, measurements, transit_ephemerides, source_coverage, identity_states, references, conflicts, selections]
     target:
       name: target
       in: path
@@ -377,3 +387,57 @@ paths:
             application/gzip:
               schema:
                 $ref: "#/components/schemas/Lightcurve"
+  /data/conflicts/{shard}.json.gz:
+    get:
+      tags: [conflicts]
+      summary: Conflict-set shard (the Compare tab)
+      description: The worldsindex-conflict-sets.v1 products of the objects whose id hashes to the shard (as details/). Per property, one row per source assertion with original and normalised values, uncertainty or limit, time system and frame, method, reference and compatibility; a conflict set (extended ConflictRecord) when two or more rows exist, every pair labelled with the contract relation vocabulary at k sigma; selections by rule nasa-pscomppars-like.v1 (selection, not a measurement); dated publications; status claims and Exo-MerCat reconciliation flags. Present only when manifest.conflictSets is not null.
+      operationId: getConflictSetsShard
+      parameters:
+        - $ref: "#/components/parameters/shard"
+      responses:
+        "200":
+          description: gzip-compressed JSON object keyed by objectId.
+          content:
+            application/gzip:
+              schema:
+                $ref: "#/components/schemas/ConflictSetsShard"
+  /data/conflict-summary.json:
+    get:
+      tags: [conflicts]
+      summary: Release summary of the conflict sets
+      description: Counts per property, relation, verdict and source pair (most inconsistent first), selections by basis and formula, flags and exceptions.
+      operationId: getConflictSummary
+      responses:
+        "200":
+          description: JSON.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConflictSummary"
+  /data/conflict-index.json.gz:
+    get:
+      tags: [conflicts]
+      summary: Every conflict set in conflict
+      description: "[objectId, propertyCode, relation, maxSigma] for every set in conflict; the changelog's base for new and resolved conflicts."
+      operationId: getConflictIndex
+      responses:
+        "200":
+          description: gzip-compressed JSON.
+          content:
+            application/gzip:
+              schema:
+                $ref: "#/components/schemas/ConflictIndex"
+  /data/controversial-retracted-excluded.json.gz:
+    get:
+      tags: [conflicts]
+      summary: Controversial, retracted and excluded objects
+      description: Every object a source flags as controversial, retracted or refuted, or dispositions as a false positive, and every object whose sources disagree on status, with reasons and source records.
+      operationId: getStatusExceptions
+      responses:
+        "200":
+          description: gzip-compressed JSON.
+          content:
+            application/gzip:
+              schema:
+                $ref: "#/components/schemas/StatusExceptions"

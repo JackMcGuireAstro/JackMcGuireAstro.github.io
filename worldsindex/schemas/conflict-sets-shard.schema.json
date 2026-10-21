@@ -1,0 +1,1850 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/conflict-sets-shard.schema.json",
+  "title": "WorldsIndex conflict-set shard (worldsindex-conflict-sets.v1)",
+  "description": "worldsindex/data/conflicts/<xx>.json.gz: the per-object conflict-set products of the objects whose id hashes to the shard (first two hex digits of sha256(objectId), as details/). One row per source assertion pointing at its source record; a conflict set (an extended ConflictRecord) per property with two or more rows, labelled with the contract relation vocabulary at k sigma; selections by rule nasa-pscomppars-like.v1 (a selection, not a measurement); dated publications for the time-evolution plot; status claims and Exo-MerCat reconciliation flags. Absent values are omitted.",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": {
+    "type": "object",
+    "properties": {
+      "objectId": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "hostName": {
+        "type": "string"
+      },
+      "identityState": {
+        "type": "string"
+      },
+      "atlasStatus": {
+        "type": "string"
+      },
+      "references": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "bibcode": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "records": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "sourceId": {
+              "type": "string"
+            },
+            "sourceRecordId": {
+              "type": "string"
+            },
+            "recordType": {
+              "type": "string"
+            },
+            "sourceTable": {
+              "type": "string"
+            },
+            "reference": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "published": {
+              "type": "string"
+            },
+            "updated": {
+              "type": "string"
+            },
+            "isSourceDefault": {
+              "type": "boolean"
+            },
+            "solutionType": {
+              "type": "string"
+            },
+            "candidate": {
+              "type": "boolean"
+            },
+            "sourceStatus": {
+              "type": "string"
+            },
+            "identityBasis": {
+              "enum": [
+                "SAME_OBJECT_RECORD",
+                "ATLAS_LINKED",
+                "PROVIDER_CROSS_IDENTIFIER",
+                "CONTRIBUTION_EXACT_KEY",
+                "AMBIGUOUS"
+              ]
+            },
+            "recordName": {
+              "type": "string"
+            },
+            "instrument": {
+              "type": "string"
+            },
+            "method": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "sourceId",
+            "sourceRecordId",
+            "recordType",
+            "sourceTable",
+            "candidate",
+            "identityBasis"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "properties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "enum": [
+                "orbital_period",
+                "planet_radius",
+                "planet_mass",
+                "semimajor_axis",
+                "eccentricity",
+                "inclination",
+                "transit_midpoint",
+                "transit_duration",
+                "transit_depth",
+                "planet_star_radius_ratio",
+                "impact_parameter",
+                "equilibrium_temperature",
+                "insolation"
+              ]
+            },
+            "label": {
+              "type": "string"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "conversions": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "rows": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "record": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "field": {
+                    "type": "string"
+                  },
+                  "definition": {
+                    "type": "string"
+                  },
+                  "limit": {
+                    "enum": [
+                      "NONE",
+                      "UPPER_LIMIT",
+                      "LOWER_LIMIT",
+                      "INTERVAL",
+                      "UNKNOWN_LIMIT"
+                    ]
+                  },
+                  "original": {
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string"
+                      },
+                      "unit": {
+                        "type": "string"
+                      },
+                      "errPlus": {
+                        "type": "number"
+                      },
+                      "errMinus": {
+                        "type": "number"
+                      },
+                      "lower": {
+                        "type": "number"
+                      },
+                      "upper": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "value",
+                      "unit"
+                    ],
+                    "additionalProperties": true
+                  },
+                  "normalized": {
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "number"
+                      },
+                      "errPlus": {
+                        "type": "number"
+                      },
+                      "errMinus": {
+                        "type": "number"
+                      },
+                      "lower": {
+                        "type": "number"
+                      },
+                      "upper": {
+                        "type": "number"
+                      },
+                      "frame": {
+                        "type": "string"
+                      },
+                      "unsupported": {
+                        "const": true
+                      }
+                    },
+                    "required": [],
+                    "additionalProperties": true
+                  },
+                  "timeSystem": {
+                    "type": "string"
+                  },
+                  "methodClass": {
+                    "type": "string"
+                  },
+                  "method": {
+                    "type": "string"
+                  },
+                  "compat": {
+                    "type": "object",
+                    "properties": {
+                      "against": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "relation": {
+                        "enum": [
+                          "statistically-inconsistent",
+                          "method-incompatible",
+                          "definition-incompatible",
+                          "epoch-dependent",
+                          "identity-ambiguity",
+                          "status-conflict",
+                          "revision-or-retraction",
+                          "not-yet-assessed"
+                        ]
+                      },
+                      "verdict": {
+                        "enum": [
+                          "consistent",
+                          "inconsistent",
+                          "not-comparable"
+                        ]
+                      },
+                      "sigma": {
+                        "type": "number"
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "counts": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "minItems": 3,
+                        "maxItems": 3
+                      }
+                    },
+                    "required": [
+                      "verdict",
+                      "counts"
+                    ],
+                    "additionalProperties": true
+                  }
+                },
+                "required": [
+                  "record",
+                  "field",
+                  "definition",
+                  "limit",
+                  "original",
+                  "normalized"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "set": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "targetId": {
+                      "type": "string"
+                    },
+                    "propertyCode": {
+                      "type": "string"
+                    },
+                    "assertionIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "relation": {
+                      "enum": [
+                        "DISAGREEMENT",
+                        "INCOMPATIBLE_DEFINITION",
+                        "STATUS_CONFLICT",
+                        "IDENTITY_AMBIGUITY",
+                        "AGREEMENT",
+                        "UNASSESSED"
+                      ]
+                    },
+                    "explanation": {
+                      "type": "string"
+                    },
+                    "comparisonUnit": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "comparisonPolicyVersion": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "maxPairwiseSigma": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "statisticallyAssessedPairs": {
+                      "type": "integer"
+                    },
+                    "schemaVersion": {
+                      "const": "worldsindex-conflict-sets.v1"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "canonicalUnit": {
+                      "type": "string"
+                    },
+                    "sigmaThreshold": {
+                      "type": "number"
+                    },
+                    "relationLabel": {
+                      "enum": [
+                        "statistically-inconsistent",
+                        "method-incompatible",
+                        "definition-incompatible",
+                        "epoch-dependent",
+                        "identity-ambiguity",
+                        "status-conflict",
+                        "revision-or-retraction",
+                        "not-yet-assessed",
+                        null
+                      ]
+                    },
+                    "conflict": {
+                      "type": "boolean"
+                    },
+                    "rowCount": {
+                      "type": "integer",
+                      "minimum": 2
+                    },
+                    "sourceIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "definitionCodes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "pairCounts": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "byRelation": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "integer"
+                          }
+                        },
+                        "byVerdict": {
+                          "type": "object",
+                          "properties": {
+                            "consistent": {
+                              "type": "integer"
+                            },
+                            "inconsistent": {
+                              "type": "integer"
+                            },
+                            "not-comparable": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "consistent",
+                            "inconsistent",
+                            "not-comparable"
+                          ],
+                          "additionalProperties": true
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "byRelation",
+                        "byVerdict"
+                      ],
+                      "additionalProperties": true
+                    },
+                    "notablePairs": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "type": "array",
+                        "prefixItems": [
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": "integer"
+                          },
+                          {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          {
+                            "enum": [
+                              "statistically-inconsistent",
+                              "method-incompatible",
+                              "definition-incompatible",
+                              "epoch-dependent",
+                              "identity-ambiguity",
+                              "status-conflict",
+                              "revision-or-retraction",
+                              "not-yet-assessed"
+                            ]
+                          }
+                        ],
+                        "minItems": 4,
+                        "maxItems": 4
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "targetId",
+                    "propertyCode",
+                    "assertionIds",
+                    "relation",
+                    "explanation",
+                    "schemaVersion",
+                    "sigmaThreshold",
+                    "relationLabel",
+                    "conflict",
+                    "rowCount",
+                    "pairCounts"
+                  ],
+                  "additionalProperties": true
+                }
+              ]
+            },
+            "selections": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "targetId": {
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "type": "string"
+                  },
+                  "policyVersion": {
+                    "const": "nasa-pscomppars-like.v1"
+                  },
+                  "ruleId": {
+                    "const": "nasa-pscomppars-like"
+                  },
+                  "ruleVersion": {
+                    "const": "v1"
+                  },
+                  "selector": {
+                    "const": "builder"
+                  },
+                  "reviewState": {
+                    "const": "unreviewed"
+                  },
+                  "selectedAt": {
+                    "$ref": "common.schema.json#/$defs/isoDateTime"
+                  },
+                  "label": {
+                    "const": "selection, not a measurement"
+                  },
+                  "propertyCode": {
+                    "type": "string"
+                  },
+                  "definitionCode": {
+                    "type": "string"
+                  },
+                  "basis": {
+                    "enum": [
+                      "default-solution",
+                      "filled-from-publication",
+                      "calculated",
+                      "not-available"
+                    ]
+                  },
+                  "value": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "unit": {
+                    "type": "string"
+                  },
+                  "errPlus": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "errMinus": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "limitType": {
+                    "enum": [
+                      "NONE",
+                      "UPPER_LIMIT",
+                      "LOWER_LIMIT",
+                      "INTERVAL",
+                      "UNKNOWN_LIMIT"
+                    ]
+                  },
+                  "chosenRow": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "chosenSourceRecordIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "selectedAssertionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rejectedAssertionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rejectedRowCount": {
+                    "type": "integer"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "rationale": {
+                    "type": "string"
+                  },
+                  "calculated": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "label": {
+                            "const": "calculated"
+                          },
+                          "formulaId": {
+                            "type": "string"
+                          },
+                          "formula": {
+                            "type": "string"
+                          },
+                          "inputs": {
+                            "type": "array",
+                            "minItems": 1,
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "type": "number"
+                                },
+                                "unit": {
+                                  "type": "string"
+                                },
+                                "sourceId": {
+                                  "type": "string"
+                                },
+                                "sourceRecordId": {
+                                  "type": "string"
+                                },
+                                "reference": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "name",
+                                "value",
+                                "unit",
+                                "sourceRecordId"
+                              ],
+                              "additionalProperties": true
+                            }
+                          }
+                        },
+                        "required": [
+                          "label",
+                          "formulaId",
+                          "formula",
+                          "inputs"
+                        ],
+                        "additionalProperties": true
+                      }
+                    ]
+                  },
+                  "archiveComposite": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "row": {
+                            "type": "integer"
+                          },
+                          "value": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "matches": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "row",
+                          "matches"
+                        ],
+                        "additionalProperties": true
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "targetId",
+                  "policyVersion",
+                  "ruleId",
+                  "ruleVersion",
+                  "selector",
+                  "reviewState",
+                  "selectedAt",
+                  "label",
+                  "propertyCode",
+                  "definitionCode",
+                  "basis",
+                  "value",
+                  "unit",
+                  "chosenSourceRecordIds",
+                  "reason",
+                  "calculated"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "evolution": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "definitionCode": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": "string"
+                  },
+                  "points": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "row": {
+                          "type": "integer"
+                        },
+                        "date": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "number"
+                        },
+                        "limit": {
+                          "enum": [
+                            "NONE",
+                            "UPPER_LIMIT",
+                            "LOWER_LIMIT",
+                            "INTERVAL",
+                            "UNKNOWN_LIMIT"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "row",
+                        "date",
+                        "value"
+                      ],
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "required": [
+                  "definitionCode",
+                  "unit",
+                  "points"
+                ],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": [
+            "code",
+            "label",
+            "unit",
+            "rows",
+            "set",
+            "selections",
+            "evolution"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "status": {
+        "type": "object",
+        "properties": {
+          "assertions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sourceId": {
+                  "type": "string"
+                },
+                "sourceRecordId": {
+                  "type": "string"
+                },
+                "sourceStatus": {
+                  "type": "string"
+                },
+                "normalized": {
+                  "type": "string"
+                },
+                "rule": {
+                  "type": "string"
+                },
+                "candidateCatalog": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "sourceId",
+                "sourceRecordId",
+                "sourceStatus",
+                "normalized",
+                "rule"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "relation": {
+            "enum": [
+              "statistically-inconsistent",
+              "method-incompatible",
+              "definition-incompatible",
+              "epoch-dependent",
+              "identity-ambiguity",
+              "status-conflict",
+              "revision-or-retraction",
+              "not-yet-assessed",
+              null
+            ]
+          },
+          "conflict": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "assertions",
+          "relation",
+          "conflict"
+        ],
+        "additionalProperties": true
+      },
+      "flags": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "flag": {
+              "enum": [
+                "period_mismatch",
+                "fallback_merge",
+                "duplicate_catalog",
+                "misnamed_duplicates",
+                "status_conflict",
+                "controversial",
+                "unresolved_source_conflict"
+              ]
+            },
+            "rule": {
+              "type": "string"
+            },
+            "detail": {
+              "type": "string"
+            },
+            "rows": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": "string"
+                  },
+                  "sourceRecordId": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "sourceId",
+                  "sourceRecordId"
+                ],
+                "additionalProperties": true
+              }
+            }
+          },
+          "required": [
+            "flag",
+            "rule",
+            "rows",
+            "detail"
+          ],
+          "additionalProperties": true
+        }
+      }
+    },
+    "required": [
+      "objectId",
+      "name",
+      "identityState",
+      "atlasStatus",
+      "references",
+      "records",
+      "properties",
+      "status",
+      "flags"
+    ],
+    "additionalProperties": true
+  },
+  "$defs": {
+    "product": {
+      "type": "object",
+      "properties": {
+        "objectId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "hostName": {
+          "type": "string"
+        },
+        "identityState": {
+          "type": "string"
+        },
+        "atlasStatus": {
+          "type": "string"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "bibcode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "label"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "sourceId": {
+                "type": "string"
+              },
+              "sourceRecordId": {
+                "type": "string"
+              },
+              "recordType": {
+                "type": "string"
+              },
+              "sourceTable": {
+                "type": "string"
+              },
+              "reference": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "published": {
+                "type": "string"
+              },
+              "updated": {
+                "type": "string"
+              },
+              "isSourceDefault": {
+                "type": "boolean"
+              },
+              "solutionType": {
+                "type": "string"
+              },
+              "candidate": {
+                "type": "boolean"
+              },
+              "sourceStatus": {
+                "type": "string"
+              },
+              "identityBasis": {
+                "enum": [
+                  "SAME_OBJECT_RECORD",
+                  "ATLAS_LINKED",
+                  "PROVIDER_CROSS_IDENTIFIER",
+                  "CONTRIBUTION_EXACT_KEY",
+                  "AMBIGUOUS"
+                ]
+              },
+              "recordName": {
+                "type": "string"
+              },
+              "instrument": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "sourceId",
+              "sourceRecordId",
+              "recordType",
+              "sourceTable",
+              "candidate",
+              "identityBasis"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "enum": [
+                  "orbital_period",
+                  "planet_radius",
+                  "planet_mass",
+                  "semimajor_axis",
+                  "eccentricity",
+                  "inclination",
+                  "transit_midpoint",
+                  "transit_duration",
+                  "transit_depth",
+                  "planet_star_radius_ratio",
+                  "impact_parameter",
+                  "equilibrium_temperature",
+                  "insolation"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "conversions": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "record": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "field": {
+                      "type": "string"
+                    },
+                    "definition": {
+                      "type": "string"
+                    },
+                    "limit": {
+                      "enum": [
+                        "NONE",
+                        "UPPER_LIMIT",
+                        "LOWER_LIMIT",
+                        "INTERVAL",
+                        "UNKNOWN_LIMIT"
+                      ]
+                    },
+                    "original": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "string"
+                        },
+                        "unit": {
+                          "type": "string"
+                        },
+                        "errPlus": {
+                          "type": "number"
+                        },
+                        "errMinus": {
+                          "type": "number"
+                        },
+                        "lower": {
+                          "type": "number"
+                        },
+                        "upper": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "value",
+                        "unit"
+                      ],
+                      "additionalProperties": true
+                    },
+                    "normalized": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "number"
+                        },
+                        "errPlus": {
+                          "type": "number"
+                        },
+                        "errMinus": {
+                          "type": "number"
+                        },
+                        "lower": {
+                          "type": "number"
+                        },
+                        "upper": {
+                          "type": "number"
+                        },
+                        "frame": {
+                          "type": "string"
+                        },
+                        "unsupported": {
+                          "const": true
+                        }
+                      },
+                      "required": [],
+                      "additionalProperties": true
+                    },
+                    "timeSystem": {
+                      "type": "string"
+                    },
+                    "methodClass": {
+                      "type": "string"
+                    },
+                    "method": {
+                      "type": "string"
+                    },
+                    "compat": {
+                      "type": "object",
+                      "properties": {
+                        "against": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "relation": {
+                          "enum": [
+                            "statistically-inconsistent",
+                            "method-incompatible",
+                            "definition-incompatible",
+                            "epoch-dependent",
+                            "identity-ambiguity",
+                            "status-conflict",
+                            "revision-or-retraction",
+                            "not-yet-assessed"
+                          ]
+                        },
+                        "verdict": {
+                          "enum": [
+                            "consistent",
+                            "inconsistent",
+                            "not-comparable"
+                          ]
+                        },
+                        "sigma": {
+                          "type": "number"
+                        },
+                        "reason": {
+                          "type": "string"
+                        },
+                        "counts": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "minItems": 3,
+                          "maxItems": 3
+                        }
+                      },
+                      "required": [
+                        "verdict",
+                        "counts"
+                      ],
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "record",
+                    "field",
+                    "definition",
+                    "limit",
+                    "original",
+                    "normalized"
+                  ],
+                  "additionalProperties": true
+                }
+              },
+              "set": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "targetId": {
+                        "type": "string"
+                      },
+                      "propertyCode": {
+                        "type": "string"
+                      },
+                      "assertionIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "relation": {
+                        "enum": [
+                          "DISAGREEMENT",
+                          "INCOMPATIBLE_DEFINITION",
+                          "STATUS_CONFLICT",
+                          "IDENTITY_AMBIGUITY",
+                          "AGREEMENT",
+                          "UNASSESSED"
+                        ]
+                      },
+                      "explanation": {
+                        "type": "string"
+                      },
+                      "comparisonUnit": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "comparisonPolicyVersion": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "maxPairwiseSigma": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "statisticallyAssessedPairs": {
+                        "type": "integer"
+                      },
+                      "schemaVersion": {
+                        "const": "worldsindex-conflict-sets.v1"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "canonicalUnit": {
+                        "type": "string"
+                      },
+                      "sigmaThreshold": {
+                        "type": "number"
+                      },
+                      "relationLabel": {
+                        "enum": [
+                          "statistically-inconsistent",
+                          "method-incompatible",
+                          "definition-incompatible",
+                          "epoch-dependent",
+                          "identity-ambiguity",
+                          "status-conflict",
+                          "revision-or-retraction",
+                          "not-yet-assessed",
+                          null
+                        ]
+                      },
+                      "conflict": {
+                        "type": "boolean"
+                      },
+                      "rowCount": {
+                        "type": "integer",
+                        "minimum": 2
+                      },
+                      "sourceIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "definitionCodes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "pairCounts": {
+                        "type": "object",
+                        "properties": {
+                          "total": {
+                            "type": "integer"
+                          },
+                          "byRelation": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "integer"
+                            }
+                          },
+                          "byVerdict": {
+                            "type": "object",
+                            "properties": {
+                              "consistent": {
+                                "type": "integer"
+                              },
+                              "inconsistent": {
+                                "type": "integer"
+                              },
+                              "not-comparable": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "consistent",
+                              "inconsistent",
+                              "not-comparable"
+                            ],
+                            "additionalProperties": true
+                          }
+                        },
+                        "required": [
+                          "total",
+                          "byRelation",
+                          "byVerdict"
+                        ],
+                        "additionalProperties": true
+                      },
+                      "notablePairs": {
+                        "type": "array",
+                        "maxItems": 10,
+                        "items": {
+                          "type": "array",
+                          "prefixItems": [
+                            {
+                              "type": "integer"
+                            },
+                            {
+                              "type": "integer"
+                            },
+                            {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            {
+                              "enum": [
+                                "statistically-inconsistent",
+                                "method-incompatible",
+                                "definition-incompatible",
+                                "epoch-dependent",
+                                "identity-ambiguity",
+                                "status-conflict",
+                                "revision-or-retraction",
+                                "not-yet-assessed"
+                              ]
+                            }
+                          ],
+                          "minItems": 4,
+                          "maxItems": 4
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "targetId",
+                      "propertyCode",
+                      "assertionIds",
+                      "relation",
+                      "explanation",
+                      "schemaVersion",
+                      "sigmaThreshold",
+                      "relationLabel",
+                      "conflict",
+                      "rowCount",
+                      "pairCounts"
+                    ],
+                    "additionalProperties": true
+                  }
+                ]
+              },
+              "selections": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "targetId": {
+                      "type": "string"
+                    },
+                    "purpose": {
+                      "type": "string"
+                    },
+                    "policyVersion": {
+                      "const": "nasa-pscomppars-like.v1"
+                    },
+                    "ruleId": {
+                      "const": "nasa-pscomppars-like"
+                    },
+                    "ruleVersion": {
+                      "const": "v1"
+                    },
+                    "selector": {
+                      "const": "builder"
+                    },
+                    "reviewState": {
+                      "const": "unreviewed"
+                    },
+                    "selectedAt": {
+                      "$ref": "common.schema.json#/$defs/isoDateTime"
+                    },
+                    "label": {
+                      "const": "selection, not a measurement"
+                    },
+                    "propertyCode": {
+                      "type": "string"
+                    },
+                    "definitionCode": {
+                      "type": "string"
+                    },
+                    "basis": {
+                      "enum": [
+                        "default-solution",
+                        "filled-from-publication",
+                        "calculated",
+                        "not-available"
+                      ]
+                    },
+                    "value": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "errPlus": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "errMinus": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "limitType": {
+                      "enum": [
+                        "NONE",
+                        "UPPER_LIMIT",
+                        "LOWER_LIMIT",
+                        "INTERVAL",
+                        "UNKNOWN_LIMIT"
+                      ]
+                    },
+                    "chosenRow": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "chosenSourceRecordIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "selectedAssertionIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "rejectedAssertionIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "rejectedRowCount": {
+                      "type": "integer"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "rationale": {
+                      "type": "string"
+                    },
+                    "calculated": {
+                      "oneOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "label": {
+                              "const": "calculated"
+                            },
+                            "formulaId": {
+                              "type": "string"
+                            },
+                            "formula": {
+                              "type": "string"
+                            },
+                            "inputs": {
+                              "type": "array",
+                              "minItems": 1,
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "type": "number"
+                                  },
+                                  "unit": {
+                                    "type": "string"
+                                  },
+                                  "sourceId": {
+                                    "type": "string"
+                                  },
+                                  "sourceRecordId": {
+                                    "type": "string"
+                                  },
+                                  "reference": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "name",
+                                  "value",
+                                  "unit",
+                                  "sourceRecordId"
+                                ],
+                                "additionalProperties": true
+                              }
+                            }
+                          },
+                          "required": [
+                            "label",
+                            "formulaId",
+                            "formula",
+                            "inputs"
+                          ],
+                          "additionalProperties": true
+                        }
+                      ]
+                    },
+                    "archiveComposite": {
+                      "oneOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "row": {
+                              "type": "integer"
+                            },
+                            "value": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "matches": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "row",
+                            "matches"
+                          ],
+                          "additionalProperties": true
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "targetId",
+                    "policyVersion",
+                    "ruleId",
+                    "ruleVersion",
+                    "selector",
+                    "reviewState",
+                    "selectedAt",
+                    "label",
+                    "propertyCode",
+                    "definitionCode",
+                    "basis",
+                    "value",
+                    "unit",
+                    "chosenSourceRecordIds",
+                    "reason",
+                    "calculated"
+                  ],
+                  "additionalProperties": true
+                }
+              },
+              "evolution": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "definitionCode": {
+                      "type": "string"
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "points": {
+                      "type": "array",
+                      "minItems": 2,
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "row": {
+                            "type": "integer"
+                          },
+                          "date": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "number"
+                          },
+                          "limit": {
+                            "enum": [
+                              "NONE",
+                              "UPPER_LIMIT",
+                              "LOWER_LIMIT",
+                              "INTERVAL",
+                              "UNKNOWN_LIMIT"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "row",
+                          "date",
+                          "value"
+                        ],
+                        "additionalProperties": true
+                      }
+                    }
+                  },
+                  "required": [
+                    "definitionCode",
+                    "unit",
+                    "points"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            },
+            "required": [
+              "code",
+              "label",
+              "unit",
+              "rows",
+              "set",
+              "selections",
+              "evolution"
+            ],
+            "additionalProperties": true
+          }
+        },
+        "status": {
+          "type": "object",
+          "properties": {
+            "assertions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sourceId": {
+                    "type": "string"
+                  },
+                  "sourceRecordId": {
+                    "type": "string"
+                  },
+                  "sourceStatus": {
+                    "type": "string"
+                  },
+                  "normalized": {
+                    "type": "string"
+                  },
+                  "rule": {
+                    "type": "string"
+                  },
+                  "candidateCatalog": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "sourceId",
+                  "sourceRecordId",
+                  "sourceStatus",
+                  "normalized",
+                  "rule"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "relation": {
+              "enum": [
+                "statistically-inconsistent",
+                "method-incompatible",
+                "definition-incompatible",
+                "epoch-dependent",
+                "identity-ambiguity",
+                "status-conflict",
+                "revision-or-retraction",
+                "not-yet-assessed",
+                null
+              ]
+            },
+            "conflict": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "assertions",
+            "relation",
+            "conflict"
+          ],
+          "additionalProperties": true
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "flag": {
+                "enum": [
+                  "period_mismatch",
+                  "fallback_merge",
+                  "duplicate_catalog",
+                  "misnamed_duplicates",
+                  "status_conflict",
+                  "controversial",
+                  "unresolved_source_conflict"
+                ]
+              },
+              "rule": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "sourceId": {
+                      "type": "string"
+                    },
+                    "sourceRecordId": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "sourceId",
+                    "sourceRecordId"
+                  ],
+                  "additionalProperties": true
+                }
+              }
+            },
+            "required": [
+              "flag",
+              "rule",
+              "rows",
+              "detail"
+            ],
+            "additionalProperties": true
+          }
+        }
+      },
+      "required": [
+        "objectId",
+        "name",
+        "identityState",
+        "atlasStatus",
+        "references",
+        "records",
+        "properties",
+        "status",
+        "flags"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

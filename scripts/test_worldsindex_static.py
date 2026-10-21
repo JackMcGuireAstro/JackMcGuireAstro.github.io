@@ -165,6 +165,7 @@ def main() -> None:
 
     transit_count = check_transit_ephemerides(manifest, by_id, packaged_records)
     interop_note = check_interop_products(manifest)
+    conflict_note = check_conflict_products(manifest, by_id, packaged_record_ids)
     check_front_end(atlas)
 
     assert "object-hd-209458-b" in by_id
@@ -230,7 +231,8 @@ def main() -> None:
         + (f"{transit_count:,} transit ephemerides; " if transit_count is not None else "")
         + f"{len(registry['sources']['entries'])} source contracts; "
         f"{len(registry['methods']['entries'])} methods"
-        + (f"; {interop_note}." if interop_note else ".")
+        + (f"; {interop_note}" if interop_note else "")
+        + (f"; {conflict_note}." if conflict_note else ".")
     )
 
 
@@ -353,6 +355,93 @@ def check_transit_ephemerides(manifest: dict, by_id: dict, packaged_records: dic
     return len(rows)
 
 
+# Sources whose rows the detail shards also carry: a conflict-set row of these must join to the
+# exact native row of the same object (OEC, Gaia and CoRoT rows exist only in the conflict sets).
+DETAIL_SOURCES = {"nasa-ps", "nasa-pscomppars", "nasa-toi", "nasa-koi", "nasa-k2", "exoplanet-eu", "nasa-transiting-planets", "nasa-microlensing"}
+RELATIONS = {"statistically-inconsistent", "method-incompatible", "definition-incompatible", "epoch-dependent", "identity-ambiguity", "status-conflict", "revision-or-retraction", "not-yet-assessed"}
+
+
+def check_conflict_products(manifest: dict, by_id: dict, packaged_record_ids: dict) -> str | None:
+    """Framework v2 Track 2a: conflict-set shards, summary, index, exceptions list and the conflicts /
+    selections exports. Optional (a builder without conflict sets gives a release without them); once
+    declared, every shard is present and declared, every product names an atlas object, every row of a
+    detail-shard source joins to its exact native row, sets are labelled with the contract vocabulary,
+    no selected value differs from its chosen source row (no averaging), and every count agrees."""
+    artifacts = manifest["artifacts"]
+    block = manifest.get("conflictSets")
+    if not block:
+        assert not any(path.startswith("conflicts/") or path.startswith("conflict-") for path in artifacts), "conflict artifacts shipped without manifest.conflictSets"
+        assert "conflicts" not in manifest.get("exports", {}).get("tables", {}), "a conflicts export without conflict sets"
+        return "no conflict sets in this release (builder without them)"
+    assert block["schemaVersion"] == "worldsindex-conflict-sets.v1" and block["shardPathPattern"] == "conflicts/{shard}.json.gz" and block["shards"] == 256
+    assert block["selectionRule"] == "nasa-pscomppars-like.v1" and set(block["relationVocabulary"]) == RELATIONS
+    shard_paths = [f"conflicts/{index:02x}.json.gz" for index in range(256)]
+    assert set(shard_paths) <= set(artifacts), "every conflict shard is a declared artifact"
+    for path in (block["indexPath"], block["summaryPath"], block["exceptionsPath"]):
+        assert path in artifacts, path
+    objects = rows = multi = in_conflict = selected = status_sets = status_conflicts = 0
+    inconsistent_seen = None
+    for path in shard_paths:
+        shard = read_gzip_json(DATA / path)
+        assert all(hashlib.sha256(object_id.encode()).hexdigest()[:2] == path[10:12] for object_id in shard), f"{path}: object in the wrong shard"
+        for object_id, product in shard.items():
+            objects += 1
+            assert product["objectId"] == object_id and object_id in by_id, f"{object_id}: not an atlas object"
+            for record in product["records"]:
+                if record["sourceId"] in DETAIL_SOURCES:
+                    assert record["sourceRecordId"] in packaged_record_ids.get(object_id, set()), f"{object_id}: {record['sourceRecordId']} does not join to its native row"
+            for prop in product["properties"]:
+                rows += len(prop["rows"])
+                for row in prop["rows"]:
+                    assert 0 <= row["record"] < len(product["records"])
+                    assert "value" in row["original"] and "unit" in row["original"], "the original value and unit travel with every row"
+                    if row.get("compat", {}).get("relation"):
+                        assert row["compat"]["relation"] in RELATIONS
+                if prop["set"]:
+                    multi += 1
+                    assert prop["set"]["rowCount"] == len(prop["rows"]) >= 2 and prop["set"]["sigmaThreshold"] == block["sigmaThreshold"]
+                    assert prop["set"]["relationLabel"] is None or prop["set"]["relationLabel"] in RELATIONS
+                    assert len(prop["set"]["assertionIds"]) == len(prop["rows"])
+                    if prop["set"]["conflict"]:
+                        in_conflict += 1
+                        if inconsistent_seen is None and prop["set"]["relationLabel"] == "statistically-inconsistent":
+                            inconsistent_seen = (object_id, prop["code"])
+                else:
+                    assert len(prop["rows"]) <= 1, f"{object_id} {prop['code']}: two or more rows but no conflict set"
+                for selection in prop["selections"]:
+                    assert selection["label"] == "selection, not a measurement" and selection["reviewState"] == "unreviewed" and selection["selector"] == "builder"
+                    assert selection["ruleId"] == "nasa-pscomppars-like" and selection["ruleVersion"] == "v1" and selection["reason"]
+                    if selection["basis"] in ("default-solution", "filled-from-publication"):
+                        chosen = prop["rows"][selection["chosenRow"]]
+                        assert selection["value"] == chosen["normalized"]["value"], f"{object_id} {prop['code']}: selection differs from its source row (no averaging)"
+                        assert product["records"][chosen["record"]]["sourceRecordId"] in selection["chosenSourceRecordIds"]
+                    if selection["basis"] == "calculated":
+                        assert selection["calculated"]["label"] == "calculated" and selection["calculated"]["inputs"] and selection["errPlus"] is None
+                    if selection["basis"] != "not-available":
+                        selected += 1
+            if len(product["status"]["assertions"]) >= 2:
+                status_sets += 1
+            if product["status"]["conflict"]:
+                status_conflicts += 1
+    assert objects == block["objects"] and rows == block["assertionRows"] and multi == block["multiRowSets"], (objects, rows, multi, block)
+    assert in_conflict == block["setsInConflict"] and selected == block["selectedValues"]
+    assert inconsistent_seen, "the release should carry at least one statistically inconsistent conflict set"
+    summary = json.loads((DATA / block["summaryPath"]).read_text())
+    assert summary["schemaVersion"] == "worldsindex-conflict-summary.v1" and summary["setsInConflict"] == in_conflict and summary["assertionRows"] == rows and summary["objects"] == objects
+    assert summary["sourcePairs"] == sorted(summary["sourcePairs"], key=lambda pair: (-pair["inconsistent"], -pair["pairs"], "|".join(pair["sources"])))
+    index = read_gzip_json(DATA / block["indexPath"])
+    assert len(index["sets"]) == in_conflict + status_conflicts, "the conflict index lists every set in conflict"
+    exceptions = read_gzip_json(DATA / block["exceptionsPath"])
+    for category, count in exceptions["counts"].items():
+        assert sum(category in item["categories"] for item in exceptions["objects"]) == count, category
+    assert block["exceptions"] == exceptions["counts"]
+    tables = manifest["exports"]["tables"]
+    assert tables["conflicts"]["rows"] == multi + status_sets, (tables["conflicts"]["rows"], multi, status_sets)
+    assert tables["selections"]["rows"] == selected
+    assert by_id["object-hd-209458-b"]["objectId"] in {object_id for object_id in by_id}
+    return f"{objects:,} conflict-set products ({multi:,} multi-row sets, {in_conflict:,} in conflict, {selected:,} selected values, {len(exceptions['objects']):,} listed exceptions)"
+
+
 def check_front_end(atlas: dict) -> None:
     """Framework v2 Track 1 part D, the parts a static read can verify: the Sky tab, the report link
     and the footer data links are in the page; sky.js pins the Aladin Lite build and the four
@@ -366,6 +455,14 @@ def check_front_end(atlas: dict) -> None:
     for href in ("status.html", "data/changelog.md", "data/feed.json", "data/feed.xml", "data/exports/index.json", "openapi.yaml"):
         assert f'href="{href}"' in index, f"footer link to {href} is missing"
     assert "sky.js?v=" in (APP / "assets" / "app.js").read_text(encoding="utf-8")
+    # Track 2a: the Compare tab exists, starts hidden (shown only when manifest.conflictSets exists) and
+    # loads compare.js and its shard only when it opens (a dynamic import, never a static one).
+    app = (APP / "assets" / "app.js").read_text(encoding="utf-8")
+    assert re.search(r'id="object-tab-compare"[^>]*hidden', index) and 'id="tab-compare"' in index, "the Compare tab is missing"
+    assert "import('./compare.js?v=" in app and "from './compare.js" not in app, "compare.js must load only when the tab opens"
+    assert "data/conflicts/${bucket}.json.gz" in app
+    compare = (APP / "assets" / "compare.js").read_text(encoding="utf-8")
+    assert "selection, not a measurement" in compare.lower() and "Export exactly these rows" in compare
     sky = (APP / "assets" / "sky.js").read_text(encoding="utf-8")
     assert "https://aladin.cds.unistra.fr/AladinLite/api/v3/" in sky and "ALADIN_VERSION = '3.6.1'" in sky, "Aladin Lite must stay pinned"
     for hips in ("CDS/P/DSS2/color", "CDS/P/DESI-Legacy-Surveys/DR10/color", "CDS/P/PanSTARRS/DR1/color-z-zg-g", "CDS/P/2MASS/color"):
