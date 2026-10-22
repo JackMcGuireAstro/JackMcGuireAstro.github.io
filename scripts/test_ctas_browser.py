@@ -839,7 +839,15 @@ class BrowserTests(unittest.TestCase):
         names = [row[0].split("?")[0] for row in rows]
         self.assertIn("ctas/sky.js", names)
         self.assertIn("ctas/changelog.js", names)
-        self.assertLess(total, 1_500_000, "first-screen decoded bytes")
+        # The budget covers the page's own code, not the catalog data: the data grows with the
+        # catalog (2.4 MB on the real 2026-10-22 release against 1.1 MB on the 24-event
+        # fixture) and is guarded separately by the summary-only first-screen test. A whole-page
+        # cap calibrated on the fixture refused every real deploy from 2026-10-21 to 2026-10-22.
+        code = sum(row[2] for row in rows if not row[0].split("?")[0].startswith("ctas/data/"))
+        added = sum(row[2] for row in rows if row[0].split("?")[0] in ("ctas/sky.js", "ctas/changelog.js"))
+        print(f"first screen: {code:,} decoded bytes of code; sky and changelog scripts {added:,}")
+        self.assertLess(code, 1_250_000, "first-screen decoded bytes of code")
+        self.assertLess(added, 64 * 1024, "the two Track 1 scripts loaded before any panel opens")
         data_requests = sorted(name for name in self.requests)
         self.assertEqual([n for n in data_requests if n.startswith("feeds/") or n in ("changelog.json", "source-accounting.json")], [],
                          "feeds, changelog and source accounting load only when a panel or the status page asks")

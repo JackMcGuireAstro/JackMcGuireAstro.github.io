@@ -848,7 +848,7 @@ svg.is-narrow .ctas-lc-direct { font-size: 14px; }
   .ctas-lightcurve svg text { fill: CanvasText; }
   .ctas-lc-swatch { forced-color-adjust: none; }
 }
-.ctas-evidence-table-wrap { max-width: 100%; overflow-x: auto; margin-top: .8rem; border: 1px solid var(--border); }
+.ctas-evidence-table-wrap { position: relative; max-width: 100%; overflow-x: auto; margin-top: .8rem; border: 1px solid var(--border); } /* positioned so absolutely placed screen-reader labels inside a cell stay inside the scroll box instead of widening the page */
 .ctas-evidence-table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: .78rem; }
 .ctas-evidence-table caption { padding: .65rem; text-align: left; color: var(--ink-3); }
 .ctas-evidence-table th, .ctas-evidence-table td { padding: .55rem .65rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
