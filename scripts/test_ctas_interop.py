@@ -647,6 +647,44 @@ class FixtureExportTests(unittest.TestCase):
         added = int(line.split()[1])
         self.assertLess(added, 2 * 1024 * 1024, line)
 
+    def test_a_candidate_without_provider_links_validates(self):
+        # 2026-10-21/22: 1,083 of 17,762 live events (high-energy triggers with no external
+        # page) carry no "links" list, the schema required one, and the release-time schema
+        # check refused every CTAS release for a day. "links" is optional (the exporter reads
+        # it with a default of none); a truly required key must still fail.
+        import copy
+        from jsonschema import Draft202012Validator
+        from referencing import Registry, Resource
+        from referencing.jsonschema import DRAFT202012
+
+        registry = Registry()
+        for folder in (ROOT / "ctas/schemas", ROOT / "ctas/schema"):
+            for path in folder.glob("*.json"):
+                contents = dict(json.loads(path.read_text()))
+                contents.pop("$id", None)
+                registry = registry.with_resource(path.resolve().as_uri(), Resource.from_contents(contents, default_specification=DRAFT202012))
+        chunk_schema_path = ROOT / "ctas/schemas/candidate-chunk.schema.json"
+        chunk_schema = json.loads(chunk_schema_path.read_text())
+        candidate_schema = {
+            "$schema": chunk_schema["$schema"], "$id": chunk_schema_path.resolve().as_uri(),
+            "$defs": chunk_schema["$defs"], "$ref": "#/$defs/candidate",
+        }
+        check = Draft202012Validator(candidate_schema, registry=registry)
+        candidate = None
+        for path in sorted(self.out.glob("candidate-chunks/*.json")):
+            document = json.loads(path.read_text())
+            if document.get("candidates"):
+                candidate = document["candidates"][0]
+                break
+        self.assertIsNotNone(candidate, "the fixture release has no inline dossier chunk")
+        self.assertEqual([error.message for error in check.iter_errors(candidate)], [])
+        without_links = copy.deepcopy(candidate)
+        without_links.pop("links", None)
+        self.assertEqual([error.message for error in check.iter_errors(without_links)], [])
+        without_id = copy.deepcopy(candidate)
+        without_id.pop("event_id")
+        self.assertTrue(any("event_id" in error.message for error in check.iter_errors(without_id)))
+
     def test_schema_validator_accepts_the_release(self):
         import validate_ctas_schemas as validator
 
