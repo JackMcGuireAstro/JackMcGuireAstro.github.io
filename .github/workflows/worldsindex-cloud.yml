@@ -25,6 +25,7 @@ on:
 permissions:
   contents: write   # push the worldsindex-data release branch; replace the VOParquet assets of the rolling "worldsindex-data-latest" release
   actions: write    # start "Validate and deploy site"
+  issues: write     # check-warning, fallback-active and release-blocked issues (scripts/release_issues.py; RESILIENCE.md)
 
 concurrency:
   group: worldsindex-cloud
@@ -99,6 +100,8 @@ jobs:
           DEPLOY_TOKEN: ${{ github.token }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
           WORK: ${{ runner.temp }}/worldsindex-cloud
+          # Named in fallback-active and release-blocked issues so they reach email.
+          RELEASE_ISSUE_MENTION: "@JackMcGuireAstro"
         run: bash site/scripts/worldsindex_cloud_run.sh
       - name: Clean up credentials and scrub the log
         if: always()

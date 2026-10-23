@@ -43,6 +43,22 @@
     "token_http_status": {
       "type": ["integer", "null"]
     },
+    "site_commit": {
+      "type": ["string", "null"],
+      "description": "The website commit whose code built the release; the next run reads it back as the known-good code (RESILIENCE.md)."
+    },
+    "code_fallback": {
+      "type": "object",
+      "description": "Present when a release check blocked the current site code and the code that produced the previously published release built this release instead (RESILIENCE.md).",
+      "properties": {
+        "failed_commit": {"type": ["string", "null"]},
+        "failed_check": {"type": ["string", "null"]},
+        "failed_checks": {"type": "array", "items": {"type": "string"}},
+        "detail": {"type": ["string", "null"]},
+        "used_commit": {"type": ["string", "null"]}
+      },
+      "required": ["failed_commit", "failed_check", "used_commit"]
+    },
     "token_probe_error": {
       "type": "string"
     }

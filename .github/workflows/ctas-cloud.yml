@@ -33,6 +33,7 @@ on:
 permissions:
   contents: write   # push the ctas-data release branch; replace the VOParquet assets of the rolling "ctas-data-latest" release
   actions: write    # start "Validate and deploy site"
+  issues: write     # check-warning, fallback-active and release-blocked issues (scripts/release_issues.py; RESILIENCE.md)
 
 # One run at a time; a run that starts while another is going waits for it.
 concurrency:
@@ -121,6 +122,8 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
           CHAIN: ${{ (github.event_name == 'schedule' || inputs.chain) && '1' || '0' }}
           WORK: ${{ runner.temp }}/ctas-cloud
+          # Named in fallback-active and release-blocked issues so they reach email.
+          RELEASE_ISSUE_MENTION: "@JackMcGuireAstro"
         run: bash site/scripts/ctas_cloud_run.sh
       - name: Clean up credentials
         if: always()

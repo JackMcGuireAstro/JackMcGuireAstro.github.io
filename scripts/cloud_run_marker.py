@@ -20,6 +20,16 @@ owner's ``gh auth token``) is tried against https://api.github.com/user: the mar
 records whether GitHub accepted it and, when the response carries the
 ``github-authentication-token-expiration`` header (keys that expire), the expiry
 date, date only. Nothing secret is written: never the key, nor the account it names.
+
+``site_commit`` is the website commit whose code builds the release (``--site-commit``,
+or HEAD of ``--site``); the next run reads it back as the known-good code. When a release
+check blocked the current code and the cloud runner rebuilt the release with the code that
+produced the previously published release (RESILIENCE.md), ``--fallback DECISION.json``
+adds ``code_fallback: {failed_commit, failed_check, detail, used_commit}`` (plus the full
+list of failed checks), so the published marker says which code built the release and why.
+The marker is written by the runner (the current code) even when the release is built by
+the fallback code, and it is outside the checksum-bound release, so the key can be added
+after the checks without touching certified bytes.
 """
 from __future__ import annotations
 
@@ -27,6 +37,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -83,8 +94,31 @@ def probe_token(token: str, opener=None, timeout: float = 20) -> dict:
             "token_expires_at": parse_expiry(headers.get(TOKEN_EXPIRY_HEADER) if headers else None)}
 
 
+def site_head(site: str | None) -> str | None:
+    if not site:
+        return None
+    completed = subprocess.run(["git", "-C", site, "rev-parse", "HEAD"], capture_output=True, text=True)
+    commit = completed.stdout.strip()
+    return commit if completed.returncode == 0 and re.fullmatch(r"[0-9a-f]{40}", commit) else None
+
+
+def fallback_fields(decision: dict | None) -> dict:
+    """The ``code_fallback`` key of a release built by the fallback code after the current
+    code was blocked (decision of scripts/release_checks.py decide)."""
+    if not isinstance(decision, dict) or not decision.get("release_commit"):
+        return {}
+    blocking = list(decision.get("blocking") or [])
+    return {"code_fallback": {
+        "failed_commit": decision.get("main_commit"),
+        "failed_check": blocking[0] if blocking else None,
+        "failed_checks": blocking,
+        "detail": str(decision.get("blocking_detail") or decision.get("explanation") or decision.get("reason") or "")[:300],
+        "used_commit": decision.get("release_commit"),
+    }}
+
+
 def build_marker(workflow: str, receipt: dict, environ: dict, generated_at: str | None = None,
-                 token: dict | None = None) -> dict:
+                 token: dict | None = None, site_commit: str | None = None, decision: dict | None = None) -> dict:
     run_id = environ.get("GITHUB_RUN_ID") or None
     server = environ.get("GITHUB_SERVER_URL", "https://github.com").rstrip("/")
     repository = environ.get("GITHUB_REPOSITORY")
@@ -98,6 +132,8 @@ def build_marker(workflow: str, receipt: dict, environ: dict, generated_at: str 
         "state_saved_at": receipt.get("saved_at"),
         "state_restored_at": receipt.get("restored_at"),
         **(token or {"token_status": "not-checked", "token_expires_at": None}),
+        "site_commit": site_commit,
+        **fallback_fields(decision),
     }
 
 
@@ -107,12 +143,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--receipt", help="restore receipt written by the state script (STATE_RECEIPT)")
     parser.add_argument("--output", required=True, help="where to write the marker")
     parser.add_argument("--probe-token", action="store_true", help="record whether GH_TOKEN works and when it expires")
+    parser.add_argument("--site-commit", help="the website commit whose code builds this release")
+    parser.add_argument("--site", help="the website checkout; its HEAD is the site commit when --site-commit is not given")
+    parser.add_argument("--fallback", help="decision JSON (scripts/release_checks.py decide) of a fallback-code retry")
     args = parser.parse_args(argv)
     token = probe_token(os.environ.get("GH_TOKEN", "")) if args.probe_token else None
-    marker = build_marker(args.workflow, read_receipt(args.receipt), os.environ, token=token)
+    decision = read_receipt(args.fallback) if args.fallback else None
+    marker = build_marker(args.workflow, read_receipt(args.receipt), os.environ, token=token,
+                          site_commit=args.site_commit or site_head(args.site), decision=decision)
     Path(args.output).write_text(json.dumps(marker, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"cloud-run marker: state saved {marker['state_saved_at'] or 'unknown'} ({marker['state_asset'] or 'no receipt'}); "
-          f"key {marker['token_status']}, expires {marker['token_expires_at'] or 'never or unknown'}")
+          f"key {marker['token_status']}, expires {marker['token_expires_at'] or 'never or unknown'}; "
+          f"site code {(marker['site_commit'] or 'unknown')[:10]}" + (" (code fallback)" if marker.get("code_fallback") else ""))
     return 0
 
 

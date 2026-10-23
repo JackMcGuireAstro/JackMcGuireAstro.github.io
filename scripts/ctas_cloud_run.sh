@@ -9,6 +9,16 @@
 #   4. stop the collector cleanly and save the database back to the state repo
 #   5. start the site deployment when a release was published
 #
+# Resilience (RESILIENCE.md): every release check is classified (scripts/check-classes.json).
+# When one blocks with the current site code (publisher exit 3) and that code differs from
+# the commit that produced the currently published release, the release step is retried
+# ONCE with that commit's code on the same frozen database, if scripts/release_checks.py
+# decide allows it; the marker then carries code_fallback and a "CTAS published with
+# fallback code" issue is opened or updated. Never more than one fallback attempt per run;
+# the state is saved exactly as before either way. Each run syncs the check-warning,
+# fallback-active and release-blocked issues, and a failed or fallback run pushes a
+# sanitized report to the run-reports branch.
+#
 # Environment (set by the workflow):
 #   SITE              this repository's checkout (main)
 #   BACKEND           the collector's code (checkout of the private state repo)
@@ -30,8 +40,46 @@ DATA="$BACKEND/data"
 PORT=${SOC_PORT:-8787}
 mkdir -p "$LOGS"
 
-say() { printf '%s  %s\n' "$(date -u '+%H:%M:%S')" "$*"; }
+say() { printf '%s  %s\n' "$(date -u '+%H:%M:%S')" "$*" | tee -a "$LOGS/runner.log"; }
 fail() { say "FAIL  $*"; stop_collector; exit 1; }
+# shellcheck source=code_fallback.sh
+. "$SITE/scripts/code_fallback.sh"
+REPO="${GITHUB_REPOSITORY:-JackMcGuireAstro/JackMcGuireAstro.github.io}"
+MAIN_COMMIT=$(git -C "$SITE" rev-parse HEAD 2>/dev/null || true)
+CHECKS_MAIN="$WORK/checks-main.jsonl"
+CHECKS_FALLBACK="$WORK/checks-fallback.jsonl"
+DECISION="$WORK/decision.json"
+FROZEN="$WORK/frozen-main.db"
+FALLBACK_USED=0
+RELEASE_COMMIT=""
+rm -f -- "$CHECKS_MAIN" "$CHECKS_FALLBACK" "$DECISION" "$FROZEN"
+# Every secret-bearing variable the CTAS workflow sets (scripts/run_report.py
+# SECRET_ENV_NAMES; scripts/test_run_report.py keeps the list complete), removed from
+# everything that becomes public (issues, reports), and the collector's settings file.
+SECRET_ENV="STATE_TOKEN DEPLOY_TOKEN GH_TOKEN PUSH_TOKEN BACKEND_ENV AAVSO_AID_API_TOKEN_OVERRIDE"
+
+FALLBACK_SCOPE=ctas-publish
+FALLBACK_WORKFLOW=ctas-cloud.yml
+decide() { fallback_decide "$@"; }
+
+# The issues and the run report; a failure of either is reported, never fatal.
+ISSUES_SYNCED=0
+sync_issues() {
+  [ "$DRY_RUN" != "1" ] && [ "$ISSUES_SYNCED" -eq 0 ] || return 0
+  ISSUES_SYNCED=1
+  GH_TOKEN="$DEPLOY_TOKEN" CHECK_SECRET_ENV="$SECRET_ENV" python3 "$SITE/scripts/release_issues.py" sync --scope ctas-publish \
+    --results "$CHECKS_MAIN" --decision "$DECISION" --repo "$REPO" --secret-env "$SECRET_ENV" \
+    --secret-file "$BACKEND/.env" 2>&1 | sed 's/^/issues: /' || true
+}
+push_report() {  # push_report <failed|fallback|blocked>
+  [ "$DRY_RUN" != "1" ] || return 0
+  python3 "$SITE/scripts/run_report.py" build --workflow ctas-cloud.yml --outcome "$1" --out "$WORK/run-report.json" \
+    --commit "$MAIN_COMMIT" --log "$LOGS/runner.log" --log "$LOGS/publish/publish.log" --log "$LOGS/publish-fallback/publish.log" \
+    --results "$CHECKS_MAIN" --results "$CHECKS_FALLBACK" --decision "$DECISION" \
+    --secret-env "$SECRET_ENV" --secret-file "$BACKEND/.env" \
+    && python3 "$SITE/scripts/run_report.py" push --report "$WORK/run-report.json" --repo-dir "$SITE" \
+    || echo "WARN  could not push the run report"
+}
 
 COLLECTOR_PID=""
 stop_collector() {
@@ -47,18 +95,44 @@ stop_collector() {
   fi
   COLLECTOR_PID=""
 }
-trap stop_collector EXIT
+on_exit() {
+  local status=$?
+  stop_collector
+  rm -f -- "$FROZEN"
+  if [ "$status" -ne 0 ]; then
+    [ -s "$DECISION" ] || printf '{"action": "block", "reason": "run-failed", "explanation": "the run failed (exit %s) before or outside the release checks", "main_commit": "%s", "blocking": []}\n' "$status" "$MAIN_COMMIT" >"$DECISION"
+    sync_issues
+    if [ "$FALLBACK_USED" -eq 1 ]; then push_report fallback
+    elif [ -s "$CHECKS_MAIN" ] && grep -q '"outcome": "block"' "$CHECKS_MAIN"; then push_report blocked
+    else push_report failed; fi
+  elif [ "$FALLBACK_USED" -eq 1 ]; then
+    push_report fallback
+  fi
+  return "$status"
+}
+trap on_exit EXIT
 
 # ------------------------------------------------------------------ 1. restore
 say "restoring the database from the state repository"
-STATE_RECEIPT="$WORK/state-restored.json" GH_TOKEN="$STATE_TOKEN" \
-  python3 "$SITE/scripts/ctas_cloud_state.py" restore "$DATA" || fail "could not restore the state"
+RESTORE_LOG="$LOGS/restore.log"
+if STATE_RECEIPT="$WORK/state-restored.json" GH_TOKEN="$STATE_TOKEN" \
+  python3 "$SITE/scripts/ctas_cloud_state.py" restore "$DATA" >"$RESTORE_LOG" 2>&1; then
+  cat "$RESTORE_LOG"
+else
+  cat "$RESTORE_LOG"
+  # A restore refusal is an integrity check without fallback (older code must never accept
+  # an archive the current safety rules refuse); it opens a release-blocked issue.
+  CHECK_SECRET_ENV="$SECRET_ENV" python3 "$SITE/scripts/release_checks.py" record --scope ctas-publish --id ctas.restore \
+    --exit-code 1 --output "$RESTORE_LOG" --results "$CHECKS_MAIN" >/dev/null 2>&1 || true
+  decide >/dev/null
+  fail "could not restore the state"
+fi
 # Public marker of this run (which state copy it restored and when that was saved,
 # whether the state key still works and when it expires),
 # published beside the release as ctas/data/cloud-run.json for the freshness watchdog.
 MARKER="$WORK/cloud-run.json"
 GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/cloud_run_marker.py" --workflow ctas-cloud.yml \
-  --receipt "$WORK/state-restored.json" --output "$MARKER" --probe-token || { say "WARN  could not write the cloud-run marker"; MARKER=""; }
+  --receipt "$WORK/state-restored.json" --output "$MARKER" --probe-token --site-commit "$MAIN_COMMIT" || { say "WARN  could not write the cloud-run marker"; MARKER=""; }
 
 # ------------------------------------------------------------------ 2. collect
 [ -f "$BACKEND/.env" ] || say "no .env for the collector; sources that need keys will be skipped"
@@ -92,13 +166,40 @@ say "building the release${PUBLISH_ARGS:+ (dry run)}"
 # CTAS_RELEASE_TOKEN lets the publisher replace the VOParquet assets of the rolling
 # "ctas-data-latest" GitHub Release (contents: write) named in ctas/data/bulk-downloads.json.
 COLLECTOR_COMMIT=$(git -C "$BACKEND" rev-parse HEAD 2>/dev/null || true)
+# CTAS_CHECK_RESULTS collects the classified check results; CTAS_KEEP_FROZEN_DB keeps the
+# frozen database of a run a release check blocked, for the fallback attempt below.
 PUBLISH_OUT=$(CTAS_SITE="$SITE" CTAS_DB="$DATA/soc.db" CTAS_LOG_DIR="$LOGS/publish" CTAS_CLOUD_RUN_MARKER="$MARKER" \
   CTAS_COLLECTOR_COMMIT="$COLLECTOR_COMMIT" CTAS_RELEASE_TOKEN="$DEPLOY_TOKEN" \
+  CTAS_CHECK_RESULTS="$CHECKS_MAIN" CTAS_KEEP_FROZEN_DB="$FROZEN" CHECK_SECRET_ENV="$SECRET_ENV" \
   DATA_BRANCH_DISPATCHER=0 DATA_BRANCH_COMPACT=0 bash "$SITE/scripts/publish_ctas.sh" "${PUBLISH_ARGS[@]}" 2>&1)
 PUBLISH_STATUS=$?
 printf '%s\n' "$PUBLISH_OUT" | tail -20
+printf '%s\n' "$PUBLISH_OUT" | grep -E '^(FAIL|WARN)  ' >>"$LOGS/runner.log" || true
 PUBLISHED=0
 printf '%s\n' "$PUBLISH_OUT" | grep -q '^published ' && PUBLISHED=1
+
+# The one fallback attempt (scripts/code_fallback.sh): the code that produced the currently
+# published release, on the same frozen database.
+publish_with() {  # <site> <log dir> <results> <marker>
+  CTAS_SITE="$1" CTAS_DB="$DATA/soc.db" CTAS_FROZEN_DB="$FROZEN" CTAS_LOG_DIR="$2" CTAS_CHECK_RESULTS="$3" \
+    CTAS_CLOUD_RUN_MARKER="$4" CTAS_COLLECTOR_COMMIT="$COLLECTOR_COMMIT" CTAS_RELEASE_TOKEN="$DEPLOY_TOKEN" \
+    CHECK_SECRET_ENV="$SECRET_ENV" DATA_BRANCH_DISPATCHER=0 DATA_BRANCH_COMPACT=0 \
+    bash "$1/scripts/publish_ctas.sh" "${PUBLISH_ARGS[@]}"
+}
+fallback_ready() { [ -s "$FROZEN" ]; }
+if [ "$PUBLISH_STATUS" -eq 3 ]; then
+  # The code that produced the currently published release (the publisher did not publish,
+  # so its data store still holds that release).
+  RELEASE_COMMIT=$(release_commit_of "$SITE" ctas)
+  say "the published CTAS release was produced by site commit $(printf '%.10s' "${RELEASE_COMMIT:-unknown}"); this run used $(printf '%.10s' "$MAIN_COMMIT")"
+fi
+code_fallback_run ctas "$PUBLISH_STATUS"
+if [ "$FALLBACK_USED" -eq 1 ]; then
+  PUBLISH_STATUS=0
+  printf '%s\n' "$FALLBACK_OUT" | grep -q '^published ' && PUBLISHED=1
+fi
+rm -f -- "$FROZEN"
+sync_issues
 
 # ------------------------------------------------------------------ 4. save
 stop_collector

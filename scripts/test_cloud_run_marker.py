@@ -77,12 +77,48 @@ class MarkerTests(unittest.TestCase):
             "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/18527",
             "state_asset": "wi-state-20261016T061500Z.tar.gz", "state_saved_at": "2026-10-16T06:15:00Z",
             "state_restored_at": "2026-10-16T07:02:10Z",
-            "token_status": "not-checked", "token_expires_at": None,
+            "token_status": "not-checked", "token_expires_at": None, "site_commit": None,
         })
         # Outside Actions, and without a receipt, the fields are simply null.
         bare = marker.build_marker("ctas-cloud.yml", {}, {}, generated_at="2026-10-16T07:02:11Z")
         self.assertIsNone(bare["run_url"])
         self.assertIsNone(bare["state_saved_at"])
+
+    def test_marker_names_the_site_code_and_a_code_fallback(self):
+        # RESILIENCE.md: the marker says which website commit built the release, and when a
+        # release check blocked the current code and the code that produced the previous
+        # release published instead, says so in code_fallback.
+        main, good = "a" * 40, "b" * 40
+        plain = marker.build_marker("ctas-cloud.yml", {}, ACTIONS_ENV, site_commit=main)
+        self.assertEqual(plain["site_commit"], main)
+        self.assertNotIn("code_fallback", plain)
+        decision = {"action": "use-fallback", "main_commit": main, "release_commit": good,
+                    "blocking": ["ctas.schemas"], "reason": "fallback-passed",
+                    "blocking_detail": "status.schema.json 1 file(s)",
+                    "explanation": "ctas.schemas failed with main"}
+        fell_back = marker.build_marker("ctas-cloud.yml", {}, ACTIONS_ENV, site_commit=good, decision=decision)
+        self.assertEqual(fell_back["site_commit"], good)
+        self.assertEqual(fell_back["code_fallback"], {
+            "failed_commit": main, "failed_check": "ctas.schemas", "failed_checks": ["ctas.schemas"],
+            "detail": "status.schema.json 1 file(s)", "used_commit": good})
+        self.assertEqual(marker.fallback_fields({"action": "block"}), {})
+        with tempfile.TemporaryDirectory(prefix="cloud-run-marker-site-") as folder:
+            subprocess.run(["git", "init", "-q", folder], check=True)
+            subprocess.run(["git", "-C", folder, "-c", "user.name=t", "-c", "user.email=t@example.invalid",
+                            "commit", "-q", "--allow-empty", "-m", "site"], check=True)
+            head = subprocess.run(["git", "-C", folder, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+            self.assertEqual(marker.site_head(folder), head)
+            (Path(folder) / "decision.json").write_text(json.dumps(decision))
+            result = subprocess.run([sys.executable, str(ROOT / "scripts/cloud_run_marker.py"), "--workflow", "ctas-cloud.yml",
+                                     "--site", folder, "--fallback", str(Path(folder) / "decision.json"),
+                                     "--output", str(Path(folder) / "cloud-run.json")],
+                                    text=True, capture_output=True, env={"PATH": "/usr/bin:/bin"})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            doc = json.loads((Path(folder) / "cloud-run.json").read_text())
+            self.assertEqual(doc["site_commit"], head)
+            self.assertEqual(doc["code_fallback"]["used_commit"], good)
+            self.assertIn("(code fallback)", result.stdout)
+        self.assertIsNone(marker.site_head(None))
 
     def test_cli_writes_the_marker_and_tolerates_a_missing_receipt(self):
         with tempfile.TemporaryDirectory(prefix="cloud-run-marker-") as folder:
