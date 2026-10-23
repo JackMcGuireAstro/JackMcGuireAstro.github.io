@@ -250,6 +250,25 @@ class WiringTests(unittest.TestCase):
         self.assertIn("scripts/run_report.py push --report", record_runs)
         self.assertIn("history/deploy.json", record_runs)
 
+    def test_a_hanging_browser_suite_cannot_block_through_the_step_time_limit(self):
+        # The browser step may hit its timeout-minutes (a page waiting for "networkidle" on a
+        # slow third-party host): continue-on-error keeps the deploy going. Its only blocking
+        # check runs first and under its own `timeout`, so it is recorded, never missing.
+        import yaml
+        workflow = yaml.safe_load((ROOT / ".github/workflows/worldsindex-release.yml").read_text())
+        step = next(s for s in workflow["jobs"]["validate"]["steps"] if s.get("run", "").strip() == "bash scripts/deploy_checks.sh browser .")
+        self.assertIs(step.get("continue-on-error"), True)
+        deploy = (ROOT / "scripts/deploy_checks.sh").read_text()
+        body = deploy.split("group_browser() {", 1)[1].split("\n}", 1)[0]
+        ids = re.findall(r"^\s*check (\S+) (.*)$", body, re.MULTILINE)
+        self.assertEqual(ids[0][0], "ctas.test_ctas_astro_evidence")
+        self.assertTrue(ids[0][1].startswith("timeout "), ids[0][1])
+        for check_id, _ in ids[1:]:
+            self.assertEqual(CLASSES["checks"][check_id]["class"], "advisory", check_id)
+        # timeout-minutes of the step bounds the group: the blocking check's own limit is inside it
+        seconds = int(re.search(r"timeout -k \d+ (\d+) ", ids[0][1]).group(1))
+        self.assertLess(seconds + 10, step["timeout-minutes"] * 60)
+
     def test_cloud_workflows_may_write_issues(self):
         for name in ("ctas-cloud.yml", "worldsindex-cloud.yml"):
             text = (ROOT / ".github/workflows" / name).read_text()

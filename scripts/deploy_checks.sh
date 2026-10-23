@@ -135,7 +135,10 @@ group_ctas_schemas() {
 }
 
 group_browser() {
-  check ctas.test_ctas_astro_evidence python3 scripts/test_ctas_astro_evidence.py
+  # The workflow step runs with continue-on-error (a hanging advisory browser suite must not
+  # block through the step's time limit), so the one integrity check of this group runs
+  # first and under its own limit: a hang is a recorded failure, never a missing result.
+  check ctas.test_ctas_astro_evidence timeout -k 10 300 python3 scripts/test_ctas_astro_evidence.py
   check ctas.test_ctas_browser python3 scripts/test_ctas_browser.py
   check browser.tonight python3 scripts/test_tonight_browser.py
   check browser.tools python3 scripts/test_tools_browser.py

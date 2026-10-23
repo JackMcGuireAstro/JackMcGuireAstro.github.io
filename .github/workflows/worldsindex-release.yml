@@ -155,8 +155,14 @@ jobs:
       # WCAG via axe-core, no first-party console errors, the live panels) and the evidence
       # schema. The browser checks are advisory: they warn, never block (2026-10-21:
       # two of them blocked every deploy for 41 hours while the data was fine).
+      # continue-on-error: a browser suite that hangs (a page waiting for "networkidle" on
+      # a slow third-party host) must not stop the deploy through the step's time limit
+      # either; the results recorded before the limit stay, the missing ones were advisory.
+      # The evidence schema (integrity) runs first, under its own `timeout`, so a hang there
+      # is recorded as a failure (fail-closed) well inside the limit.
       - name: CTAS page in a real browser, and evidence schema
         timeout-minutes: 12
+        continue-on-error: true
         run: bash scripts/deploy_checks.sh browser .
       - name: Freshness watchdog, publishing, housekeeping and database retention
         run: bash scripts/deploy_checks.sh tooling .
