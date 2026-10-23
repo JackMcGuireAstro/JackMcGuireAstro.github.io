@@ -82,6 +82,27 @@ class SanitizerTests(unittest.TestCase):
         self.assertEqual(rr.sanitize(""), "")
         self.assertEqual(rr.sanitize_tree({"a": [f"x {GHP}", 3, None]}, []), {"a": ["x ***", 3, None]})
 
+    def test_query_string_keys_and_percent_encoded_values_are_removed(self):
+        # A settings value with URL-special characters appears percent-encoded in a request
+        # URL; a key the run does not know appears as a query parameter (review 2026-10-23).
+        value = "s3cr3t+/val=ue9876"
+        lines = [
+            "FAIL  GET https://example.org/q?key=s3cr3t%2B%2Fval%3Due9876 -> 403",
+            "FAIL  GET https://example.org/q?key=s3cr3t%2B%2Fval%3Due9876&x=1 (form s3cr3t%2B%2Fval%3Due9876)",
+            "FAIL  GET https://example.org/q?a=1&token=unknownTok3n1234567890 -> 403",
+            "FAIL  GET https://www.wis-tns.org/api/get?api_key=Zq9xW2vB7nM4kL1pQ8rT&objname=2026abc",
+            "FAIL  https://bucket.s3.amazonaws.com/f?X-Amz-Credential=AKIDEXAMPLE%2F2026&X-Amz-Signature=abcdef0123456789",
+        ]
+        clean = rr.sanitize("\n".join(lines), [value])
+        for secret in ("s3cr3t%2B%2Fval%3Due9876", "unknownTok3n1234567890", "Zq9xW2vB7nM4kL1pQ8rT", "abcdef0123456789",
+                       "AKIDEXAMPLE"):
+            self.assertNotIn(secret, clean, secret)
+        self.assertIn("api_key=***&objname=2026abc", clean)
+        self.assertIn("?a=1&token=***", clean)
+        # ordinary query strings stay readable
+        plain = "https://alasky.cds.unistra.fr/hips-image-services/hips2fits?hips=CDS%2FP%2FDSS2%2Fcolor&width=96&ra=1.5"
+        self.assertEqual(rr.sanitize(plain), plain)
+
     def test_a_surviving_credential_shape_refuses_the_report(self):
         # A shape the redaction does not know but the final scan does (a too-short ghp_ token,
         # an Authorization header whose value is cut oddly) refuses the whole report.

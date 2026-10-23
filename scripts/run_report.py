@@ -45,6 +45,7 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Any, Iterable
+from urllib.parse import quote, quote_plus
 
 REPORT_SCHEMA = "run-report@2"
 MASK = "***"
@@ -69,6 +70,11 @@ ASSIGNMENTS = (
 AUTH_HEADER = re.compile(r"(?i)\b((?:proxy-)?authorization)\s*[:=]\s*(?:(?:basic|bearer|token)\s+)?(?!\*\*\*)\S+")
 BEARER = re.compile(r"(?i)\b(bearer)\s+(?!\*\*\*)[A-Za-z0-9._~+/=-]{8,}|\b(token)\s+(?!\*\*\*)[A-Za-z0-9._~+/=-]{12,}")
 URL_CREDENTIALS = re.compile(r"(?i)\b([a-z][a-z0-9+.-]*://)(?!\*\*\*@)[^/\s:@'\"]+(?::[^/\s@'\"]*)?@")
+# Credentials in a query string (a provider key a collector or builder puts in its request URL,
+# a signed URL's signature), whatever the value looks like.
+QUERY_SECRET = re.compile(r"(?i)([?&;](?:api[_-]?key|apikey|api[_-]?token|access[_-]?token|auth[_-]?token|token|key|"
+                          r"secret|client[_-]?secret|password|passwd|sig|signature|x-amz-signature|x-amz-credential|"
+                          r"x-amz-security-token)=)(?!\*\*\*)[^&#\s'\"<>]+")
 ACCESS_TOKEN = re.compile(r"(?i)\bx-access-token:(?!\*\*\*)[^\s@'\"]+")
 PRIVATE_KEY = re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?(-----END [A-Z ]*PRIVATE KEY-----|$)", re.S)
 # Looser shapes for the final scan: anything here after sanitizing refuses the report.
@@ -150,6 +156,8 @@ def secret_forms(values: Iterable[str]) -> list[str]:
         if not value or len(value) < 4:
             continue
         forms.add(value)
+        # percent-encoded, as in a request URL's query string (a key with + / = characters)
+        forms.update({quote(value, safe=""), quote_plus(value, safe="")})
         for raw in (value, f"x-access-token:{value}"):
             encoded = base64.b64encode(raw.encode()).decode()
             forms.update({encoded, encoded.rstrip("="), base64.urlsafe_b64encode(raw.encode()).decode().rstrip("=")})
@@ -171,6 +179,7 @@ def sanitize(text: str, secret_values: Iterable[str] = ()) -> str:
     text = BEARER.sub(lambda m: f"{m.group(1) or m.group(2)} {MASK}", text)
     text = ACCESS_TOKEN.sub(f"x-access-token:{MASK}", text)
     text = URL_CREDENTIALS.sub(lambda m: f"{m.group(1)}{MASK}@", text)
+    text = QUERY_SECRET.sub(lambda m: f"{m.group(1)}{MASK}", text)
     return text
 
 
