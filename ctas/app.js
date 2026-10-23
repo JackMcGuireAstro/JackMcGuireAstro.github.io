@@ -1393,7 +1393,9 @@
     if (skyHeading) skyHeading.textContent = "Sky catalog";
     if (liveDot) liveDot.style.opacity = localPreview || stale || cached || !state.snapshot ? "0.35" : "1";
     var assurance = status.static_snapshot_verification || status.static_catalog_assurance || {};
-    var snapshotVerified = assurance.status === "verified-static-snapshot" || assurance.status === "certified-static-catalog";
+    // verified-with-warnings: every integrity gate passed; only advisory gates (budgets, page copy) failed
+    var verifiedWithWarnings = assurance.status === "verified-with-warnings";
+    var snapshotVerified = assurance.status === "verified-static-snapshot" || assurance.status === "certified-static-catalog" || verifiedWithWarnings;
     var failedGateIds = Array.isArray(assurance.failed_gate_ids) ? assurance.failed_gate_ids : [];
     var publicationBindingGates = ["deployed-code-binding", "local-origin-code-alignment"];
     var publicationBindingPending = failedGateIds.length > 0 && failedGateIds.every(function (gateId) {
@@ -1401,11 +1403,13 @@
     });
     var checkCount = Number(assurance.check_count);
     var passedCheckCount = Number(assurance.passed_check_count);
-    var integrityValue = snapshotVerified ? "Verified" : publicationBindingPending && Number.isFinite(checkCount) && Number.isFinite(passedCheckCount)
+    var integrityValue = snapshotVerified ? (verifiedWithWarnings ? "Verified, with warnings" : "Verified") : publicationBindingPending && Number.isFinite(checkCount) && Number.isFinite(passedCheckCount)
       ? passedCheckCount + " of " + checkCount + " checks passed"
       : humanKey(assurance.status || "pending");
     var integrityDetail = publicationBindingPending
       ? "At compilation, the final local commit and origin publication bindings had not yet been recorded"
+      : verifiedWithWarnings
+        ? "Every integrity check passed; advisory checks with warnings: " + esc((Array.isArray(assurance.warning_gate_ids) ? assurance.warning_gate_ids : failedGateIds).join(", "))
       : assurance.content_release_id
         ? "Checksums and public-file consistency · Snapshot " + esc(shortHash(assurance.content_release_id)) + "…"
         : "Checksum report available below";

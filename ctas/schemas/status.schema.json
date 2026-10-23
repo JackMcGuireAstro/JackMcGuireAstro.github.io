@@ -137,6 +137,7 @@
         "status": {
           "enum": [
             "verified-static-snapshot",
+            "verified-with-warnings",
             "verification-failed",
             "publication-binding-pending"
           ]
@@ -157,6 +158,13 @@
           "items": {
             "type": "string"
           }
+        },
+        "warning_gate_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Present when status is verified-with-warnings: the advisory gates that failed (every integrity gate passed; scripts/check-classes.json)."
         },
         "report_checksum_sha256": {
           "$ref": "common.schema.json#/$defs/sha256"

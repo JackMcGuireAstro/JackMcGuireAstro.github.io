@@ -80,7 +80,7 @@
       cell("Snapshot built", esc(relative(status.last_successful_update))) +
       cell("Latest record", esc(relative(status.latest_record_update))) +
       cell("Public candidates", number(status.candidate_count)) +
-      cell("Snapshot integrity", esc(verification.status === "verified-static-snapshot" ? "Verified" : human(verification.status || "pending")) + (verification.check_count ? " <small>" + number(verification.passed_check_count) + " of " + number(verification.check_count) + " checks</small>" : "")) +
+      cell("Snapshot integrity", esc(verification.status === "verified-static-snapshot" ? "Verified" : verification.status === "verified-with-warnings" ? "Verified, with warnings" : human(verification.status || "pending")) + (verification.check_count ? " <small>" + number(verification.passed_check_count) + " of " + number(verification.check_count) + " checks</small>" : "")) +
       cell("Release id", '<code>' + esc(text(verification.content_release_id || status.catalog_content_checksum_sha256).slice(0, 12)) + '…</code>') + '</div>';
   }
 
@@ -90,7 +90,9 @@
     var failed = Array.isArray((status.static_snapshot_verification || {}).failed_gate_ids) ? status.static_snapshot_verification.failed_gate_ids : [];
     var summary = "This release was built " + absolute(status.last_successful_update) + " and is valid until " + absolute(status.valid_until) + " (" + (stale ? "that window has passed" : "within its window") + "); " +
       "the newest retained record changed " + absolute(status.latest_record_update) + ". " + (status.degraded_source_count ? number(status.degraded_source_count) + " source" + (status.degraded_source_count === 1 ? " is" : "s are") + " in a degraded state." : "No source is in a degraded state.") +
-      (failed.length ? " " + failed.length + " verification gate" + (failed.length === 1 ? "" : "s") + " did not pass: " + failed.join(", ") + "." : " Every verification gate passed.");
+      (failed.length && (status.static_snapshot_verification || {}).status === "verified-with-warnings"
+        ? " Every integrity gate passed; " + failed.length + " advisory gate" + (failed.length === 1 ? "" : "s") + " reported a warning: " + failed.join(", ") + "."
+        : failed.length ? " " + failed.length + " verification gate" + (failed.length === 1 ? "" : "s") + " did not pass: " + failed.join(", ") + "." : " Every verification gate passed.");
     var rows = [
       ["Snapshot built", esc(absolute(status.last_successful_update)), esc(relative(status.last_successful_update))],
       ["Export checked", esc(absolute(status.export_checked_at)), esc(relative(status.export_checked_at))],

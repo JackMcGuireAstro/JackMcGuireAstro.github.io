@@ -767,7 +767,9 @@ check ctas.count-drop python3 scripts/release_checks.py count-drop --product cta
 phase_done release-integrity-checks
 # Each of the certificate's gates is a classified check (ctas.gate.<id>). A failed
 # advisory gate (a byte budget, page copy) does not stop the release; the published
-# certificate still says verification-failed and names the gate, so nothing is hidden.
+# certificate then reads verified-with-warnings and names the gate (warning_gate_ids in
+# status.json), so nothing is hidden. A failed integrity gate still in watch mode does not
+# stop it either, and its certificate reads verification-failed.
 python3 scripts/release_checks.py gates --scope ctas-publish --certificate ctas/data/certification.json \
   --results "$CHECK_RESULTS" --history "$CHECK_HISTORY" >>"$LOG" 2>&1 \
   || block "static-snapshot verification is $CERT_STATUS ($FAILED_GATES); refusing publication"

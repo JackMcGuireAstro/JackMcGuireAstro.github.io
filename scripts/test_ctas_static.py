@@ -1156,6 +1156,14 @@ class CertificateAndArtifactTests(unittest.TestCase):
             "verification-failed",
         )
         self.assertEqual(EXPORTER.certificate_status([]), "verification-failed")
+        # only advisory gates failed (scripts/check-classes.json): every integrity gate passed
+        self.assertEqual(
+            EXPORTER.certificate_status([
+                {"id": "catalog-population", "passed": True},
+                {"id": "bootstrap-performance-budget", "passed": False},
+            ]),
+            "verified-with-warnings",
+        )
 
     def test_semantic_catalog_checksum_ignores_source_poll_timestamps(self):
         first = event(source_coverage=[{

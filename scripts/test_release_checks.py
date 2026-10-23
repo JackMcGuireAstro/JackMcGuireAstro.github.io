@@ -315,6 +315,44 @@ class WiringTests(unittest.TestCase):
                        "deploy_checks.sh", "deploy_candidates.sh", "release_checks.sh", "code_fallback.sh"):
             self.assertEqual(subprocess.run(["/bin/bash", "-n", str(ROOT / "scripts" / script)]).returncode, 0, script)
 
+    def test_a_certificate_with_only_advisory_gate_failures_reads_verified_with_warnings(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("exporter_for_status", ROOT / "scripts/export_ctas_snapshot.py")
+        exporter = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(exporter)
+        advisory = {cid[len("ctas.gate."):] for cid, e in CLASSES["checks"].items() if cid.startswith("ctas.gate.") and e["class"] == "advisory"}
+        self.assertEqual(set(exporter.ADVISORY_GATE_IDS), advisory)
+        self.assertIn("bootstrap-performance-budget", advisory)
+        status = exporter.certificate_status
+        ok, budget, copy = ({"id": "catalog-population", "passed": True}, {"id": "bootstrap-performance-budget", "passed": False},
+                            {"id": "interpretation-and-limitations", "passed": False})
+        self.assertEqual(status([ok, budget, copy]), "verified-with-warnings")
+        # an integrity gate failure (also one still in watch mode) keeps verification-failed
+        self.assertEqual(status([budget, {"id": "catalog-population", "passed": False}]), "verification-failed")
+        self.assertEqual(status([budget, {"id": "changelog-feeds-and-source-accounting-integrity", "passed": False}]), "verification-failed")
+        self.assertEqual(status([budget, {"id": "deployed-code-binding", "passed": False}]), "verification-failed")
+        self.assertEqual(status([{"id": "deployed-code-binding", "passed": False}]), "publication-binding-pending")
+        self.assertEqual(status([ok]), "verified-static-snapshot")
+        # without the classification file nothing is advisory (older behaviour)
+        self.assertEqual(exporter.advisory_gate_ids(ROOT / "missing.json"), frozenset())
+        self.assertEqual(status([ok, budget], frozenset()), "verification-failed")
+        # status.json's summary lists the warnings; both schemas accept the new value
+        summary = exporter.verification_summary({"status": "verified-with-warnings", "schema": "s", "gates": [ok, budget],
+                                                 "report_checksum_sha256": "a" * 64, "valid_until": None, "content_release_id": "b" * 64})
+        self.assertEqual(summary["warning_gate_ids"], ["bootstrap-performance-budget"])
+        self.assertNotIn("warning_gate_ids", exporter.verification_summary({**summary, "status": "verified-static-snapshot", "schema": "s",
+                                                                             "gates": [ok], "valid_until": None}))
+        for name, pointer in (("status", ("properties", "static_snapshot_verification", "properties", "status", "enum")),
+                              ("certification", ("properties", "status", "enum"))):
+            node = json.loads((ROOT / f"ctas/schemas/{name}.schema.json").read_text())
+            for key in pointer:
+                node = node[key]
+            self.assertIn("verified-with-warnings", node)
+            self.assertIn("verification-failed", node)
+        for front in ("ctas/app.js", "ctas/status.js"):
+            self.assertIn('"verified-with-warnings"', (ROOT / front).read_text())
+            self.assertIn("Verified, with warnings", (ROOT / front).read_text())
+
     def test_new_files_are_bound_or_declared_unbound_with_a_reason(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("exporter_for_binding", ROOT / "scripts/export_ctas_snapshot.py")

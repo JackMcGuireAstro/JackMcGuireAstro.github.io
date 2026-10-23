@@ -4237,7 +4237,31 @@ def write_output_artifact(output_dir: Path, public_path: str, raw: bytes) -> Pat
     return target
 
 
-def certificate_status(gates: list[dict[str, Any]]) -> str:
+def advisory_gate_ids(classes_path: Path | None = None) -> frozenset[str]:
+    """Gate ids classed ``advisory`` in scripts/check-classes.json (``ctas.gate.<id>``): byte
+    budgets, page copy, derived-export round trips. Their failure never blocks a release
+    (RESILIENCE.md), so a certificate whose only failed gates are advisory reads
+    ``verified-with-warnings``, not ``verification-failed``. Empty without the file."""
+
+    path = classes_path or Path(__file__).resolve().parents[1] / "scripts" / "check-classes.json"
+    try:
+        checks = json.loads(path.read_text(encoding="utf-8")).get("checks") or {}
+    except (OSError, ValueError, AttributeError):
+        return frozenset()
+    return frozenset(
+        check_id[len("ctas.gate."):] for check_id, entry in checks.items()
+        if check_id.startswith("ctas.gate.") and isinstance(entry, dict) and entry.get("class") == "advisory"
+    )
+
+
+ADVISORY_GATE_IDS = advisory_gate_ids()
+
+
+def certificate_status(gates: list[dict[str, Any]], advisory_ids: frozenset[str] | None = None) -> str:
+    """verified-static-snapshot (every gate passed), verified-with-warnings (every integrity
+    gate passed; only advisory gates failed, listed in warning_gate_ids), publication-binding-
+    pending (only the two binding gates failed), else verification-failed."""
+
     if not gates:
         return "verification-failed"
     failed = [gate for gate in gates if gate.get("passed") is not True]
@@ -4247,6 +4271,9 @@ def certificate_status(gates: list[dict[str, Any]]) -> str:
     failed_ids = {str(gate.get("id") or "") for gate in failed}
     if failed_ids and failed_ids <= publication_binding_ids:
         return "publication-binding-pending"
+    advisory = ADVISORY_GATE_IDS if advisory_ids is None else advisory_ids
+    if failed_ids and failed_ids <= advisory:
+        return "verified-with-warnings"
     return "verification-failed"
 
 
@@ -4281,7 +4308,7 @@ def verification_summary(certificate: dict[str, Any]) -> dict[str, Any]:
     """status.json's copy of the verification outcome."""
 
     gates = certificate["gates"]
-    return {
+    summary = {
         "status": certificate["status"],
         "schema": certificate["schema"],
         "passed_check_count": sum(gate["passed"] is True for gate in gates),
@@ -4291,6 +4318,10 @@ def verification_summary(certificate: dict[str, Any]) -> dict[str, Any]:
         "valid_until": certificate["valid_until"],
         "content_release_id": certificate["content_release_id"],
     }
+    if certificate["status"] == "verified-with-warnings":
+        # additive: the advisory gates that failed (every integrity gate passed)
+        summary["warning_gate_ids"] = list(summary["failed_gate_ids"])
+    return summary
 
 
 def rebind_link_health(output_dir: Path, site_root: Path) -> int:
