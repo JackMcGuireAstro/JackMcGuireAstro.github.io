@@ -24,6 +24,31 @@ was on the Mac. The builder's `.env.local`, if any, is the `WORLDSINDEX_ENV` sec
 its values are scrubbed from the kept publish log. The move was done by
 `Move WorldsIndex to GitHub.command`. The sections below describe the earlier Mac operation.
 
+Resilience (2026-10-22, RESILIENCE.md). What changed in plain words:
+
+* Every release check has a class in `scripts/check-classes.json`. An **advisory** failure
+  (the schema of an optional document such as the monitor's, the front-end helper tests,
+  the round trips of the derived exports) never stops a release; it is a `WARN` line and
+  one `check-warning` issue. An **integrity** failure blocks; an **always_block** failure
+  (credential-shaped content, files outside the manifest, the manifest's own checksums)
+  always blocks.
+* A **new** integrity check, and each **new or changed** schema file under
+  `worldsindex/schemas`, only warns until it was first seen 24 hours ago and passed 3
+  consecutive real releases (`worldsindex/data/check-history.json`, published with each
+  release and read back by the next).
+* When a site check blocks, the cloud run rebuilds the static release **once with the code
+  that produced the release currently online**, from the same builder outputs (`--fast
+  --force`). If that passes, it is published, `worldsindex/data/cloud-run.json` says
+  `code_fallback` and an issue "WorldsIndex published with fallback code" is opened.
+  Builder-side failures (monitor, ExoNexus gates, atlas) and the restore never fall back.
+  The working data is saved exactly as before.
+* Two new guards: `worldsindex.checksums` (always_block) and `worldsindex.count-drop` (the
+  object count may not drop by more than 20%; in watch mode for its first day).
+* Each run's marker now records `site_commit`, the website commit whose code built it.
+* Failed or fallback runs write a sanitized report to the `run-reports` branch
+  (`reports/worldsindex-cloud/latest.json`); the watchdog raises `deploy-stale` when the
+  live site lags the data branch by more than 60 minutes.
+
 ## What runs
 
 `io.github.jackmcguireastro.worldsindex-mirror` runs **every two minutes** while the Mac is

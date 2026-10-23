@@ -43,6 +43,37 @@ dropped all but the newest three `certification_runs` (August audit evidence,
 No local dashboard, managed database, secret manager, or human approval step is
 part of this publication path.
 
+Resilience (2026-10-22, RESILIENCE.md). What changed in plain words:
+
+* Every release check has a class in `scripts/check-classes.json`. An **advisory** failure
+  (layout, byte budgets, page copy, a test that pins a real event by name, the round trips
+  of the derived ECSV/VOTable/VOParquet exports, feed and changelog formatting) never stops
+  a release: the log says `WARN`, and one `check-warning` issue per check is opened, closed
+  again when the check passes. An **integrity** failure blocks. An **always_block** failure
+  (secrets or banned keys, unmanifested files, the release's own checksums) always blocks.
+* A **new** integrity check, and each **new or changed** schema file under `ctas/schemas`,
+  only warns until it was first seen 24 hours ago and passed 4 consecutive real releases;
+  the counts are published with each release in `ctas/data/check-history.json` and read
+  back by the next one, so promotion needs no commit.
+* When a check blocks with the current site code, the cloud run publishes **once more with
+  the code that produced the release currently online**, on the same frozen database. If
+  that passes, the release goes out, its `ctas/data/cloud-run.json` says `code_fallback`
+  (which commit and check failed, which commit was used) and an issue "CTAS published with
+  fallback code" is opened. If the same check fails with that code too, the data is bad:
+  nothing is published and a `release-blocked` issue says so. Never more than one attempt
+  per run; the database is saved exactly as before.
+* Two new guards: `ctas.checksums` (every file the certificate lists has the bytes it
+  states; always_block) and `ctas.count-drop` (the candidate count may not drop by more
+  than 20% against the published release; integrity, in watch mode for its first day).
+* The deploy validates main and, if main's blocking checks fail, the code that produced
+  the current CTAS release, then the last deployed code, and deploys the first that passes
+  (section 4 of RESILIENCE.md). Right after a CTAS code landing the deployed front end is
+  the one the live certificate binds until the next CTAS release certifies main.
+* The hourly watchdog compares the live site with the data branches and raises
+  `deploy-stale` when the site lags by more than 60 minutes.
+* A failed or fallback run writes a sanitized report to the `run-reports` branch:
+  `https://raw.githubusercontent.com/JackMcGuireAstro/JackMcGuireAstro.github.io/run-reports/reports/ctas-cloud/latest.json`.
+
 ## Architecture
 
 ```text
