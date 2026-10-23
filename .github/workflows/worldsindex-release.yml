@@ -103,6 +103,7 @@ jobs:
       - name: WorldsIndex exports round trip and published JSON against worldsindex/schemas
         run: |
           python3 scripts/test_worldsindex_interop.py
+          python3 scripts/test_worldsindex_schemas.py
           python3 scripts/validate_worldsindex_schemas.py | tee -a "$GITHUB_STEP_SUMMARY"
       - name: QualQuest static export and public content
         run: python3 scripts/test_qualquest_static.py

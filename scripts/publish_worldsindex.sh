@@ -296,7 +296,7 @@ PY_OBSERVATIONS
 # UCDs, limit flags, provenance columns), and every published JSON file matches its schema
 # under worldsindex/schemas (named by worldsindex/openapi.yaml; the detail-shard sample is
 # bounded by WORLDSINDEX_SCHEMA_BUDGET_SECONDS, default 30). Either failure refuses the release.
-(cd "$SITE" && node --test scripts/test_worldsindex_interop.mjs && python3 scripts/test_worldsindex_interop.py --assets "$BULK_DIR") >>"$LOG" 2>&1 \
+(cd "$SITE" && node --test scripts/test_worldsindex_interop.mjs && python3 scripts/test_worldsindex_interop.py --assets "$BULK_DIR" && python3 scripts/test_worldsindex_schemas.py) >>"$LOG" 2>&1 \
   || die "interoperability exports do not round-trip; nothing published"
 (cd "$SITE" && python3 scripts/validate_worldsindex_schemas.py) >>"$LOG" 2>&1 \
   || die "published JSON does not validate against worldsindex/schemas; nothing published"

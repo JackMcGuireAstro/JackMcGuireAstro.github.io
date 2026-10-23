@@ -62,7 +62,11 @@
                 "type": "boolean"
               },
               "changed": {
-                "type": "boolean"
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Whether the provider's content changed since the last validated run; null when the probe failed and the question cannot be answered."
               },
               "checkedAt": {
                 "type": "string"
