@@ -18,7 +18,11 @@ import json
 import socket
 import threading
 import unittest
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from browser_test_net import isolate_browser  # noqa: E402  (third-party requests are blocked)
 
 ROOT = Path(__file__).resolve().parent.parent
 VIEWPORTS = ((320, 568), (390, 844), (768, 1024), (1280, 720))
@@ -70,7 +74,7 @@ class TonightBrowserTests(unittest.TestCase):
         cls.base = f"http://127.0.0.1:{port}"
         cls.playwright = sync_playwright().start()
         try:
-            cls.browser = cls.playwright.chromium.launch()
+            cls.browser = isolate_browser(cls.playwright.chromium.launch(), cls.base)
         except Exception as exc:  # pragma: no cover
             cls.playwright.stop()
             cls.server.shutdown()

@@ -399,6 +399,8 @@ BOUND_CODE_PATHS = (
     # binds which checks were allowed to warn for this release.
     "scripts/release_checks.py", "scripts/release_checks.sh", "scripts/check-classes.json",
     "scripts/run_report.py",
+    # The browser suites' third-party network policy (test_ctas_browser.py imports it).
+    "scripts/browser_test_net.py",
 )
 # Files of the resilience batch (2026-10-22) that the CTAS publisher does not execute while
 # building a release, so the certificate does not bind them (a change to them needs no

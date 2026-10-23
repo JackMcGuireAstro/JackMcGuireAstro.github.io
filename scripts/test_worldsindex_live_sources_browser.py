@@ -18,7 +18,11 @@ import json
 import socket
 import threading
 import unittest
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from browser_test_net import isolate_browser  # noqa: E402  (third-party requests are blocked)
 from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -60,7 +64,7 @@ class LiveSourcesBrowserTests(unittest.TestCase):
         cls.object_id = _planet_object()
         cls.playwright = sync_playwright().start()
         try:
-            cls.browser = cls.playwright.chromium.launch()
+            cls.browser = isolate_browser(cls.playwright.chromium.launch(), cls.base)
         except Exception as exc:  # pragma: no cover
             cls.playwright.stop()
             cls.server.shutdown()

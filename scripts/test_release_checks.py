@@ -269,6 +269,27 @@ class WiringTests(unittest.TestCase):
         seconds = int(re.search(r"timeout -k \d+ (\d+) ", ids[0][1]).group(1))
         self.assertLess(seconds + 10, step["timeout-minutes"] * 60)
 
+    def test_every_browser_suite_blocks_third_party_requests_by_default(self):
+        import browser_test_net as net
+        third = net.third_party("http://127.0.0.1:8123/ctas.html")
+        for url in ("https://alasky.cds.unistra.fr/hips-image-services/hips2fits?x=1", "https://relay.test/?url=a",
+                    "http://localhost:21012/xmlrpc", "http://127.0.0.1:9999/other-server", "https://www.googletagmanager.com/gtag/js"):
+            self.assertTrue(third(url), url)
+        for url in ("http://127.0.0.1:8123/ctas/data/status.json", "data:image/png;base64,AAAA", "blob:http://127.0.0.1:8123/x", "about:blank"):
+            self.assertFalse(third(url), url)
+        self.assertTrue(net.is_third_party_load_failure("Failed to load resource: net::ERR_BLOCKED_BY_CLIENT"))
+        self.assertFalse(net.is_third_party_load_failure("Uncaught TypeError: x is undefined"))
+        suites = sorted(p for p in (ROOT / "scripts").glob("test_*browser*.py") if "chromium.launch()" in p.read_text())
+        self.assertEqual(len(suites), 7)
+        for path in suites:
+            text = path.read_text()
+            launches = text.count("chromium.launch()")
+            self.assertEqual(text.count("isolate_browser(cls."), launches, path.name)
+        # a blocked load is never a first-party error in the CTAS suite's console filters
+        ctas = (ROOT / "scripts/test_ctas_browser.py").read_text()
+        self.assertNotIn('"ERR_TUNNEL_CONNECTION_FAILED" not in', ctas)
+        self.assertIn("test_a_blocked_dss2_thumbnail_becomes_a_graceful_placeholder", ctas)
+
     def test_the_browser_tools_are_pinned(self):
         text = (ROOT / ".github/workflows/worldsindex-release.yml").read_text()
         self.assertIn('"playwright==1.64.1"', text)
@@ -368,7 +389,7 @@ class WiringTests(unittest.TestCase):
         bound, unbound = set(exporter.BOUND_CODE_PATHS), exporter.UNBOUND_RESILIENCE_PATHS
         self.assertFalse(bound & set(unbound))
         for path in ("scripts/release_checks.py", "scripts/release_checks.sh", "scripts/check-classes.json",
-                     "scripts/run_report.py", "ctas/schemas/check-history.schema.json"):
+                     "scripts/run_report.py", "ctas/schemas/check-history.schema.json", "scripts/browser_test_net.py"):
             self.assertIn(path, bound)
         for path in ("scripts/release_issues.py", "scripts/code_fallback.sh", "scripts/release_commit.py", "scripts/deploy_checks.sh",
                      "scripts/deploy_candidates.sh", "scripts/test_release_checks.py", "scripts/test_run_report.py",

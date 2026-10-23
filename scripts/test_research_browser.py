@@ -10,7 +10,11 @@ import http.server
 import socket
 import threading
 import unittest
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from browser_test_net import isolate_browser  # noqa: E402  (third-party requests are blocked)
 
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = "/research/barium-dwarfs/"
@@ -40,7 +44,7 @@ class CensusBrowserTests(unittest.TestCase):
         cls.base = f"http://127.0.0.1:{port}"
         cls.pw = sync_playwright().start()
         try:
-            cls.browser = cls.pw.chromium.launch()
+            cls.browser = isolate_browser(cls.pw.chromium.launch(), cls.base)
         except Exception as exc:  # pragma: no cover
             cls.pw.stop(); cls.server.shutdown()
             raise unittest.SkipTest(f"no Chromium: {exc}") from exc

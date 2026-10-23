@@ -29,6 +29,9 @@ import threading
 import unittest
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from browser_test_net import isolate_browser, is_third_party_load_failure  # noqa: E402  (third-party requests are blocked)
+
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "ctas" / "data"
 SPECTRUM_FIXTURES = ROOT / "tests" / "fixtures" / "spectra"
@@ -124,7 +127,7 @@ class BrowserTests(unittest.TestCase):
         cls.url = f"http://127.0.0.1:{port}/ctas.html"
         cls.playwright = sync_playwright().start()
         try:
-            cls.browser = cls.playwright.chromium.launch()
+            cls.browser = isolate_browser(cls.playwright.chromium.launch(), cls.url)
         except Exception as exc:  # pragma: no cover - environment owns this
             cls.playwright.stop()
             cls.server.shutdown()
@@ -162,9 +165,23 @@ class BrowserTests(unittest.TestCase):
             entry for entry in self.console
             if entry[0] in {"error", "pageerror"}
             and not any(host in entry[1] for host in THIRD_PARTY_HOSTS)
-            and "ERR_TUNNEL_CONNECTION_FAILED" not in entry[1]
+            and not is_third_party_load_failure(entry[1])
         ]
         self.assertEqual(errors, [])
+
+    def test_a_blocked_dss2_thumbnail_becomes_a_graceful_placeholder(self):
+        """Third-party requests are blocked in these tests (scripts/browser_test_net.py), as they
+        may fail for readers: a leaderboard row's 96-pixel HiPS2FITS thumbnail then shows the
+        "No image" placeholder (ctas/presentation.js), never a broken image or a script error."""
+        if self.page.locator("img[data-ctas-thumbnail]").count() == 0 and self.page.locator(".ctas-thumb--missing").count() == 0:
+            self.skipTest("no thumbnail on the first screen of this release")
+        self.page.wait_for_function(
+            "() => [...document.querySelectorAll('.ctas-thumb.ctas-thumb--missing')].some(t => t.textContent === 'No image')",
+            timeout=20000)
+        placeholder = self.page.locator(".ctas-thumb.ctas-thumb--missing", has_text="No image").first
+        self.assertEqual(placeholder.get_attribute("title"), "Archival provider image unavailable")
+        self.assertEqual(placeholder.locator("img").count(), 0)
+        self.assertEqual([e for e in self.console if e[0] == "pageerror"], [])
 
     def test_first_screen_does_not_download_the_complete_catalog(self):
         self.assertIn("live-summary.json", self.requests)
@@ -695,7 +712,7 @@ class BrowserTests(unittest.TestCase):
         self.assertEqual(self.page.evaluate("() => document.activeElement.getAttribute('data-followup-placeholder-badge')"), "", "the badge is keyboard reachable")
         self.assertEqual(self._axe_violations(), [])
         errors = [entry for entry in self.console if entry[0] in {"error", "pageerror"}
-                  and not any(host in entry[1] for host in THIRD_PARTY_HOSTS) and "ERR_TUNNEL_CONNECTION_FAILED" not in entry[1]]
+                  and not any(host in entry[1] for host in THIRD_PARTY_HOSTS) and not is_third_party_load_failure(entry[1])]
         self.assertEqual(errors, [])
         for width, height in ((320, 568), (390, 844)):
             with self.subTest(viewport=f"{width}x{height}"):
@@ -964,7 +981,7 @@ class BrowserTests(unittest.TestCase):
         self.assertIn("pinned 3.6.1", self.page.locator("[data-aladin-status]").inner_text())
         self.assertEqual(self.page.locator(".aladin-stub a[href*='aladin.cds.unistra.fr']").count(), 1, "the Aladin logo link stays")
         self.assertEqual(self._axe_violations(), [])
-        errors = [e for e in self.console if e[0] in {"error", "pageerror"} and not any(h in e[1] for h in THIRD_PARTY_HOSTS) and "ERR_TUNNEL_CONNECTION_FAILED" not in e[1]]
+        errors = [e for e in self.console if e[0] in {"error", "pageerror"} and not any(h in e[1] for h in THIRD_PARTY_HOSTS) and not is_third_party_load_failure(e[1])]
         self.assertEqual(errors, [])
 
     def test_finder_chart_falls_back_through_the_image_sources(self):
@@ -1065,7 +1082,7 @@ class StatusPageTests(unittest.TestCase):
         cls.url = f"http://127.0.0.1:{port}/ctas/status.html"
         cls.playwright = sync_playwright().start()
         try:
-            cls.browser = cls.playwright.chromium.launch()
+            cls.browser = isolate_browser(cls.playwright.chromium.launch(), cls.url)
         except Exception as exc:  # pragma: no cover
             cls.playwright.stop(); cls.server.shutdown()
             raise unittest.SkipTest(f"no Chromium available: {exc}") from exc
@@ -1087,7 +1104,7 @@ class StatusPageTests(unittest.TestCase):
         self.page.close()
 
     def test_status_page_structure_and_no_errors(self):
-        errors = [e for e in self.console if e[0] in {"error", "pageerror"} and not any(h in e[1] for h in THIRD_PARTY_HOSTS) and "ERR_TUNNEL_CONNECTION_FAILED" not in e[1]]
+        errors = [e for e in self.console if e[0] in {"error", "pageerror"} and not any(h in e[1] for h in THIRD_PARTY_HOSTS) and not is_third_party_load_failure(e[1])]
         self.assertEqual(errors, [])
         headings = self.page.evaluate("() => [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map(h => h.tagName)")
         self.assertEqual(headings.count("H1"), 1)
