@@ -38,8 +38,20 @@ if any(code.startswith("ctas") for code in codes): names.append("CTAS")
 if any(code.startswith("worldsindex") for code in codes): names.append("WorldsIndex")
 if any(code.startswith("state-token") for code in codes): names.append("state key")
 if "deploy-failed" in codes: names.append("deployment")
+if "deploy-stale" in codes: names.append("public site")
 print(", ".join(names) or "ok")
 ' "$REPORT")
+# The live-site check (scripts/watchdog_freshness.py, item 7) gets the plain title.
+TITLE=$(python3 -c '
+import json, sys
+report = json.load(open(sys.argv[1]))
+codes = [row["code"] for row in report["alerts"]]
+others = sys.argv[2].replace("public site", "").replace(", ,", ",").strip(" ,")
+if "deploy-stale" in codes:
+    print("Public site is not deploying" + (f" (also: {others})" if others else ""))
+else:
+    print(f"Publisher alert: {sys.argv[2]}")
+' "$REPORT" "$SUMMARY")
 TEXT=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("summary", ""))' "$REPORT")
 
 # notify <event> <issue url>: POST the summary to WATCHDOG_NOTIFY_WEBHOOK, if set.
@@ -83,7 +95,7 @@ fi
 
 if [ -z "$OPEN" ]; then
   URL=$(gh issue create --repo "$REPO" --label "$LABEL" \
-    --title "Publisher alert: $SUMMARY" --body-file body.md)
+    --title "$TITLE" --body-file body.md)
   echo "opened $URL ($FINGERPRINT)"
   notify "opened" "$URL"
   exit 0

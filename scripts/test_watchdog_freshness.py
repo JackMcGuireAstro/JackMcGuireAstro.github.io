@@ -178,7 +178,7 @@ class EvaluateTests(unittest.TestCase):
         window = deploy("failure", created="2026-09-26T06:10:00Z", history=[("success", "2026-09-26T05:50:00Z")])
         report = watchdog.evaluate(*fresh, window, now=now)
         self.assertTrue(report["ok"], report["alerts"])
-        self.assertTrue(any("clears on the next CTAS release" in note for note in report["notes"]))
+        self.assertTrue(any("but a deployment succeeded" in note for note in report["notes"]))
         # an in-progress newest run is skipped in favour of the newest completed one
         running = [{"status": "in_progress", "conclusion": None, "createdAt": "2026-09-26T06:25:00Z"},
                    *deploy("success", created="2026-09-26T06:05:00Z")]
@@ -427,6 +427,7 @@ class RenderAndCliTests(unittest.TestCase):
                 "--worldsindex-marker-file", str(folder / "wi-marker.json"),
                 "--mention", "@owner", "--report", str(folder / "report.json"),
                 "--markdown", str(folder / "report.md"), "--ctas-max-age-hours", "18",
+                "--raw-base", "",   # no data-branch reads in this test (no network)
             ], text=True, capture_output=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn("CTAS run list unavailable", result.stderr)
@@ -466,6 +467,138 @@ class RenderAndCliTests(unittest.TestCase):
                        "WATCHDOG_NOTIFY_WEBHOOK", 'notify "opened"', 'notify "changed"', 'notify "recovered"'):
             self.assertIn(needed, helper)
         self.assertEqual(subprocess.run(["/bin/bash", "-n", str(ROOT / "scripts/watchdog_issue.sh")]).returncode, 0)
+
+
+class LiveSiteTests(unittest.TestCase):
+    """Item 7: the public site against the data branches (2026-10-21: the deploy stopped for
+    41 hours while ctas-data and worldsindex-data kept updating, and nothing alerted)."""
+
+    NOW = "2026-10-21T18:00:00Z"
+
+    def deploy_runs(self):
+        return [{"conclusion": "failure", "status": "completed", "createdAt": "2026-10-21T17:40:00Z", "headSha": "e" * 40,
+                 "displayTitle": "Validate and deploy site", "databaseId": 555,
+                 "url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/555"},
+                {"conclusion": "success", "status": "completed", "createdAt": "2026-10-20T01:10:00Z", "headSha": "d" * 40,
+                 "displayTitle": "Validate and deploy site", "databaseId": 400,
+                 "url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/400"}]
+
+    def failed_jobs(self):
+        return {"jobs": [{"name": "Validate all website releases", "conclusion": "failure", "steps": [
+            {"name": "Set up job", "conclusion": "success"},
+            {"name": "CTAS page in a real browser, and evidence schema", "conclusion": "failure"}]}]}
+
+    def test_a_frozen_site_with_fresh_branches_is_an_alert_naming_the_deploy_and_the_step(self):
+        report = watchdog.evaluate(ctas_status("2026-10-20T01:00:00Z"), None, worlds_manifest("2026-10-20T00:50:00Z"), None,
+                                   self.deploy_runs(), now=at(self.NOW),
+                                   ctas_branch=ctas_status("2026-10-21T17:45:00Z"),
+                                   worldsindex_branch=worlds_manifest("2026-10-21T17:41:00Z"),
+                                   deploy_jobs=self.failed_jobs(), ctas_max_age_hours=4, worldsindex_max_age_hours=6)
+        codes = [row["code"] for row in report["alerts"]]
+        self.assertEqual(codes[0], "deploy-stale")
+        message = report["alerts"][0]["message"]
+        self.assertIn("Public site is not deploying", message)
+        self.assertIn("CTAS live 2026-10-20T01:00:00Z vs ctas-data 2026-10-21T17:45:00Z (2445 min behind)", message)
+        self.assertIn("WorldsIndex live 2026-10-20T00:50:00Z vs worldsindex-data 2026-10-21T17:41:00Z", message)
+        self.assertIn("actions/runs/400", message)
+        self.assertIn("step 'CTAS page in a real browser, and evidence schema'", message)
+        self.assertIn("actions/runs/555", report["alerts"][0]["action"])
+        self.assertEqual(report["site"]["ctas"]["lag_minutes"], 2445.0)
+        markdown = watchdog.render_markdown(report, "https://example.test")
+        self.assertIn("| CTAS live vs ctas-data | 2026-10-21T17:45:00Z | 2445 min behind | 60 min |", markdown)
+
+    def test_the_lag_limit_is_sixty_minutes_and_an_unknown_branch_is_no_alert(self):
+        def codes(live, branch, **kwargs):
+            report = watchdog.evaluate(ctas_status(live), None, worlds_manifest("2026-10-21T17:20:00Z"), None,
+                                       self.deploy_runs()[1:], now=at(self.NOW), ctas_branch=ctas_status(branch) if branch else None,
+                                       **kwargs)
+            return [row["code"] for row in report["alerts"]]
+        self.assertNotIn("deploy-stale", codes("2026-10-21T17:30:00Z", "2026-10-21T17:55:00Z"))    # 25 min behind
+        self.assertNotIn("deploy-stale", codes("2026-10-21T16:55:00Z", "2026-10-21T17:55:00Z"))    # exactly 60 min
+        self.assertIn("deploy-stale", codes("2026-10-21T16:54:00Z", "2026-10-21T17:55:00Z"))       # 61 min
+        # A branch that is itself old still counts: the site is behind what was published.
+        self.assertIn("deploy-stale", codes("2026-10-20T01:00:00Z", "2026-10-21T08:00:00Z", ctas_max_age_hours=4))
+        self.assertIn("deploy-stale", codes("2026-10-21T15:00:00Z", "2026-10-21T17:55:00Z", site_lag_minutes=120))
+        self.assertNotIn("deploy-stale", codes("2026-10-21T16:00:00Z", "2026-10-21T17:55:00Z", site_lag_minutes=120))
+        self.assertNotIn("deploy-stale", codes("2026-10-21T17:30:00Z", None))
+        self.assertFalse(watchdog.evaluate(ctas_status("2026-10-21T17:30:00Z"), None, worlds_manifest("2026-10-21T17:20:00Z"), None,
+                                           None, now=at(self.NOW))["site"]["ctas"]["known"])
+
+    def test_branches_are_read_from_raw_githubusercontent_with_a_mocked_fetch(self):
+        calls = []
+
+        def fake_fetch(url, attempts=3, timeout=30):
+            calls.append(url)
+            if url.endswith("/ctas-data/ctas/data/status.json"):
+                return ctas_status("2026-10-21T17:45:00Z"), None
+            return None, "HTTPError: HTTP Error 404: Not Found"
+        args = type("Args", (), {"ctas_branch_file": None, "worldsindex_branch_file": None,
+                                 "raw_base": "https://raw.githubusercontent.com/owner/repo/"})()
+        ctas_branch, worlds_branch = watchdog.read_branches(args, lambda path, label: None, fetch=fake_fetch)
+        self.assertEqual(calls, ["https://raw.githubusercontent.com/owner/repo/ctas-data/ctas/data/status.json",
+                                 "https://raw.githubusercontent.com/owner/repo/worldsindex-data/worldsindex/data/manifest.json"])
+        self.assertEqual(ctas_branch["last_successful_update"], "2026-10-21T17:45:00Z")
+        self.assertIsNone(worlds_branch)
+        self.assertEqual(watchdog.RAW_BASE, "https://raw.githubusercontent.com/JackMcGuireAstro/JackMcGuireAstro.github.io")
+        args.raw_base = ""
+        self.assertEqual(watchdog.read_branches(args, lambda path, label: None, fetch=fake_fetch), (None, None))
+
+    def test_main_reads_the_live_site_and_the_branches_over_http(self):
+        # One local HTTP server stands in for both the live site and raw.githubusercontent.com.
+        import http.server
+        import threading
+        with tempfile.TemporaryDirectory(prefix="watchdog-live-") as folder:
+            folder = Path(folder)
+            for relative, document in (("site/ctas/data/status.json", ctas_status("2026-10-20T01:00:00Z")),
+                                       ("site/worldsindex/data/manifest.json", worlds_manifest("2026-10-21T17:30:00Z")),
+                                       ("site/raw/ctas-data/ctas/data/status.json", ctas_status("2026-10-21T17:45:00Z")),
+                                       ("site/raw/worldsindex-data/worldsindex/data/manifest.json", worlds_manifest("2026-10-21T17:30:00Z"))):
+                (folder / relative).parent.mkdir(parents=True, exist_ok=True)
+                (folder / relative).write_text(json.dumps(document))
+            (folder / "deploy.json").write_text(json.dumps(self.deploy_runs()))
+            (folder / "deploy-jobs.json").write_text(json.dumps(self.failed_jobs()))
+            (folder / "marker.json").write_text("{}")
+            requests = []
+
+            class Handler(http.server.SimpleHTTPRequestHandler):
+                def __init__(self, *args, **kwargs):
+                    super().__init__(*args, directory=str(folder / "site"), **kwargs)
+
+                def log_message(self, *args):
+                    requests.append(self.path)
+
+            server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                base = f"http://127.0.0.1:{server.server_address[1]}"
+                env = {key: value for key, value in os.environ.items() if not key.lower().endswith("_proxy")}
+                done = subprocess.run([sys.executable, str(ROOT / "scripts/watchdog_freshness.py"), "--base", base,
+                                       "--raw-base", f"{base}/raw",
+                                       "--deploy-json", str(folder / "deploy.json"), "--deploy-jobs-json", str(folder / "deploy-jobs.json"),
+                                       "--ctas-marker-file", str(folder / "marker.json"),
+                                       "--worldsindex-marker-file", str(folder / "marker.json"),
+                                       "--now", self.NOW, "--ctas-max-age-hours", "40", "--site-lag-minutes", "60",
+                                       "--report", str(folder / "report.json")], text=True, capture_output=True, env=env)
+            finally:
+                server.shutdown()
+            self.assertEqual(done.returncode, 0, done.stderr)
+            report = json.loads((folder / "report.json").read_text())
+            self.assertIn("deploy-stale", [row["code"] for row in report["alerts"]])
+            self.assertEqual(report["site"]["ctas"]["lag_minutes"], 2445.0)
+            self.assertEqual(report["site"]["worldsindex"]["lag_minutes"], 0.0)
+            self.assertTrue(any(path.startswith("/ctas/data/status.json?watchdog=") for path in requests))
+            self.assertTrue(any(path.startswith("/raw/ctas-data/ctas/data/status.json?watchdog=") for path in requests))
+            self.assertTrue(any(path.startswith("/raw/worldsindex-data/worldsindex/data/manifest.json?watchdog=") for path in requests))
+
+    def test_the_hourly_workflow_reads_the_branches_and_the_failed_deploy_step(self):
+        workflow = (ROOT / ".github/workflows/freshness-watchdog.yml").read_text()
+        for needed in ('--raw-base "https://raw.githubusercontent.com/$GITHUB_REPOSITORY"',
+                       "--json conclusion,status,createdAt,headSha,url,displayTitle,databaseId",
+                       'gh run view "$id" --repo "$GITHUB_REPOSITORY" --json jobs > deploy-jobs.json',
+                       "--deploy-jobs-json deploy-jobs.json", '--site-lag-minutes "$SITE_LAG_MINUTES"', 'SITE_LAG_MINUTES: "60"',
+                       'cron: "23 * * * *"'):
+            self.assertIn(needed, workflow)
 
 
 FAKE_GH = r'''#!/usr/bin/env python3
@@ -572,6 +705,14 @@ class IssueHelperTests(unittest.TestCase):
                               WATCHDOG_NOTIFY_FORMAT="text", FAKE_CURL_EXIT="22")
         self.assertIn("webhook notification failed (opened); the issue is the record", out)
         self.assertIn("Title: Publisher watchdog", (self.tmp / "curl-args.txt").read_text())
+
+    def test_a_frozen_public_site_gets_the_plain_title(self):
+        now = at("2026-10-21T18:00:00Z")
+        report = watchdog.evaluate(ctas_status("2026-10-20T01:00:00Z"), None, worlds_manifest("2026-10-21T17:30:00Z"), None,
+                                   deploy("failure", created="2026-10-21T17:00:00Z", history=[("success", "2026-10-20T01:10:00Z")]),
+                                   now=now, ctas_branch=ctas_status("2026-10-21T17:45:00Z"), ctas_max_age_hours=40)
+        self.run_helper(report)
+        self.assertEqual((self.tmp / "created-title.txt").read_text(), "Public site is not deploying (also: CTAS, deployment)")
 
     def test_quiet_case_touches_nothing_and_recovery_closes_and_notifies(self):
         out = self.run_helper(self.quiet_report(), WATCHDOG_NOTIFY_WEBHOOK="https://ntfy.sh/topic")

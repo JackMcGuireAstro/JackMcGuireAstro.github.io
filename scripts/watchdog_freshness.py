@@ -34,6 +34,14 @@ Three signals, in order of certainty:
 6. The state key. The same marker records whether GitHub accepted the
    CTAS_STATE_TOKEN key and, for keys that expire, the expiry date; a rejected key
    or one expiring within ten days is an alert before every run starts failing.
+7. The public site against the data branches. The live site's ctas/data/status.json and
+   worldsindex/data/manifest.json are compared with the same files on the data branches,
+   read from raw.githubusercontent.com (ctas-data, worldsindex-data); when the live CTAS
+   last_successful_update or WorldsIndex generatedAt lags its data branch by more than
+   60 minutes, the deploy is what stopped: a `deploy-stale` alert (2026-10-21: the site
+   froze for 41 hours while both branches kept updating, and nothing alerted, because
+   every other check read the data branches). The alert names the last successful
+   deploy run and the step the newest failed deploy run failed in.
 
 The script never fails the workflow on a stale release; it writes a JSON report
 and a Markdown summary, and the workflow turns those into one GitHub issue that is
@@ -53,6 +61,8 @@ import urllib.request
 
 UTC = dt.timezone.utc
 CTAS_STATUS_PATH = "ctas/data/status.json"
+# The data branches as raw files (no API, no token): what the publishers last published.
+RAW_BASE = "https://raw.githubusercontent.com/JackMcGuireAstro/JackMcGuireAstro.github.io"
 WORLDSINDEX_MANIFEST_PATH = "worldsindex/data/manifest.json"
 CTAS_MARKER_PATH = "ctas/data/cloud-run.json"
 WORLDSINDEX_MARKER_PATH = "worldsindex/data/cloud-run.json"
@@ -83,6 +93,8 @@ DEFAULT_THRESHOLDS = {
     "worldsindex_state_max_age_hours": 6.0,
     # The state key: warn this many days before the expiry date the marker records.
     "token_warn_days": 10.0,
+    # The public site: an alert when it lags a fresh data branch by more than this.
+    "site_lag_minutes": 60.0,
 }
 
 # The cloud workflows whose runs are read, keyed by the alert-code prefix.
@@ -95,7 +107,7 @@ CLOUD_WORKFLOWS = {
 # Run conclusions that say nothing about the publisher and are left out of the streak.
 UNINFORMATIVE_CONCLUSIONS = {"cancelled", "skipped", None}
 # Most urgent first: the first alert's action becomes the first line of the issue.
-SEVERITY = ("state-token-rejected", "-runs-failing", "-stalled-while-", "-stale", "-unavailable",
+SEVERITY = ("state-token-rejected", "deploy-stale", "-runs-failing", "-stalled-while-", "-stale", "-unavailable",
             "-runs-failing-after-publish", "-state-not-saved", "deploy-failed", "state-token-expiring")
 RENEW = "run `Renew cloud key.command` on the Mac (it copies a fresh `gh auth token` into the CTAS_STATE_TOKEN secret)"
 
@@ -206,9 +218,9 @@ def describe_deploy(deploy):
     """Normalize `gh run list --json ...` output (newest first) or a single run object.
 
     Reports the newest *completed* run and when the last successful one started, so a
-    failure that a later run has already fixed, or one still inside the expected
-    window after a CTAS code change (CI stays red until the next CTAS release
-    re-certifies the new code), is not mistaken for a frozen site.
+    failure that a later run has already fixed is not mistaken for a frozen site. (Since
+    2026-10-22 the deploy checks the CTAS certificate against the commit that built the
+    release, so a CTAS code landing no longer turns it red; see RESILIENCE.md.)
     """
     runs = deploy if isinstance(deploy, list) else [deploy] if isinstance(deploy, dict) else []
     runs = [run for run in runs if isinstance(run, dict)]
@@ -216,7 +228,9 @@ def describe_deploy(deploy):
     if not completed:
         return {"known": False}
     run = completed[0]
-    last_success = next((item.get("createdAt") for item in completed if item.get("conclusion") == "success"), None)
+    success = next((item for item in completed if item.get("conclusion") == "success"), None)
+    last_success = success.get("createdAt") if success else None
+    failed = next((item for item in completed if item.get("conclusion") not in ("success", "cancelled", "skipped")), None)
     return {
         "known": True,
         "status": run.get("status"),
@@ -226,6 +240,27 @@ def describe_deploy(deploy):
         "title": run.get("displayTitle"),
         "url": run.get("url"),
         "last_success_at": last_success,
+        "last_success_url": success.get("url") if success else None,
+        "newest_failed_id": failed.get("databaseId") if failed else None,
+        "newest_failed_url": failed.get("url") if failed else None,
+    }
+
+
+def describe_site(live, branch, max_age_hours, now):
+    """The live release against its data branch: how far the public site lags."""
+    if not isinstance(branch, dict) or not branch.get("available"):
+        return {"known": False}
+    live_at, branch_at = parse_utc(live.get("last_update")), parse_utc(branch.get("last_update"))
+    lag = None
+    if live_at and branch_at:
+        lag = round(max(0.0, (branch_at - live_at).total_seconds() / 60.0), 1)
+    return {
+        "known": True,
+        "live_update": live.get("last_update"),
+        "branch_update": branch.get("last_update"),
+        "lag_minutes": lag,
+        "branch_age_hours": branch.get("age_hours"),
+        "branch_fresh": branch.get("age_hours") is not None and branch["age_hours"] <= max_age_hours,
     }
 
 
@@ -315,6 +350,12 @@ def describe_action(code, report):
         return (f"The {workflow['file']} runs keep restoring a state saved {marker.get('state_saved_at')}, so the "
                 f"save at the end of each run fails: open the newest run{run}, read the lines after "
                 "\"saving ... to the state repository\" and save the log.")
+    if code == "deploy-stale":
+        deploy = report["deploy"]
+        failed = f" ({deploy['newest_failed_url']})" if deploy.get("newest_failed_url") else ""
+        step = f" at step '{report['site'].get('failed_step')}'" if report.get("site", {}).get("failed_step") else ""
+        return (f"Open the newest failed '{DEPLOY_WORKFLOW_NAME}' run{failed}{step}, read the run report on the "
+                "run-reports branch (reports/worldsindex-release/latest.json), then fix or revert the commit, or re-run the last green run.")
     if "-stalled-while-" in code or code.endswith("-stale"):
         return (f"Open the newest run of {workflow['file']} (Actions -> \"{workflow['title']}\"), save its log and "
                 f"`{workflow['artifact']}` artifact, and start the workflow by hand; if every run fails at the "
@@ -331,6 +372,7 @@ def describe_action(code, report):
 def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, deploy, now=None,
              ctas_runs=None, worldsindex_runs=None, run_jobs=None,
              ctas_marker=None, ctas_marker_error=None, worldsindex_marker=None, worldsindex_marker_error=None,
+             ctas_branch=None, worldsindex_branch=None, deploy_jobs=None,
              **thresholds):
     """Return the full report. Pure function: everything it needs is passed in."""
     now = now or dt.datetime.now(UTC)
@@ -388,8 +430,7 @@ def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, d
                                    f"{deployment.get('title')}) ended with {deployment.get('conclusion')} and "
                                    f"{since}; the live site is frozen at the previous green deployment.")
         else:
-            notes.append(f"The last deploy run failed, but a deployment succeeded {success_age:g} h ago; "
-                         "a failure right after a CTAS code change clears on the next CTAS release.")
+            notes.append(f"The last deploy run failed, but a deployment succeeded {success_age:g} h ago.")
 
     # 4. run results: a streak of failed runs, or a high failure rate over the window.
     runs = {}
@@ -459,6 +500,28 @@ def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, d
                 else f"expired on {key['token_expires_at']} ({-days} day{'s' if days != -1 else ''} ago)")
         alert("state-token-expiring", f"The CTAS_STATE_TOKEN key {when}; every cloud run fails once it has expired.")
 
+    # 7. the public site against the data branches: the deploy stopped while publishing works.
+    site = {
+        "ctas": describe_site(ctas, describe_ctas(ctas_branch, now) if ctas_branch is not None else None,
+                              limits["ctas_max_age_hours"], now),
+        "worldsindex": describe_site(worlds, describe_worldsindex(worldsindex_branch, now) if worldsindex_branch is not None else None,
+                                     limits["worldsindex_max_age_hours"], now),
+        "failed_step": failed_step(deploy_jobs) if deploy_jobs else None,
+    }
+    lagging = [(name, row) for name, row in site.items() if isinstance(row, dict) and row.get("known")
+               and (row.get("lag_minutes") or 0) > limits["site_lag_minutes"]]
+    if lagging:
+        parts = [f"{'CTAS' if name == 'ctas' else 'WorldsIndex'} live {row['live_update']} vs "
+                 f"{name}-data {row['branch_update']} ({row['lag_minutes']:g} min behind)" for name, row in lagging]
+        last = (f"the last successful deploy started {deployment.get('last_success_at')}"
+                + (f" ({deployment['last_success_url']})" if deployment.get("last_success_url") else "")
+                if deployment.get("last_success_at") else "no successful deploy is in the recent runs")
+        step = (f"; the newest failed deploy run failed in step '{site['failed_step']}'" if site["failed_step"]
+                else "")
+        alert("deploy-stale",
+              f"Public site is not deploying: {'; '.join(parts)}, limit {limits['site_lag_minutes']:g} min, while the "
+              f"data branches moved on: {last}{step}.")
+
     if ctas.get("available") and ctas.get("certificate_expired") and not any(
             row["code"].startswith("ctas") for row in alerts):
         notes.append("The CTAS certificate has expired (90-minute validity) but the release is within limits; "
@@ -481,6 +544,7 @@ def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, d
         "runs": runs,
         "markers": markers,
         "token": key or {"token_status": "not-checked"},
+        "site": site,
     }
     for row in report["alerts"]:
         row["action"] = describe_action(row["code"], report)
@@ -528,6 +592,14 @@ def render_markdown(report, site_url, mention=""):
         state = deploy.get("conclusion") or deploy.get("status")
         link = f"[{state}]({deploy['url']})" if deploy.get("url") else state
         lines.append(f"| Last deploy | {deploy.get('created_at') or '—'} | — | — | {link}: {deploy.get('title')} |")
+    for name in ("ctas", "worldsindex"):
+        row = (report.get("site") or {}).get(name) or {}
+        if row.get("known"):
+            label = "CTAS" if name == "ctas" else "WorldsIndex"
+            lag = "—" if row.get("lag_minutes") is None else f"{row['lag_minutes']:g} min"
+            lines.append(f"| {label} live vs {name}-data | {row.get('branch_update') or '—'} | {lag} behind | "
+                         f"{report['thresholds']['site_lag_minutes']:g} min | live {row.get('live_update') or '—'}; "
+                         f"branch {'fresh' if row.get('branch_fresh') else 'stale'} |")
     for name in CLOUD_WORKFLOWS:
         marker = report.get("markers", {}).get(name) or {}
         if marker.get("available"):
@@ -579,6 +651,26 @@ def render_markdown(report, site_url, mention=""):
     return "\n".join(lines) + "\n"
 
 
+def read_branches(args, optional_json, fetch=None):
+    """(ctas-data status.json, worldsindex-data manifest.json): from the files named, else
+    from raw.githubusercontent.com; None when unavailable (the live-site check then says so)."""
+    fetch = fetch or fetch_json
+    documents = []
+    for path, branch, relative, label in ((args.ctas_branch_file, "ctas-data", CTAS_STATUS_PATH, "ctas-data status"),
+                                          (args.worldsindex_branch_file, "worldsindex-data", WORLDSINDEX_MANIFEST_PATH,
+                                           "worldsindex-data manifest")):
+        if path:
+            documents.append(optional_json(path, label))
+        elif args.raw_base:
+            document, error = fetch(f"{args.raw_base.rstrip('/')}/{branch}/{relative}", attempts=2)
+            if error:
+                print(f"{label} unavailable: {error}", file=sys.stderr)
+            documents.append(document)
+        else:
+            documents.append(None)
+    return tuple(documents)
+
+
 def load_json_file(path):
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
@@ -597,6 +689,12 @@ def main(argv=None):
     parser.add_argument("--ctas-marker-file", help="read the CTAS cloud-run marker from this file instead of the site")
     parser.add_argument("--worldsindex-marker-file",
                         help="read the WorldsIndex cloud-run marker from this file instead of the site")
+    parser.add_argument("--raw-base", default=RAW_BASE,
+                        help="where the data branches are read (raw.githubusercontent.com/<owner>/<repo>); '' to skip")
+    parser.add_argument("--ctas-branch-file", help="ctas/data/status.json as the ctas-data branch holds it (instead of --raw-base)")
+    parser.add_argument("--worldsindex-branch-file",
+                        help="worldsindex/data/manifest.json as the worldsindex-data branch holds it (instead of --raw-base)")
+    parser.add_argument("--deploy-jobs-json", help="`gh run view --json jobs` of the newest failed deploy run")
     parser.add_argument("--now", help="ISO-8601 override of the current time (tests)")
     parser.add_argument("--mention", default="", help="GitHub @mention to put in alert text")
     parser.add_argument("--report", help="write the JSON report here")
@@ -638,6 +736,8 @@ def main(argv=None):
             return None
 
     deploy = optional_json(args.deploy_json, "deploy status")
+    ctas_branch, worlds_branch = read_branches(args, optional_json)
+    deploy_jobs = optional_json(args.deploy_jobs_json, "failed deploy run")
     ctas_runs = optional_json(args.ctas_runs_json, "CTAS run list")
     worlds_runs = optional_json(args.worldsindex_runs_json, "WorldsIndex run list")
     run_jobs = {}
@@ -652,6 +752,7 @@ def main(argv=None):
                       ctas_runs=ctas_runs, worldsindex_runs=worlds_runs, run_jobs=run_jobs,
                       ctas_marker=ctas_marker, ctas_marker_error=ctas_marker_error,
                       worldsindex_marker=worlds_marker, worldsindex_marker_error=worlds_marker_error,
+                      ctas_branch=ctas_branch, worldsindex_branch=worlds_branch, deploy_jobs=deploy_jobs,
                       **{key: getattr(args, key) for key in DEFAULT_THRESHOLDS})
     markdown = render_markdown(report, base, args.mention)
     if args.report:

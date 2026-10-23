@@ -54,6 +54,9 @@ jobs:
       WORLDSINDEX_STATE_MAX_AGE_HOURS: "6"
       # The CTAS_STATE_TOKEN key: warn this many days before the expiry the marker records.
       TOKEN_WARN_DAYS: "10"
+      # The public site: a deploy-stale alert when it lags its data branch by more than this
+      # (the deploy stopped while the publishers kept publishing; RESILIENCE.md).
+      SITE_LAG_MINUTES: "60"
       WATCHDOG_REMIND_HOURS: "12"
     steps:
       - uses: actions/checkout@v5
@@ -63,7 +66,7 @@ jobs:
       - name: Result of the last deployment
         run: |
           gh run list --repo "$GITHUB_REPOSITORY" --workflow "Validate and deploy site" --branch main \
-            --limit 20 --json conclusion,status,createdAt,headSha,url,displayTitle > deploy.json \
+            --limit 20 --json conclusion,status,createdAt,headSha,url,displayTitle,databaseId > deploy.json \
             || echo '[]' > deploy.json
       - name: Results of the recent cloud runs
         # A run can publish and then fail (saving its state, for example); the public
@@ -80,6 +83,16 @@ jobs:
                 gh run view "$id" --repo "$GITHUB_REPOSITORY" --json jobs > "run-jobs/$id.json" || rm -f "run-jobs/$id.json"
               done
           done
+      # The step the newest failed deploy run failed in, for the live-site comparison (the
+      # data branches themselves are read by the script from raw.githubusercontent.com).
+      - name: The newest failed deployment
+        run: |
+          id=$(jq -r '[.[] | select(.status == "completed" and (.conclusion | IN("success", "cancelled", "skipped") | not))][0].databaseId // empty' deploy.json)
+          if [ -n "$id" ]; then
+            gh run view "$id" --repo "$GITHUB_REPOSITORY" --json jobs > deploy-jobs.json || echo '{}' > deploy-jobs.json
+          else
+            echo '{}' > deploy-jobs.json
+          fi
       - name: Read the live CTAS and WorldsIndex releases
         run: |
           python3 scripts/watchdog_freshness.py \
@@ -95,6 +108,8 @@ jobs:
             --ctas-state-max-age-hours "$CTAS_STATE_MAX_AGE_HOURS" \
             --worldsindex-state-max-age-hours "$WORLDSINDEX_STATE_MAX_AGE_HOURS" \
             --token-warn-days "$TOKEN_WARN_DAYS" \
+            --raw-base "https://raw.githubusercontent.com/$GITHUB_REPOSITORY" \
+            --deploy-jobs-json deploy-jobs.json --site-lag-minutes "$SITE_LAG_MINUTES" \
             --report report.json --markdown report.md
           cat report.md >> "$GITHUB_STEP_SUMMARY"
       - name: Open, update or close the alert issue
