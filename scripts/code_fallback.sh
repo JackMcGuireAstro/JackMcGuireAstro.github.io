@@ -77,6 +77,37 @@ fallback_decide() {
 }
 fallback_text() { python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d["reason"]+": "+d["explanation"])' "$DECISION" 2>/dev/null; }
 
+# fallback_unpublished <fallback output>: classify a clean fallback run that published nothing
+# (FALLBACK_RESULT, FALLBACK_RESULT_TEXT) and rewrite the decision to say so: action block,
+# reason fallback-published-nothing, fallback_result, no code_fallback record.
+fallback_unpublished() {
+  local out=$1
+  FALLBACK_RESULT=no-publication
+  if printf '%s\n' "$out" | grep -qE 'already match(es)? the published|nothing to publish'; then FALLBACK_RESULT=nothing-to-publish
+  elif printf '%s\n' "$out" | grep -q 'publication paused'; then FALLBACK_RESULT=publication-paused
+  elif printf '%s\n' "$out" | grep -qE 'publication state unchanged|publication inputs unchanged|inputs unchanged'; then FALLBACK_RESULT=unchanged
+  elif printf '%s\n' "$out" | grep -qE 'another publish(er run)? is (running|active)|could not take the lock'; then FALLBACK_RESULT=skipped-lock
+  elif printf '%s\n' "$out" | grep -q 'waiting out the'; then FALLBACK_RESULT=rate-floor
+  fi
+  FALLBACK_RESULT_TEXT=$(printf '%s\n' "$out" | grep -v '^[[:space:]]*$' | tail -1 | cut -c1-200)
+  python3 - "$DECISION" "$FALLBACK_RESULT" "$FALLBACK_RESULT_TEXT" "$RELEASE_COMMIT" <<'PYUNPUB' 2>>"$LOGS/runner.log" || true
+import json, sys
+path, result, text, commit = sys.argv[1:5]
+try:
+    decision = json.load(open(path))
+except (OSError, ValueError):
+    decision = {}
+decision.update(
+    action="block", reason="fallback-published-nothing", fallback=False, fallback_published=False,
+    fallback_result=result, fallback_result_text=text, code_fallback=None,
+    explanation=(f"{', '.join(decision.get('blocking') or []) or 'a blocking check'} failed with the current code; the fallback "
+                 f"code {commit[:10]} ended cleanly on the same data but published nothing ({result}: {text}); "
+                 "the published release is unchanged"),
+)
+json.dump(decision, open(path, "w"), indent=2, sort_keys=True)
+PYUNPUB
+}
+
 # code_fallback_run <product> <exit status of the publish with the current code>
 # At most one fallback attempt: this function never calls itself and the runner calls it once.
 code_fallback_run() {
@@ -128,9 +159,20 @@ PYMARK
   [ -f "$classes" ] || classes=/dev/null   # code older than the classification: it knows the baseline checks
   ACTION=$(fallback_decide --main-exit "$status" --fallback-results "$CHECKS_FALLBACK" --fallback-exit "$FALLBACK_STATUS" \
     --fallback-classes "$classes")
-  if [ "$ACTION" = "use-fallback" ]; then
+  if [ "$ACTION" = "use-fallback" ] && printf '%s\n' "$FALLBACK_OUT" | grep -q '^published '; then
     FALLBACK_USED=1
     say "published with fallback code $(printf '%.10s' "$RELEASE_COMMIT") (marker code_fallback; fallback issue opened or updated)"
+  elif [ "$ACTION" = "use-fallback" ] && printf '%s\n' "$FALLBACK_OUT" | grep -q -- '^--dry-run: '; then
+    FALLBACK_USED=1
+    say "dry run: the fallback code $(printf '%.10s' "$RELEASE_COMMIT") passed every blocking check on the same data (a dry run publishes nothing)"
+  elif [ "$ACTION" = "use-fallback" ]; then
+    # The fallback publisher ended cleanly but published nothing (the published release
+    # already matches what it built, publication paused, another run held the lock, ...).
+    # Say what happened; never "published with fallback code". Nothing new is public, so
+    # the run stays blocked and the decision says why (a release-blocked issue, a report).
+    fallback_unpublished "$FALLBACK_OUT"
+    ACTION=block
+    say "the fallback code $(printf '%.10s' "$RELEASE_COMMIT") ended cleanly but published nothing ($FALLBACK_RESULT: $FALLBACK_RESULT_TEXT); the published release is unchanged"
   else
     say "the fallback code could not publish either ($(fallback_text))"
   fi

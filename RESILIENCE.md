@@ -185,6 +185,10 @@ with `data-integrity` when the fallback code reports the same blocking failure (
 bad: nothing is published, a `release-blocked` issue says so), otherwise `block` with
 `fallback-failed` or `fallback-error`. A run that published with fallback code ends green;
 the issue is the alert, and it closes when a run publishes with the current code again.
+A fallback run that ends cleanly but publishes nothing (the published release already
+matches what it built, publication paused, the lock held) is not reported as published:
+the decision becomes `block` with reason `fallback-published-nothing` and says what
+happened (`fallback_result`), the run stays red and a `release-blocked` issue opens.
 The state is saved after this step exactly as before, whatever happened.
 
 Transitional limits, until the releases and the last deployment are all built by this

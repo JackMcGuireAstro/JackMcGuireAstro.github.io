@@ -842,7 +842,7 @@ mkdir -p "$PUB_LOG"
 echo "$VERSION $(git -C "$SITE" rev-parse HEAD) $FAKE_DATA_TAG $(cat "$FAKE_MARKER_PATH" 2>/dev/null | tr -d '\n ')" >> "$FAKE_RECORD"
 if [ "$VERSION" = good ]; then
   python3 "$RC" record --scope ctas-publish --id ctas.export --exit-code 0 --results "$PUB_RESULTS" >/dev/null
-  echo "published deadbeef"
+  echo "${FAKE_GOOD_OUTPUT:-published deadbeef}"
   exit 0
 fi
 python3 "$RC" record --scope ctas-publish --id ctas.export --exit-code 1 --message "KeyError: 'links'" --results "$PUB_RESULTS"
@@ -896,7 +896,7 @@ class FallbackAttemptTests(unittest.TestCase):
         path.write_text(FAKE_PUBLISHER.replace("__VERSION__", version))
         path.chmod(0o755)
 
-    def run_attempt(self, status_main=None, compare="ahead", release_commit=None):
+    def run_attempt(self, status_main=None, compare="ahead", release_commit=None, good_output=None):
         work = self.tmp / "work"
         shutil.rmtree(work, ignore_errors=True)
         (work / "logs").mkdir(parents=True)
@@ -921,6 +921,8 @@ echo "RESULT action=$ACTION used=$FALLBACK_USED status=${{FALLBACK_STATUS:-none}
                "FAKE_COMPARE": compare, "GITHUB_REPOSITORY": "o/r", "DEPLOY_TOKEN": "t0ken-not-real"}
         if release_commit:
             env["FORCE_RELEASE_COMMIT"] = release_commit
+        if good_output:
+            env["FAKE_GOOD_OUTPUT"] = good_output
         done = subprocess.run(["/bin/bash", "-c", script], text=True, capture_output=True, env=env)
         result_line = next((line for line in done.stdout.splitlines() if line.startswith("RESULT ")), "")
         record = (work / "record.txt").read_text().splitlines() if (work / "record.txt").exists() else []
@@ -940,6 +942,35 @@ echo "RESULT action=$ACTION used=$FALLBACK_USED status=${{FALLBACK_STATUS:-none}
         self.assertEqual(decision["code_fallback"]["failed_commit"], self.bad)
         self.assertIn(f"compare/{self.good}...{self.bad}", (self.tmp / "gh-calls.txt").read_text())
         self.assertFalse((self.tmp / "work/fallback-site").exists())    # cleaned up
+
+    def test_a_clean_fallback_run_that_published_nothing_is_not_called_published(self):
+        cases = (("public artifacts already match the published ctas-data release; nothing to publish", "nothing-to-publish"),
+                 ("local checksum-bound code successor is not published; publication paused", "publication-paused"),
+                 ("another publish is running; skipping", "skipped-lock"),
+                 ("something else entirely", "no-publication"))
+        for output, result in cases:
+            with self.subTest(result=result):
+                line, record, decision, done = self.run_attempt(good_output=output)
+                self.assertIn("action=block used=0 status=0", line, done.stdout + done.stderr)
+                self.assertEqual(len(record), 2)                          # the fallback did run, once
+                self.assertEqual((decision["action"], decision["reason"], decision["fallback_result"]),
+                                 ("block", "fallback-published-nothing", result))
+                self.assertIs(decision["fallback_published"], False)
+                self.assertIsNone(decision["code_fallback"])
+                self.assertIn("published nothing", decision["explanation"])
+                self.assertIn(output[:60], decision["fallback_result_text"])
+                runner_log = (self.tmp / "work/logs/runner.log").read_text()
+                self.assertNotIn("published with fallback code", runner_log)
+                self.assertIn("ended cleanly but published nothing", runner_log)
+                # the issue planner opens a release-blocked issue that says so, no fallback issue
+                import release_issues
+                actions = release_issues.plan("ctas-publish", [], decision, [])
+                self.assertEqual([(a["op"], a["label"]) for a in actions], [("create", "release-blocked")])
+                self.assertIn("published nothing", actions[0]["body"])
+                self.assertNotIn("published with fallback code", actions[0]["body"])
+        line, _, decision, _ = self.run_attempt(good_output="--dry-run: 24 candidates; would publish 4586 allowlisted public CTAS artifacts")
+        self.assertIn("action=use-fallback used=1", line)
+        self.assertIn("a dry run publishes nothing", (self.tmp / "work/logs/runner.log").read_text())
 
     def test_no_fallback_when_it_must_not_or_cannot_help(self):
         line, record, decision, _ = self.run_attempt(compare="diverged")
