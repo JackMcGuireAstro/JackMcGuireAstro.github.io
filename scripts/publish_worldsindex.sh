@@ -59,7 +59,23 @@ done
 mkdir -p "$LOG_DIR"
 [ -f "$LOG" ] && [ "$(wc -c <"$LOG")" -gt 2097152 ] && mv -f "$LOG" "$LOG.1" 2>/dev/null
 say() { printf '%s  %s\n' "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" "$*" >>"$LOG"; printf '%s\n' "$*"; }
-die() { say "FAIL  $*"; exit 1; }
+# Every release-time check is classified in scripts/check-classes.json (RESILIENCE.md): an
+# always_block failure, or a promoted integrity failure, blocks; an advisory failure (or a
+# new check still in watch mode) is a WARN line and the release continues. A blocking check
+# exits 3, "blocked by a release check", so the cloud runner can rebuild the static release
+# once with the code that produced the currently published release; every other failure
+# exits 1 as before. ACTIVE_CHECK names the check a `die` in a
+# block of inline validation belongs to.
+ACTIVE_CHECK=""
+die() {
+  say "FAIL  $*"
+  if [ -n "$ACTIVE_CHECK" ]; then
+    record_check "$ACTIVE_CHECK" 1 "" --message "$*" >>"$LOG" 2>&1
+    exit 3
+  fi
+  exit 1
+}
+block() { say "FAIL  $*"; exit 3; }
 
 if ! mkdir "$LOCKDIR" 2>/dev/null; then
   if [ -n "$(find "$LOCKDIR" -maxdepth 0 -mmin +120 2>/dev/null)" ]; then
@@ -108,6 +124,36 @@ if [ "$MODE" = "full" ]; then
 fi
 command -v python3 >/dev/null || die "python3 is unavailable"
 
+# ---- Classified checks ------------------------------------------------------------------
+CHECK_DIR="$LOG_DIR/checks"
+rm -rf -- "$CHECK_DIR"
+mkdir -p "$CHECK_DIR" || die "could not prepare $CHECK_DIR"
+CHECK_SCOPE=worldsindex-publish
+CHECK_RESULTS="${WORLDSINDEX_CHECK_RESULTS:-$CHECK_DIR/results.jsonl}"
+: >"$CHECK_RESULTS" || die "could not write $CHECK_RESULTS"
+CHECK_LOG="$LOG"
+CHECK_HISTORY=""
+CHECK_TREE="$SITE"
+RELEASE_CHECKS="$SITE/scripts/release_checks.py"
+# shellcheck source=release_checks.sh
+. "$SITE/scripts/release_checks.sh" || die "could not load scripts/release_checks.sh"
+in_site() { (cd "$SITE" && "$@"); }
+in_source() { (cd "$SOURCE" && "$@"); }
+node_check() {
+  # `node --check` on a .js ES module passes even when it does not parse (Node 22 module
+  # detection; found 2026-10-22), so a file with top-level import/export is also checked
+  # as a module from stdin.
+  local file status=0
+  for file in "$@"; do
+    if ! node --check "$file"; then
+      echo "does not parse: $file"; status=1
+    elif grep -qE '^[[:space:]]*(import|export)[[:space:]{*]' "$file" && ! node --input-type=module --check <"$file"; then
+      echo "does not parse as an ES module: $file"; status=1
+    fi
+  done
+  return "$status"
+}
+
 export GIT_TERMINAL_PROMPT=0
 : "${GIT_SSH_COMMAND:=ssh -o BatchMode=yes -o ConnectTimeout=15 -o ConnectionAttempts=2 -o ServerAliveInterval=10 -o ServerAliveCountMax=2}"
 export GIT_SSH_COMMAND
@@ -146,6 +192,7 @@ fi
 # ----------------------------------------------------------------------------------------
 
 if [ "$MODE" = "full" ]; then
+ACTIVE_CHECK=worldsindex.monitor
 say "checking all declared provider monitors locally"
 MONITOR_EXIT=0
 (cd "$SOURCE" && ./scripts/run-source-monitor-noninteractive.sh) >>"$LOG" 2>&1 || MONITOR_EXIT=$?
@@ -157,6 +204,8 @@ case "$MONITOR_STATE" in
   VALIDATED_UNCHANGED|VALIDATED_CHANGED|QUARANTINED) ;;
   *) die "monitor state is $MONITOR_STATE; refusing publication" ;;
 esac
+record_check worldsindex.monitor 0 "" >/dev/null
+ACTIVE_CHECK=""
 
 CHANGED_SOURCES=$(python3 -c '
 import json,sys
@@ -247,12 +296,13 @@ else
   say "K2 refresh runtime unavailable; retaining prior observed photometry"
 fi
 say "running ExoNexus scientific and production gates"
-(cd "$SOURCE" && npm run typecheck && npm test && npm run lint && npm run build) >>"$LOG" 2>&1 \
-  || die "ExoNexus validation failed; nothing published"
+exonexus_gates() { (cd "$SOURCE" && npm run typecheck && npm test && npm run lint && npm run build); }
+check worldsindex.exonexus exonexus_gates \
+  || block "ExoNexus validation failed; nothing published"
 
 say "regenerating the source-resolved atlas from the active frozen snapshots"
-(cd "$SOURCE" && npm run sky:generate) >>"$LOG" 2>&1 \
-  || die "atlas generation failed; nothing published"
+check worldsindex.atlas in_source npm run sky:generate \
+  || block "atlas generation failed; nothing published"
 date -u '+%Y-%m-%dT%H:%M:%SZ' >"$LOG_DIR/.last-full-run"
 fi  # MODE=full
 
@@ -268,6 +318,10 @@ fi
 DATA_TIP=$(cd "$SITE" && bash scripts/data_branch.sh sync "$DATA_STORE" "$DATA_BRANCH") \
   || die "could not read the published $DATA_BRANCH release: $DATA_TIP"
 git -C "$SITE" clean -fdqX -- worldsindex/data || die "could not clear the previous generated files"
+# Watch-mode pass counts of the newer checks travel with the releases (check-history.json).
+git --git-dir="$DATA_STORE" show "$DATA_TIP:worldsindex/data/check-history.json" >"$CHECK_DIR/previous-history.json" 2>/dev/null \
+  || printf '{}\n' >"$CHECK_DIR/previous-history.json"
+CHECK_HISTORY="$CHECK_DIR/previous-history.json"
 
 say "building the GitHub-native static release"
 # The VOParquet bulk tables are written outside the Pages tree and uploaded below as assets
@@ -276,10 +330,13 @@ say "building the GitHub-native static release"
 # tip, read through the data store) is the base of the changelog and the feeds.
 BULK_DIR="${WORLDSINDEX_RELEASE_ASSETS_DIR:-$LOG_DIR/release-assets}"
 mkdir -p "$BULK_DIR" || die "could not prepare the bulk asset folder $BULK_DIR"
-(cd "$SITE" && WORLDSINDEX_SOURCE_DIR="$SOURCE" WORLDSINDEX_RELEASE_ASSETS_DIR="$BULK_DIR" \
-  WORLDSINDEX_RELEASE_BASE_GIT_DIR="$DATA_STORE" WORLDSINDEX_RELEASE_BASE_REF="$DATA_TIP" \
-  node scripts/build_worldsindex_static.mjs) >>"$LOG" 2>&1 \
-  || die "static release build failed"
+build_static() {
+  (cd "$SITE" && WORLDSINDEX_SOURCE_DIR="$SOURCE" WORLDSINDEX_RELEASE_ASSETS_DIR="$BULK_DIR" \
+    WORLDSINDEX_RELEASE_BASE_GIT_DIR="$DATA_STORE" WORLDSINDEX_RELEASE_BASE_REF="$DATA_TIP" \
+    node scripts/build_worldsindex_static.mjs)
+}
+check worldsindex.static-build build_static \
+  || block "static release build failed"
 # Derive observation files from the completed manifest; never guess shard names.
 while IFS= read -r artifact; do
   PUBLIC_FILES+=("$artifact")
@@ -290,16 +347,26 @@ for path in json.load(open(sys.argv[1])).get("artifacts", {}):
         print("worldsindex/data/" + path)
 PY_OBSERVATIONS
 )
-(cd "$SITE" && python3 scripts/test_worldsindex_static.py && node --check worldsindex/assets/app.js && node --check worldsindex/assets/sky.js && node --check worldsindex/assets/status.js && node --test scripts/test_worldsindex_front.mjs && git diff --check) >>"$LOG" 2>&1 \
-  || die "static release validation failed"
+check worldsindex.test_worldsindex_static in_site python3 scripts/test_worldsindex_static.py \
+  || block "static release validation failed"
+check worldsindex.front-syntax in_site node_check worldsindex/assets/app.js worldsindex/assets/sky.js worldsindex/assets/status.js \
+  || block "static release validation failed: a front-end script does not parse"
+check worldsindex.test_worldsindex_front in_site node --test scripts/test_worldsindex_front.mjs \
+  || block "static release validation failed: front-end helpers"
+check worldsindex.whitespace in_site git diff --check \
+  || block "static release validation failed: whitespace"
 # Track 1 gates: the exports read back with Astropy and pyarrow cell for cell (values, units,
 # UCDs, limit flags, provenance columns), and every published JSON file matches its schema
 # under worldsindex/schemas (named by worldsindex/openapi.yaml; the detail-shard sample is
 # bounded by WORLDSINDEX_SCHEMA_BUDGET_SECONDS, default 30). Either failure refuses the release.
-(cd "$SITE" && node --test scripts/test_worldsindex_interop.mjs && python3 scripts/test_worldsindex_interop.py --assets "$BULK_DIR" && python3 scripts/test_worldsindex_schemas.py) >>"$LOG" 2>&1 \
-  || die "interoperability exports do not round-trip; nothing published"
-(cd "$SITE" && python3 scripts/validate_worldsindex_schemas.py) >>"$LOG" 2>&1 \
-  || die "published JSON does not validate against worldsindex/schemas; nothing published"
+check worldsindex.test_worldsindex_interop_js in_site node --test scripts/test_worldsindex_interop.mjs \
+  || block "interoperability exports do not round-trip; nothing published"
+check worldsindex.test_worldsindex_interop in_site python3 scripts/test_worldsindex_interop.py --assets "$BULK_DIR" \
+  || block "interoperability exports do not round-trip; nothing published"
+check worldsindex.test_worldsindex_schemas in_site python3 scripts/test_worldsindex_schemas.py \
+  || block "the release schemas fail their real-shape tests; nothing published"
+check worldsindex.schemas in_site python3 scripts/validate_worldsindex_schemas.py \
+  || block "published JSON does not validate against worldsindex/schemas; nothing published"
 # The cloud run's public marker (scripts/cloud_run_marker.py: restored state, run id) is
 # published beside the release. It is not a manifest artifact (the static test above and
 # scripts/test_worldsindex_static.py leave it out), but it is allowlisted like everything else.
@@ -308,18 +375,35 @@ if [ -n "${WORLDSINDEX_CLOUD_RUN_MARKER:-}" ] && [ -f "$WORLDSINDEX_CLOUD_RUN_MA
   PUBLIC_FILES+=(worldsindex/data/cloud-run.json)
 fi
 
-EXPECTED=$(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1])).get("detailShards",[])))' "$SITE/worldsindex/data/manifest.json" 2>/dev/null || echo 0)
-[ "$EXPECTED" = "256" ] || die "release manifest does not declare exactly 256 detail shards"
+# Checksum self-consistency (always_block): every artifact the manifest declares has exactly
+# the sha256 it states. Catastrophic data loss (integrity, watch mode at first): the object
+# count may not drop by more than 20% against the published release.
+check worldsindex.checksums in_site python3 scripts/release_checks.py checksums --product worldsindex --root . \
+  || block "the release's artifacts differ from the checksums its manifest states; nothing published"
+git --git-dir="$DATA_STORE" show "$DATA_TIP:worldsindex/data/manifest.json" >"$CHECK_DIR/previous-manifest.json" 2>/dev/null \
+  || rm -f -- "$CHECK_DIR/previous-manifest.json"
+check worldsindex.count-drop python3 "$SITE/scripts/release_checks.py" count-drop --product worldsindex \
+  --current "$SITE/worldsindex/data/manifest.json" --previous "$CHECK_DIR/previous-manifest.json" \
+  || block "the object count dropped by more than 20% against the published release; nothing published"
 
-if find "$SITE/worldsindex" -type f \( -name '.env*' -o -name '*.pem' -o -name '*.key' \) -print -quit | grep -q .; then
-  die "credential-shaped file found under the public WorldsIndex tree"
-fi
-if grep -R -I -E 'ADS_API_TOKEN[[:space:]]*=|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}' "$SITE/worldsindex" >/dev/null 2>&1; then
-  die "credential-shaped text found under the public WorldsIndex tree"
-fi
+EXPECTED=$(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1])).get("detailShards",[])))' "$SITE/worldsindex/data/manifest.json" 2>/dev/null || echo 0)
+check worldsindex.shard-count test "$EXPECTED" = "256" \
+  || block "release manifest does not declare exactly 256 detail shards"
+
+credential_scan() {
+  if find "$SITE/worldsindex" -type f \( -name '.env*' -o -name '*.pem' -o -name '*.key' \) -print -quit | grep -q .; then
+    echo "credential-shaped file found under the public WorldsIndex tree"; return 1
+  fi
+  if grep -R -I -E 'ADS_API_TOKEN[[:space:]]*=|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}' "$SITE/worldsindex" >/dev/null 2>&1; then
+    echo "credential-shaped text found under the public WorldsIndex tree"; return 1
+  fi
+}
+check worldsindex.credential-scan credential_scan \
+  || block "credential-shaped file or text found under the public WorldsIndex tree"
 
 cd "$SITE" || die "cannot enter the website checkout"
 
+ACTIVE_CHECK=worldsindex.artifact-guard
 # ---- Generic artifact guard -------------------------------------------------------------
 # 1. Every artifact the manifest declares must be in the allowlist. The set is derived from
 #    the manifest itself (manifest.artifacts, falling back to the hash/shard fields), so a
@@ -368,6 +452,21 @@ done < <(cd "$SITE" && find worldsindex/data -type f | sort | sed 's/^/?? /')
   || die "build changed files outside the publication allowlist; refusing a partial release:$UNLISTED_DIRTY"
 REQUIRED_COUNT=$(printf '%s\n' "$REQUIRED_ARTIFACTS" | grep -c .)
 say "artifact guard: $REQUIRED_COUNT manifest-declared artifacts are all present and allowlisted"
+ACTIVE_CHECK=""
+record_check worldsindex.artifact-guard 0 "" >/dev/null
+
+# ---- Check history ----------------------------------------------------------------------
+# The watch-mode pass counts after this release (scripts/release_checks.py history),
+# published beside the release like the cloud-run marker and, like it, not a manifest
+# artifact: it is written after the checks that judged the release, so the manifest those
+# checks verified cannot carry its checksum.
+if python3 "$SITE/scripts/release_checks.py" history --scope worldsindex-publish --results "$CHECK_RESULTS" \
+     --previous "$CHECK_HISTORY" --site-commit "$(git -C "$SITE" rev-parse HEAD 2>/dev/null)" \
+     --out "$SITE/worldsindex/data/check-history.json" >>"$LOG" 2>&1; then
+  PUBLIC_FILES+=(worldsindex/data/check-history.json)
+else
+  say "WARN  could not write worldsindex/data/check-history.json; watch-mode pass counts do not advance with this release"
+fi
 # ----------------------------------------------------------------------------------------
 
 OBJECTS=$(python3 -c 'import json;print(json.load(open("worldsindex/data/manifest.json"))["objectCount"])' 2>/dev/null || echo '?')

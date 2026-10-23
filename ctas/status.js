@@ -31,7 +31,8 @@
   ];
   var SCHEMA_NAMES = ["common", "status", "live-summary", "catalog-index", "catalog-page", "catalog-page-manifest", "candidate-chunk", "candidate-json-part",
     "candidate-chunk-manifest", "alias-index", "source-universe", "source-matrix-patterns", "research-manifest", "release-history", "link-health",
-    "certification", "bulk-downloads", "datalink-manifest", "provenance", "delivery", "observatories", "cloud-run", "changelog", "source-accounting", "feeds-index"];
+    "certification", "bulk-downloads", "datalink-manifest", "provenance", "delivery", "observatories", "cloud-run", "changelog", "source-accounting", "feeds-index",
+    "check-history"];
 
   function text(value) { return value === null || value === undefined ? "" : String(value); }
   function esc(value) {

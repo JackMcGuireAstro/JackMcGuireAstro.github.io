@@ -499,6 +499,18 @@ paths:
             application/json:
               schema:
                 $ref: schemas/cloud-run.schema.json
+  /ctas/data/check-history.json:
+    get:
+      tags: [status]
+      summary: What the release checks did on the real releases so far (first seen, consecutive passes, last result, promotion out of watch mode; scripts/release_checks.py; RESILIENCE.md); not part of the certified snapshot
+      operationId: getCheckHistory
+      responses:
+        "200":
+          description: Check history (present once a publisher with release-check classification has released).
+          content:
+            application/json:
+              schema:
+                $ref: schemas/check-history.schema.json
   /ctas/delivery.json:
     get:
       tags: [status]
@@ -542,7 +554,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [common, status, live-summary, catalog-index, catalog-page, catalog-page-manifest, candidate-chunk, candidate-json-part, candidate-chunk-manifest, alias-index, source-universe, source-matrix-patterns, research-manifest, release-history, link-health, certification, bulk-downloads, datalink-manifest, provenance, delivery, observatories, cloud-run, changelog, source-accounting, feeds-index]
+            enum: [common, status, live-summary, catalog-index, catalog-page, catalog-page-manifest, candidate-chunk, candidate-json-part, candidate-chunk-manifest, alias-index, source-universe, source-matrix-patterns, research-manifest, release-history, link-health, certification, bulk-downloads, datalink-manifest, provenance, delivery, observatories, cloud-run, changelog, source-accounting, feeds-index, check-history]
       responses:
         "200":
           description: JSON Schema document.

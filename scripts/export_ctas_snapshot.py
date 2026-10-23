@@ -366,6 +366,7 @@ API_DESCRIPTION_PATHS = (
     "ctas/schemas/changelog.schema.json",
     "ctas/schemas/source-accounting.schema.json",
     "ctas/schemas/feeds-index.schema.json",
+    "ctas/schemas/check-history.schema.json",
 )
 # Code and fixed-input files the verification report binds beside the generated data.
 BOUND_CODE_PATHS = (
@@ -393,7 +394,33 @@ BOUND_CODE_PATHS = (
     "scripts/mirror_loop.sh", "scripts/publish_ctas.sh", "scripts/ctas_launchd_runner.sh",
     "scripts/install_ctas_mirror.sh", "scripts/diagnose_ctas_mirror.sh",
     "scripts/io.github.jackmcguireastro.ctas-mirror.plist", "CTAS-AUTOMATION.md",
+    # Release-check classification (RESILIENCE.md): publish_ctas.sh runs every check through
+    # these (run_report.py is the sanitizer release_checks.py imports), so the certificate
+    # binds which checks were allowed to warn for this release.
+    "scripts/release_checks.py", "scripts/release_checks.sh", "scripts/check-classes.json",
+    "scripts/run_report.py",
 )
+# Files of the resilience batch (2026-10-22) that the CTAS publisher does not execute while
+# building a release, so the certificate does not bind them (a change to them needs no
+# re-certification). Each with the reason; scripts/test_release_checks.py keeps this list
+# and BOUND_CODE_PATHS disjoint and complete for the batch.
+UNBOUND_RESILIENCE_PATHS = {
+    "scripts/release_issues.py": "GitHub issue upkeep after a run; never reads or writes release bytes",
+    "scripts/code_fallback.sh": "the cloud runner's one fallback attempt; the retried release is certified by the code it checks out",
+    "scripts/release_commit.py": "reads which commit produced a published release; used by the cloud runners and the deploy",
+    "scripts/deploy_checks.sh": "the deploy's check groups; the deploy validates, it does not build CTAS releases",
+    "scripts/deploy_candidates.sh": "the deploy's choice of site code; the deploy validates, it does not build CTAS releases",
+    "scripts/test_release_checks.py": "tests of the classification engine; run by the deploy, not by the publisher",
+    "scripts/test_run_report.py": "tests of the report sanitizer; run by the deploy, not by the publisher",
+    "scripts/test_release_issues.py": "tests of the issue planner; run by the deploy, not by the publisher",
+    "scripts/test_release_commit.py": "tests of the release-commit reader; run by the deploy, not by the publisher",
+    "scripts/ctas_cloud_run.sh": "the cloud runner (as before): orchestration around the publisher, not part of the release",
+    "scripts/worldsindex_cloud_run.sh": "WorldsIndex cloud runner",
+    "scripts/watchdog_freshness.py": "the hourly watchdog; reads the live site and the data branches",
+    "scripts/cloud_run_marker.py": "the run marker, published beside the release and outside the certified snapshot (as before)",
+    "RESILIENCE.md": "documentation of the resilience rules",
+    ".github/workflows/worldsindex-release.yml": "workflows are not bound",
+}
 SOURCE_STATE_VOCABULARY = (
     "active-returning-data",
     "active-no-recent-messages",

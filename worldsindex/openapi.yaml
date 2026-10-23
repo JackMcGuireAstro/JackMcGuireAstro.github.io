@@ -59,6 +59,8 @@ components:
       $ref: schemas/lightcurve.schema.json
     CloudRun:
       $ref: schemas/cloud-run.schema.json
+    CheckHistory:
+      $ref: schemas/check-history.schema.json
     BulkDownloads:
       $ref: schemas/bulk-downloads.schema.json
     ExportsIndex:
@@ -186,6 +188,21 @@ paths:
                 $ref: "#/components/schemas/CloudRun"
         "404":
           description: The release was not published by the cloud workflow.
+  /data/check-history.json:
+    get:
+      tags: [release]
+      summary: Check history
+      description: What the release checks did on the real releases so far (first seen, consecutive passes, last result, promotion out of watch mode; scripts/release_checks.py; RESILIENCE.md). Written by the publisher after the checks, beside the release; not a manifest artifact.
+      operationId: getCheckHistory
+      responses:
+        "200":
+          description: Check-history document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckHistory"
+        "404":
+          description: The release was published before the check history existed.
   /data/catalog-index.json.gz:
     get:
       tags: [catalog]

@@ -91,7 +91,23 @@ mkdir -p "$LOG_DIR"
 [ -f "$LOG" ] && [ "$(wc -c <"$LOG")" -gt 1048576 ] && mv -f "$LOG" "$LOG.1" 2>/dev/null
 
 say() { printf '%s  %s\n' "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" "$*" >>"$LOG"; printf '%s\n' "$*"; }
-die() { say "FAIL  $*"; exit 1; }
+# Every release-time check is classified in scripts/check-classes.json (RESILIENCE.md): an
+# always_block failure, or a promoted integrity failure, blocks; an advisory failure (or a
+# new check still in watch mode) is a WARN line and the release continues. A blocking check
+# exits 3, "blocked by a release check", so the cloud runner can retry the release once
+# with the code that produced the currently published release; every other failure (no
+# database, the lock, the push) exits 1 as before. Inside a block of inline validation
+# ACTIVE_CHECK names the check its `die` belongs to.
+ACTIVE_CHECK=""
+die() {
+  say "FAIL  $*"
+  if [ -n "$ACTIVE_CHECK" ]; then
+    record_check "$ACTIVE_CHECK" 1 "" --message "$*" >>"$LOG" 2>&1
+    exit 3
+  fi
+  exit 1
+}
+block() { say "FAIL  $*"; exit 3; }
 
 case "$HEARTBEAT_INTERVAL" in
   ''|0*|*[!0-9]*) die "CTAS_HEARTBEAT_INTERVAL must be an integer from 120 to 900 seconds" ;;
@@ -132,8 +148,14 @@ cleanup() {
   if [ "$status" -ne 0 ] && [ "$SITE_READY" -eq 1 ]; then
     discard_generated_files
   fi
-  if [ -n "$PUBLISH_DB" ]; then
-    rm -f -- "$PUBLISH_DB" "$PUBLISH_DB-journal" "$PUBLISH_DB-wal" "$PUBLISH_DB-shm"
+  # A snapshot handed in by the caller (CTAS_FROZEN_DB) is the caller's to delete. A run
+  # that a release check blocked keeps its own for the fallback attempt when asked to.
+  if [ -n "$PUBLISH_DB" ] && [ "${PUBLISH_DB_OWNED:-1}" = "1" ]; then
+    if [ "$status" -eq 3 ] && [ -n "${CTAS_KEEP_FROZEN_DB:-}" ] && mv -f -- "$PUBLISH_DB" "$CTAS_KEEP_FROZEN_DB" 2>/dev/null; then
+      rm -f -- "$PUBLISH_DB-journal" "$PUBLISH_DB-wal" "$PUBLISH_DB-shm"
+    else
+      rm -f -- "$PUBLISH_DB" "$PUBLISH_DB-journal" "$PUBLISH_DB-wal" "$PUBLISH_DB-shm"
+    fi
   fi
   # The VOParquet assets live beside the snapshot, outside the Pages tree, only until
   # they are uploaded (or the run ends); nothing of theirs is kept between runs.
@@ -151,6 +173,19 @@ BULK_DIR=""
 [ -f "$DB" ]   || die "CTAS database not found: $DB"
 cd "$SITE"     || die "cannot enter $SITE"
 SITE_READY=1
+
+# ------------------------------------------------------------- classified checks
+CHECK_DIR="$LOG_DIR/checks"
+rm -rf -- "$CHECK_DIR"
+mkdir -p "$CHECK_DIR" || die "could not prepare $CHECK_DIR"
+CHECK_SCOPE=ctas-publish
+CHECK_RESULTS="${CTAS_CHECK_RESULTS:-$CHECK_DIR/results.jsonl}"
+: >"$CHECK_RESULTS" || die "could not write $CHECK_RESULTS"
+CHECK_LOG="$LOG"
+CHECK_HISTORY=""
+RELEASE_CHECKS="$SITE/scripts/release_checks.py"
+# shellcheck source=release_checks.sh
+. "$SITE/scripts/release_checks.sh" || die "could not load scripts/release_checks.sh"
 
 # ------------------------------------------------------------- rate guard
 # Checked before the frozen snapshot, so a run that is going to wait out the floor
@@ -179,6 +214,10 @@ fi
 DATA_TIP=$(bash scripts/data_branch.sh sync "$DATA_STORE" "$DATA_BRANCH") \
   || die "could not read the published $DATA_BRANCH release: $DATA_TIP"
 git clean -fdqX -- ctas/data || die "could not clear the previous generated files"
+# Watch-mode pass counts of the newer checks travel with the releases (check-history.json).
+git --git-dir="$DATA_STORE" show "$DATA_TIP:ctas/data/check-history.json" >"$CHECK_DIR/previous-history.json" 2>/dev/null \
+  || printf '{}\n' >"$CHECK_DIR/previous-history.json"
+CHECK_HISTORY="$CHECK_DIR/previous-history.json"
 # The cloud run's public marker (scripts/cloud_run_marker.py: restored state, run id) is
 # published beside the release. It is not part of the certified snapshot: the exporter
 # binds an explicit file set, and status.json stays exactly as the exporter wrote it.
@@ -210,6 +249,15 @@ SNAPSHOT_DIR="${CTAS_SNAPSHOT_DIR:-$SITE/.git}"
 for folder in "$SNAPSHOT_DIR" "${TMPDIR:-/tmp}"; do
   find "$folder" -maxdepth 1 -name 'ctas-publish.*' -type f -mmin +60 -exec rm -f {} + 2>/dev/null || true
 done
+# The cloud runner's fallback attempt (RESILIENCE.md) re-runs the release on exactly the
+# database state the blocked run froze: CTAS_FROZEN_DB names that snapshot, which is used
+# as it is and never deleted here.
+if [ -n "${CTAS_FROZEN_DB:-}" ]; then
+  [ -s "$CTAS_FROZEN_DB" ] || die "the frozen database snapshot $CTAS_FROZEN_DB is missing or empty"
+  PUBLISH_DB="$CTAS_FROZEN_DB"
+  PUBLISH_DB_OWNED=0
+  say "using the frozen database snapshot of the blocked run ($(wc -c <"$PUBLISH_DB" | tr -d ' ') bytes)"
+else
 PUBLISH_DB=$(mktemp "$SNAPSHOT_DIR/ctas-publish.XXXXXX") \
   || die "could not allocate a temporary database snapshot"
 # Establish an explicit read transaction before cloning or copying. In WAL mode it
@@ -349,6 +397,7 @@ PYCTASBACKUP
 then
   die "could not create a complete pinned database snapshot; nothing exported or committed"
 fi
+fi  # CTAS_FROZEN_DB
 [ -s "$PUBLISH_DB" ] || die "database snapshot is empty"
 phase_done freeze-database
 
@@ -358,14 +407,14 @@ phase_done freeze-database
 # ctas/data/bulk-downloads.json names; only that small index enters the release commit.
 BULK_DIR="${CTAS_BULK_DIR:-$SNAPSHOT_DIR/ctas-bulk}"
 mkdir -p "$BULK_DIR" || die "could not prepare the bulk asset folder $BULK_DIR"
-with_release python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
-  --release-base-ref "$DATA_TIP" --bulk-dir "$BULK_DIR" >>"$LOG" 2>&1 \
-  || die "export failed; nothing committed"
+check ctas.export with_release python3 scripts/export_ctas_snapshot.py --database "$PUBLISH_DB" --output-dir ctas/data \
+  --release-base-ref "$DATA_TIP" --bulk-dir "$BULK_DIR" \
+  || block "export failed; nothing committed"
 phase_done export
-python3 scripts/check_ctas_links.py --catalog-index ctas/data/catalog-index.json \
+check ctas.link-check python3 scripts/check_ctas_links.py --catalog-index ctas/data/catalog-index.json \
   --candidate-manifest ctas/data/candidate-chunks/manifest.json \
-  --source-universe ctas/data/source-universe.json --output ctas/data/link-health.json >>"$LOG" 2>&1 \
-  || die "public link validation failed; nothing committed"
+  --source-universe ctas/data/source-universe.json --output ctas/data/link-health.json \
+  || block "public link validation failed; nothing committed"
 phase_done link-check
 # Bind the link-health artifact into the verification report. The link checker reads
 # the exported catalog, so it can only run after the export; the report used to be
@@ -373,12 +422,16 @@ phase_done link-check
 # bound file, refuses if any byte differs from what the gates evaluated, re-evaluates
 # only the link-health, required-artifact and freshness gates, and rewrites the
 # report and status checksums. The release is the first export's bytes.
-python3 scripts/export_ctas_snapshot.py --rebind-link-health --output-dir ctas/data >>"$LOG" 2>&1 \
-  || die "verification-report link-health binding failed; nothing committed"
+check ctas.rebind-link-health python3 scripts/export_ctas_snapshot.py --rebind-link-health --output-dir ctas/data \
+  || block "verification-report link-health binding failed; nothing committed"
 phase_done bind-link-health
 # Atom feed of strong new follow-up targets, from the final first-screen summary.
-python3 scripts/ctas_feed.py --summary ctas/data/live-summary.json --output ctas/data/feed.xml >>"$LOG" 2>&1 \
-  || die "new-target feed failed; nothing committed"
+check ctas.feed-build python3 scripts/ctas_feed.py --summary ctas/data/live-summary.json --output ctas/data/feed.xml \
+  || block "new-target feed failed; nothing committed"
+
+# The manifests' file sets below are one integrity check (data-branch layout): a `die`
+# inside them exits 3 like any blocking check.
+ACTIVE_CHECK=ctas.release-layout
 
 # ----------------------------------------------------------- collect detail files
 # The completed manifest is the only source of root/part paths. Overflow parts
@@ -642,27 +695,32 @@ if [ -n "$RETIRED" ]; then
   say "retiring $(printf '%s\n' "$RETIRED" | grep -c .) superseded public data files"
 fi
 
+ACTIVE_CHECK=""
 # ------------------------------------------------------------------ tests
 # A release may not be committed on the strength of its own report alone. The
 # suites below read the artifacts that were just written, so they run after the
-# export and before anything is staged.
+# export and before anything is staged. Each is a classified check: an always_block
+# or promoted integrity failure stops the release, an advisory failure (or a newer
+# check still in watch mode) is a WARN line and the release continues.
+record_check ctas.release-layout 0 "" >/dev/null
 phase_done validate-detail-pages-and-retirement
 for suite in scripts/test_ctas_static.py scripts/test_ctas_links.py scripts/test_ctas_identity.py \
              scripts/test_ctas_astro_evidence.py scripts/test_ctas_browser.py \
              scripts/test_ctas_chunks.py scripts/test_ctas_publisher_recovery.py \
              scripts/test_ctas_interop.py scripts/test_ctas_changelog.py scripts/test_ctas_feed.py; do
-  python3 "$suite" >>"$LOG" 2>&1 || die "$suite failed against the generated release; nothing committed"
+  check "ctas.$(basename "$suite" .py)" python3 "$suite" \
+    || block "$suite failed against the generated release; nothing committed"
   phase_done "$(basename "$suite")"
 done
 # Every published JSON file against its JSON Schema (ctas/schemas, named by
 # ctas/openapi.yaml); the sampling rule for the 4,096 chunk roots is printed by the
 # validator and stated in its docstring.
-python3 scripts/validate_ctas_schemas.py >>"$LOG" 2>&1 \
-  || die "published JSON does not validate against ctas/schemas; nothing committed"
+check ctas.schemas python3 scripts/validate_ctas_schemas.py \
+  || block "published JSON does not validate against ctas/schemas; nothing committed"
 phase_done validate_ctas_schemas.py
 # Compare every exported ingest score/factor record with this cycle's frozen DB.
-python3 scripts/test_ctas_ingest_provenance.py --database "$PUBLISH_DB" --data-dir ctas/data >>"$LOG" 2>&1 \
-  || die "ingest-score provenance differs from the frozen database; nothing committed"
+check ctas.test_ctas_ingest_provenance python3 scripts/test_ctas_ingest_provenance.py --database "$PUBLISH_DB" --data-dir ctas/data \
+  || block "ingest-score provenance differs from the frozen database; nothing committed"
 phase_done test_ctas_ingest_provenance.py
 # The catalog model is the browser's copy of the reader-facing rules, so it is
 # checked in a JavaScript runtime. A publisher without one is reported rather
@@ -670,10 +728,10 @@ phase_done test_ctas_ingest_provenance.py
 # and an absent interpreter is an environment fact, not a failing assertion.
 NODE=$(python3 scripts/ctas_node.py 2>/dev/null || true)
 if [ -n "$NODE" ]; then
-  "$NODE" scripts/test_ctas_catalog_model.js >>"$LOG" 2>&1 \
-    || die "catalog-model assertions failed against the generated release; nothing committed"
-  "$NODE" scripts/test_ctas_chunk_loader.js >>"$LOG" 2>&1 \
-    || die "detail-part loader assertions failed; nothing committed"
+  check ctas.test_ctas_catalog_model "$NODE" scripts/test_ctas_catalog_model.js \
+    || block "catalog-model assertions failed against the generated release; nothing committed"
+  check ctas.test_ctas_chunk_loader "$NODE" scripts/test_ctas_chunk_loader.js \
+    || block "detail-part loader assertions failed; nothing committed"
   phase_done javascript-tests
 else
   say "no JavaScript runtime on this publisher; catalog-model assertions were not run"
@@ -681,6 +739,7 @@ fi
 
 
 CERT_STATUS=$(python3 -c "import json;print(json.load(open('ctas/data/certification.json'))['status'])" 2>/dev/null || echo "unreadable")
+FAILED_GATES=""
 if [ "$CERT_STATUS" != "verified-static-snapshot" ]; then
   FAILED_GATES=$(python3 -c '
 import json
@@ -693,9 +752,26 @@ print(",".join(sorted(gate["id"] for gate in report.get("gates", []) if gate.get
       discard_generated_files
       exit 0
       ;;
-    *) die "static-snapshot verification is $CERT_STATUS ($FAILED_GATES); refusing publication" ;;
   esac
 fi
+# Checksum self-consistency (always_block): every ctas/data file the certificate lists
+# has exactly the bytes it states. Catastrophic data loss (integrity, watch mode at first):
+# the candidate count may not drop by more than 20% against the published release.
+check ctas.checksums python3 scripts/release_checks.py checksums --product ctas --root . \
+  || block "the release's files differ from the checksums its certificate states; nothing committed"
+git --git-dir="$DATA_STORE" show "$DATA_TIP:ctas/data/status.json" >"$CHECK_DIR/previous-status.json" 2>/dev/null \
+  || rm -f -- "$CHECK_DIR/previous-status.json"
+check ctas.count-drop python3 scripts/release_checks.py count-drop --product ctas \
+  --current ctas/data/status.json --previous "$CHECK_DIR/previous-status.json" \
+  || block "the candidate count dropped by more than 20% against the published release; nothing committed"
+phase_done release-integrity-checks
+# Each of the certificate's gates is a classified check (ctas.gate.<id>). A failed
+# advisory gate (a byte budget, page copy) does not stop the release; the published
+# certificate still says verification-failed and names the gate, so nothing is hidden.
+python3 scripts/release_checks.py gates --scope ctas-publish --certificate ctas/data/certification.json \
+  --results "$CHECK_RESULTS" --history "$CHECK_HISTORY" >>"$LOG" 2>&1 \
+  || block "static-snapshot verification is $CERT_STATUS ($FAILED_GATES); refusing publication"
+[ -z "$FAILED_GATES" ] || say "WARN  static-snapshot verification is $CERT_STATUS ($FAILED_GATES); no failed gate blocks (advisory or watch mode), so the release continues and its certificate says so"
 
 # ------------------------------------------------------------ changed at all?
 # publication_state_checksum_sha256 covers semantic candidate content plus
@@ -757,6 +833,18 @@ elif [ "$CODE_BINDING_CHANGED" -eq 1 ]; then
 fi
 
 COUNT=$(python3 -c "import json;print(json.load(open('ctas/data/catalog-index.json'))['candidate_count'])" 2>/dev/null || echo "?")
+
+# ------------------------------------------------------------ check history
+# The watch-mode pass counts after this release (scripts/release_checks.py history). It is
+# published beside the release like the cloud-run marker and, like it, is not part of the
+# certified snapshot: it records the checks that judged the release.
+if python3 scripts/release_checks.py history --scope ctas-publish --results "$CHECK_RESULTS" \
+     --previous "$CHECK_HISTORY" --site-commit "$(git rev-parse HEAD 2>/dev/null)" \
+     --out ctas/data/check-history.json >>"$LOG" 2>&1; then
+  PUBLIC_FILES+=(ctas/data/check-history.json)
+else
+  say "WARN  could not write ctas/data/check-history.json; watch-mode pass counts do not advance with this release"
+fi
 
 if [ "$DRY" -eq 1 ]; then
   say "--dry-run: $COUNT candidates; would publish ${#PUBLIC_FILES[@]} allowlisted public CTAS artifacts to $DATA_BRANCH"

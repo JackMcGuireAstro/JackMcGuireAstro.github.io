@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CTAS check history",
+  "description": "ctas/data/check-history.json: what the release checks did on the real releases so far (scripts/release_checks.py history; RESILIENCE.md). One row per check id, and per schema file of the schema validator ('<id>:<file>'): when it was first seen, how many consecutive real releases passed it, its last result and the last failure in a few sanitized words, and when it was promoted out of watch mode (a check in watch mode warns instead of blocking until it was first seen 24 hours ago and passed 4 consecutive releases; promotion is permanent; a changed schema file starts a new row). Read back by the next publish from the previous release, so promotion needs no commit. Written by the publisher after the checks that judged the release, beside it like the cloud-run marker; not part of the checksum-bound release.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "check-history@1"
+    },
+    "scope": {
+      "enum": [
+        "ctas-publish",
+        "worldsindex-publish",
+        "deploy"
+      ]
+    },
+    "updated_at": {
+      "$ref": "common.schema.json#/$defs/dateTime"
+    },
+    "site_commit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "watch": {
+      "type": "object",
+      "properties": {
+        "hours": {
+          "type": "number",
+          "minimum": 0
+        },
+        "consecutive_passes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "hours",
+        "consecutive_passes"
+      ]
+    },
+    "checks": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9][a-z0-9_.-]*(:[a-z0-9][a-z0-9.-]*\\.schema\\.json)?$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "first_seen": {
+            "$ref": "common.schema.json#/$defs/dateTime"
+          },
+          "consecutive_passes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "promoted_at": {
+            "$ref": "common.schema.json#/$defs/nullableDateTime"
+          },
+          "last_seen": {
+            "$ref": "common.schema.json#/$defs/nullableDateTime"
+          },
+          "last_result": {
+            "enum": [
+              "pass",
+              "fail"
+            ]
+          },
+          "last_failure_at": {
+            "$ref": "common.schema.json#/$defs/nullableDateTime"
+          },
+          "last_failure_detail": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 300
+          },
+          "class": {
+            "enum": [
+              "always_block",
+              "integrity",
+              "advisory",
+              null
+            ]
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "seeded": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "first_seen",
+          "consecutive_passes",
+          "promoted_at"
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "scope",
+    "updated_at",
+    "checks"
+  ],
+  "additionalProperties": true
+}

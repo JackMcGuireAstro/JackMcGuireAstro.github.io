@@ -1,0 +1,1181 @@
+{
+ "schema": "check-classes@2",
+ "description": "Every release-time check of the CTAS and WorldsIndex publishers and of the 'Validate and deploy site' workflow, with its class. Read by scripts/release_checks.py; see RESILIENCE.md.",
+ "classes": {
+  "always_block": "The hard core: secrets or banned keys in the public export, unmanifested files, checksum self-consistency. Blocks on every failure, from the first run: never in watch mode.",
+  "integrity": "The published data, or the code that loads and verifies it, is wrong: manifest closure, certificate self-consistency, provenance and receipt closure, provider-label publishability, missing or duplicated records, catastrophic data loss, front-end scripts that do not parse. Blocks once out of watch mode.",
+  "advisory": "Everything that cannot make the published data wrong: browser layout, payload budgets, accessibility, page copy, tests that pin specific real objects by name, interop round trips of derived exports, feed and changelog formatting, tooling tests. Never blocks a release or a deploy: a WARN line, the run's results, and one check-warning issue per check."
+ },
+ "rule": "Classify a new check by what its failure proves. If a failure can only mean that bytes readers download are wrong, missing, unsafe or unverifiable, it is integrity (always_block only for the hard core). If the published data could be right while it fails (a layout, a size budget, a pinned object, a derived export's formatting), it is advisory. When unsure, integrity: watch mode covers its first day.",
+ "watch": {
+  "hours": 24,
+  "consecutive_passes": {
+   "ctas-publish": 4,
+   "worldsindex-publish": 3,
+   "deploy": 3
+  },
+  "rule": "A check (and each schema file of the schema validators) is in watch mode until it was first seen at least 24 hours ago AND passed N consecutive real releases (CTAS 4, WorldsIndex 3, deploy 3). In watch mode a failure is a warning whatever the class, except always_block. Promotion is recorded in check-history.json and is permanent; a changed schema file (sha256 of it and the schemas it references) starts a new watch period. Checks marked baseline ran on real releases before the history existed: when no history is readable they count as promoted."
+ },
+ "fallback": {
+  "rule": "When a blocking check fails with the current site code, the release step runs once more with the code of the commit that produced the currently published release, on the same data; checks with fallback=false (secrets, export safety, restore safety, builder-side checks site code cannot change) never fall back, and a blocking check unknown to that code blocks."
+ },
+ "parsers": {
+  "unittest": "FAIL:/ERROR: lines of Python unittest output; parts are Class.test",
+  "ctas-schemas": "FAIL lines of scripts/validate_ctas_schemas.py; parts are the schema named on each line",
+  "worldsindex-schemas": "indented failure lines of scripts/validate_worldsindex_schemas.py; parts are '<schema or file>: message'"
+ },
+ "checks": {
+  "browser.research": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_research_browser.py in a real browser (layout, console, accessibility)",
+   "baseline": true
+  },
+  "browser.tonight": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_tonight_browser.py in a real browser (layout, console, accessibility)",
+   "baseline": true
+  },
+  "browser.tools": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_tools_browser.py in a real browser (layout, console, accessibility)",
+   "baseline": true
+  },
+  "browser.worldsindex_lightcurves": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_worldsindex_lightcurves_browser.py in a real browser (layout, console, accessibility)",
+   "baseline": true
+  },
+  "browser.worldsindex_live_sources": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_worldsindex_live_sources_browser.py in a real browser (layout, console, accessibility)",
+   "baseline": true
+  },
+  "browser.worldsindex_sky": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_worldsindex_sky_browser.py in a real browser (layout, console, accessibility)",
+   "baseline": true
+  },
+  "ctas.checksums": {
+   "class": "always_block",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "checksum self-consistency: every ctas/data file the certificate lists has exactly the bytes and sha256 the certificate states (scripts/release_checks.py checksums)"
+  },
+  "ctas.count-drop": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "catastrophic data loss: the candidate count may not drop by more than 20% against the previous release (scripts/release_checks.py count-drop)",
+   "notes": "New with Track R (2026-10-22): starts in watch mode like every new check."
+  },
+  "ctas.export": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "the exporter builds the release from the frozen database (all later checks read its output)",
+   "baseline": true,
+   "prerequisite": true
+  },
+  "ctas.feed-build": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "scripts/ctas_feed.py writes feed.xml from the final live summary",
+   "baseline": true,
+   "prerequisite": true
+  },
+  "ctas.front-syntax": {
+   "class": "integrity",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "the CTAS front-end scripts parse (the page can load the release)",
+   "baseline": true
+  },
+  "ctas.front.followup": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "ctas/followup.js suggested follow-up card (front-end unit tests)",
+   "baseline": true
+  },
+  "ctas.front.lightcurve-summary": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "ctas/lightcurve-summary.js (front-end unit tests)",
+   "baseline": true
+  },
+  "ctas.front.live-relay": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "relay/worker.js against a stand-in network (front-end unit tests)",
+   "baseline": true
+  },
+  "ctas.front.live-sources": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "ctas/live-sources.js parsers (front-end unit tests)",
+   "baseline": true
+  },
+  "ctas.front.presentation": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "ctas/presentation.js thumbnails and labels (front-end unit tests)",
+   "baseline": true
+  },
+  "ctas.front.sky": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "ctas/sky.js pure parts (front-end unit tests)",
+   "baseline": true
+  },
+  "ctas.front.spectrum-ascii": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "ctas/spectrum-ascii.js (front-end unit tests)",
+   "baseline": true
+  },
+  "ctas.front.spectrum-fits": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "ctas/spectrum-fits.js (front-end unit tests)",
+   "baseline": true
+  },
+  "ctas.gate.alias-index-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate alias-index-integrity",
+   "baseline": true
+  },
+  "ctas.gate.bootstrap-performance-budget": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate: first-screen byte budget",
+   "baseline": true
+  },
+  "ctas.gate.browser-interaction-contract": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate: page code carries the interaction tokens",
+   "baseline": true
+  },
+  "ctas.gate.candidate-public-contract": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate candidate-public-contract",
+   "baseline": true
+  },
+  "ctas.gate.candidate-science-brief-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate candidate-science-brief-integrity",
+   "baseline": true
+  },
+  "ctas.gate.candidate-source-dispositions": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate candidate-source-dispositions",
+   "baseline": true
+  },
+  "ctas.gate.catalog-page-budget": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate: catalog page byte budget",
+   "baseline": true
+  },
+  "ctas.gate.catalog-population": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate catalog-population",
+   "baseline": true
+  },
+  "ctas.gate.certification-publication-contract": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate certification-publication-contract",
+   "baseline": true
+  },
+  "ctas.gate.changelog-feeds-and-source-accounting-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate changelog-feeds-and-source-accounting-integrity"
+  },
+  "ctas.gate.complete-catalog-reconstruction-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate complete-catalog-reconstruction-integrity",
+   "baseline": true
+  },
+  "ctas.gate.coordinate-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate coordinate-integrity",
+   "baseline": true
+  },
+  "ctas.gate.deployed-code-binding": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate deployed-code-binding",
+   "baseline": true,
+   "notes": "A failure of only these two gates pauses publication (exit 0, nothing committed) before classification."
+  },
+  "ctas.gate.derived-magnitude-safety": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate derived-magnitude-safety",
+   "baseline": true
+  },
+  "ctas.gate.detail-shard-performance-budget": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate: dossier download byte budget",
+   "baseline": true
+  },
+  "ctas.gate.evidence-replay-no-future-leakage": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate evidence-replay-no-future-leakage",
+   "baseline": true
+  },
+  "ctas.gate.exact-claim-boundary": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate exact-claim-boundary",
+   "baseline": true
+  },
+  "ctas.gate.follow-up-count-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate follow-up-count-integrity",
+   "baseline": true
+  },
+  "ctas.gate.github-blob-size-limit": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate github-blob-size-limit",
+   "baseline": true
+  },
+  "ctas.gate.interoperability-exports-round-trip": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate interoperability-exports-round-trip",
+   "notes": "Advisory: a round trip or formatting check of a derived export; the primary JSON release it is derived from is verified by integrity checks."
+  },
+  "ctas.gate.interpretation-and-limitations": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate: page copy states the claim boundaries",
+   "baseline": true
+  },
+  "ctas.gate.live-summary-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate live-summary-integrity",
+   "baseline": true
+  },
+  "ctas.gate.local-origin-code-alignment": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate local-origin-code-alignment",
+   "baseline": true,
+   "notes": "A failure of only these two gates pauses publication (exit 0, nothing committed) before classification."
+  },
+  "ctas.gate.local-store-exceptions-declared": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate local-store-exceptions-declared",
+   "baseline": true
+  },
+  "ctas.gate.public-export-safety": {
+   "class": "always_block",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate public-export-safety",
+   "baseline": true,
+   "fallback": false
+  },
+  "ctas.gate.public-statistics-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate public-statistics-integrity",
+   "baseline": true
+  },
+  "ctas.gate.recent-stream-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate recent-stream-integrity",
+   "baseline": true
+  },
+  "ctas.gate.record-completeness-reproducibility": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate record-completeness-reproducibility",
+   "baseline": true
+  },
+  "ctas.gate.recursive-link-structure-and-sampled-tns-health": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate recursive-link-structure-and-sampled-tns-health",
+   "baseline": true
+  },
+  "ctas.gate.release-history-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate release-history-integrity",
+   "baseline": true
+  },
+  "ctas.gate.required-public-artifacts": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate required-public-artifacts",
+   "baseline": true
+  },
+  "ctas.gate.research-table-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate research-table-integrity",
+   "baseline": true
+  },
+  "ctas.gate.score-arithmetic-reconciliation": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate score-arithmetic-reconciliation",
+   "baseline": true
+  },
+  "ctas.gate.score-term-applicability": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate score-term-applicability",
+   "baseline": true
+  },
+  "ctas.gate.snapshot-freshness": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate snapshot-freshness",
+   "baseline": true
+  },
+  "ctas.gate.source-and-survey-closure": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate source-and-survey-closure",
+   "baseline": true
+  },
+  "ctas.gate.source-matrix-round-trip-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate source-matrix-round-trip-integrity",
+   "baseline": true
+  },
+  "ctas.gate.source-statistics-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate source-statistics-integrity",
+   "baseline": true
+  },
+  "ctas.gate.source-universe-schema": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate source-universe-schema",
+   "baseline": true
+  },
+  "ctas.gate.suggested-follow-up-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate suggested-follow-up-integrity",
+   "baseline": true
+  },
+  "ctas.gate.survey-statistics-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate survey-statistics-integrity",
+   "baseline": true
+  },
+  "ctas.gate.tns-link-structure": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate tns-link-structure",
+   "baseline": true
+  },
+  "ctas.gate.two-minute-publication-contract": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate: mirror cadence wording and export heartbeat",
+   "baseline": true
+  },
+  "ctas.gate.unified-timeline-integrity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate unified-timeline-integrity",
+   "baseline": true
+  },
+  "ctas.link-check": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "scripts/check_ctas_links.py classifies every exported URL and writes link-health.json",
+   "baseline": true,
+   "prerequisite": true
+  },
+  "ctas.rebind-link-health": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "bind link-health.json into the certificate; refuses if any bound byte changed",
+   "baseline": true,
+   "prerequisite": true
+  },
+  "ctas.release-layout": {
+   "class": "always_block",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "detail roots and parts, catalog pages, DataLink documents and feed files are exactly the checksum-bound sets the manifests declare; superseded files are retired (data-branch layout)",
+   "baseline": true,
+   "prerequisite": true
+  },
+  "ctas.restore": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "restore the collector database from the private state repository (archive member safety)",
+   "baseline": true,
+   "fallback": false
+  },
+  "ctas.schemas": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "every published CTAS JSON file against ctas/schemas (Track 1)",
+   "parser": "ctas-schemas",
+   "parts": [
+    [
+     "^metaschema",
+     "integrity"
+    ],
+    [
+     "^(status|certification|catalog-index|candidate-chunk-manifest|catalog-page-manifest|research-manifest|release-history|source-universe|common)\\.schema\\.json$",
+     "integrity"
+    ],
+    [
+     "status\\.\\w+ is .* not ctas/data/",
+     "integrity"
+    ],
+    [
+     "declares \\S+ but it is missing",
+     "integrity"
+    ],
+    [
+     ".*",
+     "advisory"
+    ]
+   ],
+   "notes": "Core documents that locate and verify the release are integrity; the shape of dossiers, feeds and optional documents is presentation (2026-10-21: a required 'links' list that 1,083 real events lack).",
+   "per_schema": "ctas/schemas"
+  },
+  "ctas.test_ctas_astro_evidence": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "AstroEvidence projection and the frozen evidence schema",
+   "baseline": true
+  },
+  "ctas.test_ctas_browser": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "the CTAS pages in a real browser: layout at phone width, heading outline, axe-core WCAG, console errors, first-screen byte budget",
+   "baseline": true
+  },
+  "ctas.test_ctas_catalog_model": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "the browser's copy of the reader-facing catalog rules against the release",
+   "baseline": true
+  },
+  "ctas.test_ctas_changelog": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "the release changelog reproduces its entry ids (Track 1)",
+   "notes": "Advisory: a round trip or formatting check of a derived export; the primary JSON release it is derived from is verified by integrity checks."
+  },
+  "ctas.test_ctas_chunk_loader": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "the browser loader verifies part checksums and reassembles dossier chunks",
+   "baseline": true
+  },
+  "ctas.test_ctas_chunks": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "dossier chunk partitioning and reconstruction",
+   "baseline": true
+  },
+  "ctas.test_ctas_feed": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "Atom and JSON Feed set of the release (Track 1 part C)",
+   "notes": "Advisory: a round trip or formatting check of a derived export; the primary JSON release it is derived from is verified by integrity checks."
+  },
+  "ctas.test_ctas_identity": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "cross-survey identity resolution never merges two designated objects (duplicated records)",
+   "baseline": true
+  },
+  "ctas.test_ctas_ingest_provenance": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "every exported ingest score and factor matches the frozen database (provenance closure)",
+   "baseline": true
+  },
+  "ctas.test_ctas_interop": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "ECSV, VOTable, VOParquet, DataLink and PROV-JSON round trips (Track 1)",
+   "notes": "Advisory: a round trip or formatting check of a derived export; the primary JSON release it is derived from is verified by integrity checks."
+  },
+  "ctas.test_ctas_links": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "link structure of the exported release",
+   "baseline": true
+  },
+  "ctas.test_ctas_outcomes": {
+   "class": "integrity",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "forced measurements and limits are never counted as detections",
+   "baseline": true
+  },
+  "ctas.test_ctas_positional": {
+   "class": "integrity",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "positional neighbours never merge records or change identity",
+   "baseline": true
+  },
+  "ctas.test_ctas_publisher_recovery": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "publisher recovery and snapshot tooling against stand-in repositories (tooling; cannot change published bytes)",
+   "baseline": true
+  },
+  "ctas.test_ctas_source_health": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "per-source health report (operations report)",
+   "baseline": true
+  },
+  "ctas.test_ctas_static": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "the release against the static-catalog contract (checksums, reconstruction, certificate self-consistency, accounting)",
+   "baseline": true,
+   "parser": "unittest",
+   "parts": [
+    [
+     "^CertificateAndArtifactTests\\.test_real_rights_cleared_regression_records_remain_inspectable$",
+     "advisory"
+    ],
+    [
+     "^CertificateAndArtifactTests\\.test_public_workspace_defaults_are_calm_without_removing_features$",
+     "advisory"
+    ],
+    [
+     "^CertificateAndArtifactTests\\.test_public_copy_calls_it_snapshot_verification_not_certification$",
+     "advisory"
+    ],
+    [
+     "^CertificateAndArtifactTests\\.test_complete_catalog_download_ui_uses_parts_not_a_giant_blob$",
+     "advisory"
+    ]
+   ],
+   "notes": "Four tests are advisory: one pins real regression events by name (renames and retirements are legitimate), three read page copy. The test that compares the certificate's bound code with this tree (step 12 in the deploy) stays integrity."
+  },
+  "ops.cloud_run_marker": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_cloud_run_marker.py (operations tooling; cannot change deployed bytes)",
+   "baseline": true
+  },
+  "ops.ctas_cloud_state": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_ctas_cloud_state.py (operations tooling; cannot change deployed bytes)",
+   "baseline": true
+  },
+  "ops.ctas_db_retention": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_ctas_db_retention.py (operations tooling; cannot change deployed bytes)",
+   "baseline": true
+  },
+  "ops.data_branch": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_data_branch.py (operations tooling; cannot change deployed bytes)",
+   "baseline": true
+  },
+  "ops.publisher_housekeeping": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_publisher_housekeeping.py (operations tooling; cannot change deployed bytes)",
+   "baseline": true
+  },
+  "ops.release_checks": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_release_checks.py (operations tooling; cannot change deployed bytes)",
+   "baseline": true
+  },
+  "ops.release_commit": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_release_commit.py: tooling tests that cannot change the published bytes"
+  },
+  "ops.release_issues": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_release_issues.py (operations tooling; cannot change deployed bytes)",
+   "baseline": true
+  },
+  "ops.run_report": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_run_report.py (operations tooling; cannot change deployed bytes)",
+   "baseline": true
+  },
+  "ops.shell-syntax": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "bash -n of the cloud runners",
+   "baseline": true
+  },
+  "ops.watchdog_freshness": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_watchdog_freshness.py (operations tooling; cannot change deployed bytes)",
+   "baseline": true
+  },
+  "ops.worldsindex_cloud_state": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_worldsindex_cloud_state.py (operations tooling; cannot change deployed bytes)",
+   "baseline": true
+  },
+  "qualquest.static": {
+   "class": "integrity",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "QualQuest static export and the public-document boundary",
+   "baseline": true
+  },
+  "research.census": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "barium dwarf census page",
+   "baseline": true
+  },
+  "site.credential-scan": {
+   "class": "always_block",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "no credential-shaped file or text under the public CTAS and WorldsIndex trees (public-export safety)",
+   "baseline": true,
+   "fallback": false
+  },
+  "site.whitespace": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "git diff --check over the deployed checkout",
+   "baseline": true
+  },
+  "tonight.planner": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "Tonight's sky planner reference values",
+   "baseline": true
+  },
+  "tonight.syntax": {
+   "class": "integrity",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "Tonight's sky, the observing tools and the census page scripts parse",
+   "baseline": true
+  },
+  "tools.coordinates": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "coordinate converter reference values",
+   "baseline": true
+  },
+  "tools.exposure": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "exposure calculator",
+   "baseline": true
+  },
+  "tools.finder": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "finder chart",
+   "baseline": true
+  },
+  "worldsindex.artifact-guard": {
+   "class": "always_block",
+   "scopes": [
+    "worldsindex-publish"
+   ],
+   "what": "every manifest-declared artifact is built and allowlisted, and nothing outside the allowlist was written (data-branch layout)",
+   "baseline": true
+  },
+  "worldsindex.atlas": {
+   "class": "integrity",
+   "scopes": [
+    "worldsindex-publish"
+   ],
+   "what": "the source-resolved atlas regenerates from the active frozen snapshots (builder code)",
+   "baseline": true,
+   "fallback": false
+  },
+  "worldsindex.checksums": {
+   "class": "always_block",
+   "scopes": [
+    "worldsindex-publish",
+    "deploy"
+   ],
+   "what": "checksum self-consistency: every artifact the manifest declares has exactly the sha256 (and bytes) the manifest states (scripts/release_checks.py checksums)"
+  },
+  "worldsindex.count-drop": {
+   "class": "integrity",
+   "scopes": [
+    "worldsindex-publish"
+   ],
+   "what": "catastrophic data loss: the object count may not drop by more than 20% against the previous release (scripts/release_checks.py count-drop)",
+   "notes": "New with Track R (2026-10-22): starts in watch mode like every new check."
+  },
+  "worldsindex.credential-scan": {
+   "class": "always_block",
+   "scopes": [
+    "worldsindex-publish"
+   ],
+   "what": "no credential-shaped file or text under the public WorldsIndex tree (public-export safety)",
+   "baseline": true,
+   "fallback": false
+  },
+  "worldsindex.exonexus": {
+   "class": "integrity",
+   "scopes": [
+    "worldsindex-publish"
+   ],
+   "what": "ExoNexus typecheck, tests, lint and build (builder code, private repository)",
+   "baseline": true,
+   "fallback": false
+  },
+  "worldsindex.front-syntax": {
+   "class": "integrity",
+   "scopes": [
+    "worldsindex-publish",
+    "deploy"
+   ],
+   "what": "the WorldsIndex front-end scripts parse (the atlas can load the release)",
+   "baseline": true
+  },
+  "worldsindex.front.ephemerides": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "transit ephemerides helper (front-end unit tests)",
+   "baseline": true
+  },
+  "worldsindex.front.live-mast": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "worldsindex/assets/live-mast.js live panel (front-end unit tests)",
+   "baseline": true
+  },
+  "worldsindex.front.live-nasa": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "worldsindex/assets/live-nasa.js live panel (front-end unit tests)",
+   "baseline": true
+  },
+  "worldsindex.front.live-sources": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "worldsindex/assets/live-sources.js live panel (front-end unit tests)",
+   "baseline": true
+  },
+  "worldsindex.front.photometry": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "photometry helpers (front-end unit tests)",
+   "baseline": true
+  },
+  "worldsindex.front.science": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "worldsindex/assets/science.js derived quantities (front-end unit tests)",
+   "baseline": true
+  },
+  "worldsindex.monitor": {
+   "class": "integrity",
+   "scopes": [
+    "worldsindex-publish"
+   ],
+   "what": "the provider monitor produced a typed receipt (builder code, private repository)",
+   "baseline": true,
+   "fallback": false
+  },
+  "worldsindex.restore": {
+   "class": "integrity",
+   "scopes": [
+    "worldsindex-publish"
+   ],
+   "what": "restore the builder's working data from the private state repository (archive member safety)",
+   "baseline": true,
+   "fallback": false
+  },
+  "worldsindex.schemas": {
+   "class": "integrity",
+   "scopes": [
+    "worldsindex-publish",
+    "deploy"
+   ],
+   "what": "every published WorldsIndex JSON file against worldsindex/schemas (Track 1)",
+   "parser": "worldsindex-schemas",
+   "parts": [
+    [
+     "published but not declared by the manifest",
+     "always_block"
+    ],
+    [
+     "^(manifest|catalog-index|details-shard|common)\\.schema\\.json$",
+     "integrity"
+    ],
+    [
+     "^details/[0-9a-f]{2}\\.json\\.gz:",
+     "integrity"
+    ],
+    [
+     "^(a schema file|schema \\S+ is missing|worldsindex/openapi\\.yaml)",
+     "integrity"
+    ],
+    [
+     ".*",
+     "advisory"
+    ]
+   ],
+   "notes": "The manifest, catalog index and detail shards are integrity; monitor, coverage, feed, changelog and other documents are presentation (2026-10-21: a quarantined monitor's changed: null).",
+   "per_schema": "worldsindex/schemas",
+   "file_map": [
+    [
+     "^details/[0-9a-f]{2}\\.json\\.gz:",
+     "details-shard.schema.json"
+    ]
+   ]
+  },
+  "worldsindex.shard-count": {
+   "class": "integrity",
+   "scopes": [
+    "worldsindex-publish"
+   ],
+   "what": "the manifest declares exactly 256 detail shards",
+   "baseline": true
+  },
+  "worldsindex.static-build": {
+   "class": "integrity",
+   "scopes": [
+    "worldsindex-publish"
+   ],
+   "what": "scripts/build_worldsindex_static.mjs builds the static release (all later checks read its output)",
+   "baseline": true,
+   "prerequisite": true
+  },
+  "worldsindex.test_worldsindex_front": {
+   "class": "advisory",
+   "scopes": [
+    "worldsindex-publish",
+    "deploy"
+   ],
+   "what": "Track 1 part D front-end helpers (sky panel, status page) and contributions acceptance"
+  },
+  "worldsindex.test_worldsindex_interop": {
+   "class": "advisory",
+   "scopes": [
+    "worldsindex-publish",
+    "deploy"
+   ],
+   "what": "exports read back with Astropy and pyarrow cell for cell (Track 1)",
+   "notes": "Advisory: a round trip or formatting check of a derived export; the primary JSON release it is derived from is verified by integrity checks."
+  },
+  "worldsindex.test_worldsindex_interop_js": {
+   "class": "advisory",
+   "scopes": [
+    "worldsindex-publish",
+    "deploy"
+   ],
+   "what": "column registry, ECSV/VOTable writers, HEALPix, release diff, feeds, PROV-JSON (Track 1)",
+   "notes": "Advisory: a round trip or formatting check of a derived export; the primary JSON release it is derived from is verified by integrity checks."
+  },
+  "worldsindex.test_worldsindex_publisher_recovery": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "publisher recovery tooling (cannot change published bytes)",
+   "baseline": true
+  },
+  "worldsindex.test_worldsindex_schemas": {
+   "class": "integrity",
+   "scopes": [
+    "worldsindex-publish",
+    "deploy"
+   ],
+   "what": "real-shape regression tests of the release schemas"
+  },
+  "worldsindex.test_worldsindex_static": {
+   "class": "integrity",
+   "scopes": [
+    "worldsindex-publish",
+    "deploy"
+   ],
+   "what": "manifest-declared artifacts, checksums and byte counts, shard set, registry counts",
+   "baseline": true
+  },
+  "worldsindex.tooling-syntax": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "the WorldsIndex builder-side site scripts parse (tooling)",
+   "baseline": true
+  },
+  "worldsindex.whitespace": {
+   "class": "advisory",
+   "scopes": [
+    "worldsindex-publish"
+   ],
+   "what": "git diff --check over the checkout",
+   "baseline": true
+  }
+ }
+}

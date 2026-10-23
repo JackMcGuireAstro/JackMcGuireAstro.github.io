@@ -7,7 +7,7 @@ are the contract readers can rely on. This step runs check-jsonschema over the r
 * every top-level file fully: manifest, catalog index, sky atlas, registry, transit
   ephemerides, source coverage, source monitor, light-curve index and every light curve,
   bulk downloads, exports index, provenance, changelog, feed, and the cloud-run marker
-  when present;
+  and the check history when present;
 * the 256 detail shards sampled within a time budget (default 30 s, WORLDSINDEX_SCHEMA_BUDGET_SECONDS):
   shards are taken in a deterministic order that starts at an offset derived from the
   release's atlas digest, so successive releases sample different shards while one
@@ -53,6 +53,7 @@ SCHEMA_FOR = [
     (r"^changelog\.json$", "changelog.schema.json"),
     (r"^feed\.json$", "feed.schema.json"),
     (r"^cloud-run\.json$", "cloud-run.schema.json"),
+    (r"^check-history\.json$", "check-history.schema.json"),
     (r"^details/[0-9a-f]{2}\.json\.gz$", "details-shard.schema.json"),
 ]
 NOT_JSON = re.compile(r"\.(ecsv\.gz|vot\.gz|md|xml)$")
@@ -174,7 +175,9 @@ def main(argv: list[str] | None = None) -> int:
             if schema == "details-shard.schema.json":
                 shards.append(rel)
                 continue
-            if rel != "manifest.json" and rel != "cloud-run.json" and rel not in declared:
+            # The publisher's own files beside the release (cloud-run marker, check history)
+            # are written after the build, so the manifest cannot declare them.
+            if rel not in ("manifest.json", "cloud-run.json", "check-history.json") and rel not in declared:
                 failures.append(f"{rel}: published but not declared by the manifest")
             groups.setdefault(schema, []).append(rel)
         started = time.monotonic()

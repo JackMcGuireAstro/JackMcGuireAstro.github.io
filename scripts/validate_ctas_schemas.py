@@ -21,7 +21,7 @@ validates all 4,096 roots. Everything else (status, live summary, catalog index,
 catalog page, every manifest, the source universe, the release history, the link-health
 report, the certificate, bulk-downloads, the DataLink manifest, the provenance
 document, the changelog, the per-source accounting, the feeds index, the cloud-run
-marker, observatories.json and ctas/delivery.json) is validated completely. Every JSON
+marker, the check history, observatories.json and ctas/delivery.json) is validated completely. Every JSON
 Feed file named by the feeds index is parsed and checked for the JSON Feed 1.1 required
 members (version, title, items with ids), and every Atom file for well-formedness with a
 feed id, updated and entry ids (the same checks scripts/ctas_feed.py applies before the
@@ -72,10 +72,12 @@ DECLARED_FILES = {
     "feeds/index.json": ("feeds_index_path", "feeds-index"),
 }
 # Present only after the link checker ran (the publisher) or in a deployed tree; the
-# cloud-run marker only when the GitHub Actions publisher built the release.
+# cloud-run marker only when the GitHub Actions publisher built the release; the check
+# history (watch-mode pass counts, RESILIENCE.md) once a publisher with it has released.
 OPTIONAL_FILES = {
     "link-health.json": "link-health",
     "cloud-run.json": "cloud-run",
+    "check-history.json": "check-history",
 }
 # Fixed inputs under the data directory (certificate-bound, not written by the exporter).
 FIXED_INPUT_FILES = {
