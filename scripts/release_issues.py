@@ -39,7 +39,7 @@ from pathlib import Path
 from typing import Callable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from run_report import collect_secrets, read_jsonl, sanitize  # noqa: E402
+from run_report import collect_secrets, leaks, read_jsonl, sanitize  # noqa: E402
 
 LABELS = {
     "check-warning": ("FBCA04", "A release check failed without blocking (advisory, or a new check in watch mode); closes itself when the check passes again"),
@@ -223,6 +223,25 @@ def open_issues(repo: str, runner: Callable = subprocess.run) -> list[dict]:
     return issues
 
 
+WITHHELD = ("The details of this update were withheld: after redaction a credential-shaped string was still in "
+            "them, so they are not posted to this public issue. Read them in the workflow run's log.")
+
+
+def public_body(body: str, secrets: list[str]) -> str:
+    """The body as posted: sanitized, then scanned; when a credential shape survives, a fixed
+    notice that keeps the issue's hidden marker (so the next run still finds its issue)."""
+    clean = sanitize(body, secrets)[:60000]
+    if not leaks(clean, secrets):
+        return clean
+    found = list(MARKER.finditer(body or ""))
+    return WITHHELD + ("\n\n" + found[-1].group(0) + "\n" if found else "\n")
+
+
+def public_title(title: str, secrets: list[str]) -> str:
+    clean = sanitize(title, secrets)
+    return "Release check issue (title withheld: it contained a credential shape)" if leaks(clean, secrets) else clean
+
+
 def apply(actions: list[dict], repo: str, secrets: list[str], runner: Callable = subprocess.run) -> None:
     for label, (color, description) in LABELS.items():
         try:
@@ -230,7 +249,9 @@ def apply(actions: list[dict], repo: str, secrets: list[str], runner: Callable =
         except RuntimeError:
             pass
     for action in actions:
-        body = sanitize(action["body"], secrets)[:60000]
+        body = public_body(action["body"], secrets)
+        if action.get("title") is not None:
+            action = {**action, "title": public_title(action["title"], secrets)}
         if action["op"] == "create":
             url = gh(["issue", "create", "--repo", repo, "--label", action["label"], "--title", action["title"], "--body", body], runner)
             print(f"opened {url.strip()} ({action['label']})")
@@ -266,7 +287,7 @@ def main(argv: list[str] | None = None) -> int:
     secrets = collect_secrets(args.secret_env, args.secret_file)   # every SECRET_ENV_NAMES variable, plus these
     if args.dry_run:
         for action in plan(args.scope, results, decision, [], repo=args.repo, run_url=run_url, mention=args.mention):
-            print(json.dumps({**action, "body": sanitize(action["body"], secrets)[:400]}, sort_keys=True))
+            print(json.dumps({**action, "body": public_body(action["body"], secrets)[:400]}, sort_keys=True))
         return 0
     if not args.repo:
         print("no repository named (GITHUB_REPOSITORY); issues not synced", file=sys.stderr)

@@ -69,7 +69,8 @@ from typing import Any, Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from run_report import collect_secrets, sanitize  # noqa: E402  (same folder; the one sanitizer for every public text)
+from run_report import (collect_secrets, leaks, safe_public_text, sanitize,  # noqa: E402  (same folder; the one
+                        secret_files_from_env, REDACTED_DETAIL)                  # sanitizer for every public text)
 
 CLASSES_PATH = ROOT / "scripts" / "check-classes.json"
 CLASSES_SCHEMA = "check-classes@2"
@@ -355,7 +356,7 @@ def failure_detail(result: dict) -> str | None:
 
 
 def update_history(previous: dict | None, results: list[dict], classes: dict, scope: str,
-                   now: dt.datetime, site_commit: str | None = None) -> dict:
+                   now: dt.datetime, site_commit: str | None = None, secrets: Iterable[str] = ()) -> dict:
     """The next check-history document for one scope, after a real release.
 
     Rows of checks this run did not evaluate are carried over unchanged (a release built by
@@ -398,13 +399,34 @@ def update_history(previous: dict | None, results: list[dict], classes: dict, sc
             row["consecutive_passes"] = 0
             row["last_result"] = "fail"
             row["last_failure_at"] = iso(now)
-            row["last_failure_detail"] = failure_detail(result)
+            row["last_failure_detail"] = safe_public_text(failure_detail(result), secrets)
         if not row.get("promoted_at") and int(row["consecutive_passes"]) >= needed \
                 and now - (parse_time(row.get("first_seen")) or now) >= dt.timedelta(hours=hours):
             row["promoted_at"] = iso(now)
         rows[check_id] = row
-    return {"schema": HISTORY_SCHEMA, "scope": scope, "updated_at": iso(now), "site_commit": site_commit,
-            "watch": {"hours": hours, "consecutive_passes": needed}, "checks": dict(sorted(rows.items()))}
+    document = {"schema": HISTORY_SCHEMA, "scope": scope, "updated_at": iso(now), "site_commit": site_commit,
+                "watch": {"hours": hours, "consecutive_passes": needed}, "checks": dict(sorted(rows.items()))}
+    return scrub_history(document, secrets)
+
+
+def scrub_history(document: dict, secrets: Iterable[str] = ()) -> dict:
+    """check-history.json is public (data branch, live site): every failure detail, carried-over
+    rows included, is sanitized and scanned; a detail in which a credential shape survives is
+    replaced by a placeholder. The document is scanned once more as a whole; never raises."""
+    secrets = list(secrets)
+    for row in (document.get("checks") or {}).values():
+        if isinstance(row, dict) and row.get("last_failure_detail") is not None:
+            row["last_failure_detail"] = safe_public_text(row["last_failure_detail"], secrets)
+    if leaks(json.dumps(document), secrets):
+        # a shape in a field that is not a detail (cannot happen with this writer): keep the counts,
+        # withhold every free-text field
+        for row in (document.get("checks") or {}).values():
+            if isinstance(row, dict):
+                for key, value in list(row.items()):
+                    if isinstance(value, str) and key not in ("first_seen", "last_seen", "promoted_at", "last_failure_at",
+                                                              "class", "last_result", "sha256"):
+                        row[key] = REDACTED_DETAIL
+    return document
 
 
 # ----------------------------------------------------------------------------- one result
@@ -432,6 +454,7 @@ def evaluate(check_id: str, scope: str, exit_code: int, output: str, classes: di
              secret_values: Iterable[str] = (), schema_dir: str | Path | None = None) -> list[dict]:
     """The result records of one finished check: the check itself first, then (for a
     per_schema check) one record per schema file. Pure apart from reading the schema files."""
+    secret_values = list(secret_values)
     entry = classes["checks"].get(check_id)
     hours, needed = watch_settings(classes, scope)
     own_class = (entry or {}).get("class", "integrity")
@@ -442,7 +465,9 @@ def evaluate(check_id: str, scope: str, exit_code: int, output: str, classes: di
         return [{**result, "outcome": "skip", "reason": skip_reason}]
     tail = [line[:500] for line in sanitize(output, secret_values).splitlines()[-OUTPUT_TAIL_LINES:]] if exit_code else []
     parser = PARSERS.get((entry or {}).get("parser") or "")
-    names = parser(output) if (parser and exit_code) else []
+    # Failing-part names come from the check's own output; they reach issues, reports and the
+    # public check-history.json, so they are sanitized like the output tail.
+    names = [sanitize(name, secret_values) for name in parser(output)] if (parser and exit_code) else []
 
     sub_rows: list[dict] = []
     if entry is not None and entry.get("per_schema"):
@@ -794,7 +819,7 @@ def cmd_record(args) -> int:
         output = (output + "\n" + args.message).strip()
     rows = evaluate(args.id, args.scope, args.exit_code, output, classes, history, _now(args),
                     seconds=args.seconds, skip_reason=args.skip, schema_dir=per_schema_dir(classes, args.id, args.tree),
-                    secret_values=collect_secrets(os.environ.get("CHECK_SECRET_ENV"), []))
+                    secret_values=collect_secrets(os.environ.get("CHECK_SECRET_ENV"), secret_files_from_env()))
     append_results(args.results, rows)
     print(verdict_line(rows[0]))
     for sub in rows[1:]:
@@ -833,7 +858,9 @@ def cmd_gates(args) -> int:
 def cmd_history(args) -> int:
     classes = load_classes(args.classes)
     previous = read_histories([args.previous] if args.previous else [], classes)
-    document = update_history(previous, read_results(args.results), classes, args.scope, _now(args), args.site_commit)
+    secrets = collect_secrets(os.environ.get("CHECK_SECRET_ENV"), secret_files_from_env())
+    document = update_history(previous, read_results(args.results), classes, args.scope, _now(args), args.site_commit,
+                              secrets=secrets)
     Path(args.out).write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     hours, needed = watch_settings(classes, args.scope)
     watching = sorted(cid for cid, row in document["checks"].items() if not row.get("promoted_at")

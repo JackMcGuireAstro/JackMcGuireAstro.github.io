@@ -67,7 +67,7 @@ ISSUES_SYNCED=0
 sync_issues() {
   [ "$DRY_RUN" != "1" ] && [ "$ISSUES_SYNCED" -eq 0 ] || return 0
   ISSUES_SYNCED=1
-  GH_TOKEN="$DEPLOY_TOKEN" CHECK_SECRET_ENV="$SECRET_ENV" python3 "$SITE/scripts/release_issues.py" sync --scope ctas-publish \
+  GH_TOKEN="$DEPLOY_TOKEN" CHECK_SECRET_ENV="$SECRET_ENV" CHECK_SECRET_FILE="$BACKEND/.env" python3 "$SITE/scripts/release_issues.py" sync --scope ctas-publish \
     --results "$CHECKS_MAIN" --decision "$DECISION" --repo "$REPO" --secret-env "$SECRET_ENV" \
     --secret-file "$BACKEND/.env" 2>&1 | sed 's/^/issues: /' || true
 }
@@ -122,7 +122,7 @@ else
   cat "$RESTORE_LOG"
   # A restore refusal is an integrity check without fallback (older code must never accept
   # an archive the current safety rules refuse); it opens a release-blocked issue.
-  CHECK_SECRET_ENV="$SECRET_ENV" python3 "$SITE/scripts/release_checks.py" record --scope ctas-publish --id ctas.restore \
+  CHECK_SECRET_ENV="$SECRET_ENV" CHECK_SECRET_FILE="$BACKEND/.env" python3 "$SITE/scripts/release_checks.py" record --scope ctas-publish --id ctas.restore \
     --exit-code 1 --output "$RESTORE_LOG" --results "$CHECKS_MAIN" >/dev/null 2>&1 || true
   decide >/dev/null
   fail "could not restore the state"
@@ -170,7 +170,7 @@ COLLECTOR_COMMIT=$(git -C "$BACKEND" rev-parse HEAD 2>/dev/null || true)
 # frozen database of a run a release check blocked, for the fallback attempt below.
 PUBLISH_OUT=$(CTAS_SITE="$SITE" CTAS_DB="$DATA/soc.db" CTAS_LOG_DIR="$LOGS/publish" CTAS_CLOUD_RUN_MARKER="$MARKER" \
   CTAS_COLLECTOR_COMMIT="$COLLECTOR_COMMIT" CTAS_RELEASE_TOKEN="$DEPLOY_TOKEN" \
-  CTAS_CHECK_RESULTS="$CHECKS_MAIN" CTAS_KEEP_FROZEN_DB="$FROZEN" CHECK_SECRET_ENV="$SECRET_ENV" \
+  CTAS_CHECK_RESULTS="$CHECKS_MAIN" CTAS_KEEP_FROZEN_DB="$FROZEN" CHECK_SECRET_ENV="$SECRET_ENV" CHECK_SECRET_FILE="$BACKEND/.env" \
   DATA_BRANCH_DISPATCHER=0 DATA_BRANCH_COMPACT=0 bash "$SITE/scripts/publish_ctas.sh" "${PUBLISH_ARGS[@]}" 2>&1)
 PUBLISH_STATUS=$?
 printf '%s\n' "$PUBLISH_OUT" | tail -20
@@ -183,7 +183,7 @@ printf '%s\n' "$PUBLISH_OUT" | grep -q '^published ' && PUBLISHED=1
 publish_with() {  # <site> <log dir> <results> <marker>
   CTAS_SITE="$1" CTAS_DB="$DATA/soc.db" CTAS_FROZEN_DB="$FROZEN" CTAS_LOG_DIR="$2" CTAS_CHECK_RESULTS="$3" \
     CTAS_CLOUD_RUN_MARKER="$4" CTAS_COLLECTOR_COMMIT="$COLLECTOR_COMMIT" CTAS_RELEASE_TOKEN="$DEPLOY_TOKEN" \
-    CHECK_SECRET_ENV="$SECRET_ENV" DATA_BRANCH_DISPATCHER=0 DATA_BRANCH_COMPACT=0 \
+    CHECK_SECRET_ENV="$SECRET_ENV" CHECK_SECRET_FILE="$BACKEND/.env" DATA_BRANCH_DISPATCHER=0 DATA_BRANCH_COMPACT=0 \
     bash "$1/scripts/publish_ctas.sh" "${PUBLISH_ARGS[@]}"
 }
 fallback_ready() { [ -s "$FROZEN" ]; }

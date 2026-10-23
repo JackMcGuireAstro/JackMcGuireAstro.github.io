@@ -196,6 +196,26 @@ def leaks(text: str, secret_values: Iterable[str] = ()) -> list[str]:
     return found
 
 
+REDACTED_DETAIL = "[withheld: a credential-shaped string survived redaction; see the run log]"
+
+
+def safe_public_text(text: str | None, secret_values: Iterable[str] = (), placeholder: str = REDACTED_DETAIL) -> str | None:
+    """``text`` sanitized for a public place (check-history.json, an issue); when a credential
+    shape still survives, the placeholder instead. Never raises: a release or a notification
+    is never blocked over its own failure text."""
+    if text is None:
+        return None
+    secret_values = list(secret_values)
+    clean = sanitize(str(text), secret_values)
+    return placeholder if leaks(clean, secret_values) else clean
+
+
+def secret_files_from_env(value: str | None = None) -> list[str]:
+    """CHECK_SECRET_FILE: settings files (os.pathsep-separated) whose values are secrets."""
+    value = os.environ.get("CHECK_SECRET_FILE", "") if value is None else value
+    return [path for path in value.split(os.pathsep) if path]
+
+
 def sanitize_tree(value: Any, secrets: list[str]) -> Any:
     if isinstance(value, str):
         return sanitize(value, secrets)

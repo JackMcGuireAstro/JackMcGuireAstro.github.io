@@ -750,6 +750,52 @@ class CommandLineTests(unittest.TestCase):
         return subprocess.run([sys.executable, str(ROOT / "scripts/release_checks.py"), *args], text=True, capture_output=True,
                               env={**os.environ, "GITHUB_ACTIONS": "", **(env or {})})
 
+    def test_check_history_failure_details_are_scrubbed_and_scanned(self):
+        # Planted: a settings-file value (CHECK_SECRET_FILE), a token in a named variable, a
+        # percent-encoded settings value, and a too-short ghp_ token the redaction does not
+        # know but the leak scan does. None may reach the public check-history.json; the
+        # release itself is never blocked over it (history exit 0).
+        with tempfile.TemporaryDirectory(prefix="history-scrub-") as folder:
+            folder = Path(folder)
+            dotenv = folder / ".env"
+            dotenv.write_text("TNS_API_KEY=Zq9xW2vB7nM4kL1pQ8rT\nOTHER='s3cr3t+/val=ue9876'\n")
+            ghs = "ghs_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8"
+            env = {"CHECK_SECRET_ENV": "STATE_TOKEN", "CHECK_SECRET_FILE": str(dotenv), "STATE_TOKEN": "state-key-value-123456"}
+            results = folder / "results.jsonl"
+            outputs = {
+                # a schema validator's FAIL line (parsed into a part): settings value and named token
+                "ctas.schemas": "FAIL  feeds/index.json: 'https://h/x?k=Zq9xW2vB7nM4kL1pQ8rT state-key-value-123456' is not a 'uri'\n",
+                # a plain check: its last output line becomes the detail
+                "ctas.count-drop": f"Traceback\nValueError: fetch https://h/q?x=s3cr3t%2B%2Fval%3Due9876 with {ghs}\n",
+                # a shape that survives redaction: the detail is withheld
+                "ctas.checksums": "FAIL  remote said ghp_abc1234 was refused\n",
+            }
+            for check_id, text in outputs.items():
+                (folder / f"{check_id}.txt").write_text(text)
+                self.run_cli("record", "--scope", "ctas-publish", "--id", check_id, "--exit-code", "1", "--output",
+                             str(folder / f"{check_id}.txt"), "--results", str(results), env=env)
+            previous = folder / "previous.json"
+            previous.write_text(json.dumps({"schema": "check-history@1", "scope": "ctas-publish", "checks": {
+                "ctas.gate.catalog-population": {"first_seen": rc.iso(rc.now_utc()), "last_seen": rc.iso(rc.now_utc()),
+                                                 "consecutive_passes": 0, "promoted_at": None,
+                                                 "last_failure_detail": "old detail with Zq9xW2vB7nM4kL1pQ8rT"}}}))
+            done = self.run_cli("history", "--scope", "ctas-publish", "--results", str(results), "--previous", str(previous),
+                                "--out", str(folder / "history.json"), env=env)
+            self.assertEqual(done.returncode, 0, done.stderr)
+            text = (folder / "history.json").read_text()
+            for secret in ("Zq9xW2vB7nM4kL1pQ8rT", "state-key-value-123456", "s3cr3t", ghs, "ghp_abc1234"):
+                self.assertNotIn(secret, text, secret)
+            rows = json.loads(text)["checks"]
+            self.assertEqual(rows["ctas.checksums"]["last_failure_detail"], rc.REDACTED_DETAIL)
+            self.assertIn("is not a 'uri'", rows["ctas.schemas"]["last_failure_detail"])
+            self.assertIn("ValueError", rows["ctas.count-drop"]["last_failure_detail"])
+            self.assertEqual(rows["ctas.gate.catalog-population"]["last_failure_detail"], "old detail with ***")   # carried-over row
+            # the parts of the results file (issues, reports) are sanitized at record time too
+            self.assertNotIn("Zq9xW2vB7nM4kL1pQ8rT", results.read_text())
+            # the document as a whole passes the same leak scan the run reports use
+            import run_report
+            self.assertEqual(run_report.leaks(text, ["Zq9xW2vB7nM4kL1pQ8rT"]), [])
+
     def test_record_gates_history_decide_choose_and_summary(self):
         with tempfile.TemporaryDirectory(prefix="release-checks-") as folder:
             folder = Path(folder)

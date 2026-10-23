@@ -119,6 +119,34 @@ class PlanTests(unittest.TestCase):
         self.assertIn(["issue", "comment"], ops)
         self.assertIn(["issue", "close"], ops)
 
+    def test_a_body_in_which_a_credential_shape_survives_is_withheld_but_keeps_its_marker(self):
+        calls = []
+
+        def runner(argv, **kwargs):
+            calls.append(argv)
+            return SimpleNamespace(returncode=0, stdout="https://github.com/o/r/issues/1\n" if argv[1:3] == ["issue", "create"] else "[]", stderr="")
+
+        mark = ri.marker("check-warning", "ctas.export", "ctas-publish", "abc")
+        body = f"Release check failed\n\n```\nremote said ghp_abc1234 refused; key Zq9xW2vB7nM4kL1pQ8rT\n```\n\n{mark}\n"
+        results = [{"id": "ctas.export", "outcome": "warn", "class": "advisory", "parts": [],
+                    "output_tail": ["remote said ghp_abc1234 refused", "x-access-token:abc"]}]
+        planned = ri.plan("ctas-publish", results, None, [])
+        ri.apply([{"op": "create", "label": "check-warning", "title": "Check warning: ctas.export", "body": body},
+                  {"op": "comment", "label": "check-warning", "number": 2, "body": planned[0]["body"]},
+                  {"op": "create", "label": "release-blocked", "title": "Release blocked: ghp_abc1234", "body": "ok"}],
+                 "o/r", ["Zq9xW2vB7nM4kL1pQ8rT"], runner=runner)
+        flat = json.dumps(calls)
+        for leftover in ("ghp_abc1234", "Zq9xW2vB7nM4kL1pQ8rT", "x-access-token:abc"):
+            self.assertNotIn(leftover, flat)
+        posted = [argv[argv.index("--body") + 1] for argv in calls if "--body" in argv]
+        self.assertTrue(posted[0].startswith(ri.WITHHELD))
+        self.assertIn(mark, posted[0])                                   # the next run still finds the issue
+        self.assertEqual(ri.parse_marker(posted[1])["key"], "ctas.export")
+        self.assertTrue(posted[1].startswith(ri.WITHHELD))
+        titles = [argv[argv.index("--title") + 1] for argv in calls if "--title" in argv]
+        self.assertIn("title withheld", titles[1])
+        self.assertEqual(posted[2], "ok")                                # clean bodies are posted as they are
+
     def test_open_issues_reads_the_newest_marker_from_comments(self):
         def runner(argv, **kwargs):
             if argv[1:3] == ["issue", "list"]:

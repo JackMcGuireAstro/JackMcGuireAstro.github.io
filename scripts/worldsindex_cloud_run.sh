@@ -89,7 +89,7 @@ else
   cat "$RESTORE_LOG"
   # An integrity check without fallback: older code must never accept an archive the
   # current safety rules refuse (2026-10-18: hard links in the state archive).
-  CHECK_SECRET_ENV="$SECRET_ENV" python3 "$SITE/scripts/release_checks.py" record --scope worldsindex-publish --id worldsindex.restore \
+  CHECK_SECRET_ENV="$SECRET_ENV" CHECK_SECRET_FILE="$SOURCE/.env.local" python3 "$SITE/scripts/release_checks.py" record --scope worldsindex-publish --id worldsindex.restore \
     --exit-code 1 --output "$RESTORE_LOG" --results "$CHECKS_MAIN" >/dev/null 2>&1 || true
   decide >/dev/null
   say "FAIL  could not restore the working data"
@@ -119,7 +119,7 @@ say "running the WorldsIndex publisher (full cycle)"
 # "worldsindex-data-latest" GitHub Release with it (contents: write; never a state token).
 OUT=$(WORLDSINDEX_SITE="$SITE" WORLDSINDEX_SOURCE="$SOURCE" WORLDSINDEX_LOG_DIR="$LOGS/publish" \
   WORLDSINDEX_CLOUD_RUN_MARKER="$MARKER" WORLDSINDEX_RELEASE_TOKEN="$DEPLOY_TOKEN" \
-  WORLDSINDEX_CHECK_RESULTS="$CHECKS_MAIN" CHECK_SECRET_ENV="$SECRET_ENV" \
+  WORLDSINDEX_CHECK_RESULTS="$CHECKS_MAIN" CHECK_SECRET_ENV="$SECRET_ENV" CHECK_SECRET_FILE="$SOURCE/.env.local" \
   DATA_BRANCH_DISPATCHER=0 bash "$SITE/scripts/publish_worldsindex.sh" "${ARGS[@]}" 2>&1)
 STATUS=$?
 printf '%s\n' "$OUT" | tail -25
@@ -134,7 +134,7 @@ publish_with() {  # <site> <log dir> <results> <marker>
   local args=(--fast --force)
   [ "$DRY_RUN" = "1" ] && args+=(--dry-run)
   WORLDSINDEX_SITE="$1" WORLDSINDEX_SOURCE="$SOURCE" WORLDSINDEX_LOG_DIR="$2" WORLDSINDEX_CHECK_RESULTS="$3" \
-    WORLDSINDEX_CLOUD_RUN_MARKER="$4" WORLDSINDEX_RELEASE_TOKEN="$DEPLOY_TOKEN" CHECK_SECRET_ENV="$SECRET_ENV" \
+    WORLDSINDEX_CLOUD_RUN_MARKER="$4" WORLDSINDEX_RELEASE_TOKEN="$DEPLOY_TOKEN" CHECK_SECRET_ENV="$SECRET_ENV" CHECK_SECRET_FILE="$SOURCE/.env.local" \
     DATA_BRANCH_DISPATCHER=0 bash "$1/scripts/publish_worldsindex.sh" "${args[@]}"
 }
 if [ "$STATUS" -eq 3 ]; then
