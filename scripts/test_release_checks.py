@@ -269,6 +269,13 @@ class WiringTests(unittest.TestCase):
         seconds = int(re.search(r"timeout -k \d+ (\d+) ", ids[0][1]).group(1))
         self.assertLess(seconds + 10, step["timeout-minutes"] * 60)
 
+    def test_the_browser_tools_are_pinned(self):
+        text = (ROOT / ".github/workflows/worldsindex-release.yml").read_text()
+        self.assertIn('"playwright==1.64.1"', text)
+        self.assertIn("axe-core@4.14.0", text)
+        self.assertNotRegex(text, r"pyyaml>=6,<7\" playwright ")
+        self.assertNotRegex(text, r"\.\. axe-core >/dev/null")
+
     def test_cloud_workflows_may_write_issues(self):
         for name in ("ctas-cloud.yml", "worldsindex-cloud.yml"):
             text = (ROOT / ".github/workflows" / name).read_text()

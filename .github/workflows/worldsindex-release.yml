@@ -121,13 +121,17 @@ jobs:
       # Astropy, astropy-healpix and pyarrow read the Track 1 exports back; check-jsonschema
       # validates the published JSON; Playwright, jsonschema and axe-core (installed beside
       # the checkout so it never enters the site) drive the browser checks. One astropy
-      # range for both products (both suites pass on 7.2 and 8.0).
+      # range for both products (both suites pass on 7.2 and 8.0). Playwright (and with it the
+      # Chromium build) and axe-core are pinned, so a tool release cannot change the browser
+      # checks' results overnight: Playwright 1.64.1 is the release CI installed when deploy
+      # 2206 passed (2026-10-23 01:39 UTC; on PyPI since 2026-10-22 16:29 UTC), axe-core 4.14.0
+      # the npm release current since 2026-10-05. Raise them deliberately, in their own commit.
       - name: Interoperability, schema and browser dependencies
         run: |
           python3 -m pip install --quiet --disable-pip-version-check "astropy>=7.0,<9" "astropy-healpix>=1.0,<3" \
-            "pyarrow>=21,<27" "pandas>=2.2,<4" "check-jsonschema>=0.33,<1" "pyyaml>=6,<7" playwright jsonschema
+            "pyarrow>=21,<27" "pandas>=2.2,<4" "check-jsonschema>=0.33,<1" "pyyaml>=6,<7" "playwright==1.64.1" jsonschema
           python3 -m playwright install --with-deps chromium >/dev/null
-          npm install --no-save --silent --prefix .. axe-core >/dev/null
+          npm install --no-save --silent --prefix .. axe-core@4.14.0 >/dev/null
       # Watch-mode pass counts: the publishers' (published with each release) and the
       # deploy's own (history/deploy.json on the run-reports branch).
       - name: Check history of the newer checks
