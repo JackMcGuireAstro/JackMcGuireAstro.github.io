@@ -14,6 +14,36 @@ name: Validate and deploy site
 #
 # Rollback: re-run the last green workflow run from the Actions tab, or revert the code
 # commit on main. Each run's summary names the data commits it deployed.
+#
+# Resilience (RESILIENCE.md). Every check below is classified in scripts/check-classes.json
+# and run through scripts/deploy_checks.sh, so a step records results instead of failing:
+#   * advisory failures (layout, budgets, accessibility, pinned objects, cosmetic schema
+#     parts, derived-export round trips, tooling tests) never stop the deploy; each opens or
+#     updates one check-warning issue, closed automatically when the check passes again;
+#   * integrity checks still in watch mode (new checks, changed schema files) only warn;
+#   * the site code to deploy is chosen from up to three candidates, in order: main, the
+#     commit that produced the current CTAS release, the commit of the last successful
+#     Pages deployment. Each candidate is validated with the same data; the first whose
+#     blocking (always_block and promoted integrity) checks all pass is deployed. If it is
+#     not main, a "Site deployed with fallback code" issue names main's failing checks
+#     (except in the landing window described below). If none passes, nothing is deployed
+#     and the previous deployment stays live, as before;
+#   * a failed or fallback run writes a sanitized report to the run-reports branch.
+#
+# What "CTAS static release" (scripts/test_ctas_static.py, an integrity check) guarantees
+# after this change. It compares the code files the live CTAS certificate binds (their
+# sha256) with the files of the candidate tree being validated, exactly as before. So the
+# guarantee is unchanged: every deployed site's CTAS-bound code is byte-identical to the
+# code that certified the live CTAS release; a deploy never pairs a CTAS release with front
+# end code its certificate does not bind. What changed is what happens when main's code
+# differs (every CTAS code landing, until the next CTAS release re-certifies main, 30 to 60
+# minutes): before, the whole deploy failed and the public site froze, also for unrelated
+# data; now the candidate "commit that produced the current CTAS release" is deployed with
+# the fresh data, which by construction matches the certificate, and main follows on the
+# first deploy after the CTAS release that certifies it. The landing window (main's commit
+# younger than 3 hours, deployed candidate = the CTAS release's commit) opens no issue.
+# The WorldsIndex front end of main is delayed by the same window when a landing touches
+# CTAS-bound code.
 
 on:
   push:
@@ -24,8 +54,10 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  # The last successful github-pages deployment is a fallback candidate (deployments API).
+  deployments: read
   # The deploy job keeps the `data-problem` issue label (the dossiers' "Report a problem"
-  # links) in place with the workflow token; nothing else here writes to issues.
+  # links) in place with the workflow token; the record job keeps the release-check issues.
   issues: write
 
 # One deployment at a time; never cancel an in-flight deploy.
@@ -37,7 +69,8 @@ jobs:
   validate:
     name: Validate all website releases
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # Main's checks, and at most two more candidates (advisory checks skipped for those).
+    timeout-minutes: 50
     outputs:
       ctas_commit: ${{ steps.expect.outputs.ctas_commit }}
       worldsindex_commit: ${{ steps.expect.outputs.worldsindex_commit }}
@@ -48,6 +81,18 @@ jobs:
       ctas_status_sha: ${{ steps.expect.outputs.ctas_status_sha }}
       ctas_chunk_path: ${{ steps.expect.outputs.ctas_chunk_path }}
       ctas_chunk_sha: ${{ steps.expect.outputs.ctas_chunk_sha }}
+      site_commit: ${{ steps.overlay.outputs.site_commit }}
+      action: ${{ steps.choose.outputs.action }}
+      frontend: ${{ steps.choose.outputs.frontend }}
+      deployed_commit: ${{ steps.choose.outputs.commit }}
+    env:
+      # Fixture commits can start detached Git maintenance that outlives a test and races
+      # temporary-directory cleanup. Limited to these checks.
+      GIT_CONFIG_COUNT: "2"
+      GIT_CONFIG_KEY_0: maintenance.auto
+      GIT_CONFIG_VALUE_0: "false"
+      GIT_CONFIG_KEY_1: gc.auto
+      GIT_CONFIG_VALUE_1: "0"
     steps:
       - uses: actions/checkout@v5
         with:
@@ -65,160 +110,83 @@ jobs:
           {
             echo "ctas_commit=$(awk '$1 == "ctas-data" {print $2}' overlay.txt)"
             echo "worldsindex_commit=$(awk '$1 == "worldsindex-data" {print $2}' overlay.txt)"
+            echo "site_commit=$(git rev-parse HEAD)"
           } >> "$GITHUB_OUTPUT"
           rm overlay.txt
+          {
+            echo "CHECK_RESULTS=$RUNNER_TEMP/checks-main.jsonl"
+            echo "CHECK_DIR=$RUNNER_TEMP/deploy-checks"
+          } >> "$GITHUB_ENV"
           echo "Deploying main $(git rev-parse --short HEAD) with ctas-data $(git rev-parse --short origin/ctas-data) and worldsindex-data $(git rev-parse --short origin/worldsindex-data)" >> "$GITHUB_STEP_SUMMARY"
+      # Astropy, astropy-healpix and pyarrow read the Track 1 exports back; check-jsonschema
+      # validates the published JSON; Playwright, jsonschema and axe-core (installed beside
+      # the checkout so it never enters the site) drive the browser checks. One astropy
+      # range for both products (both suites pass on 7.2 and 8.0).
+      - name: Interoperability, schema and browser dependencies
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check "astropy>=7.0,<9" "astropy-healpix>=1.0,<3" \
+            "pyarrow>=21,<27" "pandas>=2.2,<4" "check-jsonschema>=0.33,<1" "pyyaml>=6,<7" playwright jsonschema
+          python3 -m playwright install --with-deps chromium >/dev/null
+          npm install --no-save --silent --prefix .. axe-core >/dev/null
+      # Watch-mode pass counts: the publishers' (published with each release) and the
+      # deploy's own (history/deploy.json on the run-reports branch).
+      - name: Check history of the newer checks
+        run: |
+          history="$RUNNER_TEMP/deploy-history.json"
+          if git fetch --quiet --no-tags --depth=1 origin +refs/heads/run-reports:refs/remotes/origin/run-reports 2>/dev/null \
+             && git show origin/run-reports:history/deploy.json > "$history" 2>/dev/null; then :; else echo '{}' > "$history"; fi
+          echo "CHECK_HISTORY=$GITHUB_WORKSPACE/ctas/data/check-history.json:$GITHUB_WORKSPACE/worldsindex/data/check-history.json:$history" >> "$GITHUB_ENV"
       - name: WorldsIndex static data, manifest-declared artifacts, and application
-        run: |
-          python3 scripts/test_worldsindex_static.py
-          node scripts/test_worldsindex_science.mjs
-          node scripts/test_worldsindex_photometry.mjs
-          node --check worldsindex/assets/lightcurves.js
-          node --check worldsindex/assets/app.js
-          node --check worldsindex/assets/science.js
-          node --check scripts/build_worldsindex_static.mjs
-          python3 scripts/test_worldsindex_publisher_recovery.py
-          node scripts/test_worldsindex_live_mast.mjs
-          node scripts/test_worldsindex_live_nasa.mjs
-          node scripts/test_worldsindex_live_sources.mjs
-          node --check worldsindex/assets/live-mast.js
-          node --check worldsindex/assets/live-nasa.js
-          node --check worldsindex/assets/live-sources.js
-          node --check worldsindex/assets/ephemeris.js
-          node --check scripts/worldsindex_transit_ephemerides.mjs
-          node scripts/test_worldsindex_ephemerides.mjs
-          node --check scripts/worldsindex_interop.mjs
-          node --check scripts/worldsindex_changelog.mjs
-          node --check scripts/worldsindex_provenance.mjs
-          node --test scripts/test_worldsindex_interop.mjs
-          node --check worldsindex/assets/sky.js
-          node --check worldsindex/assets/status.js
-          node --check scripts/worldsindex_contributions.mjs
-          node --test scripts/test_worldsindex_front.mjs
-      # The Track 1 exports (ECSV, VOTable, the VOParquet index, PROV-JSON, changelog, feeds)
-      # read back with Astropy and pyarrow, and every published WorldsIndex JSON file against
-      # worldsindex/schemas (named by worldsindex/openapi.yaml) with check-jsonschema.
-      - name: WorldsIndex interoperability dependencies
-        run: python3 -m pip install --quiet --disable-pip-version-check "astropy>=7.0,<9" "astropy-healpix>=1.0,<3" "pyarrow>=21,<27" "check-jsonschema>=0.33,<1" "pyyaml>=6,<7"
+        run: bash scripts/deploy_checks.sh worldsindex-static .
       - name: WorldsIndex exports round trip and published JSON against worldsindex/schemas
-        run: |
-          python3 scripts/test_worldsindex_interop.py
-          python3 scripts/test_worldsindex_schemas.py
-          python3 scripts/validate_worldsindex_schemas.py | tee -a "$GITHUB_STEP_SUMMARY"
+        run: bash scripts/deploy_checks.sh worldsindex-interop .
       - name: QualQuest static export and public content
-        run: python3 scripts/test_qualquest_static.py
+        run: bash scripts/deploy_checks.sh qualquest .
       - name: Tonight's sky planner and observing tools
-        run: |
-          node --check tonight/planner.js
-          node --check tonight/astro.js
-          node scripts/test_tonight_planner.mjs
-          node --check tools/lib/astrometry.js
-          node --check tools/coordinates/coordinates.js
-          node --check tools/exposure/exposure.js
-          node --check tools/finder/finder.js
-          node scripts/test_tools_coordinates.mjs
-          node scripts/test_tools_exposure.mjs
-          node scripts/test_tools_finder.mjs
-          node --check research/barium-dwarfs/census.js
-          node scripts/test_research_census.mjs
-      # The Track 1 interoperability exports (ECSV, VOTable, VOParquet, DataLink, PROV-JSON)
-      # are read back with Astropy and pyarrow, and every published JSON file is validated
-      # against ctas/schemas with check-jsonschema. Same astropy range as the WorldsIndex
-      # step above (both suites pass on 7.2 and 8.0); a narrower pin here made pip
-      # downgrade the astropy the WorldsIndex step had just installed in this job.
-      - name: CTAS interoperability dependencies
-        run: python3 -m pip install --quiet --disable-pip-version-check "astropy>=7.0,<9" "astropy-healpix>=1.0,<3" "pyarrow>=21,<27" "pandas>=2.2,<4" "check-jsonschema>=0.33,<1" "pyyaml>=6,<7"
+        run: bash scripts/deploy_checks.sh tonight .
+      # Step 12: the CTAS certificate's bound code against this tree's files (see the header:
+      # main fails it after every CTAS code landing until the next CTAS release, and the
+      # candidate "commit that produced the current CTAS release" is deployed meanwhile).
       - name: CTAS static release
-        # Fixture commits can start detached Git maintenance that outlives the
-        # test and races temporary-directory cleanup. Limit this to CI checks.
-        env:
-          GIT_CONFIG_COUNT: "2"
-          GIT_CONFIG_KEY_0: maintenance.auto
-          GIT_CONFIG_VALUE_0: "false"
-          GIT_CONFIG_KEY_1: gc.auto
-          GIT_CONFIG_VALUE_1: "0"
-        run: |
-          python3 scripts/test_ctas_outcomes.py
-          python3 scripts/test_ctas_chunks.py
-          python3 scripts/test_ctas_links.py
-          python3 scripts/test_ctas_publisher_recovery.py
-          python3 scripts/test_ctas_static.py
-          python3 scripts/test_ctas_positional.py
-          python3 scripts/test_ctas_source_health.py
-          python3 scripts/test_ctas_feed.py
-          node scripts/test_ctas_chunk_loader.js
-          node scripts/test_ctas_presentation.js
-          node scripts/test_ctas_live_sources.js
-          node scripts/test_live_relay.mjs
-          node scripts/test_ctas_spectrum_ascii.js
-          node scripts/test_ctas_spectrum_fits.js
-          node scripts/test_ctas_lightcurve_summary.js
-          node --check ctas/followup.js
-          node scripts/test_ctas_followup.mjs
-          python3 scripts/test_ctas_interop.py
-          python3 scripts/test_ctas_changelog.py
-          node --check ctas/sky.js
-          node --check ctas/changelog.js
-          node --check ctas/status.js
-          node scripts/test_ctas_sky.js
+        run: bash scripts/deploy_checks.sh ctas-static .
       - name: CTAS published JSON against ctas/schemas (OpenAPI 3.1 response schemas)
-        run: python3 scripts/validate_ctas_schemas.py | tee -a "$GITHUB_STEP_SUMMARY"
-      # The page in a real browser (layout at phone width, sticky bars, heading outline,
-      # WCAG via axe-core, no first-party console errors, the live panel's behaviour) and
-      # the evidence schema. Blocking since 2026-10-03: a release that fails them is not
-      # deployed and the previous green deployment stays live.
+        run: bash scripts/deploy_checks.sh ctas-schemas .
+      # The pages in a real browser (layout at phone width, sticky bars, heading outline,
+      # WCAG via axe-core, no first-party console errors, the live panels) and the evidence
+      # schema. The browser checks are advisory: they warn, never block (2026-10-21:
+      # two of them blocked every deploy for 41 hours while the data was fine).
       - name: CTAS page in a real browser, and evidence schema
-        id: browser
-        timeout-minutes: 10
+        timeout-minutes: 12
+        run: bash scripts/deploy_checks.sh browser .
+      - name: Freshness watchdog, publishing, housekeeping and database retention
+        run: bash scripts/deploy_checks.sh tooling .
+      - name: Whitespace and credential-shaped content
+        run: bash scripts/deploy_checks.sh content .
+      - name: Choose the site code to deploy (main, the CTAS release's code, the last deployment's code)
+        id: choose
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CTAS_DATA_COMMIT: ${{ steps.overlay.outputs.ctas_commit }}
+          WORLDSINDEX_DATA_COMMIT: ${{ steps.overlay.outputs.worldsindex_commit }}
         run: |
           set -o pipefail
-          python3 -m pip install --quiet playwright jsonschema
-          python3 -m playwright install --with-deps chromium >/dev/null
-          # axe-core for the WCAG check; installed beside the checkout so it never enters the site
-          npm install --no-save --silent --prefix .. axe-core >/dev/null
+          python3 scripts/release_checks.py summary --results "$CHECK_RESULTS" --title "Checks with main's code" >> "$GITHUB_STEP_SUMMARY"
           status=0
-          python3 scripts/test_ctas_astro_evidence.py 2>&1 | tail -5 || status=1
-          python3 scripts/test_ctas_browser.py 2>&1 | tail -40 || status=1
-          python3 scripts/test_tonight_browser.py 2>&1 | tail -10 || status=1
-          python3 scripts/test_tools_browser.py 2>&1 | tail -15 || status=1
-          python3 scripts/test_research_browser.py 2>&1 | tail -10 || status=1
-          python3 scripts/test_worldsindex_lightcurves_browser.py 2>&1 | tail -10 || status=1
-          python3 scripts/test_worldsindex_live_sources_browser.py 2>&1 | tail -10 || status=1
-          python3 scripts/test_worldsindex_sky_browser.py 2>&1 | tail -10 || status=1
-          if [ "$status" -eq 0 ]; then
-            echo "CTAS browser and evidence-schema checks: passed" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "CTAS browser or evidence-schema checks FAILED; not deployed (see the step log)" >> "$GITHUB_STEP_SUMMARY"
-          fi
-          exit "$status"
-      - name: Freshness watchdog, publishing, housekeeping and database retention
-        env:
-          GIT_CONFIG_COUNT: "2"
-          GIT_CONFIG_KEY_0: maintenance.auto
-          GIT_CONFIG_VALUE_0: "false"
-          GIT_CONFIG_KEY_1: gc.auto
-          GIT_CONFIG_VALUE_1: "0"
-        run: |
-          python3 scripts/test_watchdog_freshness.py
-          python3 scripts/test_cloud_run_marker.py
-          python3 scripts/test_publisher_housekeeping.py
-          python3 scripts/test_ctas_db_retention.py
-          python3 scripts/test_data_branch.py
-          python3 scripts/test_ctas_cloud_state.py
-          python3 scripts/test_worldsindex_cloud_state.py
-          bash -n scripts/worldsindex_cloud_run.sh
-          bash -n scripts/ctas_cloud_run.sh
-      - name: Whitespace and credential-shaped content
-        run: |
-          git diff --check
-          if find worldsindex ctas -type f \( -name '.env*' -o -name '*.pem' -o -name '*.key' \) -print -quit | grep -q .; then
-            echo "credential-shaped file under the public tree" >&2; exit 1
-          fi
-          if grep -R -I -E 'ADS_API_TOKEN[[:space:]]*=|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}' worldsindex ctas >/dev/null 2>&1; then
-            echo "credential-shaped text under the public tree" >&2; exit 1
+          bash scripts/deploy_candidates.sh 2>&1 | tee "$RUNNER_TEMP/choose.log" || status=$?
+          for results in "$RUNNER_TEMP"/checks-ctas-release.jsonl "$RUNNER_TEMP"/checks-last-deployment.jsonl; do
+            if [ -f "$results" ]; then
+              python3 scripts/release_checks.py summary --results "$results" \
+                --title "Checks with candidate $(basename "$results" .jsonl | sed 's/^checks-//')" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(f"Decision: **{d[\"action\"]}**: {d[\"explanation\"]}")' "$RUNNER_TEMP/decision.json" >> "$GITHUB_STEP_SUMMARY" || true
+          if [ "$status" -ne 0 ]; then
+            echo "::error title=Not deployed::no candidate passed every blocking check; the previous deployment stays live"
+            exit 1
           fi
       - name: Record what the live site must serve after deployment
         id: expect
+        working-directory: ${{ steps.choose.outputs.tree }}
         run: |
           set -euo pipefail
           chunk=$(python3 -c 'import json;m=json.load(open("ctas/data/candidate-chunks/manifest.json"));r=max(m["chunks"],key=lambda c:c["bytes"]);print(r["path"], r["sha256"])')
@@ -234,13 +202,29 @@ jobs:
             echo "ctas_chunk_sha=${chunk##* }"
           } >> "$GITHUB_OUTPUT"
       - name: Compress CTAS dossier chunks for GitHub Pages
+        env:
+          TREE: ${{ steps.choose.outputs.tree }}
         run: |
-          bash scripts/compress_ctas_chunks.sh . | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "published site size: $(du -sh --exclude=.git . | cut -f1)" | tee -a "$GITHUB_STEP_SUMMARY"
+          bash "$TREE/scripts/compress_ctas_chunks.sh" "$TREE" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "published site size: $(du -sh --exclude=.git "$TREE" | cut -f1)" | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: .
+          path: ${{ steps.choose.outputs.tree }}
+      - name: Keep the check results for the record job
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: deploy-checks-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/checks-main.jsonl
+            ${{ runner.temp }}/checks-ctas-release.jsonl
+            ${{ runner.temp }}/checks-last-deployment.jsonl
+            ${{ runner.temp }}/choice.json
+            ${{ runner.temp }}/decision.json
+            ${{ runner.temp }}/choose.log
+          retention-days: 5
+          if-no-files-found: ignore
 
   deploy:
     name: Deploy to GitHub Pages
@@ -301,3 +285,91 @@ jobs:
           live_chunk=$(fetch "${CTAS_CHUNK_PATH}.gz" | gunzip -c | sha256sum | cut -d' ' -f1)
           [ "$live_chunk" = "$CTAS_CHUNK_SHA" ] || { echo "live ${CTAS_CHUNK_PATH}.gz does not decompress to its manifest checksum" >&2; exit 1; }
           echo "live site verified: WorldsIndex ${WI_COMMIT:0:10} ($WI_OBJECTS objects, $WI_ROWS rows), CTAS ${CTAS_COMMIT:0:10} (status and compressed chunk ${CTAS_CHUNK_PATH##*/}.gz)" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  record:
+    name: Record the outcome (check issues, check history, run report)
+    needs: [validate, deploy, verify-live]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write   # push the run-reports branch (reports, the deploy's check history)
+      issues: write     # check-warning, fallback-active, release-blocked
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VALIDATE: ${{ needs.validate.result }}
+      DEPLOY: ${{ needs.deploy.result }}
+      VERIFY: ${{ needs.verify-live.result }}
+      FRONTEND: ${{ needs.validate.outputs.frontend }}
+      SITE_COMMIT: ${{ needs.validate.outputs.site_commit }}
+      DEPLOYED_COMMIT: ${{ needs.validate.outputs.deployed_commit }}
+      RELEASE_ISSUE_MENTION: "@JackMcGuireAstro"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v5
+        continue-on-error: true
+        with:
+          name: deploy-checks-${{ github.run_id }}
+          path: ${{ runner.temp }}/record
+      - name: Release-check issues
+        run: |
+          set -uo pipefail
+          dir="$RUNNER_TEMP/record"
+          [ -f "$dir/checks-main.jsonl" ] || { echo "no check results (the validate job did not get that far)"; exit 0; }
+          [ -f "$dir/decision.json" ] || echo '{"action": "block", "reason": "run-failed", "explanation": "the validate job ended before choosing the site code", "blocking": []}' > "$dir/decision.json"
+          # Chosen but not deployed or not verified live: never close a blocked or fallback
+          # issue on that.
+          python3 - "$dir/decision.json" "$VALIDATE" "$DEPLOY" "$VERIFY" <<'PY'
+          import json, sys
+          path, validate, deploy, verify = sys.argv[1:]
+          decision = json.load(open(path))
+          if validate == "success" and (deploy != "success" or verify != "success"):
+              decision.update(action="block", reason="deploy-failed",
+                              explanation=f"validated, but the Pages deploy ended {deploy} and the live check {verify}")
+          json.dump(decision, open(path, "w"))
+          PY
+          python3 scripts/release_issues.py sync --scope deploy --results "$dir/checks-main.jsonl" --decision "$dir/decision.json"
+      # Main's results on real data advance the deploy's own watch-mode counts (checks only the
+      # deploy runs), kept in history/deploy.json on the run-reports branch.
+      - name: Check history of the deploy's own checks
+        run: |
+          set -uo pipefail
+          dir="$RUNNER_TEMP/record"
+          [ -f "$dir/checks-main.jsonl" ] || exit 0
+          git fetch --quiet --no-tags --depth=1 origin +refs/heads/run-reports:refs/remotes/origin/run-reports 2>/dev/null \
+            && git show origin/run-reports:history/deploy.json > "$dir/deploy-history.json" 2>/dev/null || echo '{}' > "$dir/deploy-history.json"
+          python3 scripts/release_checks.py history --scope deploy --results "$dir/checks-main.jsonl" \
+            --previous "$dir/deploy-history.json" --site-commit "$SITE_COMMIT" --out "$dir/deploy-history.new.json"
+          # Pushed while the deploy owns an integrity check that is still counting passes, or
+          # when there is no history yet.
+          if python3 - "$dir/deploy-history.json" "$dir/deploy-history.new.json" <<'PY'
+          import json, sys
+          old, new = (json.load(open(path)) for path in sys.argv[1:3])
+          classes = json.load(open("scripts/check-classes.json"))["checks"]
+          counting = [cid for cid, row in new["checks"].items() if not row.get("promoted_at")
+                      and (row.get("class") or (classes.get(cid.split(":", 1)[0]) or {}).get("class")) == "integrity"
+                      and (classes.get(cid.split(":", 1)[0]) or {}).get("scopes", [None])[0] == "deploy"]
+          sys.exit(0 if counting or not old.get("checks") else 1)
+          PY
+          then
+            python3 scripts/run_report.py push --repo-dir . --extra "history/deploy.json=$dir/deploy-history.new.json" || echo "could not push the deploy check history"
+          fi
+      - name: Run report on the run-reports branch
+        if: needs.validate.result != 'success' || needs.deploy.result != 'success' || needs.verify-live.result != 'success' || (needs.validate.outputs.frontend != 'main' && needs.validate.outputs.frontend != '')
+        run: |
+          set -uo pipefail
+          dir="$RUNNER_TEMP/record"
+          if [ -n "$FRONTEND" ] && [ "$FRONTEND" != main ] && [ "$FRONTEND" != none ] && [ "$VERIFY" = success ]; then outcome=fallback
+          elif [ -f "$dir/checks-main.jsonl" ] && grep -q '"outcome": "block"' "$dir/checks-main.jsonl"; then outcome=blocked
+          else outcome=failed; fi
+          python3 scripts/run_report.py build --workflow worldsindex-release.yml --outcome "$outcome" --out "$dir/run-report.json" \
+            --commit "${SITE_COMMIT:-$GITHUB_SHA}" --log "$dir/choose.log" --results "$dir/checks-main.jsonl" \
+            --results "$dir/checks-ctas-release.jsonl" --results "$dir/checks-last-deployment.jsonl" \
+            --decision "$dir/decision.json" \
+            --note "jobs: validate=$VALIDATE deploy=$DEPLOY verify-live=$VERIFY; deployed code: ${FRONTEND:-none} ${DEPLOYED_COMMIT:0:10}" \
+            && python3 scripts/run_report.py push --report "$dir/run-report.json" --repo-dir . || echo "could not write or push the run report"
