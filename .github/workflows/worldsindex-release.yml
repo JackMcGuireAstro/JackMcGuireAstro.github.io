@@ -282,18 +282,26 @@ jobs:
           set -euo pipefail
           site="${PAGE_URL%/}"
           fetch() { curl -fsSL -H 'Cache-Control: no-cache' "$site/$1?verify=$GITHUB_RUN_ID"; }
-          for attempt in $(seq 1 12); do
+          # GitHub Pages propagates a deploy over a minute or two, file by file: compare all four
+          # together and retry until every one matches (a CTAS-only release leaves the WorldsIndex
+          # manifest unchanged, so it cannot stand in for the CTAS files).
+          check_live() {
             live_manifest=$(fetch worldsindex/data/manifest.json | sha256sum | cut -d' ' -f1 || true)
-            if [ "$live_manifest" = "$WI_MANIFEST_SHA" ]; then break; fi
-            echo "attempt $attempt: live manifest $live_manifest != expected $WI_MANIFEST_SHA; waiting for CDN"; sleep 20
+            live_index=$(fetch worldsindex/data/catalog-index.json.gz | sha256sum | cut -d' ' -f1 || true)
+            live_status=$(fetch ctas/data/status.json | sha256sum | cut -d' ' -f1 || true)
+            live_chunk=$( (fetch "${CTAS_CHUNK_PATH}.gz" | gunzip -c) 2>/dev/null | sha256sum | cut -d' ' -f1 || true)
+            mismatch=""
+            [ "$live_manifest" = "$WI_MANIFEST_SHA" ] || mismatch="$mismatch WorldsIndex-manifest"
+            [ "$live_index" = "$WI_INDEX_SHA" ] || mismatch="$mismatch WorldsIndex-catalog-index"
+            [ "$live_status" = "$CTAS_STATUS_SHA" ] || mismatch="$mismatch CTAS-status"
+            [ "$live_chunk" = "$CTAS_CHUNK_SHA" ] || mismatch="$mismatch CTAS-chunk(${CTAS_CHUNK_PATH##*/}.gz)"
+            [ -z "$mismatch" ]
+          }
+          for attempt in $(seq 1 20); do
+            check_live && break
+            echo "attempt $attempt: not yet live:$mismatch; waiting for Pages to propagate"; sleep 20
           done
-          [ "$live_manifest" = "$WI_MANIFEST_SHA" ] || { echo "live WorldsIndex manifest never matched the deployed release" >&2; exit 1; }
-          live_index=$(fetch worldsindex/data/catalog-index.json.gz | sha256sum | cut -d' ' -f1)
-          [ "$live_index" = "$WI_INDEX_SHA" ] || { echo "live catalog index $live_index != manifest $WI_INDEX_SHA" >&2; exit 1; }
-          live_status=$(fetch ctas/data/status.json | sha256sum | cut -d' ' -f1)
-          [ "$live_status" = "$CTAS_STATUS_SHA" ] || { echo "live CTAS status $live_status != deployed $CTAS_STATUS_SHA" >&2; exit 1; }
-          live_chunk=$(fetch "${CTAS_CHUNK_PATH}.gz" | gunzip -c | sha256sum | cut -d' ' -f1)
-          [ "$live_chunk" = "$CTAS_CHUNK_SHA" ] || { echo "live ${CTAS_CHUNK_PATH}.gz does not decompress to its manifest checksum" >&2; exit 1; }
+          [ -z "$mismatch" ] || { echo "the live site never matched the deployed release:$mismatch" >&2; exit 1; }
           echo "live site verified: WorldsIndex ${WI_COMMIT:0:10} ($WI_OBJECTS objects, $WI_ROWS rows), CTAS ${CTAS_COMMIT:0:10} (status and compressed chunk ${CTAS_CHUNK_PATH##*/}.gz)" | tee -a "$GITHUB_STEP_SUMMARY"
 
   record:
