@@ -1,0 +1,1135 @@
+{
+  "schemaVersion": "worldsindex-exports.v1",
+  "generatedAt": "2026-10-22T14:23:03.506Z",
+  "atlasProjectionId": "sky-b9a352fb997b7ee211f8",
+  "formats": {
+    "ecsv": "ECSV 1.0 (Astropy APE 6): CSV with a YAML header carrying datatype, unit, UCD and description per column",
+    "votable": "IVOA VOTable 1.5 TABLEDATA with a UCD and a VOUnits unit per FIELD"
+  },
+  "claimBoundary": "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public catalog projection as the JSON release, not an independent measurement. Source membership is not independent confirmation; nothing is averaged across sources.",
+  "tables": {
+    "objects": {
+      "description": "One row per WorldsIndex object (the catalog index): names, position, status, identity state, methods, sources and the population values the atlas selected, each with its source record id and limit flag.",
+      "rows": 31337,
+      "files": {
+        "ecsv": {
+          "path": "exports/objects.ecsv.gz",
+          "bytes": 2858798,
+          "sha256": "3a4dd2cece9154deeb5cb8187cc756243611843789a756fffc326ef87235ce58"
+        },
+        "votable": {
+          "path": "exports/objects.vot.gz",
+          "bytes": 3194026,
+          "sha256": "9bac06ccfcaa2b876d826d7077e8f7cae921987e9cac90724238b46928dd6f8d"
+        }
+      },
+      "columns": [
+        {
+          "name": "object_id",
+          "datatype": "string",
+          "ucd": "meta.id;meta.main",
+          "unit": null,
+          "description": "Stable WorldsIndex object identifier (the key of the catalog index and the detail shards)."
+        },
+        {
+          "name": "name",
+          "datatype": "string",
+          "ucd": "meta.id",
+          "unit": null,
+          "description": "Preferred public designation in this release."
+        },
+        {
+          "name": "host_name",
+          "datatype": "string",
+          "ucd": "meta.id.parent",
+          "unit": null,
+          "description": "Host star or system name as the primary source states it."
+        },
+        {
+          "name": "system_id",
+          "datatype": "string",
+          "ucd": "meta.id.parent",
+          "unit": null,
+          "description": "WorldsIndex planetary-system identifier."
+        },
+        {
+          "name": "ra_deg",
+          "datatype": "float64",
+          "ucd": "pos.eq.ra;meta.main",
+          "unit": "deg",
+          "description": "Source-retained right ascension (ICRS) of the object as the atlas projects it."
+        },
+        {
+          "name": "dec_deg",
+          "datatype": "float64",
+          "ucd": "pos.eq.dec;meta.main",
+          "unit": "deg",
+          "description": "Source-retained declination (ICRS) of the object as the atlas projects it."
+        },
+        {
+          "name": "healpix_8_nested",
+          "datatype": "int64",
+          "ucd": "pos.healpix",
+          "unit": null,
+          "description": "HEALPix order 8 (nside 256) nested index of (ra_deg, dec_deg); empty without coordinates. Rows are sorted by it."
+        },
+        {
+          "name": "status",
+          "datatype": "string",
+          "ucd": "meta.code.status",
+          "unit": null,
+          "description": "Normalized status: CONFIRMED, CANDIDATE, CONTROVERSIAL, FALSE_POSITIVE, REFUTED or UNKNOWN; the source-native status stays in the detail rows."
+        },
+        {
+          "name": "identity_state",
+          "datatype": "string",
+          "ucd": "meta.code.qual",
+          "unit": null,
+          "description": "Identity state under the pinned identity rules: CANONICAL, RESOLVED, AMBIGUOUS or UNREVIEWED."
+        },
+        {
+          "name": "method_code",
+          "datatype": "string",
+          "ucd": "meta.code.class",
+          "unit": null,
+          "description": "Primary detection-method code (the method registry in registry.json.gz)."
+        },
+        {
+          "name": "method_codes",
+          "datatype": "string",
+          "ucd": "meta.code.class",
+          "unit": null,
+          "description": "Every detection-method code any source claims for the object, space-separated."
+        },
+        {
+          "name": "discovery_year",
+          "datatype": "int64",
+          "ucd": "time.epoch",
+          "unit": null,
+          "description": "Discovery year as the primary source states it."
+        },
+        {
+          "name": "discovery_facility",
+          "datatype": "string",
+          "ucd": "instr.tel",
+          "unit": null,
+          "description": "Discovery facility as the primary source states it."
+        },
+        {
+          "name": "primary_source_id",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Source whose record names and positions the object."
+        },
+        {
+          "name": "source_ids",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Every source carrying a record for the object, space-separated. Membership is not independent confirmation."
+        },
+        {
+          "name": "source_object_ids",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Source-native object identifiers linked to this object, space-separated."
+        },
+        {
+          "name": "source_record_count",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Number of source record occurrences the atlas links to the object."
+        },
+        {
+          "name": "detail_record_count",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Number of retained native catalog rows in the object's detail shard."
+        },
+        {
+          "name": "spectrum_record_count",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Number of retained atmospheric-spectroscopy rows (source nasa-atmospheric-spectroscopy) in the object's detail shard."
+        },
+        {
+          "name": "aliases",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Provider-stated aliases (NASA name tables), \" | \" separated; empty when none."
+        },
+        {
+          "name": "orbital_period_days",
+          "datatype": "float64",
+          "ucd": "time.period",
+          "unit": "d",
+          "description": "Orbital period; the value of the one source row the atlas selected for this object (see the matching _source_record_id), never an average."
+        },
+        {
+          "name": "orbital_period_days_limit",
+          "datatype": "string",
+          "ucd": "meta.code;stat",
+          "unit": null,
+          "description": "Limit flag of orbital_period_days as the source carries it: NONE, LOWER_LIMIT, UPPER_LIMIT, INTERVAL or UNKNOWN_LIMIT."
+        },
+        {
+          "name": "orbital_period_days_source_id",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Source of orbital_period_days."
+        },
+        {
+          "name": "orbital_period_days_source_record_id",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Stable source record id orbital_period_days was read from."
+        },
+        {
+          "name": "radius_earth",
+          "datatype": "float64",
+          "ucd": "phys.size.radius",
+          "unit": "6378100m",
+          "description": "Planet radius in Earth radii (IAU 2015 nominal 6378100 m); the value of the one source row the atlas selected for this object (see the matching _source_record_id), never an average."
+        },
+        {
+          "name": "radius_earth_limit",
+          "datatype": "string",
+          "ucd": "meta.code;stat",
+          "unit": null,
+          "description": "Limit flag of radius_earth as the source carries it: NONE, LOWER_LIMIT, UPPER_LIMIT, INTERVAL or UNKNOWN_LIMIT."
+        },
+        {
+          "name": "radius_earth_source_id",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Source of radius_earth."
+        },
+        {
+          "name": "radius_earth_source_record_id",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Stable source record id radius_earth was read from."
+        },
+        {
+          "name": "mass_earth",
+          "datatype": "float64",
+          "ucd": "phys.mass",
+          "unit": "5.9721679e+24kg",
+          "description": "Planet mass in Earth masses (IAU 2015 nominal, 5.9721679e24 kg); the value of the one source row the atlas selected for this object (see the matching _source_record_id), never an average."
+        },
+        {
+          "name": "mass_earth_limit",
+          "datatype": "string",
+          "ucd": "meta.code;stat",
+          "unit": null,
+          "description": "Limit flag of mass_earth as the source carries it: NONE, LOWER_LIMIT, UPPER_LIMIT, INTERVAL or UNKNOWN_LIMIT."
+        },
+        {
+          "name": "mass_earth_source_id",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Source of mass_earth."
+        },
+        {
+          "name": "mass_earth_source_record_id",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Stable source record id mass_earth was read from."
+        },
+        {
+          "name": "minimum_mass_earth",
+          "datatype": "float64",
+          "ucd": "phys.mass",
+          "unit": "5.9721679e+24kg",
+          "description": "Minimum mass (M sin i) in Earth masses; the value of the one source row the atlas selected for this object (see the matching _source_record_id), never an average."
+        },
+        {
+          "name": "minimum_mass_earth_limit",
+          "datatype": "string",
+          "ucd": "meta.code;stat",
+          "unit": null,
+          "description": "Limit flag of minimum_mass_earth as the source carries it: NONE, LOWER_LIMIT, UPPER_LIMIT, INTERVAL or UNKNOWN_LIMIT."
+        },
+        {
+          "name": "minimum_mass_earth_source_id",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Source of minimum_mass_earth."
+        },
+        {
+          "name": "minimum_mass_earth_source_record_id",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Stable source record id minimum_mass_earth was read from."
+        },
+        {
+          "name": "estimated_mass_earth",
+          "datatype": "float64",
+          "ucd": "phys.mass",
+          "unit": "5.9721679e+24kg",
+          "description": "Mass estimated by the source from a mass-radius relation, in Earth masses (not a measurement); the value of the one source row the atlas selected for this object (see the matching _source_record_id), never an average."
+        },
+        {
+          "name": "estimated_mass_earth_limit",
+          "datatype": "string",
+          "ucd": "meta.code;stat",
+          "unit": null,
+          "description": "Limit flag of estimated_mass_earth as the source carries it: NONE, LOWER_LIMIT, UPPER_LIMIT, INTERVAL or UNKNOWN_LIMIT."
+        },
+        {
+          "name": "estimated_mass_earth_source_id",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Source of estimated_mass_earth."
+        },
+        {
+          "name": "estimated_mass_earth_source_record_id",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Stable source record id estimated_mass_earth was read from."
+        },
+        {
+          "name": "eccentricity",
+          "datatype": "float64",
+          "ucd": "src.orbital.eccentricity",
+          "unit": null,
+          "description": "Orbital eccentricity; the value of the one source row the atlas selected for this object (see the matching _source_record_id), never an average."
+        },
+        {
+          "name": "eccentricity_limit",
+          "datatype": "string",
+          "ucd": "meta.code;stat",
+          "unit": null,
+          "description": "Limit flag of eccentricity as the source carries it: NONE, LOWER_LIMIT, UPPER_LIMIT, INTERVAL or UNKNOWN_LIMIT."
+        },
+        {
+          "name": "eccentricity_source_id",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Source of eccentricity."
+        },
+        {
+          "name": "eccentricity_source_record_id",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Stable source record id eccentricity was read from."
+        },
+        {
+          "name": "equilibrium_temperature_k",
+          "datatype": "float64",
+          "ucd": "phys.temperature",
+          "unit": "K",
+          "description": "Equilibrium temperature as the source states it; the value of the one source row the atlas selected for this object (see the matching _source_record_id), never an average."
+        },
+        {
+          "name": "equilibrium_temperature_k_limit",
+          "datatype": "string",
+          "ucd": "meta.code;stat",
+          "unit": null,
+          "description": "Limit flag of equilibrium_temperature_k as the source carries it: NONE, LOWER_LIMIT, UPPER_LIMIT, INTERVAL or UNKNOWN_LIMIT."
+        },
+        {
+          "name": "equilibrium_temperature_k_source_id",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Source of equilibrium_temperature_k."
+        },
+        {
+          "name": "equilibrium_temperature_k_source_record_id",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Stable source record id equilibrium_temperature_k was read from."
+        },
+        {
+          "name": "insolation_earth",
+          "datatype": "float64",
+          "ucd": "phot.flux.bol;arith.ratio",
+          "unit": null,
+          "description": "Insolation relative to Earth (dimensionless); the value of the one source row the atlas selected for this object (see the matching _source_record_id), never an average."
+        },
+        {
+          "name": "insolation_earth_limit",
+          "datatype": "string",
+          "ucd": "meta.code;stat",
+          "unit": null,
+          "description": "Limit flag of insolation_earth as the source carries it: NONE, LOWER_LIMIT, UPPER_LIMIT, INTERVAL or UNKNOWN_LIMIT."
+        },
+        {
+          "name": "insolation_earth_source_id",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Source of insolation_earth."
+        },
+        {
+          "name": "insolation_earth_source_record_id",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Stable source record id insolation_earth was read from."
+        }
+      ]
+    },
+    "measurements": {
+      "description": "One row per retained catalog value per publication: every source's own value, uncertainty, unit, limit flag and reference, keyed by the object and the native source record. Nothing is averaged or converted.",
+      "rows": 438646,
+      "files": {
+        "ecsv": {
+          "path": "exports/measurements.ecsv.gz",
+          "bytes": 7547202,
+          "sha256": "d708e8872e388758f8b1664b0eab1738ee47468628aecb994d689f7a06c0a1bc"
+        },
+        "votable": {
+          "path": "exports/measurements.vot.gz",
+          "bytes": 9229178,
+          "sha256": "183e1b4a6e5b8306ee9b024b50507530425219a5d2cc37650ba629040fcc6cea"
+        }
+      },
+      "columns": [
+        {
+          "name": "object_id",
+          "datatype": "string",
+          "ucd": "meta.id;meta.main",
+          "unit": null,
+          "description": "Stable WorldsIndex object identifier (the key of the catalog index and the detail shards)."
+        },
+        {
+          "name": "name",
+          "datatype": "string",
+          "ucd": "meta.id",
+          "unit": null,
+          "description": "Preferred public designation in this release."
+        },
+        {
+          "name": "host_name",
+          "datatype": "string",
+          "ucd": "meta.id.parent",
+          "unit": null,
+          "description": "Host star or system name as the primary source states it."
+        },
+        {
+          "name": "ra_deg",
+          "datatype": "float64",
+          "ucd": "pos.eq.ra;meta.main",
+          "unit": "deg",
+          "description": "Source-retained right ascension (ICRS) of the object as the atlas projects it."
+        },
+        {
+          "name": "dec_deg",
+          "datatype": "float64",
+          "ucd": "pos.eq.dec;meta.main",
+          "unit": "deg",
+          "description": "Source-retained declination (ICRS) of the object as the atlas projects it."
+        },
+        {
+          "name": "healpix_8_nested",
+          "datatype": "int64",
+          "ucd": "pos.healpix",
+          "unit": null,
+          "description": "HEALPix order 8 (nside 256) nested index of (ra_deg, dec_deg); empty without coordinates. Rows are sorted by it."
+        },
+        {
+          "name": "source_id",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Source of the retained row."
+        },
+        {
+          "name": "source_record_id",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Stable identifier of the retained native row (detail shard records[].sourceRecordId)."
+        },
+        {
+          "name": "record_type",
+          "datatype": "string",
+          "ucd": "meta.code",
+          "unit": null,
+          "description": "published solution (one publication), source composite (the source's own composite), mission candidate row or catalog row."
+        },
+        {
+          "name": "is_source_default",
+          "datatype": "bool",
+          "ucd": "meta.code",
+          "unit": null,
+          "description": "True when the source marks this row as its default parameter set; empty when the source has no such flag."
+        },
+        {
+          "name": "property_code",
+          "datatype": "string",
+          "ucd": "meta.code",
+          "unit": null,
+          "description": "WorldsIndex property code (orbital_period, planet_radius, planet_mass, semi_major_axis, eccentricity, inclination, transit_midpoint, transit_duration, transit_depth, equilibrium_temperature, insolation, planet_star_radius_ratio, semi_major_axis_over_stellar_radius, impact_parameter, stellar_radius)."
+        },
+        {
+          "name": "source_field",
+          "datatype": "string",
+          "ucd": "meta.id",
+          "unit": null,
+          "description": "The source's own column the value was read from (its definition pointer)."
+        },
+        {
+          "name": "value",
+          "datatype": "float64",
+          "ucd": "stat.value",
+          "unit": null,
+          "description": "Value exactly as the source states it, in unit. Units vary by row; never converted here."
+        },
+        {
+          "name": "error_upper",
+          "datatype": "float64",
+          "ucd": "stat.error;stat.max",
+          "unit": null,
+          "description": "Positive uncertainty as the source states it (absolute value), in unit; empty when not stated."
+        },
+        {
+          "name": "error_lower",
+          "datatype": "float64",
+          "ucd": "stat.error;stat.min",
+          "unit": null,
+          "description": "Negative uncertainty as the source states it (absolute value), in unit; empty when not stated."
+        },
+        {
+          "name": "unit",
+          "datatype": "string",
+          "ucd": "meta.unit",
+          "unit": null,
+          "description": "Unit of value and its errors: a VOUnits string (d, h, K, deg, AU, solRad, 6378100m = Earth radius, 71492000m = Jupiter radius, 5.9721679e+24kg = Earth mass, 1.8981246e+27kg = Jupiter mass), empty for a dimensionless quantity, or percent / ppm for a transit depth the source states on that scale (not VOUnits)."
+        },
+        {
+          "name": "limit_type",
+          "datatype": "string",
+          "ucd": "meta.code;stat",
+          "unit": null,
+          "description": "NONE, LOWER_LIMIT or UPPER_LIMIT from the source's own limit flag (NASA *lim: 1 lower, -1 upper); UNKNOWN_LIMIT for a flag outside that convention; empty when the source has no flag."
+        },
+        {
+          "name": "mass_definition",
+          "datatype": "string",
+          "ucd": "meta.code",
+          "unit": null,
+          "description": "For planet_mass: MASS, MINIMUM_MASS_M_SIN_I or MASS_RADIUS_RELATION_ESTIMATE as the source provenance states; empty otherwise."
+        },
+        {
+          "name": "time_system",
+          "datatype": "string",
+          "ucd": "time.scale",
+          "unit": null,
+          "description": "For transit_midpoint: the time system the source states (BJD_TDB; BKJD for Kepler KOI rows, BJD - 2454833.0); empty otherwise."
+        },
+        {
+          "name": "reference",
+          "datatype": "string",
+          "ucd": "meta.bib",
+          "unit": null,
+          "description": "Publication reference the source cites for the row (or, for a composite, for this value); empty when the source gives none."
+        },
+        {
+          "name": "reference_url",
+          "datatype": "string",
+          "ucd": "meta.ref.url",
+          "unit": null,
+          "description": "URL of that reference when the source gives one."
+        },
+        {
+          "name": "published",
+          "datatype": "string",
+          "ucd": "time.publiYear",
+          "unit": null,
+          "description": "Publication date the source states for the row. ISO 8601 text as the source states it; empty when not retained."
+        },
+        {
+          "name": "updated",
+          "datatype": "string",
+          "ucd": "time.processing",
+          "unit": null,
+          "description": "Row update date the source states. ISO 8601 text as the source states it; empty when not retained."
+        }
+      ]
+    },
+    "transit_ephemerides": {
+      "description": "One transit ephemeris per transiting planet, period and epoch from one cited catalog row (transit-ephemerides.json.gz).",
+      "rows": 12723,
+      "files": {
+        "ecsv": {
+          "path": "exports/transit_ephemerides.ecsv.gz",
+          "bytes": 745206,
+          "sha256": "e09dd50d326d0348e11feeaac95a7e10fab4d4b2c7a501326cbabd89eae70b46"
+        },
+        "votable": {
+          "path": "exports/transit_ephemerides.vot.gz",
+          "bytes": 830346,
+          "sha256": "cf79a120eb9e45f804f7c21c55bd6e42697c22f856c2ec43a172052fe0e2fd8c"
+        }
+      },
+      "columns": [
+        {
+          "name": "object_id",
+          "datatype": "string",
+          "ucd": "meta.id;meta.main",
+          "unit": null,
+          "description": "Stable WorldsIndex object identifier (the key of the catalog index and the detail shards)."
+        },
+        {
+          "name": "name",
+          "datatype": "string",
+          "ucd": "meta.id",
+          "unit": null,
+          "description": "Preferred public designation in this release."
+        },
+        {
+          "name": "host_name",
+          "datatype": "string",
+          "ucd": "meta.id.parent",
+          "unit": null,
+          "description": "Host star or system name as the primary source states it."
+        },
+        {
+          "name": "ra_deg",
+          "datatype": "float64",
+          "ucd": "pos.eq.ra;meta.main",
+          "unit": "deg",
+          "description": "Source-retained right ascension (ICRS) of the object as the atlas projects it."
+        },
+        {
+          "name": "dec_deg",
+          "datatype": "float64",
+          "ucd": "pos.eq.dec;meta.main",
+          "unit": "deg",
+          "description": "Source-retained declination (ICRS) of the object as the atlas projects it."
+        },
+        {
+          "name": "healpix_8_nested",
+          "datatype": "int64",
+          "ucd": "pos.healpix",
+          "unit": null,
+          "description": "HEALPix order 8 (nside 256) nested index of (ra_deg, dec_deg); empty without coordinates. Rows are sorted by it."
+        },
+        {
+          "name": "status",
+          "datatype": "string",
+          "ucd": "meta.code.status",
+          "unit": null,
+          "description": "Normalized status of the planet (CONFIRMED, CANDIDATE or CONTROVERSIAL)."
+        },
+        {
+          "name": "period_days",
+          "datatype": "float64",
+          "ucd": "time.period",
+          "unit": "d",
+          "description": "Orbital period from the one cited catalog row."
+        },
+        {
+          "name": "period_err_days",
+          "datatype": "float64",
+          "ucd": "stat.error;time.period",
+          "unit": "d",
+          "description": "Period uncertainty (the larger of the reported upper and lower errors, 1 sigma); empty when not reported."
+        },
+        {
+          "name": "t0_bjd",
+          "datatype": "float64",
+          "ucd": "time.epoch",
+          "unit": "d",
+          "description": "Mid-transit epoch from the same row, BJD_TDB unless time_system says otherwise."
+        },
+        {
+          "name": "t0_err_days",
+          "datatype": "float64",
+          "ucd": "stat.error;time.epoch",
+          "unit": "d",
+          "description": "Epoch uncertainty (1 sigma); empty when not reported."
+        },
+        {
+          "name": "duration_hours",
+          "datatype": "float64",
+          "ucd": "time.duration",
+          "unit": "h",
+          "description": "Transit duration as the row states it; empty when not reported."
+        },
+        {
+          "name": "depth_ppt",
+          "datatype": "float64",
+          "ucd": "phot.flux;arith.ratio",
+          "unit": null,
+          "description": "Transit depth in parts per thousand as the row states it (converted only in scale); empty when not reported."
+        },
+        {
+          "name": "host_mag",
+          "datatype": "float64",
+          "ucd": "phot.mag",
+          "unit": "mag",
+          "description": "Host magnitude in host_mag_band; empty when not reported."
+        },
+        {
+          "name": "host_mag_band",
+          "datatype": "string",
+          "ucd": "instr.bandpass",
+          "unit": null,
+          "description": "V or TESS."
+        },
+        {
+          "name": "time_system",
+          "datatype": "string",
+          "ucd": "time.scale",
+          "unit": null,
+          "description": "Time system of t0_bjd."
+        },
+        {
+          "name": "source_id",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Source of the cited row."
+        },
+        {
+          "name": "source_table",
+          "datatype": "string",
+          "ucd": "meta.dataset",
+          "unit": null,
+          "description": "Source table of the cited row (pscomppars, ps, toi, cumulative, k2pandc)."
+        },
+        {
+          "name": "source_record_id",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Stable identifier of the cited row."
+        },
+        {
+          "name": "reference",
+          "datatype": "string",
+          "ucd": "meta.bib",
+          "unit": null,
+          "description": "Reference the source cites for the row; empty when none."
+        },
+        {
+          "name": "reference_url",
+          "datatype": "string",
+          "ucd": "meta.ref.url",
+          "unit": null,
+          "description": "URL of that reference; empty when none."
+        },
+        {
+          "name": "matched_via",
+          "datatype": "string",
+          "ucd": "meta.code",
+          "unit": null,
+          "description": "\"tic+period\" when a TOI row was attached to a NASA planet by TIC and period agreement; empty otherwise."
+        }
+      ]
+    },
+    "source_coverage": {
+      "description": "Per declared source: eligibility, attachment, the four denominators and the last recorded retrieval attempt (source-coverage.json).",
+      "rows": 42,
+      "files": {
+        "ecsv": {
+          "path": "exports/source_coverage.ecsv.gz",
+          "bytes": 4092,
+          "sha256": "a40ecf17450f724d1551738bb80615782b14d4f3c110c6154d1b7991e431eed1"
+        },
+        "votable": {
+          "path": "exports/source_coverage.vot.gz",
+          "bytes": 4466,
+          "sha256": "cd10668d441c6c927f8011680f5edb1fe7c75f8d6b1ed65ff124df93b2dd0641"
+        }
+      },
+      "columns": [
+        {
+          "name": "source_id",
+          "datatype": "string",
+          "ucd": "meta.id;meta.main",
+          "unit": null,
+          "description": "Source identifier in the WorldsIndex source universe."
+        },
+        {
+          "name": "coverage_class",
+          "datatype": "string",
+          "ucd": "meta.code.class",
+          "unit": null,
+          "description": "ATLAS_INGESTED, FROZEN_CONTEXT, LIVE_PER_TARGET or NOT_CONFIGURED."
+        },
+        {
+          "name": "state",
+          "datatype": "string",
+          "ucd": "meta.code.status",
+          "unit": null,
+          "description": "Source state in this release."
+        },
+        {
+          "name": "snapshot_id",
+          "datatype": "string",
+          "ucd": "meta.id",
+          "unit": null,
+          "description": "Frozen snapshot the release read; empty when none."
+        },
+        {
+          "name": "retrieved_at",
+          "datatype": "string",
+          "ucd": "time.epoch",
+          "unit": null,
+          "description": "When that snapshot was retrieved. ISO 8601 text as the source states it; empty when not retained."
+        },
+        {
+          "name": "keyed_on",
+          "datatype": "string",
+          "ucd": "meta.note",
+          "unit": null,
+          "description": "Identifier kinds the source is keyed on, \" | \" separated."
+        },
+        {
+          "name": "eligible",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Objects carrying an identifier of the kind the source is keyed on."
+        },
+        {
+          "name": "attached",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Objects a row of the source reached by that exact identifier."
+        },
+        {
+          "name": "missing_at_provider",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Eligible objects the snapshot holds no row for."
+        },
+        {
+          "name": "blocked",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Eligible objects not looked up (no snapshot, no credential, or live-only)."
+        },
+        {
+          "name": "blocked_reason",
+          "datatype": "string",
+          "ucd": "meta.note",
+          "unit": null,
+          "description": "Why, in the words of the last recorded attempt when there is one."
+        },
+        {
+          "name": "identifier_missing",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Objects with no identifier of a usable kind."
+        },
+        {
+          "name": "rows",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Rows in the snapshot (or the ingested catalog)."
+        },
+        {
+          "name": "attached_rows",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Rows attached to objects in this release."
+        },
+        {
+          "name": "via_cross_identifier",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Rows attached through an identifier another source stated."
+        },
+        {
+          "name": "declared",
+          "datatype": "bool",
+          "ucd": "meta.code",
+          "unit": null,
+          "description": "Four denominators (Professional Framework 4): in the versioned source universe."
+        },
+        {
+          "name": "applicable",
+          "datatype": "bool",
+          "ucd": "meta.code",
+          "unit": null,
+          "description": "Scientifically relevant and queryable for at least one object of this release."
+        },
+        {
+          "name": "executed",
+          "datatype": "bool",
+          "ucd": "meta.code",
+          "unit": null,
+          "description": "A bounded query, snapshot lookup or retrieval attempt occurred for this release; empty when the builder cannot know (live per-target sources)."
+        },
+        {
+          "name": "data_bearing",
+          "datatype": "bool",
+          "ucd": "meta.code",
+          "unit": null,
+          "description": "Valid rows were returned and retained for at least one object."
+        },
+        {
+          "name": "objects_declared",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Objects in the release (the declared denominator per source)."
+        },
+        {
+          "name": "objects_applicable",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Objects the source is applicable to (= eligible)."
+        },
+        {
+          "name": "objects_executed",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Objects a lookup was executed for; empty when not computable."
+        },
+        {
+          "name": "objects_data_bearing",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Objects with retained rows (= attached)."
+        },
+        {
+          "name": "not_computable",
+          "datatype": "string",
+          "ucd": "meta.note",
+          "unit": null,
+          "description": "Which denominator the builder cannot compute for this source and why; empty when all four are computed."
+        },
+        {
+          "name": "last_attempt_at",
+          "datatype": "string",
+          "ucd": "time.epoch",
+          "unit": null,
+          "description": "When the follow-up last tried this source. ISO 8601 text as the source states it; empty when not retained."
+        },
+        {
+          "name": "last_attempt_outcome",
+          "datatype": "string",
+          "ucd": "meta.code.status",
+          "unit": null,
+          "description": "RETRIEVED, UNCHANGED, REFUSED, FAILED or SKIPPED_*; empty when none recorded."
+        },
+        {
+          "name": "last_attempt_category",
+          "datatype": "string",
+          "ucd": "meta.code",
+          "unit": null,
+          "description": "Failure category of that attempt; empty when none."
+        },
+        {
+          "name": "last_attempt_detail",
+          "datatype": "string",
+          "ucd": "meta.note",
+          "unit": null,
+          "description": "The provider's words or the follow-up's reason."
+        }
+      ]
+    },
+    "identity_states": {
+      "description": "Identity state of every object under the pinned identity rules, with the sources and source-native identifiers linked to it.",
+      "rows": 31337,
+      "files": {
+        "ecsv": {
+          "path": "exports/identity_states.ecsv.gz",
+          "bytes": 1456394,
+          "sha256": "8762928b7eb2b13f303759e6b29b7d7a6475c57bcf4d7e80901d06c2653fab33"
+        },
+        "votable": {
+          "path": "exports/identity_states.vot.gz",
+          "bytes": 1559131,
+          "sha256": "f12b1b4c2ae4fd0792d9ebdc3c99626caf8b1dddeae7f7843d6bedcf999c404c"
+        }
+      },
+      "columns": [
+        {
+          "name": "object_id",
+          "datatype": "string",
+          "ucd": "meta.id;meta.main",
+          "unit": null,
+          "description": "Stable WorldsIndex object identifier (the key of the catalog index and the detail shards)."
+        },
+        {
+          "name": "name",
+          "datatype": "string",
+          "ucd": "meta.id",
+          "unit": null,
+          "description": "Preferred public designation in this release."
+        },
+        {
+          "name": "host_name",
+          "datatype": "string",
+          "ucd": "meta.id.parent",
+          "unit": null,
+          "description": "Host star or system name as the primary source states it."
+        },
+        {
+          "name": "ra_deg",
+          "datatype": "float64",
+          "ucd": "pos.eq.ra;meta.main",
+          "unit": "deg",
+          "description": "Source-retained right ascension (ICRS) of the object as the atlas projects it."
+        },
+        {
+          "name": "dec_deg",
+          "datatype": "float64",
+          "ucd": "pos.eq.dec;meta.main",
+          "unit": "deg",
+          "description": "Source-retained declination (ICRS) of the object as the atlas projects it."
+        },
+        {
+          "name": "healpix_8_nested",
+          "datatype": "int64",
+          "ucd": "pos.healpix",
+          "unit": null,
+          "description": "HEALPix order 8 (nside 256) nested index of (ra_deg, dec_deg); empty without coordinates. Rows are sorted by it."
+        },
+        {
+          "name": "identity_state",
+          "datatype": "string",
+          "ucd": "meta.code.qual",
+          "unit": null,
+          "description": "CANONICAL, RESOLVED, AMBIGUOUS or UNREVIEWED under the pinned identity rules."
+        },
+        {
+          "name": "system_id",
+          "datatype": "string",
+          "ucd": "meta.id.parent",
+          "unit": null,
+          "description": "WorldsIndex planetary-system identifier."
+        },
+        {
+          "name": "primary_source_id",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Source whose record names the object."
+        },
+        {
+          "name": "source_ids",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Sources linked to the object, space-separated."
+        },
+        {
+          "name": "source_object_ids",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Source-native identifiers linked to the object, space-separated."
+        },
+        {
+          "name": "source_record_count",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Source record occurrences linked to the object."
+        },
+        {
+          "name": "identity_rules_version",
+          "datatype": "string",
+          "ucd": "meta.version",
+          "unit": null,
+          "description": "Identity rules the release was built under (the reviewed atlas release contract)."
+        }
+      ]
+    },
+    "references": {
+      "description": "Every publication reference the retained native rows cite, with how many rows and objects cite it.",
+      "rows": 23747,
+      "files": {
+        "ecsv": {
+          "path": "exports/references.ecsv.gz",
+          "bytes": 823517,
+          "sha256": "a3b2e85f68d0f724328666a7f7e87af5e319b6916dd674a23d4818fd9c1b84b4"
+        },
+        "votable": {
+          "path": "exports/references.vot.gz",
+          "bytes": 866361,
+          "sha256": "fff54829761caa37075855de77d4b86a49da69149efd3bff78567eda33c7d61b"
+        }
+      },
+      "columns": [
+        {
+          "name": "reference_key",
+          "datatype": "string",
+          "ucd": "meta.id;meta.main",
+          "unit": null,
+          "description": "Stable key: sha256 of source_id, label and url (first 16 hex digits)."
+        },
+        {
+          "name": "source_id",
+          "datatype": "string",
+          "ucd": "meta.ref",
+          "unit": null,
+          "description": "Source that cites the reference."
+        },
+        {
+          "name": "label",
+          "datatype": "string",
+          "ucd": "meta.bib",
+          "unit": null,
+          "description": "Reference text as the source states it."
+        },
+        {
+          "name": "url",
+          "datatype": "string",
+          "ucd": "meta.ref.url",
+          "unit": null,
+          "description": "URL the source gives for the reference; empty when none."
+        },
+        {
+          "name": "record_count",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Retained native rows citing the reference (whole rows, or composite values for NASA PSCompPars)."
+        },
+        {
+          "name": "object_count",
+          "datatype": "int64",
+          "ucd": "meta.number",
+          "unit": null,
+          "description": "Objects with at least one such row."
+        },
+        {
+          "name": "example_object_ids",
+          "datatype": "string",
+          "ucd": "meta.id.cross",
+          "unit": null,
+          "description": "Up to five object ids citing the reference, space-separated."
+        }
+      ]
+    }
+  }
+}
