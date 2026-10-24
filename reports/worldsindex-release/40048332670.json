@@ -1,0 +1,149 @@
+{
+  "check_counts": {
+    "block": 1,
+    "pass": 84,
+    "skip": 49,
+    "warn": 0
+  },
+  "checks": [
+    {
+      "class": "integrity",
+      "id": "ctas.test_ctas_static",
+      "mode": "block",
+      "outcome": "block",
+      "parts": [
+        "CertificateAndArtifactTests.test_changelog_source_accounting_and_feeds_are_certified_and_reconcile",
+        "CertificateAndArtifactTests.test_interoperability_products_are_certified",
+        "CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound"
+      ],
+      "scope": "deploy"
+    }
+  ],
+  "commit": "c23f8f98c759dfe2301d3d1189ee1afd718c7e75",
+  "decision": {
+    "action": "use-fallback",
+    "blocking": [
+      "ctas.test_ctas_static"
+    ],
+    "candidates": [
+      {
+        "blocking": [
+          "ctas.test_ctas_static"
+        ],
+        "commit": "c23f8f98c759dfe2301d3d1189ee1afd718c7e75",
+        "label": "main",
+        "status": "blocked",
+        "warnings": []
+      },
+      {
+        "blocking": [],
+        "commit": "7a7e99f31db4d741c8d86f5a129c6757b6ce8e46",
+        "label": "ctas-release",
+        "status": "passed",
+        "warnings": []
+      }
+    ],
+    "decided_at": "2026-10-24T01:27:28Z",
+    "explanation": "main's code failed ctas.test_ctas_static; deployed ctas-release 7a7e99f31d with the same data (landing window: expected until the next CTAS release)",
+    "fallback": true,
+    "fallback_label": "ctas-release",
+    "landing_window": true,
+    "main_commit": "c23f8f98c759dfe2301d3d1189ee1afd718c7e75",
+    "reason": "fallback-candidate-passed",
+    "release_commit": "7a7e99f31db4d741c8d86f5a129c6757b6ce8e46",
+    "schema": "release-decision@1",
+    "scope": "deploy"
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "integrity",
+    "id": "ctas.test_ctas_static",
+    "mode": "block",
+    "outcome": "block",
+    "output_tail": [
+      "======================================================================",
+      "FAIL: test_changelog_source_accounting_and_feeds_are_certified_and_reconcile (__main__.CertificateAndArtifactTests.test_changelog_source_accounting_and_feeds_are_certified_and_reconcile)",
+      "Track 1, part C: the plain-words changelog, the per-source denominators and the",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_ctas_static.py\", line 2168, in test_changelog_source_accounting_and_feeds_are_certified_and_reconcile",
+      "    self.assertEqual(files[path], {\"sha256\": hashlib.sha256(raw).hexdigest(), \"bytes\": len(raw)}, path)",
+      "AssertionError: {'bytes': 26183, 'sha256': '23f3eaec76dc1b6[46 chars]87d'} != {'sha256': 'ed06ac456810eea92eabec6f208c1ea[46 chars]6555}",
+      "- {'bytes': 26183,",
+      "?             ^^^",
+      "",
+      "+ {'bytes': 26555,",
+      "?             ^^^",
+      "",
+      "-  'sha256': '23f3eaec76dc1b60df33532e714d9fbd95aa9d0fceeafbe84ae13beabec7887d'}",
+      "+  'sha256': 'ed06ac456810eea92eabec6f208c1ea9cbd861092c027ba0512a2f7a348fd0dd'} : ctas/status.js",
+      "",
+      "======================================================================",
+      "FAIL: test_interoperability_products_are_certified (__main__.CertificateAndArtifactTests.test_interoperability_products_are_certified)",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_ctas_static.py\", line 2148, in test_interoperability_products_are_certified",
+      "    self.assertIn(path, self.certificate[\"files\"], path)",
+      "AssertionError: 'ctas/schemas/check-history.schema.json' not found in {'CTAS-AUTOMATION.md': {'bytes': 24013, 'sha256': '6ae0172f20d92fb8717b3eeffe8b839db066d76376ef86dfb4bfd84c4fc4b035'}, 'ctas.html': {'bytes': 39068, 'sha256': 'df766efd0d2b343d30d05ac83a48f5991ae3d4190390061a7495fc3fbec463b8'}, 'ctas/app.js': {'bytes': 225128, 'sha256': 'a1bbf01a5c0d4b54979be6d04a728915e48d5e81722d8365936bd3d5770f76e9'}, 'ctas/astro-evidence.js': {'bytes': 51590, 'sha256': '3129826c6be64ca89a4aa7e014e94cfa0f16",
+      "",
+      "======================================================================",
+      "FAIL: test_schema_projector_and_contract_tests_are_checksum_bound (__main__.CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound)",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_ctas_static.py\", line 1383, in test_schema_projector_and_contract_tests_are_checksum_bound",
+      "    self.assertEqual(",
+      "AssertionError: 'f2321c61cab7c978cc07f5123eecbaf1dfc8c0c6f2df09706b95ed6a254beac1' != 'ad740ddceb60b09c3269603fc2d38b05162219635e6c983422aa8a623a5772ca'",
+      "- f2321c61cab7c978cc07f5123eecbaf1dfc8c0c6f2df09706b95ed6a254beac1",
+      "+ ad740ddceb60b09c3269603fc2d38b05162219635e6c983422aa8a623a5772ca",
+      "",
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 106 tests in 69.245s",
+      "",
+      "FAILED (failures=3)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 40 checksum-bound files",
+      "snapshot verification: verified-static-snapshot (4/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)"
+    ],
+    "parts": [
+      "CertificateAndArtifactTests.test_changelog_source_accounting_and_feeds_are_certified_and_reconcile",
+      "CertificateAndArtifactTests.test_interoperability_products_are_certified",
+      "CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound"
+    ],
+    "reason": "baseline check (ran on real releases before the check history); no history readable",
+    "scope": "deploy"
+  },
+  "failing_checks": [
+    "ctas.test_ctas_static"
+  ],
+  "failing_phase": null,
+  "lines": [],
+  "note": "jobs: validate=success deploy=success verify-live=success; deployed code: ctas-release 7a7e99f31d",
+  "outcome": "fallback",
+  "phases": [],
+  "run_attempt": "1",
+  "run_id": "40048332670",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/40048332670",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "worldsindex-release.yml",
+  "written_at": "2026-10-24T01:28:53Z"
+}
