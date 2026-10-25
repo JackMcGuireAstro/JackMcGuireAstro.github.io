@@ -125,11 +125,13 @@ group_ctas_static() {
   check ctas.front.spectrum-ascii node scripts/test_ctas_spectrum_ascii.js
   check ctas.front.spectrum-fits node scripts/test_ctas_spectrum_fits.js
   check ctas.front.lightcurve-summary node scripts/test_ctas_lightcurve_summary.js
-  check ctas.front-syntax node_check ctas/followup.js ctas/sky.js ctas/changelog.js ctas/status.js
+  check ctas.front-syntax node_check ctas/followup.js ctas/sky.js ctas/changelog.js ctas/status.js ctas/screens.js
   check ctas.front.followup node scripts/test_ctas_followup.mjs
   check ctas.test_ctas_interop python3 scripts/test_ctas_interop.py
   check ctas.test_ctas_changelog python3 scripts/test_ctas_changelog.py
   check ctas.front.sky node scripts/test_ctas_sky.js
+  check ctas.test_ctas_screens python3 scripts/test_ctas_screens.py
+  check ctas.front.screens node scripts/test_ctas_screens.js
 }
 
 group_ctas_schemas() {

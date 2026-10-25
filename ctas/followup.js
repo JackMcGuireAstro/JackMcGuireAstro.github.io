@@ -455,6 +455,8 @@
       "<section><h5>Objectives</h5>" + objectives + "<p><strong>Cadence:</strong> " + esc(block.cadence.text) + "</p></section>" +
       "<section><h5>Target</h5><p><strong>Latest magnitude:</strong> " + esc(magnitudeText) + "</p><ul>" + block.eligibility.reasons.map(function (row) { return "<li>" + esc(row) + "</li>"; }).join("") + "</ul></section></div>" +
       (block.objectives.length ? '<div class="ctas-followup__telescopes">' + telescopes + "</div>" : "") +
+      // Track 3a: the GW counterpart ranking and the WIRO / Red Buttes tiling drafts (ctas/screens.js).
+      (typeof globalThis !== "undefined" && globalThis.CTASScreens ? globalThis.CTASScreens.gwFollowup(candidate) : "") +
       '<p class="ctas-claim-boundary">' + esc(block.claim_boundary) + " Windows are a browser-local geometric estimate (no weather or telescope state); exposure times come from the site's CCD model with " +
       (placeholder ? "placeholder WIRO and Red Buttes instrument values" : "the preset instrument values") + ". Nothing here is sent anywhere or requests telescope time." +
       (found.source === "browser" ? " This release predates the published draft, so the browser derived it with the same rules." : "") + "</p></section>";

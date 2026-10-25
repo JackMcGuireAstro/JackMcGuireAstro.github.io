@@ -65,6 +65,11 @@ try:
 except ModuleNotFoundError:
     from scripts.ctas_chunks import encode_chunk, decode_chunk
 
+try:
+    import ctas_analysis_screens as analysis_screens
+except ModuleNotFoundError:
+    from scripts import ctas_analysis_screens as analysis_screens  # type: ignore[no-redef]
+
 
 def interop():
     """The IVOA export module (scripts/ctas_interop.py), imported on first use.
@@ -379,6 +384,7 @@ BOUND_CODE_PATHS = (
     "ctas/schema/astro-evidence-core-0.1.0.schema.json",
     *API_DESCRIPTION_PATHS,
     "scripts/export_ctas_snapshot.py", "scripts/ctas_astro_evidence.py", "scripts/ctas_interop.py",
+    "scripts/ctas_analysis_screens.py", "scripts/test_ctas_screens.py", "ctas/screens.js", "scripts/test_ctas_screens.js",
     "scripts/ctas_chunks.py", "scripts/test_ctas_chunks.py", "scripts/test_ctas_chunk_loader.js",
     "scripts/test_ctas_publisher_recovery.py",
     "scripts/check_ctas_links.py", "scripts/rebuild_ctas_release_history.py",
@@ -2476,6 +2482,22 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         ORDER BY ar.event_id, COALESCE(ar.completed_at, ar.created_at), ar.id
         """,
     )
+    # Track 3a: the complete collector screens (anomaly, multiband colour screen, GW
+    # counterpart ranking and tiling), published under analysis_screens; scripts/ctas_analysis_screens.py.
+    analysis_screen_runs = rows_by_event(
+        cur,
+        ids,
+        """
+        SELECT ar.*
+        FROM analysis_runs ar
+        WHERE ar.event_id IN ({ids})
+          AND ar.analysis_type IN ('population-anomaly', 'multiband-light-curve',
+                                   'gw-counterpart-ranking', 'gw-tiling-plan')
+          AND ar.status = 'complete'
+          AND ar.data_rights IN ('public', 'open')
+        ORDER BY ar.event_id, COALESCE(ar.completed_at, ar.created_at), ar.id
+        """,
+    )
 
     latest_source_attempts = {
         str(row["source_id"]): {
@@ -2975,6 +2997,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
     counts["source_disposition_counts"] = source_disposition_counts
     counts["all_attempts"] = all_attempts
     counts["analysis_runs"] = analysis_runs
+    counts["analysis_screen_runs"] = analysis_screen_runs
     return out, counts
 
 
@@ -5046,6 +5069,9 @@ def main() -> int:
     projection_problems: list[str] = []
     source_matrix_patterns: dict[str, list[dict[str, Any]]] = {}
     per_source_accounting: dict[str, dict[str, Any]] = {}
+    public_events = {
+        str(row["event_id"]): {"name": row.get("name"), "status": row.get("status")} for row in candidates
+    }
     for candidate in candidates:
         event_id = str(candidate["event_id"])
         candidate_attempts = counts["all_attempts"].get(event_id, [])
@@ -5077,6 +5103,11 @@ def main() -> int:
             "measurementCount": len(projection["measurements"]),
             "projectionMethod": "The exporter projects source-native retained rows once; the browser deterministically assembles those measurements with versioned source contracts and persisted receipts.",
         }
+        screens = analysis_screens.build_analysis_screens(
+            candidate, counts.get("analysis_screen_runs", {}).get(event_id, []), public_events,
+        )
+        if screens is not None:
+            candidate[analysis_screens.CANDIDATE_KEY] = screens
         candidate["source_accounting"] = accounting
         complete_source_matrix = [
             {key: row.get(key) for key in SOURCE_MATRIX_ROW_KEYS}
@@ -5846,6 +5877,7 @@ def main() -> int:
         return {"id": gate_id, "passed": bool(passed), "evidence": evidence}
 
     names = [str(candidate.get("name") or "") for candidate in candidates]
+    screen_problems = analysis_screens.screen_problems(candidates)
     required_contract = all(
         candidate.get("name") and "ctas_score" in candidate and
         isinstance(candidate.get("follow_up_counts"), dict) and
@@ -6357,6 +6389,12 @@ def main() -> int:
         gate("source-statistics-integrity", published_provider_stats == provider_reproduced, f"{len(published_provider_stats)} provider totals reproduced"),
         gate("survey-statistics-integrity", published_surveys == survey_reproduced, f"{len(published_surveys)} discovery-survey totals reproduced"),
         gate("public-export-safety", not problems, "recursive allowlist safety check across public candidate and source artifacts"),
+        gate("analysis-screen-provenance", not screen_problems, (
+            f"{sum(1 for c in candidates if c.get(analysis_screens.CANDIDATE_KEY))} dossiers carry "
+            f"{sum(len(c[analysis_screens.CANDIDATE_KEY]['runs']) for c in candidates if c.get(analysis_screens.CANDIDATE_KEY))} "
+            "collector screens, each naming its method version, inputs, input and result checksums and claim boundary"
+            + ("" if not screen_problems else "; " + "; ".join(screen_problems[:5]))
+        )),
         gate(FRESHNESS_GATE_ID, freshness, f"generated {payload['generated_at']}; valid until {payload['valid_until']}"),
         gate("two-minute-publication-contract", cadence_contract, "120-second mirror contract and current export heartbeat"),
         gate("source-universe-schema", universe_structure, f"{len(source_universe_rows)} unique versioned source contracts; every dossier names the definition checksum {source_universe_version}"),

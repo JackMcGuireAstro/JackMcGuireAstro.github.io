@@ -792,6 +792,27 @@
         },
         "updated_at": {
           "$ref": "common.schema.json#/$defs/nullableDateTime"
+        },
+        "analysis_screens": {
+          "description": "Track 3a: collector screens (population anomaly, multiband light curve and colour screen, GW counterpart ranking and tiling). Absent when the event has no complete screen.",
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "ctas.analysis-screens@1"
+            },
+            "runs": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/analysisScreen"
+              }
+            }
+          },
+          "required": [
+            "schema",
+            "runs"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -921,6 +942,122 @@
         "bucket",
         "part",
         "json_fragment"
+      ],
+      "additionalProperties": true
+    },
+    "analysisScreen": {
+      "description": "One collector analysis run published by Track 3a (scripts/ctas_analysis_screens.py): the latest complete run of its kind; large diagnostic arrays are omitted and named in omittedResultFields, and resultChecksumSha256 is the collector's checksum of the complete result.",
+      "type": "object",
+      "properties": {
+        "analysisRunId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "analysisType": {
+          "enum": [
+            "population-anomaly",
+            "multiband-light-curve",
+            "gw-counterpart-ranking",
+            "gw-tiling-plan"
+          ]
+        },
+        "methodName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "methodVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "const": "COMPLETE"
+        },
+        "inputs": {
+          "type": "object",
+          "minProperties": 1
+        },
+        "inputChecksumSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "parameters": {
+          "type": "object"
+        },
+        "softwareVersions": {
+          "type": "object"
+        },
+        "result": {
+          "type": "object"
+        },
+        "resultChecksumSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "omittedResultFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "quality": {
+          "type": "object"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reviewState": {
+          "enum": [
+            "MACHINE",
+            "HUMAN_REVIEWED",
+            "HUMAN_ADOPTED",
+            "REJECTED"
+          ]
+        },
+        "completedAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "claimBoundary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "badge": {
+          "type": "object",
+          "properties": {
+            "unusual": {
+              "type": "boolean"
+            },
+            "rule": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "unusual",
+            "rule"
+          ]
+        },
+        "eventRetracted": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "analysisRunId",
+        "analysisType",
+        "methodName",
+        "methodVersion",
+        "status",
+        "inputs",
+        "inputChecksumSha256",
+        "parameters",
+        "result",
+        "resultChecksumSha256",
+        "warnings",
+        "claimBoundary"
       ],
       "additionalProperties": true
     }

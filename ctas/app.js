@@ -760,7 +760,7 @@
       '<button type="button" data-download-evidence="observations" data-format="json">Download JSON</button></div>' +
       photometrySvg(filtered, {discovery: candidate.discovery_time, key: text(candidate.event_id).slice(0, 8), name: candidate.name,
         logAxis: state.lcLog[candidate.event_id], onLogChange: function (on) { state.lcLog[candidate.event_id] = on; }}) +
-      renderLightcurveEstimates(candidate, rows) + renderReferences(rows) +
+      renderLightcurveEstimates(candidate, rows) + (window.CTASScreens ? window.CTASScreens.colourScreen(candidate) : "") + renderReferences(rows) +
       '<div class="ctas-evidence-table-wrap ctas-evidence-table-wrap--tall" role="region" aria-label="Complete source-native photometry table" tabindex="0"><table class="ctas-evidence-table"><caption>All ' + filtered.length.toLocaleString() +
       " matching rows are inspectable here" + (selected === "*" ? "." : "; the candidate retains " + rows.length.toLocaleString() + " rows across all bands.") +
       '</caption><thead><tr><th scope="col">Observed</th><th scope="col">Band</th><th scope="col">Detection / limit</th><th scope="col">Source-native value</th><th scope="col">System · method</th><th scope="col">Facility</th><th scope="col">Assertion / source</th></tr></thead><tbody>' +
@@ -1345,7 +1345,7 @@
       '</p></div><div class="ctas-detail__score"><span>CTAS follow-up score</span><strong>' + esc(num(candidate.ctas_score, 1)) +
       '</strong><small>ordering aid · not probability</small></div></div>' +
       '<div class="ctas-workspace__actions"><button type="button" data-close-candidate>Close dossier</button><details class="ctas-more-actions"><summary>More actions</summary><div><button type="button" data-copy-link>Copy link</button><button type="button" data-download-candidate>Download JSON</button><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></details>' +
-      '<a class="ctas-report-problem" data-report-problem href="' + esc(reportProblemUrl(candidate)) + '" target="_blank" rel="noopener">Report a problem<span class="sr-only"> (opens a prefilled GitHub issue in a new tab)</span></a></div>' + renderFollowup(candidate) + renderScienceBrief(candidate) +
+      '<a class="ctas-report-problem" data-report-problem href="' + esc(reportProblemUrl(candidate)) + '" target="_blank" rel="noopener">Report a problem<span class="sr-only"> (opens a prefilled GitHub issue in a new tab)</span></a></div>' + (window.CTASScreens ? window.CTASScreens.badge(candidate) : "") + renderFollowup(candidate) + renderScienceBrief(candidate) +
       '<dl class="ctas-detail__facts ctas-detail__facts--essential">' + fact("Event / messenger", humanKey(candidate.event_type || "Not recorded") + " · " + humanKey(candidate.primary_messenger || "Not recorded")) +
       fact("Physical classification", window.CTASPresentation.classInfo(candidate).physical || "Not reported") +
       fact("Alert / provider label", window.CTASPresentation.classInfo(candidate).alert || "None retained") +

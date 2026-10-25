@@ -1191,6 +1191,28 @@
     "deploy"
    ],
    "what": "scripts/test_worldsindex_compare_browser.py in a real browser (Compare tab layout, console, accessibility)"
+  },
+  "ctas.gate.analysis-screen-provenance": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate analysis-screen-provenance (Track 3a: every published collector screen names its method version, inputs and checksums)"
+  },
+  "ctas.test_ctas_screens": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "Track 3a collector screens: selection of the latest complete runs, trimmed results, the badge rule, the GW ranking states and the certificate gate, and every published analysis_screens block of the release"
+  },
+  "ctas.front.screens": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "ctas/screens.js dossier panels for the collector screens (front-end unit tests, including the GW ranking and tiling drawn from a fixture)"
   }
  }
 }

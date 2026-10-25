@@ -707,7 +707,8 @@ phase_done validate-detail-pages-and-retirement
 for suite in scripts/test_ctas_static.py scripts/test_ctas_links.py scripts/test_ctas_identity.py \
              scripts/test_ctas_astro_evidence.py scripts/test_ctas_browser.py \
              scripts/test_ctas_chunks.py scripts/test_ctas_publisher_recovery.py \
-             scripts/test_ctas_interop.py scripts/test_ctas_changelog.py scripts/test_ctas_feed.py; do
+             scripts/test_ctas_interop.py scripts/test_ctas_changelog.py scripts/test_ctas_feed.py \
+             scripts/test_ctas_screens.py; do
   check "ctas.$(basename "$suite" .py)" python3 "$suite" \
     || block "$suite failed against the generated release; nothing committed"
   phase_done "$(basename "$suite")"
