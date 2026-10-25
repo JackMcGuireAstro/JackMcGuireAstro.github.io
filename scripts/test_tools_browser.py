@@ -28,7 +28,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from browser_test_net import isolate_browser  # noqa: E402  (third-party requests are blocked)
+from browser_test_net import isolate_browser, is_third_party_load_failure  # noqa: E402  (third-party requests are blocked)
+
+# The site's Google Analytics tag (every page since 2026-10-25): blocked like any third party,
+# never recorded as an off-site request the tools made and never a first-party error.
+ANALYTICS_HOSTS = ("googletagmanager.com", "google-analytics.com")
 
 ROOT = Path(__file__).resolve().parent.parent
 VIEWPORTS = ((320, 568), (390, 844), (768, 1024), (1280, 720))
@@ -108,13 +112,16 @@ class ToolsBrowserTests(unittest.TestCase):
         page = self.browser.new_page(viewport={"width": width, "height": height}, color_scheme=scheme,
                                      timezone_id="America/Denver", accept_downloads=True)
         page.errors, page.requests = [], []
-        page.on("console", lambda m: page.errors.append(m.text) if m.type == "error" else None)
+        page.on("console", lambda m: page.errors.append(m.text)
+                if m.type == "error" and not is_third_party_load_failure(m.text) else None)
         page.on("pageerror", lambda e: page.errors.append(str(e)))
 
         def route(r):
             url = r.request.url
             if url.startswith(self.base):
                 return r.continue_()
+            if any(host in url for host in ANALYTICS_HOSTS):
+                return r.abort("blockedbyclient")
             page.requests.append(url)
             if url.startswith(HIPS2FITS):
                 return r.fulfill(status=200, content_type="image/png", body=PNG)

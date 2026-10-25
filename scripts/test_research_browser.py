@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from browser_test_net import isolate_browser  # noqa: E402  (third-party requests are blocked)
+from browser_test_net import isolate_browser, is_third_party_load_failure  # noqa: E402  (third-party requests are blocked)
 
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = "/research/barium-dwarfs/"
@@ -57,8 +57,10 @@ class CensusBrowserTests(unittest.TestCase):
         page = self.browser.new_page(viewport={"width": width, "height": 900}, color_scheme=scheme)
         errors = []
         page.on("pageerror", lambda e: errors.append(str(e)))
-        page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
-        page.route("**/*", lambda route: route.continue_() if route.request.url.startswith(self.base) else route.abort())
+        page.on("console", lambda m: errors.append(m.text)
+                if m.type == "error" and not is_third_party_load_failure(m.text) else None)
+        # Off-site requests (the site's Google Analytics tag) are blocked, never a first-party error.
+        page.route("**/*", lambda route: route.continue_() if route.request.url.startswith(self.base) else route.abort("blockedbyclient"))
         page.goto(self.base + PAGE, wait_until="load")
         page.wait_for_selector("#cat-table tbody tr")
         return page, errors

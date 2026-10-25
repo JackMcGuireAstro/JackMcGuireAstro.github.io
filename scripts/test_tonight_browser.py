@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from browser_test_net import isolate_browser  # noqa: E402  (third-party requests are blocked)
+from browser_test_net import isolate_browser, is_third_party_load_failure  # noqa: E402  (third-party requests are blocked)
 
 ROOT = Path(__file__).resolve().parent.parent
 VIEWPORTS = ((320, 568), (390, 844), (768, 1024), (1280, 720))
@@ -102,7 +102,7 @@ class TonightBrowserTests(unittest.TestCase):
         return page, errors
 
     def first_party(self, errors):
-        return [e for e in errors if not any(h in e for h in THIRD_PARTY_HOSTS)]
+        return [e for e in errors if not any(h in e for h in THIRD_PARTY_HOSTS) and not is_third_party_load_failure(e)]
 
     def test_ctas_night_table_and_chart(self):
         page, errors = self.open()
