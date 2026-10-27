@@ -615,9 +615,16 @@ def host_rows(envelopes: list[dict[str, Any]], hosts: list[dict[str, Any]]) -> l
 
 def photometry_groups(candidate: dict[str, Any], measurements: list[dict[str, Any]],
                       envelope_receipts: dict[str, dict[str, Any]]) -> list[tuple[float | None, list[dict[str, Any]]]]:
-    """The AstroEvidence screen's statistically inconsistent photometry groups as comparison rows."""
+    """The AstroEvidence screen's photometry conflict groups as comparison rows.
+
+    Since 2026-10-27 the screen itself sets aside the limit a provider reports with its own
+    detection and labels a detection that violates another provider's non-detection limit
+    STATUS_CONFLICT; releases made before then label every group STATISTICALLY_INCONSISTENT.
+    Both are read, and the detection thresholds are still set aside below for older releases.
+    """
+    relations = {"STATISTICALLY_INCONSISTENT", "STATUS_CONFLICT"}
     conflicts = [row for row in ((candidate.get("astro_evidence") or {}).get("conflictSets") or [])
-                 if str(row.get("propertyCode", "")).startswith("phot.") and "STATISTICALLY_INCONSISTENT" in (row.get("relations") or [])]
+                 if str(row.get("propertyCode", "")).startswith("phot.") and relations & set(row.get("relations") or [])]
     if not conflicts:
         return []
     by_id = {row["measurementId"]: row for row in measurements}

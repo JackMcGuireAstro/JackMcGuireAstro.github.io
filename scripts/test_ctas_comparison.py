@@ -105,21 +105,38 @@ class PhotometryTests(unittest.TestCase):
 
     def test_the_limit_reported_with_a_detection_is_not_a_non_detection(self):
         # Seen on 518 real events: three brokers relay one ZTF detection; ALeRCE also reports the
-        # epoch's limiting magnitude, which the AstroEvidence screen compares as a non-detection.
+        # epoch's limiting magnitude. Until 2026-10-27 the AstroEvidence screen compared it as a
+        # non-detection; now neither the screen nor the comparison does.
         screened, listed = self.build([
             ztf_observation("ztf-alerce", "a1", magnitude=19.560162, error=0.12774864, limit=20.0827),
             ztf_observation("rubin-fink", "a2", magnitude=19.560162, error=0.12774864),
             ztf_observation("rubin-lasair", "a3", magnitude=19.5602, error=0.127749),
         ])
-        self.assertTrue(screened, "the AstroEvidence screen flags the group")
+        self.assertEqual(screened, [], "the AstroEvidence screen does not flag a detection threshold")
         self.assertEqual(listed, [], "the comparison does not list a conflict that is a detection threshold")
+
+    def test_a_release_made_before_the_screen_fix_still_lists_nothing(self):
+        # Older releases carry the false group as STATISTICALLY_INCONSISTENT; the comparison
+        # still sets the detection threshold aside.
+        observations = [
+            ztf_observation("ztf-alerce", "d1", magnitude=19.560162, error=0.12774864, limit=20.0827),
+            ztf_observation("rubin-fink", "d2", magnitude=19.560162, error=0.12774864),
+        ]
+        row, measurements, receipts = photometry_candidate(observations)
+        ids = sorted(m["measurementId"] for m in measurements if m["propertyCode"] == "phot.mag")
+        row["astro_evidence"]["conflictSets"] = [{"conflictSetId": "ae:conflict:old", "propertyCode": "phot.mag",
+                                                  "measurementIds": ids, "relations": ["STATISTICALLY_INCONSISTENT"],
+                                                  "significanceSigma": None}]
+        block = cmp.build_comparison(row, envelopes=[], classifications=[], hosts=[], measurements=measurements,
+                                     envelope_receipts=receipts)
+        self.assertEqual([p for p in (block or {}).get("properties", []) if p["code"] == "photometry"], [])
 
     def test_a_real_non_detection_fainter_than_a_detection_is_listed(self):
         screened, listed = self.build([
             ztf_observation("rubin-fink", "b1", magnitude=19.56, error=0.12),
             ztf_observation("rubin-lasair", "b2", limit=20.4, detection=0),
         ])
-        self.assertTrue(screened)
+        self.assertEqual([s["relations"] for s in screened], [["STATUS_CONFLICT"]])
         self.assertEqual(len(listed), 1)
         self.assertTrue(listed[0]["set"]["conflict"])
         self.assertEqual({row["limitType"] for row in listed[0]["rows"]}, {"NONE", "LOWER_LIMIT"})

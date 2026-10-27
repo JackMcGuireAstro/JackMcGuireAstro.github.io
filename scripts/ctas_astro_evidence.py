@@ -908,6 +908,11 @@ def build_measurements(candidate: dict[str, Any]) -> tuple[list[dict[str, Any]],
             "citation": _citation(row, source_id), "active_state": active,
         }
         epoch_key = _time_compatibility_key(row, "observed_at")
+        # A limiting magnitude or flux reported with a detection (ZTF's diffmaglim via ALeRCE, for
+        # example) is that exposure's detection threshold, not a non-detection: it is kept as a
+        # measurement but never compared as an upper limit on the object (scripts/ctas_comparison.py
+        # applies the same rule).
+        detected = row.get("detection") in (1, True, "1", "true")
         per_observation: list[str] = []
         magnitude = number(row.get("magnitude"))
         mag_error = number(row.get("magnitude_error"))
@@ -944,7 +949,8 @@ def build_measurements(candidate: dict[str, Any]) -> tuple[list[dict[str, Any]],
                 normalized_unit="mag", uncertainty=None, **{**common, "reference_frame": row.get("magnitude_system")},
             ))
             per_observation.append(mid)
-            compatibility[mid] = {"kind": "photometry", "key": ("magnitude", epoch_key, row.get("band"), row.get("magnitude_system"), method, row.get("calibration"), diff)}
+            compatibility[mid] = {"kind": "photometry", "key": ("magnitude", epoch_key, row.get("band"), row.get("magnitude_system"), method, row.get("calibration"), diff),
+                                  "detection_threshold": detected}
         limiting_flux = number(row.get("limiting_flux"))
         if limiting_flux is not None:
             mid = stable_id("measurement", "limiting-flux", assertion_id)
@@ -955,7 +961,8 @@ def build_measurements(candidate: dict[str, Any]) -> tuple[list[dict[str, Any]],
                 normalized_unit=row.get("flux_unit"), uncertainty=None, **common,
             ))
             per_observation.append(mid)
-            compatibility[mid] = {"kind": "photometry", "key": ("flux", epoch_key, row.get("band"), row.get("flux_unit"), method, row.get("calibration"), diff)}
+            compatibility[mid] = {"kind": "photometry", "key": ("flux", epoch_key, row.get("band"), row.get("flux_unit"), method, row.get("calibration"), diff),
+                                  "detection_threshold": detected}
         state = "DETECTION" if row.get("detection") is True else "NONDETECTION" if row.get("detection") is False else "UNSPECIFIED"
         mid = stable_id("measurement", "detection-state", assertion_id)
         measurements.append(_measurement(
@@ -1082,13 +1089,14 @@ def build_conflicts(target_id: str, measurements: list[dict[str, Any]], compatib
     photometry_groups: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
     for item in active:
         meta = compatibility.get(item["measurementId"], {})
-        if meta.get("kind") == "photometry":
+        if meta.get("kind") == "photometry" and not meta.get("detection_threshold"):
             photometry_groups.setdefault(tuple(meta.get("key") or ()), []).append(item)
     for group in photometry_groups.values():
         providers = {item["sourceContractId"] for item in group}
         if len(group) < 2 or len(providers) < 2:
             continue
         inconsistent: set[str] = set()
+        status: set[str] = set()
         max_sigma: float | None = None
         for index, left in enumerate(group):
             for right in group[index + 1:]:
@@ -1113,12 +1121,17 @@ def build_conflicts(target_id: str, measurements: list[dict[str, Any]], compatib
                             limit["valueKind"] == "LOWER_LIMIT" and mv is not None and limit_v is not None and mv < limit_v
                         )
                         if contradiction:
-                            inconsistent.update((measurement["measurementId"], limit["measurementId"]))
+                            status.update((measurement["measurementId"], limit["measurementId"]))
         if len(inconsistent) >= 2:
             conflicts.append(_conflict(
                 target_id, group[0]["propertyCode"], inconsistent, ["STATISTICALLY_INCONSISTENT"],
-                "Only exact epoch, bandpass, unit/system, method, and direct/difference-photometry matches were compared; this compatible group exceeds the declared 3-sigma or detection/limit consistency rule.",
+                "Only exact epoch, bandpass, unit/system, method, and direct/difference-photometry matches were compared; these measurements differ by more than the declared 3-sigma rule.",
                 round(max_sigma, 6) if max_sigma is not None else None,
+            ))
+        if len(status) >= 2:
+            conflicts.append(_conflict(
+                target_id, group[0]["propertyCode"], status, ["STATUS_CONFLICT"],
+                "The same epoch, bandpass, unit/system, method and direct/difference state is reported as a detection by one provider and as a non-detection limit the detection violates by another. The limit a provider reports alongside its own detection is that exposure's detection threshold and is not compared.",
             ))
 
     redshifts = [item for item in active if item["propertyCode"] == "src.redshift;meta.id.assoc"]

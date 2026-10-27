@@ -485,12 +485,47 @@ class AstroEvidenceTests(unittest.TestCase):
         self.assertIn("src.redshift;meta.id.assoc", by_property)
         labels = [row for row in self.document["measurements"] if row["propertyCode"] == "transient.classification.status"]
         self.assertEqual(len(labels), 1)
-        magnitude_conflict = by_property["phot.mag"]
+        magnitude_sets = {tuple(row["relations"]): row for row in self.document["conflictSets"] if row["propertyCode"] == "phot.mag"}
         lower_limit_id = EVIDENCE.stable_id("measurement", "limiting-magnitude", "obs-limit")
         bright_detection_id = EVIDENCE.stable_id("measurement", "magnitude", "obs-ztf")
-        self.assertTrue({lower_limit_id, bright_detection_id} <= set(magnitude_conflict["measurementIds"]))
+        atlas_detection_id = EVIDENCE.stable_id("measurement", "magnitude", "obs-atlas")
+        # Two detections 10 sigma apart are statistically inconsistent; a detection brighter than
+        # another provider's non-detection limit at the same epoch is a status conflict.
+        self.assertEqual(set(magnitude_sets), {("STATISTICALLY_INCONSISTENT",), ("STATUS_CONFLICT",)})
+        self.assertEqual(set(magnitude_sets[("STATISTICALLY_INCONSISTENT",)]["measurementIds"]), {bright_detection_id, atlas_detection_id})
+        self.assertEqual(set(magnitude_sets[("STATUS_CONFLICT",)]["measurementIds"]), {lower_limit_id, bright_detection_id})
         detection_states = [row for row in self.document["measurements"] if row["propertyCode"] == "photometry.detection_state"]
         self.assertEqual(len(detection_states), 5)
+
+    def test_the_limit_reported_with_a_detection_is_not_a_non_detection(self):
+        # Real shape (518 events on 2026-10-27): ALeRCE relays a ZTF detection together with the
+        # exposure's limiting magnitude (diffmaglim); Fink relays the same detection without it.
+        # The limit is that exposure's detection threshold, not an upper limit on the object, so
+        # the screen must not report the two brokers as inconsistent.
+        base = {"band": "r", "calibration": "ZTF alert-packet calibration", "detection": True,
+                "difference_photometry": 1, "instrument": "ZTF alert photometry", "magnitude_system": "AB",
+                "mjd": 61216.47372689983, "jd": 2461216.9737269, "observed_at": "2026-06-25T11:22:10.004145Z",
+                "photometry_method": "difference-psf"}
+        candidate = {"event_id": "00000000-0000-4000-8000-000000000001", "follow_up": {"observations": [
+            dict(base, assertion_id="alerce-1", provider="ztf-alerce", provider_observation_id="ztf-alerce:ZTF26abdrmsn:1",
+                 magnitude=19.560162, magnitude_error=0.12774864, limiting_magnitude=20.0827),
+            dict(base, assertion_id="fink-1", provider="rubin-fink", provider_observation_id="rubin-fink:ZTF26abdrmsn:1",
+                 magnitude=19.560162, magnitude_error=0.12774864),
+        ]}}
+        measurements, _ids, compatibility = EVIDENCE.build_measurements(candidate)
+        limit_id = EVIDENCE.stable_id("measurement", "limiting-magnitude", "alerce-1")
+        self.assertIn(limit_id, {row["measurementId"] for row in measurements}, "the reported limit is kept")
+        conflicts = EVIDENCE.build_conflicts("target", measurements, compatibility)
+        self.assertEqual([row for row in conflicts if row["propertyCode"].startswith("phot.")], [])
+        # The same limit on a non-detection record does contradict a brighter detection.
+        candidate["follow_up"]["observations"].append(dict(
+            base, assertion_id="lasair-1", provider="rubin-lasair", provider_observation_id="rubin-lasair:ZTF26abdrmsn:1",
+            detection=False, limiting_magnitude=20.0827))
+        measurements, _ids, compatibility = EVIDENCE.build_measurements(candidate)
+        conflicts = [row for row in EVIDENCE.build_conflicts("target", measurements, compatibility) if row["propertyCode"].startswith("phot.")]
+        self.assertEqual([row["relations"] for row in conflicts], [["STATUS_CONFLICT"]])
+        self.assertNotIn(limit_id, conflicts[0]["measurementIds"])
+        self.assertIn(EVIDENCE.stable_id("measurement", "limiting-magnitude", "lasair-1"), conflicts[0]["measurementIds"])
 
     def test_python_and_browser_projection_are_semantically_equal(self):
         browser = node_call("project", self.public_candidate, self.universe)
