@@ -125,7 +125,7 @@ group_ctas_static() {
   check ctas.front.spectrum-ascii node scripts/test_ctas_spectrum_ascii.js
   check ctas.front.spectrum-fits node scripts/test_ctas_spectrum_fits.js
   check ctas.front.lightcurve-summary node scripts/test_ctas_lightcurve_summary.js
-  check ctas.front-syntax node_check ctas/followup.js ctas/sky.js ctas/changelog.js ctas/status.js ctas/screens.js ctas/comparison.js
+  check ctas.front-syntax node_check ctas/followup.js ctas/sky.js ctas/changelog.js ctas/status.js ctas/screens.js ctas/lightcurve-science.js ctas/comparison.js
   check ctas.front.followup node scripts/test_ctas_followup.mjs
   check ctas.test_ctas_interop python3 scripts/test_ctas_interop.py
   check ctas.test_ctas_changelog python3 scripts/test_ctas_changelog.py
@@ -134,6 +134,8 @@ group_ctas_static() {
   check ctas.front.screens node scripts/test_ctas_screens.js
   check ctas.test_ctas_comparison python3 scripts/test_ctas_comparison.py
   check ctas.front.comparison node scripts/test_ctas_comparison.js
+  check ctas.test_ctas_lightcurve_science python3 scripts/test_ctas_lightcurve_science.py
+  check ctas.front.lightcurve-science node scripts/test_ctas_lightcurve_science.js
 }
 
 group_ctas_schemas() {

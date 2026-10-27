@@ -129,7 +129,8 @@ jobs:
       - name: Interoperability, schema and browser dependencies
         run: |
           python3 -m pip install --quiet --disable-pip-version-check "astropy>=7.0,<9" "astropy-healpix>=1.0,<3" \
-            "pyarrow>=21,<27" "pandas>=2.2,<4" "check-jsonschema>=0.33,<1" "pyyaml>=6,<7" "playwright==1.64.1" jsonschema
+            "pyarrow>=21,<27" "pandas>=2.2,<4" "check-jsonschema>=0.33,<1" "pyyaml>=6,<7" "playwright==1.64.1" jsonschema \
+            "scipy>=1.13,<2"
           python3 -m playwright install --with-deps chromium >/dev/null
           npm install --no-save --silent --prefix .. axe-core@4.14.0 >/dev/null
       # Watch-mode pass counts: the publishers' (published with each release) and the

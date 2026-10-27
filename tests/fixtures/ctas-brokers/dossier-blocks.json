@@ -1,0 +1,619 @@
+{
+ "broker_classes": {
+  "blockChecksumSha256": "efe0a68b6a55a43862a7479c574f8ac17aa29f3131ce72e290c24f53a5ae2b77",
+  "brokers": [
+   {
+    "attribution": "ALeRCE broker classifiers (Sanchez-Saez et al. 2021; Carrasco-Davis et al. 2021); cite Forster et al. 2021 and acknowledge ALeRCE and ZTF.",
+    "broker": "ALeRCE",
+    "currentOutcome": "searched-with-data",
+    "currentReceipt": {
+     "attemptId": "a1",
+     "checkedAt": "2026-10-27 12:00:00",
+     "detail": "alerce-classifiers data"
+    },
+    "dataReceipt": {
+     "attemptId": "a1",
+     "checkedAt": "2026-10-27 12:00:00",
+     "parserContract": "alerce-ztf-probabilities-json@1.0.0",
+     "requestUrl": "https://example.invalid/",
+     "responseChecksumSha256": "38da7a922858bc4bb54619c2d48b6d31fb38f673b58833c7bc07382b53d9655e"
+    },
+    "output": {
+     "classifiers": [
+      {
+       "classes": [
+        {
+         "class": "bogus",
+         "probability": 0.68094,
+         "rank": 1
+        },
+        {
+         "class": "SN",
+         "probability": 0.164014,
+         "rank": 2
+        },
+        {
+         "class": "VS",
+         "probability": 0.0884788,
+         "rank": 3
+        },
+        {
+         "class": "asteroid",
+         "probability": 0.0379145,
+         "rank": 4
+        },
+        {
+         "class": "AGN",
+         "probability": 0.0286527,
+         "rank": 5
+        }
+       ],
+       "classifier": "stamp_classifier",
+       "version": "stamp_classifier_1.0.4"
+      },
+      {
+       "classes": [
+        {
+         "class": "bogus",
+         "probability": 0.727625,
+         "rank": 1
+        },
+        {
+         "class": "SN",
+         "probability": 0.192953,
+         "rank": 2
+        },
+        {
+         "class": "satellite",
+         "probability": 0.0755434,
+         "rank": 3
+        },
+        {
+         "class": "asteroid",
+         "probability": 0.00189718,
+         "rank": 4
+        },
+        {
+         "class": "VS",
+         "probability": 0.00142836,
+         "rank": 5
+        },
+        {
+         "class": "AGN",
+         "probability": 0.000553469,
+         "rank": 6
+        }
+       ],
+       "classifier": "stamp_classifier_2025_beta",
+       "version": "2.1.1_beta"
+      }
+     ]
+    },
+    "reading": {
+     "brokerClass": "bogus",
+     "classifier": "stamp_classifier_2025_beta",
+     "coarseClass": "bogus or artefact",
+     "probability": 0.727625,
+     "rule": "rank-1 class of the light-curve classifier (lc_classifier) when published, otherwise rank-1 class of the newest stamp classifier",
+     "version": "2.1.1_beta"
+    },
+    "source": "alerce-classifiers"
+   },
+   {
+    "attribution": "Fink broker science modules; cite Moller et al. 2021 and include the current Fink acknowledgment.",
+    "broker": "Fink",
+    "currentOutcome": "searched-with-data",
+    "currentReceipt": {
+     "attemptId": "a2",
+     "checkedAt": "2026-10-27 12:00:00",
+     "detail": "fink-science-scores data"
+    },
+    "dataReceipt": {
+     "attemptId": "a2",
+     "checkedAt": "2026-10-27 12:00:00",
+     "parserContract": "fink-ztf-science-scores-json-rows@1.0.0",
+     "requestUrl": "https://example.invalid/",
+     "responseChecksumSha256": "516f7d64b247ef049936d46fb7f11259713d347e6b00a740ef9202c6140e4aeb"
+    },
+    "output": {
+     "alerts": 3,
+     "cdsCrossmatch": "Unknown",
+     "newestAlert": {
+      "candid": "3506489661015015002",
+      "jd": 2461260.989664
+     },
+     "scores": [
+      {
+       "column": "d:snn_snia_vs_nonia",
+       "label": "SuperNNova SN Ia vs non-Ia",
+       "value": 0.032174
+      },
+      {
+       "column": "d:snn_sn_vs_all",
+       "label": "SuperNNova SN vs all",
+       "value": 0.706371
+      },
+      {
+       "column": "d:rf_snia_vs_nonia",
+       "label": "Random forest SN Ia vs non-Ia (early)",
+       "value": 0.0
+      },
+      {
+       "column": "d:rf_kn_vs_nonkn",
+       "label": "Kilonova vs non-kilonova",
+       "value": 0.0
+      },
+      {
+       "column": "d:mulens",
+       "label": "Microlensing (LIA)",
+       "value": 0.0
+      },
+      {
+       "column": "d:slsn_score",
+       "label": "SLSN score",
+       "value": -1.0
+      },
+      {
+       "column": "d:anomaly_score",
+       "label": "Anomaly score (lower is more anomalous)",
+       "value": 0.0044119
+      }
+     ]
+    },
+    "reading": {
+     "coarseClass": "SN (type unknown)",
+     "rule": "newest alert: SN Ia if SuperNNova SN-vs-all > 0.5 and SN-Ia-vs-non-Ia > 0.5; SN (type unknown) if SN-vs-all > 0.5; kilonova if kilonova score > 0.5; microlensing if microlensing score > 0.5; otherwise no reading"
+    },
+    "source": "fink-science-scores"
+   },
+   {
+    "attribution": "ANTARES (NSF NOIRLab); cite Matheson et al. 2021 and acknowledge NSF NOIRLab.",
+    "broker": "ANTARES",
+    "currentOutcome": "searched-with-data",
+    "currentReceipt": {
+     "attemptId": "a3",
+     "checkedAt": "2026-10-27 12:00:00",
+     "detail": "antares-ztf-loci data"
+    },
+    "dataReceipt": {
+     "attemptId": "a3",
+     "checkedAt": "2026-10-27 12:00:00",
+     "parserContract": "antares-locus-listing-json@1.0.0",
+     "requestUrl": "https://example.invalid/",
+     "responseChecksumSha256": "fabd676a6c16e4a0e6dacddcdbf74c82e96230ccd817bfcfdc82f1f40e857867"
+    },
+    "output": {
+     "alerts": 5,
+     "catalogs": [
+      "2mass_xsc",
+      "tns_public_objects"
+     ],
+     "classifierProperties": {},
+     "locusId": "ANT20260s3q9ygj2hn9",
+     "tags": [
+      "extragalactic",
+      "lc_feature_extractor",
+      "refitt_newsources_snrcut"
+     ]
+    },
+    "reading": {
+     "coarseClass": null,
+     "rule": "the locus's classifier property (superphot_plus_class) when present; filter tags alone give no reading"
+    },
+    "source": "antares-ztf-loci"
+   }
+  ],
+  "claimBoundary": "Broker machine-learning outputs and CTAS's stated reading of them; not spectroscopic classifications, and the reading never replaces the broker's own numbers.",
+  "consensus": {
+   "coarseClassesSeen": [
+    "SN (type unknown)",
+    "SN Ia",
+    "bogus or artefact"
+   ],
+   "readings": [
+    {
+     "broker": "ALeRCE",
+     "coarseClass": "bogus or artefact"
+    },
+    {
+     "broker": "ANTARES",
+     "coarseClass": null
+    },
+    {
+     "broker": "Fink",
+     "coarseClass": "SN (type unknown)"
+    }
+   ],
+   "rule": "Coarse classes from each broker reading and from the TNS label are compared as labels; agreement means every available label is the same coarse class. Nothing is averaged.",
+   "state": "disagree",
+   "tnsCoarseClass": "SN Ia",
+   "tnsLabel": "SN Ia"
+  },
+  "schema": "ctas.broker-classes@1",
+  "vocabulary": [
+   "SN Ia",
+   "SN core-collapse",
+   "SN (type unknown)",
+   "SLSN",
+   "TDE",
+   "kilonova",
+   "AGN / QSO / blazar",
+   "variable star",
+   "microlensing",
+   "asteroid",
+   "bogus or artefact",
+   "other"
+  ]
+ },
+ "lightcurve_science": {
+  "inputs": {
+   "detections": 28,
+   "detectionsByBand": {
+    "ztfg": 14,
+    "ztfr": 14
+   },
+   "excludedRows": {},
+   "firstMjd": 60000.0,
+   "inputChecksumSha256": "d3db197dd2fc26c83091b9f0a9a0e12bb1603af25db0004a6a565eb144b881e1",
+   "inputRule": "ZTF g/r/i difference-PSF detections (ALeRCE, Fink, Lasair; one row per exposure) and ATLAS o/c forced-PSF detections, AB, uncertainty <= 0.5 mag",
+   "lastMjd": 60032.6
+  },
+  "runs": [
+   {
+    "analysisType": "multiband-bazin",
+    "claimBoundary": "A phenomenological fit to public difference and forced photometry; it describes the light-curve shape and is not a classification, a physical model or a distance.",
+    "inputChecksumSha256": "0a3b32eff50cde6055919e596d0d4e05436e54b41c13e2cd53159f9d521e7d25",
+    "inputs": {
+     "bands": [
+      "ztfg",
+      "ztfr"
+     ],
+     "photometryChecksumSha256": "d3db197dd2fc26c83091b9f0a9a0e12bb1603af25db0004a6a565eb144b881e1"
+    },
+    "methodName": "multiband-bazin",
+    "methodVersion": "1.0.0",
+    "parameters": {
+     "fitter": "scipy.optimize.least_squares (trf), deterministic starts",
+     "minimumBandDetections": 3,
+     "minimumDetections": 8,
+     "minimumSpanDays": 5.0,
+     "model": "F_b(t) = A_b exp(-(t-t0)/tau_fall) / (1 + exp(-(t-t0)/tau_rise))",
+     "sharedParameters": "timing (and the plateau slope s) shared across bands; one amplitude per band",
+     "space": "flux (microjansky, AB zero point 23.9)"
+    },
+    "references": [
+     "2009A&A...499..653B"
+    ],
+    "result": {
+     "aicc": 14.7459,
+     "bands": [
+      "ztfg",
+      "ztfr"
+     ],
+     "chi2": 2.01863,
+     "degreesOfFreedom": 23,
+     "parameters": {
+      "log_amplitude_ztfg": {
+       "sigma": 0.03215,
+       "value": 5.988374
+      },
+      "log_amplitude_ztfr": {
+       "sigma": 0.03225,
+       "value": 6.393111
+      },
+      "log_tau_fall": {
+       "sigma": 0.0682,
+       "value": 3.223932
+      },
+      "log_tau_rise": {
+       "sigma": 0.01322,
+       "value": 1.094122
+      },
+      "t0": {
+       "sigma": 0.258,
+       "value": -5.651967
+      }
+     },
+     "reducedChi2": 0.087767,
+     "referenceMjd": 60017.6
+    },
+    "resultChecksumSha256": "204805d9469c00a341ac9b53809ce9637efa04fcb8951625ad15e339f27a8124",
+    "software": {
+     "astropy": "8.0.2",
+     "numpy": "2.5.3",
+     "scipy": "1.18.1"
+    },
+    "status": "complete",
+    "warnings": [
+     "the decline is longer than half the data span; decline-side values are extrapolated"
+    ]
+   },
+   {
+    "analysisType": "multiband-villar",
+    "claimBoundary": "A phenomenological fit to public difference and forced photometry; it describes the light-curve shape and is not a classification, a physical model or a distance.",
+    "inputChecksumSha256": "0a3b32eff50cde6055919e596d0d4e05436e54b41c13e2cd53159f9d521e7d25",
+    "inputs": {
+     "bands": [
+      "ztfg",
+      "ztfr"
+     ],
+     "photometryChecksumSha256": "d3db197dd2fc26c83091b9f0a9a0e12bb1603af25db0004a6a565eb144b881e1"
+    },
+    "methodName": "multiband-villar",
+    "methodVersion": "1.0.0",
+    "parameters": {
+     "fitter": "scipy.optimize.least_squares (trf), deterministic starts",
+     "minimumBandDetections": 3,
+     "minimumDetections": 8,
+     "minimumSpanDays": 5.0,
+     "model": "F_b(t) = A_b (1 + s(t-t0)) / (1 + exp(-(t-t0)/tau_rise)) for t < t0+gamma; A_b (1 + s gamma) exp(-(t-t0-gamma)/tau_fall) / (1 + exp(-(t-t0)/tau_rise)) after",
+     "sharedParameters": "timing (and the plateau slope s) shared across bands; one amplitude per band",
+     "space": "flux (microjansky, AB zero point 23.9)"
+    },
+    "references": [
+     "2019ApJ...884...83V"
+    ],
+    "result": {
+     "aicc": 21.27288,
+     "bands": [
+      "ztfg",
+      "ztfr"
+     ],
+     "chi2": 1.67288,
+     "degreesOfFreedom": 21,
+     "parameters": {
+      "log_amplitude_ztfg": {
+       "sigma": 0.1381,
+       "value": 6.066951
+      },
+      "log_amplitude_ztfr": {
+       "sigma": 0.1381,
+       "value": 6.471775
+      },
+      "log_gamma": {
+       "sigma": 0.569,
+       "value": 1.199573
+      },
+      "log_tau_fall": {
+       "sigma": 0.0971,
+       "value": 3.169525
+      },
+      "log_tau_rise": {
+       "sigma": 0.03063,
+       "value": 1.111053
+      },
+      "plateau_slope": {
+       "sigma": 0.03898,
+       "value": -0.05583599
+      },
+      "t0": {
+       "sigma": 1.136,
+       "value": -5.023422
+      }
+     },
+     "reducedChi2": 0.079661,
+     "referenceMjd": 60017.6
+    },
+    "resultChecksumSha256": "d1a5466dea6945fa885948bf0f3c40890fc73c2cfa7fba6828357aa2dd95c881",
+    "software": {
+     "astropy": "8.0.2",
+     "numpy": "2.5.3",
+     "scipy": "1.18.1"
+    },
+    "status": "complete",
+    "warnings": [
+     "the decline is longer than half the data span; decline-side values are extrapolated"
+    ]
+   },
+   {
+    "analysisType": "lightcurve-features",
+    "claimBoundary": "A phenomenological fit to public difference and forced photometry; it describes the light-curve shape and is not a classification, a physical model or a distance.",
+    "inputChecksumSha256": "3714225ab28330091904465e9a888903b876de78c2f1164176a950ae1ae279bf",
+    "inputs": {
+     "bands": [
+      "ztfg",
+      "ztfr"
+     ],
+     "model": "multiband-bazin",
+     "photometryChecksumSha256": "d3db197dd2fc26c83091b9f0a9a0e12bb1603af25db0004a6a565eb144b881e1"
+    },
+    "methodName": "fit-derived-features",
+    "methodVersion": "1.0.0",
+    "parameters": {
+     "colourScreen": "the per-epoch colour and blackbody temperature are the collector's multiband screen under analysis_screens",
+     "declineWindowDays": 15,
+     "draws": 200,
+     "modelChoice": "the multiband fit with the lower AICc",
+     "seed": 0
+    },
+    "result": {
+     "bands": {
+      "ztfg": {
+       "peakBracketedByData": true,
+       "peakMagnitude": 17.794,
+       "peakMagnitudeSigma": 0.0182
+      },
+      "ztfr": {
+       "peakBracketedByData": true,
+       "peakMagnitude": 17.355,
+       "peakMagnitudeSigma": 0.0173
+      }
+     },
+     "declineMagPerDay15": 0.03412,
+     "declineMagPerDay15Sigma": 0.00206,
+     "halfMaxDurationDays": 28.87,
+     "halfMaxDurationDaysSigma": 1.18,
+     "halfMaxRiseDays": 8.278,
+     "halfMaxRiseDaysSigma": 0.117,
+     "model": "multiband-bazin",
+     "peakMjd": 60017.93271,
+     "peakMjdSigma": 0.169,
+     "sharedShape": true
+    },
+    "resultChecksumSha256": "3add1cd8d596ddcf2bc2592ec8d23af81696ba1e858c12f86f05937daba8a9d9",
+    "software": {
+     "astropy": "8.0.2",
+     "numpy": "2.5.3",
+     "scipy": "1.18.1"
+    },
+    "status": "complete",
+    "warnings": []
+   },
+   {
+    "analysisType": "absolute-magnitude",
+    "claimBoundary": "A distance-dependent estimate from a phenomenological peak; not a calibrated luminosity.",
+    "inputChecksumSha256": "56ab5fa009265ec9fdfbc9c0853c452f04e16437f13c0ed8c430844c91457afe",
+    "inputs": {
+     "decDeg": 2.0,
+     "photometryChecksumSha256": "d3db197dd2fc26c83091b9f0a9a0e12bb1603af25db0004a6a565eb144b881e1",
+     "raDeg": 150.0,
+     "redshift": 0.05,
+     "redshiftSource": "event redshift as retained (TNS)"
+    },
+    "methodName": "peak-absolute-magnitude",
+    "methodVersion": "1.0.0",
+    "parameters": {
+     "bandEffectiveWavelengthsAngstrom": {
+      "atlasc": 5330.0,
+      "atlaso": 6780.0,
+      "ztfg": 4746.5,
+      "ztfi": 7829.0,
+      "ztfr": 6366.4
+     },
+     "cosmology": "Planck18 (astropy)",
+     "extinctionLaw": "Fitzpatrick 1999, R_V = 3.1",
+     "extinctionMap": "SFD 1998, x0.86 (Schlafly & Finkbeiner 2011)",
+     "kCorrection": "+2.5 log10(1+z) bandwidth term only; no spectral k-correction"
+    },
+    "references": [
+     "1998ApJ...500..525S",
+     "2011ApJ...737..103S",
+     "1999PASP..111...63F",
+     "2020A&A...641A...6P"
+    ],
+    "result": {
+     "bands": {
+      "ztfg": {
+       "extinctionMag": 0.06052,
+       "peakAbsoluteMagnitude": -19.021,
+       "peakAbsoluteMagnitudeSigma": 0.0182,
+       "peakApparentMagnitude": 17.794
+      },
+      "ztfr": {
+       "extinctionMag": 0.04003,
+       "peakAbsoluteMagnitude": -19.44,
+       "peakAbsoluteMagnitudeSigma": 0.0173,
+       "peakApparentMagnitude": 17.355
+      }
+     },
+     "distanceModulus": 36.8075,
+     "ebvRecalibrated": 0.016225,
+     "ebvSfd": 0.018866,
+     "kCorrectionTerm": 0.052973,
+     "redshift": 0.05
+    },
+    "resultChecksumSha256": "b5c004afcbd5e9499c9467d3bff87cab4501aebe61321145ab035308f7f9f7ec",
+    "status": "complete",
+    "warnings": [
+     "the absolute magnitude uses a redshift without its uncertainty; peculiar velocity and spectral k-correction are not included"
+    ]
+   },
+   {
+    "analysisType": "jump-detector",
+    "claimBoundary": "A brightening relative to the event's own recent detections; not a classification.",
+    "inputChecksumSha256": "88d3eae3724129a067c95fd0d7a9f7def8fa73953005779da704c0b88280bdd2",
+    "inputs": {
+     "photometryChecksumSha256": "d3db197dd2fc26c83091b9f0a9a0e12bb1603af25db0004a6a565eb144b881e1"
+    },
+    "methodName": "baseline-jump",
+    "methodVersion": "1.0.0",
+    "parameters": {
+     "baselineWindowDays": [
+      -70,
+      -10
+     ],
+     "jumpSigma": 5.0,
+     "latestWindowDays": 2,
+     "minimumBaselineDetections": 3,
+     "statistic": "(F_latest - mean F_baseline) / sqrt(sigma_latest^2 + sigma_mean^2)"
+    },
+    "result": {
+     "bands": {
+      "ztfg": {
+       "baselineDetections": 10,
+       "jump": true,
+       "latestMjd": 60032.5,
+       "significance": 19.32
+      },
+      "ztfr": {
+       "baselineDetections": 10,
+       "jump": true,
+       "latestMjd": 60032.6,
+       "significance": 19.28
+      }
+     },
+     "jump": true,
+     "latestMjd": 60032.6
+    },
+    "resultChecksumSha256": "baeef98edd87c8d6e55c0cc9b431170a61073010cddd9466c7cbfaf2b400fefe",
+    "status": "complete",
+    "warnings": []
+   },
+   {
+    "analysisType": "periodogram",
+    "claimBoundary": "A phenomenological fit to public difference and forced photometry; it describes the light-curve shape and is not a classification, a physical model or a distance.",
+    "inputChecksumSha256": "88d3eae3724129a067c95fd0d7a9f7def8fa73953005779da704c0b88280bdd2",
+    "inputs": {
+     "photometryChecksumSha256": "d3db197dd2fc26c83091b9f0a9a0e12bb1603af25db0004a6a565eb144b881e1"
+    },
+    "methodName": "lomb-scargle",
+    "methodVersion": "1.0.0",
+    "notComputedReason": "no band has 20 detections over 30 days",
+    "parameters": {
+     "falseAlarmMethod": "baluev",
+     "minimumDetections": 20,
+     "minimumSpanDays": 30.0,
+     "periodRangeDays": "0.1 to half the band's span",
+     "periodicCandidateFap": 0.001,
+     "samplesPerPeak": 10
+    },
+    "status": "not-computed",
+    "warnings": []
+   },
+   {
+    "analysisType": "screens",
+    "claimBoundary": "Screens that point at candidates for a closer look (kilonova-like timescales, nuclear position); they are not classifications.",
+    "inputChecksumSha256": "2cd888adca92e5d5108563821a39955720aeff3ddc53b28ef17e3c9d17ced952",
+    "inputs": {
+     "hostOffsetsArcsec": [],
+     "photometryChecksumSha256": "d3db197dd2fc26c83091b9f0a9a0e12bb1603af25db0004a6a565eb144b881e1"
+    },
+    "methodName": "timescale-and-offset-screens",
+    "methodVersion": "1.0.0",
+    "parameters": {
+     "fastDeclineMagPerDay": 0.3,
+     "fastRiseHalfMaxDays": 3.0,
+     "nuclearOffsetArcsec": 0.5,
+     "rules": {
+      "fast-transient": "shared-shape half-maximum rise < 3 d or 15-day decline > 0.3 mag/day",
+      "nuclear-transient": "a retained host offset < 0.5 arcsec"
+     }
+    },
+    "result": {
+     "fastTransient": {
+      "drivers": [],
+      "flag": false
+     },
+     "nuclearTransient": {
+      "flag": null,
+      "notComputedReason": "no retained host offset (host association is Track 3c part 2)"
+     }
+    },
+    "resultChecksumSha256": "89fae7942702dac78bd6bc4f19ee831d4697fef681442481c9044094a4165238",
+    "status": "complete",
+    "warnings": []
+   }
+  ],
+  "schema": "ctas.lightcurve-science@1"
+ }
+}

@@ -174,6 +174,11 @@ EVENT_COLUMN_SPECS: tuple[ColumnSpec, ...] = (
     _c("source_applicable", "int", "meta.number", None, "Sources applicable to this record."),
     _c("source_executed", "int", "meta.number", None, "Executed query receipts for this record."),
     _c("source_data_bearing", "int", "meta.number", None, "Sources that returned retained data for this record."),
+    _c("lc_fit_model", "str", "meta.code", None, "Multiband light-curve fit chosen for the features (Track 3c), when computed."),
+    _c("lc_rise_days", "float", "time.duration", u.day, "Half-maximum rise time of the chosen multiband fit, when computed."),
+    _c("lc_peak_abs_mag", "float", "phys.magAbs", u.mag, "Peak absolute magnitude (Planck 2018, SFD x0.86 extinction, bandwidth k-term), when computed."),
+    _c("broker_consensus", "str", "meta.code.class", None, "Agreement of the broker readings and the TNS label (agree, disagree, single-reading, no-broker-reading)."),
+    _c("broker_classes_seen", "str", "src.class", None, "Coarse classes given by the broker readings and the TNS label."),
 )
 
 ALIAS_COLUMN_SPECS: tuple[ColumnSpec, ...] = (

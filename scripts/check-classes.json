@@ -1235,6 +1235,35 @@
     "deploy"
    ],
    "what": "ctas/comparison.js dossier panel (front-end unit tests: tables, filters, selected-row exports with manifest and citations)"
+  },
+  "ctas.gate.lightcurve-science-provenance": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate lightcurve-science-provenance (Track 3c part 1: every light-curve run names its method version, inputs and checksums; not-computed runs say why)"
+  },
+  "ctas.gate.broker-classes-receipt-trace": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate broker-classes-receipt-trace (Track 3c part 1: every broker entry names its receipt; every output its kept response checksum and parser contract)"
+  },
+  "ctas.test_ctas_lightcurve_science": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "Track 3c part 1: light-curve fits, features, absolute magnitude, jump, periodogram, SALT3 selection, screens, broker parsing, reading rules and consensus, the two certificate gates, and every published lightcurve_science and broker_classes block of the release"
+  },
+  "ctas.front.lightcurve-science": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "ctas/lightcurve-science.js dossier panels for light-curve science and broker classes (front-end unit tests)"
   }
  }
 }

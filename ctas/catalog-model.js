@@ -90,7 +90,7 @@
   var FILTER_KEYS = [
     "q", "class", "msg", "status", "survey", "from", "to", "magMin", "magMax",
     "scoreMin", "scoreMax", "spectrum", "conflict", "richness", "preset", "window",
-    "coneRa", "coneDec", "coneRadius"
+    "coneRa", "coneDec", "coneRadius", "lcfit", "broker"
   ];
 
   function finite(value) {
@@ -115,6 +115,8 @@
       scoreMax: finite(input.scoreMax) ? Number(input.scoreMax) : null,
       spectrum: ["yes", "no"].indexOf(input.spectrum) !== -1 ? input.spectrum : "",
       conflict: ["yes", "no"].indexOf(input.conflict) !== -1 ? input.conflict : "",
+      lcfit: ["yes", "no"].indexOf(input.lcfit) !== -1 ? input.lcfit : "",
+      broker: ["agree", "disagree", "any"].indexOf(input.broker) !== -1 ? input.broker : "",
       richness: String(input.richness || ""),
       preset: String(input.preset || "all"),
       window: String(input.window || "all"),
@@ -177,6 +179,11 @@
     if (filters.conflict === "yes" && !conflicts) return false;
     if (filters.conflict === "no" && conflicts) return false;
     if (filters.richness && String((candidate.record_completeness || {}).label || "") !== filters.richness) return false;
+    // Track 3c part 1: a multiband light-curve fit; broker readings that agree or disagree.
+    if (filters.lcfit === "yes" && !candidate.lc_fit_model) return false;
+    if (filters.lcfit === "no" && candidate.lc_fit_model) return false;
+    if (filters.broker === "any" && !candidate.broker_consensus) return false;
+    if ((filters.broker === "agree" || filters.broker === "disagree") && candidate.broker_consensus !== filters.broker) return false;
     if (filters.coneRadius !== null) {
       var separation = greatCircleDistanceDeg(candidate.ra_deg, candidate.dec_deg, filters.coneRa, filters.coneDec);
       if (separation === null || separation > filters.coneRadius) return false;

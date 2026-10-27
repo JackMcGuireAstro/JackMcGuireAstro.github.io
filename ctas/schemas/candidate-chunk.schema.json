@@ -865,6 +865,96 @@
             }
           },
           "additionalProperties": false
+        },
+        "lightcurve_science": {
+          "description": "Track 3c part 1: light-curve science as analysis runs (multiband Bazin and Villar fits, fit-derived features, absolute magnitude, jump detector, periodogram, SALT3 for Ia, screens). Absent when the event has no fitted detection.",
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "ctas.lightcurve-science@1"
+            },
+            "inputs": {
+              "type": "object",
+              "required": [
+                "detections",
+                "inputChecksumSha256"
+              ],
+              "properties": {
+                "inputChecksumSha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            },
+            "runs": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/lightcurveRun"
+              }
+            }
+          },
+          "required": [
+            "schema",
+            "inputs",
+            "runs"
+          ],
+          "additionalProperties": false
+        },
+        "broker_classes": {
+          "description": "Track 3c part 1: ALeRCE, Fink and ANTARES outputs for the event's retained ZTF object side by side, with a consensus panel that compares labels and averages nothing. Absent when the event has no broker receipt.",
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "ctas.broker-classes@1"
+            },
+            "brokers": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/brokerEntry"
+              }
+            },
+            "consensus": {
+              "type": "object",
+              "required": [
+                "rule",
+                "readings",
+                "state"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "agree",
+                    "disagree",
+                    "single-reading",
+                    "no-broker-reading"
+                  ]
+                }
+              }
+            },
+            "claimBoundary": {
+              "type": "string",
+              "minLength": 1
+            },
+            "vocabulary": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "blockChecksumSha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "schema",
+            "brokers",
+            "consensus",
+            "claimBoundary",
+            "blockChecksumSha256"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -1638,6 +1728,177 @@
           }
         }
       },
+      "additionalProperties": false
+    },
+    "lightcurveRun": {
+      "description": "One light-curve science run (Track 3c part 1, scripts/ctas_lightcurve_science.py): method and version, exact inputs with their checksum, parameters, warnings and claim boundary; a complete run carries its result and result checksum, a not-computed run says why and carries no result.",
+      "type": "object",
+      "properties": {
+        "analysisType": {
+          "enum": [
+            "multiband-bazin",
+            "multiband-villar",
+            "lightcurve-features",
+            "absolute-magnitude",
+            "jump-detector",
+            "periodogram",
+            "salt3",
+            "screens"
+          ]
+        },
+        "methodName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "methodVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "complete",
+            "not-computed"
+          ]
+        },
+        "inputs": {
+          "type": "object",
+          "minProperties": 1
+        },
+        "inputChecksumSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "parameters": {
+          "type": "object"
+        },
+        "result": {
+          "type": "object"
+        },
+        "resultChecksumSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "notComputedReason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "software": {
+          "type": "object"
+        },
+        "claimBoundary": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "analysisType",
+        "methodName",
+        "methodVersion",
+        "status",
+        "inputs",
+        "inputChecksumSha256",
+        "parameters",
+        "warnings",
+        "claimBoundary"
+      ],
+      "oneOf": [
+        {
+          "properties": {
+            "status": {
+              "const": "complete"
+            }
+          },
+          "required": [
+            "result",
+            "resultChecksumSha256"
+          ]
+        },
+        {
+          "properties": {
+            "status": {
+              "const": "not-computed"
+            }
+          },
+          "required": [
+            "notComputedReason"
+          ],
+          "not": {
+            "required": [
+              "result"
+            ]
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "brokerEntry": {
+      "description": "One broker's answer for the event's retained ZTF object (Track 3c part 1, scripts/ctas_broker_classes.py): the current receipt and, from the latest receipt with data, the broker's own outputs and CTAS's stated reading.",
+      "type": "object",
+      "properties": {
+        "broker": {
+          "enum": [
+            "ALeRCE",
+            "Fink",
+            "ANTARES"
+          ]
+        },
+        "source": {
+          "enum": [
+            "alerce-classifiers",
+            "fink-science-scores",
+            "antares-ztf-loci"
+          ]
+        },
+        "currentOutcome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "currentReceipt": {
+          "type": "object",
+          "required": [
+            "attemptId"
+          ]
+        },
+        "dataReceipt": {
+          "type": "object",
+          "required": [
+            "attemptId"
+          ]
+        },
+        "output": {
+          "type": "object"
+        },
+        "reading": {
+          "type": "object",
+          "required": [
+            "rule",
+            "coarseClass"
+          ]
+        },
+        "attribution": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "broker",
+        "source",
+        "currentOutcome",
+        "currentReceipt",
+        "attribution"
+      ],
       "additionalProperties": false
     }
   }

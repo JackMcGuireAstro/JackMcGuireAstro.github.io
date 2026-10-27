@@ -75,6 +75,13 @@ try:
 except ModuleNotFoundError:
     from scripts import ctas_comparison as comparison  # type: ignore[no-redef]
 
+try:
+    import ctas_broker_classes as broker_classes
+    import ctas_lightcurve_science as lightcurve_science
+except ModuleNotFoundError:
+    from scripts import ctas_broker_classes as broker_classes  # type: ignore[no-redef]
+    from scripts import ctas_lightcurve_science as lightcurve_science  # type: ignore[no-redef]
+
 
 def interop():
     """The IVOA export module (scripts/ctas_interop.py), imported on first use.
@@ -391,6 +398,13 @@ BOUND_CODE_PATHS = (
     "scripts/export_ctas_snapshot.py", "scripts/ctas_astro_evidence.py", "scripts/ctas_interop.py",
     "scripts/ctas_analysis_screens.py", "scripts/test_ctas_screens.py", "ctas/screens.js", "scripts/test_ctas_screens.js",
     "scripts/ctas_comparison.py", "scripts/test_ctas_comparison.py", "ctas/comparison.js", "scripts/test_ctas_comparison.js",
+    "scripts/ctas_lightcurve_science.py", "scripts/ctas_broker_classes.py", "scripts/test_ctas_lightcurve_science.py",
+    "ctas/lightcurve-science.js", "scripts/test_ctas_lightcurve_science.js",
+    "scripts/ctas_reference_data.sh",
+    "tests/fixtures/ctas-brokers/alerce-ZTF26abljbah.json", "tests/fixtures/ctas-brokers/fink-ZTF26abljbah.json",
+    "tests/fixtures/ctas-brokers/antares-ZTF26abljbah.json", "tests/fixtures/ctas-brokers/alerce-404-ZTF99zzzzzzz.json",
+    "tests/fixtures/ctas-brokers/fink-empty-ZTF99zzzzzzz.json", "tests/fixtures/ctas-brokers/antares-empty-ZTF99zzzzzzz.json",
+    "tests/fixtures/ctas-brokers/dossier-blocks.json",
     "scripts/ctas_chunks.py", "scripts/test_ctas_chunks.py", "scripts/test_ctas_chunk_loader.js",
     "scripts/test_ctas_publisher_recovery.py",
     "scripts/check_ctas_links.py", "scripts/rebuild_ctas_release_history.py",
@@ -482,6 +496,8 @@ SOURCE_FAMILY_MAP = {
     **{key: "discovery-and-alert-brokers" for key in (
         "tns", "rubin-alerce", "rubin-ampel", "rubin-antares", "rubin-babamul",
         "rubin-fink", "rubin-fink-crossmatch", "rubin-rsp-alerts", "rubin-lasair", "rubin-pitt-google",
+        # Broker classifications for a retained ZTF object (collector, Track 3c part 1).
+        "alerce-classifiers", "fink-science-scores", "antares-ztf-loci",
     )},
     **{key: "optical-and-time-domain-surveys" for key in (
         "ztf", "atlas", "asas-sn", "gaia-alerts",
@@ -2528,6 +2544,9 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
     comparison_envelopes = rows_by_event(cur, ids, comparison.ENVELOPE_SQL)
     comparison_classifications = rows_by_event(cur, ids, comparison.CLASSIFICATION_SQL)
     comparison_hosts = rows_by_event(cur, ids, comparison.HOST_SQL)
+    # Track 3c part 1: the broker-classification receipts (ALeRCE, Fink, ANTARES) with the
+    # kept response bytes; scripts/ctas_broker_classes.py re-reads them.
+    broker_rows = rows_by_event(cur, ids, broker_classes.broker_rows_sql())
 
     latest_source_attempts = {
         str(row["source_id"]): {
@@ -3031,6 +3050,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
     counts["comparison_inputs"] = {
         "envelopes": comparison_envelopes, "classifications": comparison_classifications, "hosts": comparison_hosts,
     }
+    counts["broker_rows"] = broker_rows
     return out, counts
 
 
@@ -3240,6 +3260,9 @@ CATALOG_CANDIDATE_COLUMNS = (
     "record_fraction", "primary_source_key", "primary_source_url",
     "primary_source_designation", "identity_state", "conflict_count",
     "source_declared", "source_applicable", "source_executed", "source_data_bearing",
+    # Track 3c part 1 (appended; absent values are null): the chosen multiband fit, the
+    # half-maximum rise time and peak absolute magnitude, and the broker consensus.
+    "lc_fit_model", "lc_rise_days", "lc_peak_abs_mag", "broker_consensus", "broker_classes_seen",
 )
 
 
@@ -3308,8 +3331,28 @@ def compact_candidate_row(
         "source_applicable": accounting.get("applicableSources"),
         "source_executed": accounting.get("executedQueryReceipts"),
         "source_data_bearing": accounting.get("dataBearingSources"),
+        **lightcurve_catalog_values(candidate),
     }
     return [values.get(column) for column in CATALOG_CANDIDATE_COLUMNS]
+
+
+def lightcurve_catalog_values(candidate: dict[str, Any]) -> dict[str, Any]:
+    """Track 3c part 1 catalog columns, read from the candidate's own blocks."""
+
+    runs = {run.get("analysisType"): run for run in (candidate.get(lightcurve_science.CANDIDATE_KEY) or {}).get("runs", [])
+            if run.get("status") == "complete"}
+    features = (runs.get("lightcurve-features") or {}).get("result") or {}
+    absolute = ((runs.get("absolute-magnitude") or {}).get("result") or {}).get("bands") or {}
+    peak_abs = next((absolute[band]["peakAbsoluteMagnitude"] for band in ("ztfr", "atlaso", "ztfg", "atlasc", "ztfi")
+                     if band in absolute and absolute[band].get("peakAbsoluteMagnitude") is not None), None)
+    consensus = (candidate.get(broker_classes.CANDIDATE_KEY) or {}).get("consensus") or {}
+    return {
+        "lc_fit_model": features.get("model"),
+        "lc_rise_days": features.get("halfMaxRiseDays"),
+        "lc_peak_abs_mag": peak_abs,
+        "broker_consensus": consensus.get("state"),
+        "broker_classes_seen": ", ".join(consensus.get("coarseClassesSeen") or []) or None,
+    }
 
 
 def inflate_catalog_candidates(index: dict[str, Any]) -> list[dict[str, Any]]:
@@ -5105,6 +5148,15 @@ def main() -> int:
     public_events = {
         str(row["event_id"]): {"name": row.get("name"), "status": row.get("status")} for row in candidates
     }
+    # Track 3c part 1: broker classes first (the SALT3 selection rule reads them), then the
+    # light-curve science, fitted in worker processes because it is the slow part.
+    broker_blocks: dict[str, dict[str, Any]] = {}
+    for candidate in candidates:
+        block = broker_classes.build_broker_classes(candidate, counts.get("broker_rows", {}).get(str(candidate["event_id"]), []))
+        if block is not None:
+            broker_blocks[str(candidate["event_id"])] = block
+    lightcurve_blocks = lightcurve_science.build_all(candidates, broker_blocks)
+    clock.done("lightcurve-science")
     for candidate in candidates:
         event_id = str(candidate["event_id"])
         candidate_attempts = counts["all_attempts"].get(event_id, [])
@@ -5153,6 +5205,10 @@ def main() -> int:
         )
         if comparison_block is not None:
             candidate[comparison.CANDIDATE_KEY] = comparison_block
+        if event_id in broker_blocks:
+            candidate[broker_classes.CANDIDATE_KEY] = broker_blocks[event_id]
+        if lightcurve_blocks.get(event_id) is not None:
+            candidate[lightcurve_science.CANDIDATE_KEY] = lightcurve_blocks[event_id]
         candidate["source_accounting"] = accounting
         complete_source_matrix = [
             {key: row.get(key) for key in SOURCE_MATRIX_ROW_KEYS}
@@ -5924,6 +5980,8 @@ def main() -> int:
     names = [str(candidate.get("name") or "") for candidate in candidates]
     screen_problems = analysis_screens.screen_problems(candidates)
     comparison_problems = comparison.comparison_problems(candidates)
+    lightcurve_problems = lightcurve_science.lightcurve_problems(candidates)
+    broker_problems = broker_classes.broker_problems(candidates)
     required_contract = all(
         candidate.get("name") and "ctas_score" in candidate and
         isinstance(candidate.get("follow_up_counts"), dict) and
@@ -6446,6 +6504,17 @@ def main() -> int:
             f"{sum(c[comparison.CANDIDATE_KEY]['summary']['propertiesInConflict'] for c in candidates if c.get(comparison.CANDIDATE_KEY))} "
             "properties in conflict, every row of which traces to an alert envelope, provider response or query receipt"
             + ("" if not comparison_problems else "; " + "; ".join(comparison_problems[:5]))
+        )),
+        gate("lightcurve-science-provenance", not lightcurve_problems, (
+            f"{sum(1 for c in candidates if c.get(lightcurve_science.CANDIDATE_KEY))} dossiers carry light-curve science; "
+            f"{sum(1 for c in candidates for r in (c.get(lightcurve_science.CANDIDATE_KEY) or {}).get('runs', []) if r.get('status') == 'complete')} "
+            "complete runs, each naming its method version, inputs and checksums; every not-computed run says why"
+            + ("" if not lightcurve_problems else "; " + "; ".join(lightcurve_problems[:5]))
+        )),
+        gate("broker-classes-receipt-trace", not broker_problems, (
+            f"{sum(1 for c in candidates if c.get(broker_classes.CANDIDATE_KEY))} dossiers carry broker classes; "
+            "every broker entry names its receipt and every published output its kept response checksum and parser contract"
+            + ("" if not broker_problems else "; " + "; ".join(broker_problems[:5]))
         )),
         gate(FRESHNESS_GATE_ID, freshness, f"generated {payload['generated_at']}; valid until {payload['valid_until']}"),
         gate("two-minute-publication-contract", cadence_contract, "120-second mirror contract and current export heartbeat"),

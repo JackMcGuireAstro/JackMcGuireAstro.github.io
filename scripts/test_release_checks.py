@@ -141,7 +141,7 @@ class ClassesFileTests(unittest.TestCase):
         constants = dict(re.findall(r'^([A-Z_]+_GATE_ID) = "([a-z0-9-]+)"', source, re.MULTILINE))
         block = source[source.index("    gates = [\n"):source.index('    clock.done("verification-gates")')]
         ids = re.findall(r'gate\(\s*"([a-z0-9-]+)"', block) + [constants[name] for name in re.findall(r"gate\(([A-Z_]+_GATE_ID)", block)]
-        self.assertEqual(len(set(ids)), 46)  # 44 + analysis-screen-provenance (Track 3a) + comparison-receipt-trace (Track 2b)
+        self.assertEqual(len(set(ids)), 48)  # 44 + analysis-screen-provenance (3a) + comparison-receipt-trace (2b) + lightcurve-science-provenance + broker-classes-receipt-trace (3c part 1)
         for gate in ids:
             self.assertIn(f"ctas.gate.{gate}", CLASSES["checks"], gate)
         certificate = ROOT / "ctas/data/certification.json"

@@ -79,6 +79,20 @@ jobs:
       # astropy_healpix come with the collector's requirements.
       - name: Install the exporter's interoperability dependencies
         run: python3 -m pip install --quiet --disable-pip-version-check "pyarrow>=21,<27" "pandas>=2.2,<4" "check-jsonschema>=0.33,<1"
+      # Track 3c part 1: the light-curve science (scripts/ctas_lightcurve_science.py) fits SALT3
+      # with sncosmo (iminuit minimizer; extinction for the Fitzpatrick law). Pinned exactly, so a
+      # library release cannot change published fits overnight; raise them in their own commit.
+      - name: Install the light-curve science dependencies
+        run: python3 -m pip install --quiet --disable-pip-version-check "sncosmo==2.13.1" "iminuit==2.33.0" "extinction==0.4.9"
+      # The SFD dust map and sncosmo's ZTF bandpasses and SALT3 model, at pinned commits and
+      # checked byte for byte (scripts/ctas_reference_data.sh); cached between runs.
+      - name: Light-curve reference data (cache)
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ctas-reference
+          key: ctas-reference-sfd-7a5fe7f-sncosmo-a399a39-v1
+      - name: Light-curve reference data
+        run: bash site/scripts/ctas_reference_data.sh "$RUNNER_TEMP/ctas-reference" "$GITHUB_ENV" || echo "::warning::light-curve reference data unavailable; absolute magnitudes and SALT3 fits will say not computed"
       - name: Collector settings and git identity
         env:
           BACKEND_ENV: ${{ secrets.CTAS_BACKEND_ENV }}
