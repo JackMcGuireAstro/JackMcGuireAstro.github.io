@@ -721,6 +721,49 @@ class BrowserTests(unittest.TestCase):
                 overflow = self.page.evaluate("() => document.documentElement.scrollWidth - document.documentElement.clientWidth")
                 self.assertLessEqual(overflow, 1)
 
+    def test_dossier_compares_sources_with_filters_and_exports(self):
+        """Track 2b: the comparison panel lists every source row with its rule and compatibility,
+        the brief links to it, filters only hide rows, a ticked row exports as ECSV with exactly
+        that row, axe stays clean and a phone does not scroll sideways."""
+        candidate = _published_dossier(lambda row: True, lambda c: bool(c.get("comparison")), limit=120)
+        if candidate is None:
+            self.skipTest("this release has no dossier with a source comparison")
+        block = candidate["comparison"]
+        total = sum(len(item["rows"]) for item in block["properties"])
+        self._open_dossier(candidate["event_id"])
+        panel = self.page.locator('#candidate-workspace [data-dossier-view="comparison"]')
+        self.assertEqual(panel.count(), 1)
+        self.page.evaluate("() => { const b = document.querySelector('[data-dossier-view=\"brief\"]'); if (b) b.open = true; }")
+        link = self.page.locator("[data-comparison-open]")
+        self.assertEqual(link.count(), 1)
+        link.click()
+        self.assertTrue(panel.evaluate("el => el.open"))
+        self.assertEqual(panel.locator("[data-comparison-row]").count(), total)
+        self.assertIn("selection, not a measurement" if any(item["selections"] for item in block["properties"]) else "nothing averaged", panel.inner_text())
+        source = block["properties"][0]["rows"][0]["sourceId"]
+        panel.locator('[data-comparison-filter="source"]').select_option(source)
+        visible = panel.locator("[data-comparison-row]:visible").count()
+        expected = sum(1 for item in block["properties"] for row in item["rows"] if row["sourceId"] == source)
+        self.assertEqual(visible, expected)
+        panel.locator('[data-comparison-filter="source"]').select_option("")
+        self.assertEqual(panel.locator("[data-comparison-row]:visible").count(), total)
+        panel.locator("[data-comparison-pick]").first.check()
+        with self.page.expect_download() as info:
+            panel.locator('[data-comparison-export="ecsv"]').click()
+        text_ = Path(info.value.path()).read_text()
+        self.assertTrue(text_.startswith("# %ECSV 1.0"))
+        self.assertEqual(len([line for line in text_.splitlines() if not line.startswith("#")]), 2, "a header and the ticked row")
+        self.assertEqual(self._axe_violations(), [])
+        errors = [entry for entry in self.console if entry[0] in {"error", "pageerror"}
+                  and not any(host in entry[1] for host in THIRD_PARTY_HOSTS) and not is_third_party_load_failure(entry[1])]
+        self.assertEqual(errors, [])
+        for width, height in ((320, 568), (390, 844)):
+            with self.subTest(viewport=f"{width}x{height}"):
+                self.page.set_viewport_size({"width": width, "height": height})
+                self.page.wait_for_timeout(300)
+                overflow = self.page.evaluate("() => document.documentElement.scrollWidth - document.documentElement.clientWidth")
+                self.assertLessEqual(overflow, 1)
+
     def _axe_violations(self, page=None):
         page = page or self.page
         axe = next(

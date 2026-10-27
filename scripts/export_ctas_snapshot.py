@@ -70,6 +70,11 @@ try:
 except ModuleNotFoundError:
     from scripts import ctas_analysis_screens as analysis_screens  # type: ignore[no-redef]
 
+try:
+    import ctas_comparison as comparison
+except ModuleNotFoundError:
+    from scripts import ctas_comparison as comparison  # type: ignore[no-redef]
+
 
 def interop():
     """The IVOA export module (scripts/ctas_interop.py), imported on first use.
@@ -385,6 +390,7 @@ BOUND_CODE_PATHS = (
     *API_DESCRIPTION_PATHS,
     "scripts/export_ctas_snapshot.py", "scripts/ctas_astro_evidence.py", "scripts/ctas_interop.py",
     "scripts/ctas_analysis_screens.py", "scripts/test_ctas_screens.py", "ctas/screens.js", "scripts/test_ctas_screens.js",
+    "scripts/ctas_comparison.py", "scripts/test_ctas_comparison.py", "ctas/comparison.js", "scripts/test_ctas_comparison.js",
     "scripts/ctas_chunks.py", "scripts/test_ctas_chunks.py", "scripts/test_ctas_chunk_loader.js",
     "scripts/test_ctas_publisher_recovery.py",
     "scripts/check_ctas_links.py", "scripts/rebuild_ctas_release_history.py",
@@ -2201,6 +2207,25 @@ def positional_neighbours(candidates: list[dict[str, Any]], radius_arcsec: float
     return found
 
 
+def comparison_envelope_receipts(db_path: Path, envelope_ids: list[str]) -> dict[str, dict[str, Any]]:
+    """Alert-envelope receipts (ID, checksum, topic, receipt time) for Track 2b photometry rows."""
+    if not envelope_ids:
+        return {}
+    receipts: dict[str, dict[str, Any]] = {}
+    con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=15)
+    try:
+        con.row_factory = sqlite3.Row
+        for index in range(0, len(envelope_ids), 400):
+            part = envelope_ids[index:index + 400]
+            for row in con.execute(comparison.ENVELOPE_CHECKSUM_SQL.format(ids=",".join("?" * len(part))), part):
+                receipt = comparison._receipt_envelope(row["id"], row["checksum"], row["topic"], row["received_at"])
+                if receipt:
+                    receipts[str(row["id"])] = receipt
+    finally:
+        con.close()
+    return receipts
+
+
 def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     uri = f"file:{db_path}?mode=ro"
     con = sqlite3.connect(uri, uri=True, timeout=15)
@@ -2498,6 +2523,11 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         ORDER BY ar.event_id, COALESCE(ar.completed_at, ar.created_at), ar.id
         """,
     )
+    # Track 2b: every retained source assertion of position, classification, redshift and
+    # host, side by side under the comparison key; scripts/ctas_comparison.py.
+    comparison_envelopes = rows_by_event(cur, ids, comparison.ENVELOPE_SQL)
+    comparison_classifications = rows_by_event(cur, ids, comparison.CLASSIFICATION_SQL)
+    comparison_hosts = rows_by_event(cur, ids, comparison.HOST_SQL)
 
     latest_source_attempts = {
         str(row["source_id"]): {
@@ -2998,6 +3028,9 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
     counts["all_attempts"] = all_attempts
     counts["analysis_runs"] = analysis_runs
     counts["analysis_screen_runs"] = analysis_screen_runs
+    counts["comparison_inputs"] = {
+        "envelopes": comparison_envelopes, "classifications": comparison_classifications, "hosts": comparison_hosts,
+    }
     return out, counts
 
 
@@ -5108,6 +5141,18 @@ def main() -> int:
         )
         if screens is not None:
             candidate[analysis_screens.CANDIDATE_KEY] = screens
+        comparison_inputs = counts.get("comparison_inputs") or {}
+        photometry_envelopes = comparison.envelope_ids_for_photometry(candidate)
+        comparison_block = comparison.build_comparison(
+            candidate,
+            envelopes=(comparison_inputs.get("envelopes") or {}).get(event_id, []),
+            classifications=(comparison_inputs.get("classifications") or {}).get(event_id, []),
+            hosts=(comparison_inputs.get("hosts") or {}).get(event_id, []),
+            measurements=projection["measurements"] if photometry_envelopes else [],
+            envelope_receipts=comparison_envelope_receipts(db, photometry_envelopes),
+        )
+        if comparison_block is not None:
+            candidate[comparison.CANDIDATE_KEY] = comparison_block
         candidate["source_accounting"] = accounting
         complete_source_matrix = [
             {key: row.get(key) for key in SOURCE_MATRIX_ROW_KEYS}
@@ -5878,6 +5923,7 @@ def main() -> int:
 
     names = [str(candidate.get("name") or "") for candidate in candidates]
     screen_problems = analysis_screens.screen_problems(candidates)
+    comparison_problems = comparison.comparison_problems(candidates)
     required_contract = all(
         candidate.get("name") and "ctas_score" in candidate and
         isinstance(candidate.get("follow_up_counts"), dict) and
@@ -6394,6 +6440,12 @@ def main() -> int:
             f"{sum(len(c[analysis_screens.CANDIDATE_KEY]['runs']) for c in candidates if c.get(analysis_screens.CANDIDATE_KEY))} "
             "collector screens, each naming its method version, inputs, input and result checksums and claim boundary"
             + ("" if not screen_problems else "; " + "; ".join(screen_problems[:5]))
+        )),
+        gate("comparison-receipt-trace", not comparison_problems, (
+            f"{sum(1 for c in candidates if c.get(comparison.CANDIDATE_KEY))} dossiers compare sources; "
+            f"{sum(c[comparison.CANDIDATE_KEY]['summary']['propertiesInConflict'] for c in candidates if c.get(comparison.CANDIDATE_KEY))} "
+            "properties in conflict, every row of which traces to an alert envelope, provider response or query receipt"
+            + ("" if not comparison_problems else "; " + "; ".join(comparison_problems[:5]))
         )),
         gate(FRESHNESS_GATE_ID, freshness, f"generated {payload['generated_at']}; valid until {payload['valid_until']}"),
         gate("two-minute-publication-contract", cadence_contract, "120-second mirror contract and current export heartbeat"),

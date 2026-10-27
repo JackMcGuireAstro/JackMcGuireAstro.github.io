@@ -1887,3 +1887,20 @@ table.ctas-table { min-width: 900px; }
 .ctas-screen__provenance { margin: 0.25rem 0; overflow-wrap: anywhere; }
 .ctas-screen__retracted { border-left: 3px solid currentColor; padding-left: 0.5rem; }
 .ctas-screen tr.is-retracted td { text-decoration: line-through; }
+
+/* Track 2b: source comparison panel (ctas/comparison.js) */
+.ctas-comparison__filters { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; margin: .5rem 0 1rem; }
+.ctas-comparison__filters label { display: inline-flex; gap: .35rem; align-items: center; }
+.ctas-comparison__property { margin: 1rem 0 1.25rem; }
+.ctas-comparison__property[hidden], .ctas-comparison__table tr[hidden] { display: none; }
+.ctas-comparison__head { display: flex; flex-wrap: wrap; gap: .5rem; align-items: baseline; }
+.ctas-comparison__head h5 { margin: 0; }
+.ctas-comparison__conflict { border-color: var(--accent, #c96); font-weight: 600; }
+.ctas-comparison__selection { margin: .4rem 0; }
+.ctas-comparison__rule small, .ctas-comparison__table small { color: var(--ink-3); }
+.ctas-comparison__table { min-width: 1080px; }
+.ctas-comparison__table td { vertical-align: top; overflow-wrap: break-word; }
+.ctas-comparison__table td small { overflow-wrap: anywhere; }
+.ctas-comparison__export { margin-top: .75rem; }
+.ctas-comparison-link { margin-top: .5rem; }
+.ctas-bibcode { white-space: nowrap; }

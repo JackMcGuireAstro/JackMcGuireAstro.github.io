@@ -461,6 +461,7 @@
     }
     var known = listRows(brief.confidently_known, function (row) { return "<li><strong>" + esc(/classification/i.test(row.label)&&!window.CTASPresentation.classInfo(candidate).physical?"Alert / provider label":row.label) + ":</strong> " + esc(row.value) + "</li>"; }, "No summary fact is promoted beyond the retained source record.");
     var uncertain = listRows(brief.uncertain_or_conflicting, function (row) { return "<li><strong>" + esc(/classification/i.test(row.label)&&!window.CTASPresentation.classInfo(candidate).physical?"Reported label probability":humanKey(row.label)) + ":</strong> " + esc(humanKey(row.state)) + "</li>"; }, "No explicit conflict state is retained.");
+    if (window.CTASComparison) uncertain += window.CTASComparison.briefLink(candidate);
     var missing = listRows(brief.missing_information, function (row) { return "<li>" + esc(row.label) + " <small>(" + esc(humanKey(row.state)) + ")</small></li>"; }, "No applicable component is marked missing or not assessed.");
     var changed = brief.most_recent_change ? "<p><strong>" + esc(humanKey(brief.most_recent_change.evidence_type)) + ":</strong> " + esc(brief.most_recent_change.title || "Retained evidence update") + "</p><p>" + esc([brief.most_recent_change.provider, brief.most_recent_change.public_available_at ? absolute(brief.most_recent_change.public_available_at) : "availability clock unavailable"].filter(Boolean).join(" · ")) + "</p>" : "<p>No provider change is retained.</p>";
     var visibility = "<p><strong>INSUFFICIENT_DATA:</strong> valid coordinates are not retained.</p>";
@@ -1363,7 +1364,7 @@
         ? "<p>TNS hourly intake does not itself expose every current object-page flag. Open the exact TNS record above for the provider’s current object page and status.</p>" : "") + "</section>" +
       (window.CTASWorkbench && window.CTASWorkbench.skyContextPanel ? window.CTASWorkbench.skyContextPanel(candidate) : "") +
       renderIdentity(candidate) + renderScoreFactors(candidate) + renderCompleteness(candidate) + renderSourceCoverage(candidate) +
-      renderEvidenceLedger(candidate) +
+      (window.CTASComparison ? window.CTASComparison.panel(candidate) : "") + renderEvidenceLedger(candidate) +
       renderPhotometry(candidate) + renderSpectra(candidate) +
       (window.CTASLive && window.CTASLive.panel ? window.CTASLive.panel(candidate) : "") + renderMessenger(candidate) +
       renderClassifications(candidate) + renderEnvironment(candidate) + renderTimeline(candidate) + renderAnalysis(candidate) +

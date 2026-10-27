@@ -813,6 +813,58 @@
             "runs"
           ],
           "additionalProperties": false
+        },
+        "comparison": {
+          "description": "Track 2b: every retained source assertion of position, classification, redshift, host and compatible photometry, side by side with stated comparison rules and headline selections. Absent when no property has two or more rows.",
+          "type": "object",
+          "required": [
+            "schema",
+            "policyVersion",
+            "sigmaThreshold",
+            "rules",
+            "claimBoundary",
+            "summary",
+            "properties"
+          ],
+          "properties": {
+            "schema": {
+              "const": "ctas.comparison@1"
+            },
+            "policyVersion": {
+              "const": "ctas-comparison-policy.v1"
+            },
+            "sigmaThreshold": {
+              "type": "number"
+            },
+            "rules": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "claimBoundary": {
+              "type": "string"
+            },
+            "summary": {
+              "type": "object",
+              "required": [
+                "properties",
+                "rows",
+                "propertiesInConflict",
+                "conflictCodes",
+                "selections",
+                "selectionsDifferingFromDisplay"
+              ]
+            },
+            "properties": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/comparisonProperty"
+              }
+            }
+          },
+          "additionalProperties": false
         }
       },
       "required": [
@@ -1060,6 +1112,533 @@
         "claimBoundary"
       ],
       "additionalProperties": true
+    },
+    "comparisonRow": {
+      "type": "object",
+      "required": [
+        "id",
+        "sourceId",
+        "sourceRecordId",
+        "value",
+        "normalized",
+        "unit",
+        "errPlus",
+        "errMinus",
+        "limitType",
+        "definitionCode",
+        "epoch",
+        "method",
+        "instrument",
+        "reference",
+        "state",
+        "receipt",
+        "compat"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^cmp:[0-9a-f]{24}$"
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceRecordId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assertionId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "value": {
+          "type": "string"
+        },
+        "normalized": {
+          "type": [
+            "number",
+            "string",
+            "array",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "errPlus": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "errMinus": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "limitType": {
+          "enum": [
+            "NONE",
+            "UPPER_LIMIT",
+            "LOWER_LIMIT"
+          ]
+        },
+        "probability": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "definitionCode": {
+          "type": "string"
+        },
+        "epoch": {
+          "type": "object",
+          "required": [
+            "time",
+            "kind",
+            "frame"
+          ],
+          "properties": {
+            "time": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "kind": {
+              "type": "string"
+            },
+            "frame": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "method": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "instrument": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reference": {
+          "type": "object",
+          "required": [
+            "label",
+            "url",
+            "bibcode",
+            "bibcodes"
+          ],
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "bibcode": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "bibcodes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "state": {
+          "enum": [
+            "active",
+            "superseded",
+            "retracted"
+          ]
+        },
+        "seenInEnvelopes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "receipt": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "checksumSha256"
+              ],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "alert-envelope",
+                    "provider-response",
+                    "query-receipt"
+                  ]
+                },
+                "envelopeId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "receiptId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "checksumSha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "topic": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "receivedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "compat": {
+          "type": "object",
+          "required": [
+            "against",
+            "relation",
+            "verdict",
+            "sigma",
+            "reason"
+          ],
+          "properties": {
+            "against": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "relation": {
+              "enum": [
+                null,
+                "statistically-inconsistent",
+                "method-incompatible",
+                "definition-incompatible",
+                "epoch-dependent",
+                "identity-ambiguity",
+                "status-conflict",
+                "revision-or-retraction",
+                "not-yet-assessed"
+              ]
+            },
+            "verdict": {
+              "enum": [
+                "reference",
+                "consistent",
+                "inconsistent",
+                "not-comparable"
+              ]
+            },
+            "sigma": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "reason": {
+              "type": "string"
+            },
+            "consistent": {
+              "type": "integer"
+            },
+            "inconsistent": {
+              "type": "integer"
+            },
+            "not-comparable": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "host": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "crossIdentifications": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "offsetArcsec": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "associationProbability": {
+          "type": "null"
+        },
+        "astronoteId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "band": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "groupId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mjd": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "comparisonProperty": {
+      "type": "object",
+      "required": [
+        "code",
+        "label",
+        "unit",
+        "rule",
+        "rows",
+        "rowsOmitted",
+        "set",
+        "selections"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "position",
+            "classification",
+            "redshift",
+            "host",
+            "photometry"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rule": {
+          "type": "string"
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/comparisonRow"
+          }
+        },
+        "rowsOmitted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "group": {
+          "type": "object",
+          "properties": {
+            "band": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "epoch": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "screenSigma": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "set": {
+          "type": "object",
+          "required": [
+            "id",
+            "relationLabel",
+            "conflict",
+            "rowCount",
+            "sourceIds",
+            "definitionCodes",
+            "sigmaThreshold",
+            "maxPairwiseSigma",
+            "pairCounts",
+            "notablePairs",
+            "explanation",
+            "comparisonPolicyVersion"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "relationLabel": {
+              "enum": [
+                null,
+                "statistically-inconsistent",
+                "method-incompatible",
+                "definition-incompatible",
+                "epoch-dependent",
+                "identity-ambiguity",
+                "status-conflict",
+                "revision-or-retraction",
+                "not-yet-assessed"
+              ]
+            },
+            "conflict": {
+              "type": "boolean"
+            },
+            "rowCount": {
+              "type": "integer",
+              "minimum": 2
+            },
+            "sourceIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "definitionCodes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "sigmaThreshold": {
+              "type": "number"
+            },
+            "maxPairwiseSigma": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "pairCounts": {
+              "type": "object",
+              "required": [
+                "total",
+                "byRelation",
+                "byVerdict"
+              ]
+            },
+            "notablePairs": {
+              "type": "array",
+              "maxItems": 10
+            },
+            "explanation": {
+              "type": "string"
+            },
+            "comparisonPolicyVersion": {
+              "const": "ctas-comparison-policy.v1"
+            }
+          },
+          "additionalProperties": false
+        },
+        "selections": {
+          "type": "array",
+          "maxItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "ruleId",
+              "ruleVersion",
+              "rule",
+              "selector",
+              "reviewState",
+              "propertyCode",
+              "definitionCode",
+              "basis",
+              "label",
+              "value",
+              "displayValue",
+              "unit",
+              "chosenRow",
+              "chosenSourceRecordIds",
+              "rejectedRowCount",
+              "matchesDisplayedValue",
+              "reason"
+            ],
+            "properties": {
+              "label": {
+                "const": "selection, not a measurement"
+              },
+              "ruleId": {
+                "const": "ctas-headline"
+              },
+              "ruleVersion": {
+                "const": "v1"
+              },
+              "matchesDisplayedValue": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "chosenRow": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     }
   }
 }
