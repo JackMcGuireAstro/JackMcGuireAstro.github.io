@@ -179,6 +179,12 @@ EVENT_COLUMN_SPECS: tuple[ColumnSpec, ...] = (
     _c("lc_peak_abs_mag", "float", "phys.magAbs", u.mag, "Peak absolute magnitude (Planck 2018, SFD x0.86 extinction, bandwidth k-term), when computed."),
     _c("broker_consensus", "str", "meta.code.class", None, "Agreement of the broker readings and the TNS label (agree, disagree, single-reading, no-broker-reading)."),
     _c("broker_classes_seen", "str", "src.class", None, "Coarse classes given by the broker readings and the TNS label."),
+    _c("host_verdict", "str", "meta.code", None, "Host-association verdict (probable, ambiguous, host-missed-most-probable) from the Prost-style posterior (Track 3c), when computed."),
+    _c("host_probable", "str", "meta.id", None, "Name of the probable host galaxy, when the verdict is probable."),
+    _c("host_posterior", "float", "stat.probability", None, "Posterior probability of the probable host, when the verdict is probable."),
+    _c("host_redshift_candidate", "float", "src.redshift", None, "Retained catalogue redshift of the probable host (NED/SIMBAD), when present; not the transient redshift."),
+    _c("prior_activity", "str", "meta.code", None, "Retained detections well before discovery (yes/no), when pre-discovery photometry is retained."),
+    _c("anomaly_percentile", "float", "stat.value", None, "Percentile of the release isolation-forest anomaly score among events with light-curve features (100 = most unusual)."),
 )
 
 ALIAS_COLUMN_SPECS: tuple[ColumnSpec, ...] = (

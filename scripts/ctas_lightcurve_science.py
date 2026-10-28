@@ -76,6 +76,7 @@ PERIOD_FAP_THRESHOLD = 1e-3
 FAST_RISE_DAYS = 3.0
 FAST_DECLINE_MAG_PER_DAY = 0.3
 NUCLEAR_OFFSET_ARCSEC = 0.5
+SCREENS_VERSION = "1.1.0"  # Track 3c part 2: the nuclear screen also reads the probable host
 SFD_RECALIBRATION = 0.86
 R_V = 3.1
 VERSION = "1.0.0"
@@ -203,11 +204,12 @@ def input_summary(rows: list[dict[str, Any]], excluded: dict[str, int]) -> dict[
 def _run(kind: str, method: str, *, inputs: dict[str, Any], parameters: dict[str, Any],
          result: dict[str, Any] | None = None, reason: str | None = None,
          warnings: list[str] | None = None, claim: str = CLAIM_BOUNDARY,
-         software: dict[str, str] | None = None, references: list[str] | None = None) -> dict[str, Any]:
+         software: dict[str, str] | None = None, references: list[str] | None = None,
+         version: str = VERSION) -> dict[str, Any]:
     run: dict[str, Any] = {
         "analysisType": kind,
         "methodName": method,
-        "methodVersion": VERSION,
+        "methodVersion": version,
         "status": "complete" if result is not None else "not-computed",
         "inputs": inputs,
         "inputChecksumSha256": _sha256(inputs),
@@ -780,8 +782,11 @@ def screens_run(candidate: dict[str, Any], features: dict[str, Any] | None, summ
     parameters = {"fastRiseHalfMaxDays": FAST_RISE_DAYS, "fastDeclineMagPerDay": FAST_DECLINE_MAG_PER_DAY,
                   "nuclearOffsetArcsec": NUCLEAR_OFFSET_ARCSEC,
                   "rules": {"fast-transient": "shared-shape half-maximum rise < 3 d or 15-day decline > 0.3 mag/day",
-                            "nuclear-transient": "a retained host offset < 0.5 arcsec"}}
+                            "nuclear-transient": "a retained NED host offset, or the offset of the probable host of host_association (posterior rule stated there), < 0.5 arcsec"}}
     offsets = []
+    probable = candidate.get("probable_host_offset_arcsec")
+    if probable is not None and math.isfinite(float(probable)) and float(probable) >= 0:
+        offsets.append(float(probable))
     for row in (candidate.get("follow_up") or {}).get("host_context") or []:
         try:
             value = float(row.get("transient_offset_arcsec"))
@@ -790,7 +795,8 @@ def screens_run(candidate: dict[str, Any], features: dict[str, Any] | None, summ
         if math.isfinite(value) and value >= 0:
             offsets.append(value)
     inputs = {"photometryChecksumSha256": summary["inputChecksumSha256"],
-              "hostOffsetsArcsec": sorted(_round(value, 5) for value in offsets)}
+              "hostOffsetsArcsec": sorted(_round(value, 5) for value in offsets),
+              "probableHostOffsetArcsec": _round(float(probable), 5) if probable is not None else None}
     result: dict[str, Any] = {}
     if features:
         drivers = []
@@ -806,9 +812,9 @@ def screens_run(candidate: dict[str, Any], features: dict[str, Any] | None, summ
         nearest = min(offsets)
         result["nuclearTransient"] = {"flag": bool(nearest < NUCLEAR_OFFSET_ARCSEC), "nearestHostOffsetArcsec": _round(nearest, 5)}
     else:
-        result["nuclearTransient"] = {"flag": None, "notComputedReason": "no retained host offset (host association is Track 3c part 2)"}
+        result["nuclearTransient"] = {"flag": None, "notComputedReason": "no retained host offset and no probable host"}
     return _run("screens", "timescale-and-offset-screens", inputs=inputs, parameters=parameters, result=result,
-                claim="Screens that point at candidates for a closer look (kilonova-like timescales, nuclear position); they are not classifications.")
+                version=SCREENS_VERSION, claim="Screens that point at candidates for a closer look (kilonova-like timescales, nuclear position); they are not classifications.")
 
 
 def build_lightcurve_science(candidate: dict[str, Any], broker_block: dict[str, Any] | None = None) -> dict[str, Any] | None:
@@ -945,7 +951,7 @@ def _build_one(args: tuple[dict[str, Any], dict[str, Any] | None]) -> dict[str, 
 
 
 def build_all(candidates: list[dict[str, Any]], broker_blocks: dict[str, dict[str, Any]] | None = None,
-              workers: int | None = None) -> dict[str, dict[str, Any] | None]:
+              workers: int | None = None, probable_offsets: dict[str, float] | None = None) -> dict[str, dict[str, Any] | None]:
     """Blocks for every candidate with photometry, fitted in worker processes. The result
     does not depend on the number of workers (each event's fit is independent and seeded)."""
 
@@ -957,6 +963,8 @@ def build_all(candidates: list[dict[str, Any]], broker_blocks: dict[str, dict[st
             continue
         slim = {key: candidate.get(key) for key in ("event_id", "name", "classification", "redshift", "host_redshift",
                                                      "ra_deg", "dec_deg")}
+        if (probable_offsets or {}).get(str(candidate["event_id"])) is not None:
+            slim["probable_host_offset_arcsec"] = probable_offsets[str(candidate["event_id"])]
         slim["follow_up"] = {"observations": observations,
                              "host_context": (candidate.get("follow_up") or {}).get("host_context") or []}
         jobs.append((str(candidate["event_id"]), slim, broker_blocks.get(str(candidate["event_id"]))))

@@ -70,6 +70,8 @@ DECLARED_FILES = {
     "changelog.json": ("changelog_path", "changelog"),
     "source-accounting.json": ("source_accounting_path", "source-accounting"),
     "feeds/index.json": ("feeds_index_path", "feeds-index"),
+    # Track 3c part 2: the population anomaly and nearest neighbours.
+    "population-anomaly.json": ("population_anomaly_path", "population-anomaly"),
 }
 # Present only after the link checker ran (the publisher) or in a deployed tree; the
 # cloud-run marker only when the GitHub Actions publisher built the release; the check

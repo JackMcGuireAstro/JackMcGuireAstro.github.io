@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/ctas/schemas/population-anomaly.schema.json",
+  "title": "CTAS population anomaly and nearest neighbours",
+  "description": "Track 3c part 2 (scripts/ctas_population_anomaly.py): the release's light-curve feature table, a seeded coniferest isolation-forest score per event with its driving features, and each event's nearest neighbours in the robustly scaled feature space.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "ctas.population-anomaly@1"
+    },
+    "methodName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "methodVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "release": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "parameters": {
+      "type": "object"
+    },
+    "claimBoundary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "enum": [
+        "complete",
+        "not-computed"
+      ]
+    },
+    "notComputedReason": {
+      "type": "string"
+    },
+    "featureTable": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string"
+          },
+          "features": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "eventId",
+          "features"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "featureTableChecksumSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "population": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "excludedByReason": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "percentile": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "drivers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "feature": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "number"
+                },
+                "robustZ": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "contribution": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "feature",
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "neighbours": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "eventId": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "classification": {},
+                "distance": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "eventId",
+                "distance"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "eventId",
+          "score",
+          "rank",
+          "percentile",
+          "drivers",
+          "neighbours"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "scaling": {
+      "type": "object"
+    },
+    "software": {
+      "type": "object"
+    },
+    "resultChecksumSha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "methodName",
+    "methodVersion",
+    "parameters",
+    "claimBoundary",
+    "status",
+    "featureTable",
+    "featureTableChecksumSha256",
+    "population",
+    "events"
+  ],
+  "additionalProperties": false
+}

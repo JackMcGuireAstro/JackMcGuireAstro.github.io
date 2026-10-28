@@ -34,7 +34,7 @@
     chunks: {}, activeSummary: null, activeDetail: null, cachedSnapshot: false,
     sortKey: "ctas_score", sortDir: -1, preset: "all", q: "", cls: "", msg: "",
     stat: "", survey: "", from: "", to: "", magMin: null, magMax: null,
-    scoreMin: null, scoreMax: null, spectrum: "", conflict: "", lcfit: "", broker: "", richness: "",
+    scoreMin: null, scoreMax: null, spectrum: "", conflict: "", lcfit: "", broker: "", host: "", prior: "", unusual: "", richness: "",
     coneRa: null, coneDec: null, coneRadius: null,
     shown: PAGE, skyDays: 7, skyPoints: [], skySelected: null,
     hoveredEventId: null, focusedEventId: null, linkedHighlightId: null,
@@ -88,6 +88,9 @@
     conflict: document.getElementById("ctas-conflict-filter"),
     lcfit: document.getElementById("ctas-lcfit-filter"),
     broker: document.getElementById("ctas-broker-filter"),
+    host: document.getElementById("ctas-host-filter"),
+    prior: document.getElementById("ctas-prior-filter"),
+    unusual: document.getElementById("ctas-unusual-filter"),
     richness: document.getElementById("ctas-richness-filter"),
     coneRa: document.getElementById("ctas-cone-ra"),
     coneDec: document.getElementById("ctas-cone-dec"),
@@ -1368,6 +1371,7 @@
       (window.CTASWorkbench && window.CTASWorkbench.skyContextPanel ? window.CTASWorkbench.skyContextPanel(candidate) : "") +
       renderIdentity(candidate) + renderScoreFactors(candidate) + renderCompleteness(candidate) + renderSourceCoverage(candidate) +
       (window.CTASLightcurveScience ? window.CTASLightcurveScience.brokerPanel(candidate) : "") +
+      (window.CTASHostAssociation ? window.CTASHostAssociation.panel(candidate) : "") +
       (window.CTASComparison ? window.CTASComparison.panel(candidate) : "") + renderEvidenceLedger(candidate) +
       renderPhotometry(candidate) + renderSpectra(candidate) +
       (window.CTASLive && window.CTASLive.panel ? window.CTASLive.panel(candidate) : "") + renderMessenger(candidate) +
@@ -1613,7 +1617,7 @@
       scoreMin: state.scoreMin, scoreMax: state.scoreMax, spectrum: state.spectrum,
       conflict: state.conflict, richness: state.richness, preset: state.preset,
       window: String(state.skyDays), coneRa: state.coneRa, coneDec: state.coneDec,
-      coneRadius: state.coneRadius, lcfit: state.lcfit, broker: state.broker
+      coneRadius: state.coneRadius, lcfit: state.lcfit, broker: state.broker, host: state.host, prior: state.prior, unusual: state.unusual
     };
   }
   function filteredRows() {
@@ -1625,7 +1629,7 @@
     if (!window.CTASCatalogModel) return;
     var url = new URL(window.location.href), params = window.CTASCatalogModel.serializeFilters(currentFilters());
     ["q", "class", "msg", "status", "survey", "from", "to", "magMin", "magMax", "scoreMin", "scoreMax",
-      "spectrum", "conflict", "richness", "preset", "window", "coneRa", "coneDec", "coneRadius", "lcfit", "broker"].forEach(function (key) { url.searchParams.delete(key); });
+      "spectrum", "conflict", "richness", "preset", "window", "coneRa", "coneDec", "coneRadius", "lcfit", "broker", "host", "prior", "unusual"].forEach(function (key) { url.searchParams.delete(key); });
     params.forEach(function (value, key) { url.searchParams.set(key, value); });
     history.replaceState(null, "", url.pathname + (url.searchParams.toString() ? "?" + url.searchParams.toString() : "") + url.hash);
   }
@@ -1679,7 +1683,7 @@
     var rows = visible(), shown = rows.slice(0, state.shown);
     var defaultLeaderboard = state.preset === "all" && !state.q && !state.cls && !state.msg && !state.stat && !state.survey &&
       !state.from && !state.to && state.scoreMin === null && state.scoreMax === null && state.magMax === null &&
-      !state.spectrum && !state.conflict && !state.lcfit && !state.broker && !state.richness && state.coneRa === null && state.coneDec === null && state.coneRadius === null;
+      !state.spectrum && !state.conflict && !state.lcfit && !state.broker && !state.host && !state.prior && !state.unusual && !state.richness && state.coneRa === null && state.coneDec === null && state.coneRadius === null;
     if (defaultLeaderboard && state.shown <= PAGE && state.sortKey === "ctas_score" && state.sortDir === -1 && (state.snapshot || {}).leaderboard) {
       var byId = {}; state.candidates.forEach(function (candidate) { byId[candidate.event_id] = candidate; });
       shown = state.snapshot.leaderboard.event_ids.map(function (id) { return byId[id]; }).filter(Boolean);
@@ -1727,7 +1731,7 @@
   }
 
   function skyNeedsCompleteCatalog() {
-    return state.skyDays > 90 || Boolean(state.q || state.msg || state.stat || state.survey || state.spectrum || state.conflict || state.lcfit || state.broker || state.richness ||
+    return state.skyDays > 90 || Boolean(state.q || state.msg || state.stat || state.survey || state.spectrum || state.conflict || state.lcfit || state.broker || state.host || state.prior || state.unusual || state.richness ||
       ["all", "priority", "today", "newest", "bright", "unclassified"].indexOf(state.preset) === -1);
   }
   function skyRows() {
@@ -2294,12 +2298,12 @@
     state.stat = filters.status[0] || ""; state.survey = filters.survey[0] || "";
     state.from = filters.from; state.to = filters.to; state.magMin = filters.magMin; state.magMax = filters.magMax;
     state.scoreMin = filters.scoreMin; state.scoreMax = filters.scoreMax; state.spectrum = filters.spectrum;
-    state.conflict = filters.conflict; state.lcfit = filters.lcfit || ""; state.broker = filters.broker || ""; state.richness = filters.richness; state.preset = filters.preset || "all";
+    state.conflict = filters.conflict; state.lcfit = filters.lcfit || ""; state.broker = filters.broker || ""; state.host = filters.host || ""; state.prior = filters.prior || ""; state.unusual = filters.unusual || ""; state.richness = filters.richness; state.preset = filters.preset || "all";
     state.coneRa = filters.coneRa; state.coneDec = filters.coneDec; state.coneRadius = filters.coneRadius;
     if (filters.window && isFinite(Number(filters.window))) state.skyDays = Number(filters.window);
     var values = [[el.q, state.q], [el.cls, state.cls], [el.msg, state.msg], [el.stat, state.stat], [el.survey, state.survey],
       [el.from, state.from], [el.to, state.to], [el.scoreMin, state.scoreMin], [el.scoreMax, state.scoreMax], [el.magMax, state.magMax],
-      [el.spectrum, state.spectrum], [el.conflict, state.conflict], [el.lcfit, state.lcfit], [el.broker, state.broker], [el.richness, state.richness], [el.coneRa, state.coneRa],
+      [el.spectrum, state.spectrum], [el.conflict, state.conflict], [el.lcfit, state.lcfit], [el.broker, state.broker], [el.host, state.host], [el.prior, state.prior], [el.unusual, state.unusual], [el.richness, state.richness], [el.coneRa, state.coneRa],
       [el.coneDec, state.coneDec], [el.coneRadius, state.coneRadius]];
     values.forEach(function (pair) { if (pair[0]) pair[0].value = pair[1] === null || pair[1] === undefined ? "" : pair[1]; });
     Array.prototype.forEach.call(document.querySelectorAll("[data-preset]"), function (button) {
@@ -2310,10 +2314,10 @@
     });
   }
   function clearFilters() {
-    state.q = state.cls = state.msg = state.stat = state.survey = state.from = state.to = state.spectrum = state.conflict = state.lcfit = state.broker = state.richness = "";
+    state.q = state.cls = state.msg = state.stat = state.survey = state.from = state.to = state.spectrum = state.conflict = state.lcfit = state.broker = state.host = state.prior = state.unusual = state.richness = "";
     state.magMin = state.magMax = state.scoreMin = state.scoreMax = state.coneRa = state.coneDec = state.coneRadius = null;
     state.preset = "all"; state.sortKey = "ctas_score"; state.sortDir = -1; state.shown = PAGE;
-    [el.q, el.cls, el.msg, el.stat, el.survey, el.from, el.to, el.scoreMin, el.scoreMax, el.magMax, el.spectrum, el.conflict, el.lcfit, el.broker, el.richness, el.coneRa, el.coneDec, el.coneRadius].forEach(function (field) { if (field) field.value = ""; });
+    [el.q, el.cls, el.msg, el.stat, el.survey, el.from, el.to, el.scoreMin, el.scoreMax, el.magMax, el.spectrum, el.conflict, el.lcfit, el.broker, el.host, el.prior, el.unusual, el.richness, el.coneRa, el.coneDec, el.coneRadius].forEach(function (field) { if (field) field.value = ""; });
     Array.prototype.forEach.call(document.querySelectorAll("[data-preset]"), function (button) {
       var active = button.getAttribute("data-preset") === "all"; button.classList.toggle("is-active", active); button.setAttribute("aria-pressed", active ? "true" : "false");
     });
@@ -2386,6 +2390,9 @@
     if (el.richness) el.richness.addEventListener("change", function () { state.richness = el.richness.value; rerenderForFilters(); });
     if (el.lcfit) el.lcfit.addEventListener("change", function () { state.lcfit = el.lcfit.value; rerenderForFilters(); });
     if (el.broker) el.broker.addEventListener("change", function () { state.broker = el.broker.value; rerenderForFilters(); });
+    if (el.host) el.host.addEventListener("change", function () { state.host = el.host.value; rerenderForFilters(); });
+    if (el.prior) el.prior.addEventListener("change", function () { state.prior = el.prior.value; rerenderForFilters(); });
+    if (el.unusual) el.unusual.addEventListener("change", function () { state.unusual = el.unusual.value; rerenderForFilters(); });
     if (el.coneRa) el.coneRa.addEventListener("input", function () { state.coneRa = inputNumber(el.coneRa); rerenderForFilters(); });
     if (el.coneDec) el.coneDec.addEventListener("input", function () { state.coneDec = inputNumber(el.coneDec); rerenderForFilters(); });
     if (el.coneRadius) el.coneRadius.addEventListener("input", function () { state.coneRadius = inputNumber(el.coneRadius); rerenderForFilters(); });

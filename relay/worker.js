@@ -25,6 +25,8 @@ export const SITE_ORIGINS = [
 ];
 export const MAX_BYTES = 40 * 1024 * 1024;
 export const CACHE_SECONDS = 3600;
+// Alert stamps are small images; a larger or non-image answer is refused (Track 3c part 2).
+export const STAMP_MAX_BYTES = 1024 * 1024;
 
 // Each rule: exact host, a path pattern, and an optional check on the query string.
 export const ROUTES = [
@@ -131,6 +133,23 @@ export const ROUTES = [
       && (!q.has("radius") || Number(q.get("radius")) <= 60) && (!q.has("objectId") || /^\d{1,25}$/.test(q.get("objectId"))),
     auth: { secret: "LASAIR_TOKEN", scheme: "Token" },
     postForm: true,
+  },
+  { // ALeRCE alert stamps (science, template, difference) of one ZTF alert, as PNG (Track 3c part 2)
+    host: "avro.alerce.online",
+    path: /^\/get_stamp$/,
+    query: (q) => /^ZTF\d{2}[a-z]{7}$/.test(q.get("oid") || "") && /^\d{6,20}$/.test(q.get("candid") || "")
+      && ["science", "template", "difference"].includes(q.get("type") || "") && q.get("format") === "png"
+      && [...q.keys()].every((k) => ["oid", "candid", "type", "format"].includes(k)),
+    maxBytes: STAMP_MAX_BYTES,
+    contentTypes: ["image/png"],
+  },
+  { // Fink ZTF cutouts of an object's latest alert (science, template, difference), as PNG (Track 3c part 2)
+    host: "api.ztf.fink-portal.org",
+    path: /^\/api\/v1\/cutouts$/,
+    query: (q) => /^ZTF\d{2}[a-z]{7}$/.test(q.get("objectId") || "") && ["Science", "Template", "Difference"].includes(q.get("kind") || "")
+      && q.get("output-format") === "PNG" && [...q.keys()].every((k) => ["objectId", "kind", "output-format"].includes(k)),
+    maxBytes: STAMP_MAX_BYTES,
+    contentTypes: ["image/png"],
   },
 ];
 
@@ -305,14 +324,19 @@ export default {
     }
     // Redirects are followed: the request itself was allow-listed, and archives such as
     // MAST hand file downloads to their own storage hosts.
+    const limit = route.maxBytes || MAX_BYTES;
     const length = Number(response.headers.get("Content-Length") || 0);
-    if (length > MAX_BYTES) return reply(413, "The source file is larger than the relay's 40 MB limit.", origin);
+    if (length > limit) return reply(413, "The source file is larger than the relay's limit for this source.", origin);
+    if (route.contentTypes && response.ok) {
+      const type = String(response.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
+      if (!route.contentTypes.includes(type)) return reply(415, "The source did not answer with an image.", origin);
+    }
 
     let seen = 0;
     const limiter = new TransformStream({
       transform(chunk, controller) {
         seen += chunk.byteLength;
-        if (seen > MAX_BYTES) { controller.error(new Error("response exceeded 40 MB")); return; }
+        if (seen > limit) { controller.error(new Error("response exceeded the relay's limit")); return; }
         controller.enqueue(chunk);
       },
     });

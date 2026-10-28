@@ -78,9 +78,13 @@ except ModuleNotFoundError:
 try:
     import ctas_broker_classes as broker_classes
     import ctas_lightcurve_science as lightcurve_science
+    import ctas_host_association as host_association
+    import ctas_population_anomaly as population_anomaly
 except ModuleNotFoundError:
     from scripts import ctas_broker_classes as broker_classes  # type: ignore[no-redef]
     from scripts import ctas_lightcurve_science as lightcurve_science  # type: ignore[no-redef]
+    from scripts import ctas_host_association as host_association  # type: ignore[no-redef]
+    from scripts import ctas_population_anomaly as population_anomaly  # type: ignore[no-redef]
 
 
 def interop():
@@ -265,6 +269,8 @@ INTEROP_GATE_ID = "interoperability-exports-round-trip"
 # Track 1, part C (2026-10-19): the plain-words changelog, the per-source accounting
 # behind the status page, and the per-category/per-region feeds, all certificate-bound.
 CHANGELOG_PATH = "ctas/data/changelog.json"
+# Track 3c part 2: the release-level isolation-forest scores and nearest neighbours.
+POPULATION_ANOMALY_PATH = "ctas/data/population-anomaly.json"
 SOURCE_ACCOUNTING_PATH = "ctas/data/source-accounting.json"
 SOURCE_ACCOUNTING_SCHEMA = "ctas.public-source-accounting@1.0.0"
 FEEDS_INDEX_PATH = "ctas/data/feeds/index.json"
@@ -351,7 +357,7 @@ REQUIRED_PUBLIC_ARTIFACTS = (
     "ctas/data/source-universe.json", LINK_HEALTH_PATH,
     SOURCE_MATRIX_PATTERNS_PATH, "ctas/data/release-history.json",
     BULK_DOWNLOADS_PATH, DATALINK_MANIFEST_PATH, PROVENANCE_PATH,
-    CHANGELOG_PATH, SOURCE_ACCOUNTING_PATH, FEEDS_INDEX_PATH,
+    CHANGELOG_PATH, SOURCE_ACCOUNTING_PATH, FEEDS_INDEX_PATH, POPULATION_ANOMALY_PATH,
 )
 # The machine description of the static endpoints and the JSON Schemas it references
 # are code: they are bound by the certificate and validated against every published
@@ -384,6 +390,7 @@ API_DESCRIPTION_PATHS = (
     "ctas/schemas/source-accounting.schema.json",
     "ctas/schemas/feeds-index.schema.json",
     "ctas/schemas/check-history.schema.json",
+    "ctas/schemas/population-anomaly.schema.json",
 )
 # Code and fixed-input files the verification report binds beside the generated data.
 BOUND_CODE_PATHS = (
@@ -401,6 +408,8 @@ BOUND_CODE_PATHS = (
     "scripts/ctas_lightcurve_science.py", "scripts/ctas_broker_classes.py", "scripts/test_ctas_lightcurve_science.py",
     "ctas/lightcurve-science.js", "scripts/test_ctas_lightcurve_science.js",
     "scripts/ctas_reference_data.sh",
+    "scripts/ctas_host_association.py", "scripts/ctas_population_anomaly.py", "scripts/test_ctas_host_association.py",
+    "ctas/host-association.js", "scripts/test_ctas_host_association.js",
     "tests/fixtures/ctas-brokers/alerce-ZTF26abljbah.json", "tests/fixtures/ctas-brokers/fink-ZTF26abljbah.json",
     "tests/fixtures/ctas-brokers/antares-ZTF26abljbah.json", "tests/fixtures/ctas-brokers/alerce-404-ZTF99zzzzzzz.json",
     "tests/fixtures/ctas-brokers/fink-empty-ZTF99zzzzzzz.json", "tests/fixtures/ctas-brokers/antares-empty-ZTF99zzzzzzz.json",
@@ -3263,6 +3272,11 @@ CATALOG_CANDIDATE_COLUMNS = (
     # Track 3c part 1 (appended; absent values are null): the chosen multiband fit, the
     # half-maximum rise time and peak absolute magnitude, and the broker consensus.
     "lc_fit_model", "lc_rise_days", "lc_peak_abs_mag", "broker_consensus", "broker_classes_seen",
+    # Track 3c part 2 (appended; absent values are null): the host-association verdict and the
+    # probable host with its posterior and retained redshift, prior activity, and the
+    # release's isolation-forest percentile (from population-anomaly.json).
+    "host_verdict", "host_probable", "host_posterior", "host_redshift_candidate", "prior_activity",
+    "anomaly_percentile",
 )
 
 
@@ -3332,6 +3346,7 @@ def compact_candidate_row(
         "source_executed": accounting.get("executedQueryReceipts"),
         "source_data_bearing": accounting.get("dataBearingSources"),
         **lightcurve_catalog_values(candidate),
+        **host_catalog_values(candidate),
     }
     return [values.get(column) for column in CATALOG_CANDIDATE_COLUMNS]
 
@@ -3352,6 +3367,34 @@ def lightcurve_catalog_values(candidate: dict[str, Any]) -> dict[str, Any]:
         "lc_peak_abs_mag": peak_abs,
         "broker_consensus": consensus.get("state"),
         "broker_classes_seen": ", ".join(consensus.get("coarseClassesSeen") or []) or None,
+    }
+
+
+# Filled once per release by main() from population-anomaly.json, before the catalog rows.
+POPULATION_PERCENTILES: dict[str, float] = {}
+
+
+def host_catalog_values(candidate: dict[str, Any]) -> dict[str, Any]:
+    """Track 3c part 2 catalog columns, read from the candidate's own block and the release's
+    population document."""
+
+    runs = {run.get("analysisType"): run for run in (candidate.get(host_association.CANDIDATE_KEY) or {}).get("runs", [])
+            if run.get("status") == "complete"}
+    posterior = (runs.get("host-posterior") or {}).get("result") or {}
+    top = (posterior.get("candidates") or [None])[0] or {}
+    probable = posterior.get("verdict") == "probable"
+    redshift = None
+    if probable:
+        values = [r.get("value") for r in top.get("redshifts") or [] if r.get("value") is not None]
+        redshift = sorted(values)[len(values) // 2] if values else None
+    prior = (runs.get("prior-activity") or {}).get("result")
+    return {
+        "host_verdict": posterior.get("verdict"),
+        "host_probable": top.get("name") if probable else None,
+        "host_posterior": top.get("posterior") if probable else None,
+        "host_redshift_candidate": redshift,
+        "prior_activity": None if prior is None else ("yes" if prior.get("flag") else "no"),
+        "anomaly_percentile": POPULATION_PERCENTILES.get(str(candidate.get("event_id"))),
     }
 
 
@@ -5155,7 +5198,18 @@ def main() -> int:
         block = broker_classes.build_broker_classes(candidate, counts.get("broker_rows", {}).get(str(candidate["event_id"]), []))
         if block is not None:
             broker_blocks[str(candidate["event_id"])] = block
-    lightcurve_blocks = lightcurve_science.build_all(candidates, broker_blocks)
+    # Track 3c part 2: host association first, because the nuclear screen of the light-curve
+    # science reads the probable host's offset.
+    sfd_dir = lightcurve_science.sfd_directory()
+    host_blocks: dict[str, dict[str, Any]] = {}
+    for candidate in candidates:
+        block = host_association.build_host_association(candidate, sfd_dir, lightcurve_science.sfd_ebv if sfd_dir else None)
+        if block is not None:
+            host_blocks[str(candidate["event_id"])] = block
+    clock.done("host-association")
+    probable_offsets = {event_id: host_association.probable_host_offset(block) for event_id, block in host_blocks.items()}
+    lightcurve_blocks = lightcurve_science.build_all(candidates, broker_blocks,
+                                                     probable_offsets={k: v for k, v in probable_offsets.items() if v is not None})
     clock.done("lightcurve-science")
     for candidate in candidates:
         event_id = str(candidate["event_id"])
@@ -5209,6 +5263,8 @@ def main() -> int:
             candidate[broker_classes.CANDIDATE_KEY] = broker_blocks[event_id]
         if lightcurve_blocks.get(event_id) is not None:
             candidate[lightcurve_science.CANDIDATE_KEY] = lightcurve_blocks[event_id]
+        if event_id in host_blocks:
+            candidate[host_association.CANDIDATE_KEY] = host_blocks[event_id]
         candidate["source_accounting"] = accounting
         complete_source_matrix = [
             {key: row.get(key) for key in SOURCE_MATRIX_ROW_KEYS}
@@ -5267,6 +5323,11 @@ def main() -> int:
     payload["catalog_content_checksum_sha256"] = catalog_semantic_checksum(candidates)
     clock.done("project-evidence")
 
+    population_document = population_anomaly.build(candidates, payload.get("generated_at"))
+    POPULATION_PERCENTILES.clear()
+    POPULATION_PERCENTILES.update({str(row["eventId"]): row["percentile"] for row in population_document.get("events") or []})
+    population_anomaly_raw = (json.dumps(population_document, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    clock.done("population-anomaly")
     candidate_rows = [compact_candidate_row(candidate, score_clock) for candidate in candidates]
 
     bucket_rows, chunk_raw, part_raw = candidate_chunk_artifacts(candidates)
@@ -5934,6 +5995,7 @@ def main() -> int:
                 (CHANGELOG_PATH, changelog_raw),
                 (SOURCE_ACCOUNTING_PATH, source_accounting_raw),
                 (FEEDS_INDEX_PATH, feeds_index_raw),
+                (POPULATION_ANOMALY_PATH, population_anomaly_raw),
             )
         },
     )
@@ -5968,6 +6030,7 @@ def main() -> int:
         CHANGELOG_PATH: changelog_raw,
         SOURCE_ACCOUNTING_PATH: source_accounting_raw,
         FEEDS_INDEX_PATH: feeds_index_raw,
+        POPULATION_ANOMALY_PATH: population_anomaly_raw,
         **feed_files,
     }
 
@@ -5982,6 +6045,8 @@ def main() -> int:
     comparison_problems = comparison.comparison_problems(candidates)
     lightcurve_problems = lightcurve_science.lightcurve_problems(candidates)
     broker_problems = broker_classes.broker_problems(candidates)
+    host_problems = host_association.host_problems(candidates)
+    population_problems = population_anomaly.problems(json.loads(population_anomaly_raw), candidates)
     required_contract = all(
         candidate.get("name") and "ctas_score" in candidate and
         isinstance(candidate.get("follow_up_counts"), dict) and
@@ -6516,6 +6581,17 @@ def main() -> int:
             "every broker entry names its receipt and every published output its kept response checksum and parser contract"
             + ("" if not broker_problems else "; " + "; ".join(broker_problems[:5]))
         )),
+        gate("host-association-provenance", not host_problems, (
+            f"{sum(1 for c in candidates if c.get(host_association.CANDIDATE_KEY))} dossiers carry host association; "
+            f"{sum(1 for c in candidates for r in (c.get(host_association.CANDIDATE_KEY) or {}).get('runs', []) if r.get('analysisType') == 'host-posterior' and r.get('status') == 'complete')} "
+            "host posteriors, each normalised with the host-missed hypothesis and tracing every ranked galaxy to retained catalogue rows"
+            + ("" if not host_problems else "; " + "; ".join(host_problems[:5]))
+        )),
+        gate("population-anomaly-provenance", not population_problems, (
+            f"{POPULATION_ANOMALY_PATH}: {json.loads(population_anomaly_raw).get('status')}, "
+            f"{json.loads(population_anomaly_raw).get('population')} events in the feature table, which matches the dossiers' light-curve features and its checksum"
+            + ("" if not population_problems else "; " + "; ".join(population_problems[:5]))
+        )),
         gate(FRESHNESS_GATE_ID, freshness, f"generated {payload['generated_at']}; valid until {payload['valid_until']}"),
         gate("two-minute-publication-contract", cadence_contract, "120-second mirror contract and current export heartbeat"),
         gate("source-universe-schema", universe_structure, f"{len(source_universe_rows)} unique versioned source contracts; every dossier names the definition checksum {source_universe_version}"),
@@ -6574,6 +6650,7 @@ def main() -> int:
         "changelog": {"path": CHANGELOG_PATH, "sha256": hashlib.sha256(changelog_raw).hexdigest()},
         "source_accounting": {"path": SOURCE_ACCOUNTING_PATH, "sha256": hashlib.sha256(source_accounting_raw).hexdigest()},
         "feeds_index": {"path": FEEDS_INDEX_PATH, "sha256": hashlib.sha256(feeds_index_raw).hexdigest()},
+        "population_anomaly": {"path": POPULATION_ANOMALY_PATH, "sha256": hashlib.sha256(population_anomaly_raw).hexdigest()},
         "api_description": {"path": "ctas/openapi.yaml", "sha256": hashlib.sha256(working_code["ctas/openapi.yaml"]).hexdigest() if "ctas/openapi.yaml" in working_code else None},
     }
     # New top-level keys only (rule N1): the PROV-JSON document and the machine
@@ -6585,6 +6662,7 @@ def main() -> int:
     status["changelog_path"] = CHANGELOG_PATH
     status["source_accounting_path"] = SOURCE_ACCOUNTING_PATH
     status["feeds_index_path"] = FEEDS_INDEX_PATH
+    status["population_anomaly_path"] = POPULATION_ANOMALY_PATH
     status["status_page_path"] = "ctas/status.html"
     status_raw = (json.dumps(status, indent=2, sort_keys=True) + "\n").encode()
     certificate_raw = (json.dumps(certificate, indent=2, sort_keys=True) + "\n").encode()
@@ -6627,6 +6705,7 @@ def main() -> int:
     atomic_write(out / "provenance.json", provenance_raw)
     atomic_write(out / "changelog.json", changelog_raw)
     atomic_write(out / "source-accounting.json", source_accounting_raw)
+    atomic_write(out / "population-anomaly.json", population_anomaly_raw)
     for relative, raw in {**feed_files, FEEDS_INDEX_PATH: feeds_index_raw}.items():
         write_output_artifact(out, relative, raw)
     # A feed file the index no longer declares must not linger beside the current set.

@@ -1264,6 +1264,35 @@
     "deploy"
    ],
    "what": "ctas/lightcurve-science.js dossier panels for light-curve science and broker classes (front-end unit tests)"
+  },
+  "ctas.gate.host-association-provenance": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate host-association-provenance (Track 3c part 2: every host-association run names its method version, inputs and checksums; host posteriors sum to one with the host-missed hypothesis and every ranked galaxy traces to retained catalogue rows)"
+  },
+  "ctas.gate.population-anomaly-provenance": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "certificate gate population-anomaly-provenance (Track 3c part 2: population-anomaly.json names its method and version, its feature table matches its checksum and the dossiers' light-curve features, and every scored event and neighbour is public)"
+  },
+  "ctas.test_ctas_host_association": {
+   "class": "integrity",
+   "scopes": [
+    "ctas-publish",
+    "deploy"
+   ],
+   "what": "Track 3c part 2: host posterior, prior activity, extinction and point-source flags, the colour-magnitude point, the isolation forest and neighbours, the two certificate gates, and every published host_association block and the population file of the release"
+  },
+  "ctas.front.host-association": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "ctas/host-association.js dossier panel (front-end unit tests: host table, population reading, stamp addresses)"
   }
  }
 }

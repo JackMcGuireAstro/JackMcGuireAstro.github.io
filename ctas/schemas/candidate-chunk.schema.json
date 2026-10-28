@@ -955,6 +955,50 @@
             "blockChecksumSha256"
           ],
           "additionalProperties": false
+        },
+        "host_association": {
+          "description": "Track 3c part 2: a Prost-style host posterior over retained NED/SIMBAD/Gaia galaxies with a host-missed hypothesis, prior activity before discovery, Galactic extinction and a Gaia point-source flag, and a Gaia colour-magnitude point for a stellar counterpart. Absent when no run has anything to report.",
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "ctas.host-association@1"
+            },
+            "runs": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/hostAssociationRun"
+              }
+            },
+            "externalLinks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string",
+                    "pattern": "^https://"
+                  },
+                  "note": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "label",
+                  "url"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "schema",
+            "runs"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -1898,6 +1942,115 @@
         "currentOutcome",
         "currentReceipt",
         "attribution"
+      ],
+      "additionalProperties": false
+    },
+    "hostAssociationRun": {
+      "description": "One host-association run (Track 3c part 2, scripts/ctas_host_association.py): method and version, exact inputs with their checksum, parameters, warnings and claim boundary; a complete run carries its result and result checksum, a not-computed run says why and carries no result.",
+      "type": "object",
+      "properties": {
+        "analysisType": {
+          "enum": [
+            "host-posterior",
+            "prior-activity",
+            "extinction-and-point-source",
+            "stellar-counterpart"
+          ]
+        },
+        "methodName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "methodVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "complete",
+            "not-computed"
+          ]
+        },
+        "inputs": {
+          "type": "object",
+          "minProperties": 1
+        },
+        "inputChecksumSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "parameters": {
+          "type": "object"
+        },
+        "result": {
+          "type": "object"
+        },
+        "resultChecksumSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "notComputedReason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "software": {
+          "type": "object"
+        },
+        "claimBoundary": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "analysisType",
+        "methodName",
+        "methodVersion",
+        "status",
+        "inputs",
+        "inputChecksumSha256",
+        "parameters",
+        "warnings",
+        "claimBoundary"
+      ],
+      "oneOf": [
+        {
+          "properties": {
+            "status": {
+              "const": "complete"
+            }
+          },
+          "required": [
+            "result",
+            "resultChecksumSha256"
+          ]
+        },
+        {
+          "properties": {
+            "status": {
+              "const": "not-computed"
+            }
+          },
+          "required": [
+            "notComputedReason"
+          ],
+          "not": {
+            "required": [
+              "result"
+            ]
+          }
+        }
       ],
       "additionalProperties": false
     }

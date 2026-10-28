@@ -475,6 +475,18 @@ paths:
             application/json:
               schema:
                 $ref: schemas/source-accounting.schema.json
+  /ctas/data/population-anomaly.json:
+    get:
+      tags: [catalog]
+      summary: Isolation-forest anomaly scores and nearest neighbours of the events with light-curve features (Track 3c part 2)
+      operationId: getPopulationAnomaly
+      responses:
+        "200":
+          description: The release's feature table, a seeded coniferest score, rank, percentile and driving features per event, and its five nearest neighbours.
+          content:
+            application/json:
+              schema:
+                $ref: schemas/population-anomaly.schema.json
   /ctas/data/observatories.json:
     get:
       tags: [interoperability]
@@ -554,7 +566,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [common, status, live-summary, catalog-index, catalog-page, catalog-page-manifest, candidate-chunk, candidate-json-part, candidate-chunk-manifest, alias-index, source-universe, source-matrix-patterns, research-manifest, release-history, link-health, certification, bulk-downloads, datalink-manifest, provenance, delivery, observatories, cloud-run, changelog, source-accounting, feeds-index, check-history]
+            enum: [common, status, live-summary, catalog-index, catalog-page, catalog-page-manifest, candidate-chunk, candidate-json-part, candidate-chunk-manifest, alias-index, source-universe, source-matrix-patterns, research-manifest, release-history, link-health, certification, bulk-downloads, datalink-manifest, provenance, delivery, observatories, cloud-run, changelog, source-accounting, feeds-index, check-history, population-anomaly]
       responses:
         "200":
           description: JSON Schema document.

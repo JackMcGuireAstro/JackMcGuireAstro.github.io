@@ -38,8 +38,14 @@ const allowed = [
   "https://www.wiserep.org/search/spectra?name=2026abht&public=yes&format=tsv",
   "https://www.wiserep.org/system/files/uploaded/TNS/SN2026abht_2026-09-12_10-29-45_P60_SEDM_TNS.ascii",
   "https://www.wiserep.org/system/files/uploaded/ePESSTO%2B/SN2026abc_EFOSC2.fits",
+  "https://avro.alerce.online/get_stamp?oid=ZTF26abxwrmm&candid=3558142162315015006&type=science&format=png",
+  "https://api.ztf.fink-portal.org/api/v1/cutouts?objectId=ZTF26abljbah&kind=Difference&output-format=PNG",
 ];
 const refused = [
+  "https://avro.alerce.online/get_stamp?oid=ZTF26abxwrmm&candid=3558142162315015006&type=science&format=fits",
+  "https://avro.alerce.online/get_stamp?oid=../etc&candid=1&type=science&format=png",
+  "https://api.ztf.fink-portal.org/api/v1/cutouts?objectId=ZTF26abljbah&kind=Science&output-format=FITS",
+  "https://api.ztf.fink-portal.org/api/v1/objects?objectId=ZTF26abljbah",
   "http://www.wis-tns.org/system/files/uploaded/a.dat",                       // not https
   "https://www.wis-tns.org/api/get/object",                                    // TNS API, not a public file
   "https://www.wis-tns.org/system/files/uploaded/a.dat?x=1",                   // extra query
@@ -233,5 +239,21 @@ assert.equal(matchRoute(tap("select pl_name from spectra where pl_name='x'")) &&
   assert.deepEqual(await keep({}, fetcher, now), [{ workflow: "*", action: "skipped: no GH_DISPATCH_TOKEN secret" }]);
   const broken = await keep({ GH_DISPATCH_TOKEN: "x" }, async () => new Response("no", { status: 401 }), now);
   assert.ok(broken.every((r) => r.action.includes("HTTP 401")));
+}
+// alert stamps (Track 3c part 2): images only, at most 1 MB
+{
+  const saved = globalThis.fetch;
+  const stamp = "https://avro.alerce.online/get_stamp?oid=ZTF26abxwrmm&candid=3558142162315015006&type=science&format=png";
+  globalThis.fetch = async () => new Response(new Uint8Array([137, 80, 78, 71]), { status: 200, headers: { "Content-Type": "image/png" } });
+  let response = await call(stamp);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Content-Type"), "image/png");
+  globalThis.fetch = async () => new Response("<html>error</html>", { status: 200, headers: { "Content-Type": "text/html" } });
+  response = await call(stamp);
+  assert.equal(response.status, 415, "a stamp route refuses a non-image answer");
+  globalThis.fetch = async () => new Response("x", { status: 200, headers: { "Content-Type": "image/png", "Content-Length": String(2 * 1024 * 1024) } });
+  response = await call(stamp);
+  assert.equal(response.status, 413, "a stamp larger than 1 MB is refused");
+  globalThis.fetch = saved;
 }
 console.log("live relay: all checks passed");

@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://jackmcguireastro.github.io/assets/images/ctas/ctas-card.png">
 <meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="assets/css/site.css?v=20260903-notebook">
-<link rel="stylesheet" href="ctas/ctas.css?v=20261028">
+<link rel="stylesheet" href="ctas/ctas.css?v=20261029">
 <link rel="alternate" type="application/atom+xml" title="CTAS — strong new follow-up targets" href="ctas/data/feed.xml">
 <link rel="alternate" type="application/atom+xml" title="CTAS — all public records (Atom)" href="ctas/data/feeds/all-events.xml">
 <link rel="alternate" type="application/feed+json" title="CTAS — all public records (JSON Feed)" href="ctas/data/feeds/all-events.json">
@@ -362,6 +362,9 @@
               <div class="field"><label for="ctas-conflict-filter">Explicit conflict</label><select id="ctas-conflict-filter"><option value="">Any</option><option value="yes">Conflict retained</option><option value="no">No conflict retained</option></select></div>
               <div class="field"><label for="ctas-lcfit-filter">Light-curve fit</label><select id="ctas-lcfit-filter"><option value="">Any</option><option value="yes">Multiband fit published</option><option value="no">No multiband fit</option></select></div>
               <div class="field"><label for="ctas-broker-filter">Broker readings</label><select id="ctas-broker-filter"><option value="">Any</option><option value="any">Any broker answer</option><option value="agree">Readings agree</option><option value="disagree">Readings disagree</option></select></div>
+              <div class="field"><label for="ctas-host-filter">Host association</label><select id="ctas-host-filter"><option value="">Any</option><option value="any">Host posterior computed</option><option value="probable">Probable host</option><option value="ambiguous">Ambiguous</option><option value="host-missed-most-probable">Host likely not catalogued</option></select></div>
+              <div class="field"><label for="ctas-prior-filter">Prior activity</label><select id="ctas-prior-filter"><option value="">Any</option><option value="yes">Detected before discovery</option><option value="no">History covered, none found</option></select></div>
+              <div class="field"><label for="ctas-unusual-filter">Unusual light curve</label><select id="ctas-unusual-filter"><option value="">Any</option><option value="95">Top 5% of this release</option><option value="99">Top 1% of this release</option></select></div>
               <div class="field"><label for="ctas-richness-filter">Public record</label><select id="ctas-richness-filter"><option value="">Any richness</option><option>Rich public record</option><option>Moderate public record</option><option>Sparse public record</option><option>Event record only</option></select></div>
               <div class="field"><label for="ctas-cone-ra">Cone center RA (deg)</label><input id="ctas-cone-ra" type="number" min="0" max="360" step="0.0001" inputmode="decimal"></div>
               <div class="field"><label for="ctas-cone-dec">Cone center Dec (deg)</label><input id="ctas-cone-dec" type="number" min="-90" max="90" step="0.0001" inputmode="decimal"></div>
@@ -468,12 +471,13 @@
 <script src="assets/js/site.js"></script>
 
 <script src="ctas/presentation.js?v=20260920"></script>
-<script src="ctas/catalog-model.js?v=20261028"></script>
+<script src="ctas/catalog-model.js?v=20261029"></script>
 <script src="ctas/astro-evidence.js?v=20260829-evidence1"></script>
 <script src="ctas/observability.js?v=20260830-workbench1"></script>
 <script src="ctas/screens.js?v=20261026"></script>
 <script src="ctas/comparison.js?v=20261027"></script>
 <script src="ctas/lightcurve-science.js?v=20261027"></script>
+<script src="ctas/host-association.js?v=20261029"></script>
 <script src="ctas/followup.js?v=20261026"></script>
 <script src="ctas/workbench.js?v=20261019"></script>
 <script src="ctas/sky.js?v=20261019"></script>
@@ -483,7 +487,7 @@
 <script src="ctas/spectrum-ascii.js?v=20261011"></script>
 <script src="ctas/spectrum-fits.js?v=20261011"></script>
 <script src="ctas/live-sources.js?v=20261017"></script>
-<script src="ctas/app.js?v=20261028"></script>
+<script src="ctas/app.js?v=20261029"></script>
 
 </body>
 </html>

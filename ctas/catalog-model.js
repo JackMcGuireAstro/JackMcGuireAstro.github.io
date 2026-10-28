@@ -90,7 +90,7 @@
   var FILTER_KEYS = [
     "q", "class", "msg", "status", "survey", "from", "to", "magMin", "magMax",
     "scoreMin", "scoreMax", "spectrum", "conflict", "richness", "preset", "window",
-    "coneRa", "coneDec", "coneRadius", "lcfit", "broker"
+    "coneRa", "coneDec", "coneRadius", "lcfit", "broker", "host", "prior", "unusual"
   ];
 
   function finite(value) {
@@ -117,6 +117,9 @@
       conflict: ["yes", "no"].indexOf(input.conflict) !== -1 ? input.conflict : "",
       lcfit: ["yes", "no"].indexOf(input.lcfit) !== -1 ? input.lcfit : "",
       broker: ["agree", "disagree", "any"].indexOf(input.broker) !== -1 ? input.broker : "",
+      host: ["probable", "ambiguous", "host-missed-most-probable", "any"].indexOf(input.host) !== -1 ? input.host : "",
+      prior: ["yes", "no"].indexOf(input.prior) !== -1 ? input.prior : "",
+      unusual: ["95", "99"].indexOf(String(input.unusual || "")) !== -1 ? String(input.unusual) : "",
       richness: String(input.richness || ""),
       preset: String(input.preset || "all"),
       window: String(input.window || "all"),
@@ -184,6 +187,11 @@
     if (filters.lcfit === "no" && candidate.lc_fit_model) return false;
     if (filters.broker === "any" && !candidate.broker_consensus) return false;
     if ((filters.broker === "agree" || filters.broker === "disagree") && candidate.broker_consensus !== filters.broker) return false;
+    // Track 3c part 2: host-association verdict, prior activity, release anomaly percentile.
+    if (filters.host === "any" && !candidate.host_verdict) return false;
+    if (filters.host && filters.host !== "any" && candidate.host_verdict !== filters.host) return false;
+    if (filters.prior && candidate.prior_activity !== filters.prior) return false;
+    if (filters.unusual && !(finite(candidate.anomaly_percentile) && Number(candidate.anomaly_percentile) >= Number(filters.unusual))) return false;
     if (filters.coneRadius !== null) {
       var separation = greatCircleDistanceDeg(candidate.ra_deg, candidate.dec_deg, filters.coneRa, filters.coneDec);
       if (separation === null || separation > filters.coneRadius) return false;

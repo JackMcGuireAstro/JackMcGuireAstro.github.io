@@ -83,7 +83,7 @@ jobs:
       # with sncosmo (iminuit minimizer; extinction for the Fitzpatrick law). Pinned exactly, so a
       # library release cannot change published fits overnight; raise them in their own commit.
       - name: Install the light-curve science dependencies
-        run: python3 -m pip install --quiet --disable-pip-version-check "sncosmo==2.13.1" "iminuit==2.33.0" "extinction==0.4.9"
+        run: python3 -m pip install --quiet --disable-pip-version-check "sncosmo==2.13.1" "iminuit==2.33.0" "extinction==0.4.9" "coniferest==0.2.2"
       # The SFD dust map and sncosmo's ZTF bandpasses and SALT3 model, at pinned commits and
       # checked byte for byte (scripts/ctas_reference_data.sh); cached between runs.
       - name: Light-curve reference data (cache)
