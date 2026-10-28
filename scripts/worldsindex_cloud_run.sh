@@ -112,6 +112,14 @@ say "checking the reviewed identity rules"
   || { tail -20 "$LOGS/reidentify.log"; say "FAIL  the identity re-linking did not match the reviewed list; nothing published or saved"; exit 1; }
 say "identity rules: $(grep -m1 -o '"outcome": "[A-Z_]*"' "$LOGS/reidentify.log" || echo 'outcome not recorded')"
 
+# Gaia DR4 (announced for 2026-12-02), fail-closed (builder packages/exonexus/gaia/dr4.ts): before
+# the release date this asks nothing; afterwards it checks one real row of each draft-contract
+# table and retrieves and cross-matches only the tables that pass. Never fatal: an older builder
+# without the command, an unreachable archive or a schema mismatch only leaves DR4 off.
+say "checking Gaia DR4"
+(cd "$SOURCE" && timeout 600 npm run --silent gaia-dr4 -- cycle) >"$LOGS/gaia-dr4.log" 2>&1 || true
+say "gaia dr4: $(grep -m1 -o '"states":{[^}]*}\|"note":"[^"]*"' "$LOGS/gaia-dr4.log" | head -1 || echo 'not run')"
+
 ARGS=(--full)
 [ "$DRY_RUN" = "1" ] && ARGS+=(--dry-run)
 say "running the WorldsIndex publisher (full cycle)"
