@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "CTAS delivery",
-  "description": "ctas/delivery.json: how the deployed site serves dossier chunks (identity on main and previews, gzip on GitHub Pages).",
+  "description": "ctas/delivery.json: how the deployed site serves dossier chunks (identity on main and previews, gzip on GitHub Pages) and, since the delivery batch of 2026-10-29, where it serves them from: candidate_chunk_origin names the raw.githubusercontent.com address of the exact ctas-data commit the deployed release came from, the branch tip as a second try, and whether the site keeps its own copy.",
   "type": "object",
   "properties": {
     "schema": {
@@ -15,6 +15,51 @@
     },
     "note": {
       "type": "string"
+    },
+    "candidate_chunk_origin": {
+      "type": "object",
+      "description": "Where the dossier roots and parts (ctas/data/candidate-chunks/<name>.json, never manifest.json) are read from.",
+      "properties": {
+        "base_url": {
+          "type": "string",
+          "pattern": "^https://raw\\.githubusercontent\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/(?:[0-9a-f]{40}|[A-Za-z0-9_.-]+)/$",
+          "description": "Prefix of every chunk URL: raw.githubusercontent.com, this repository, the data commit, trailing slash."
+        },
+        "encoding": {
+          "enum": [
+            "identity",
+            "gzip"
+          ],
+          "description": "How the origin serves the files; raw.githubusercontent.com serves the plain JSON (identity)."
+        },
+        "branch": {
+          "type": "string",
+          "description": "The data branch the commit was the tip of when deployed (ctas-data)."
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$",
+          "description": "The ctas-data commit the deployed release came from; base_url is pinned to it."
+        },
+        "fallback_base_url": {
+          "type": "string",
+          "pattern": "^https://raw\\.githubusercontent\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/(?:[0-9a-f]{40}|[A-Za-z0-9_.-]+)/$",
+          "description": "A second address tried only when base_url fails: the branch tip, which the manifest's checksums reject if it moved on."
+        },
+        "pages_copy": {
+          "type": "boolean",
+          "description": "false when the deployed site does not carry the chunk files itself."
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "base_url",
+        "encoding",
+        "commit"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [

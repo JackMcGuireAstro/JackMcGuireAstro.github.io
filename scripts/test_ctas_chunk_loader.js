@@ -175,6 +175,53 @@ async function main() {
     const committed = JSON.parse(require("node:fs").readFileSync(require("node:path").join(__dirname, "../ctas/delivery.json"), "utf8"));
     assert.equal(loader.chunkEncoding(committed), "identity");
   });
+  // Delivery batch (2026-10-29): the dossier files are read from the release's data commit.
+  const RAW = "https://raw.githubusercontent.com/JackMcGuireAstro/JackMcGuireAstro.github.io/";
+  const pinned = "a".repeat(40);
+  const originDescriptor = {schema: "ctas.delivery@1.0.0", candidate_chunk_encoding: "gzip", candidate_chunk_origin: {
+    base_url: RAW + pinned + "/", encoding: "identity", branch: "ctas-data", commit: pinned, fallback_base_url: RAW + "ctas-data/", pages_copy: false}};
+  await test("the delivery descriptor names the origins in order: pinned commit, branch tip, then the site when it keeps a copy", () => {
+    const delivery = loader.chunkDelivery(originDescriptor);
+    assert.deepEqual(delivery.origins.map(o => [o.base, o.encoding]), [[RAW + pinned + "/", "identity"], [RAW + "ctas-data/", "identity"]]);
+    assert.equal(delivery.pinned, pinned);
+    const withCopy = loader.chunkDelivery({...originDescriptor, candidate_chunk_origin: {...originDescriptor.candidate_chunk_origin, pages_copy: true}});
+    assert.deepEqual(withCopy.origins.map(o => [o.base, o.encoding]), [[RAW + pinned + "/", "identity"], [RAW + "ctas-data/", "identity"], ["", "gzip"]]);
+    // no origin, an unknown schema, or an address outside raw.githubusercontent.com: this site only
+    for (const descriptor of [null, {schema: "ctas.delivery@1.0.0", candidate_chunk_encoding: "identity"},
+                              {...originDescriptor, schema: "other"},
+                              {...originDescriptor, candidate_chunk_origin: {base_url: "https://evil.example/x/y/z/", encoding: "identity", commit: pinned}},
+                              {...originDescriptor, candidate_chunk_origin: {base_url: "http://raw.githubusercontent.com/o/r/" + pinned + "/", encoding: "identity", commit: pinned}}]) {
+      const only = loader.chunkDelivery(descriptor);
+      assert.deepEqual(only.origins.map(o => o.base), [""], JSON.stringify(descriptor));
+    }
+  });
+  await test("fetchChunk reads the pinned commit first and tries the branch tip only when it fails", async () => {
+    const bytes = raw(sample()), path = "ctas/data/candidate-chunks/efe.json", calls = [];
+    const files = new Map([[RAW + pinned + "/" + path, bytes]]);
+    const base = served(files);
+    const fetchImpl = async (url, options) => { calls.push(url); return base(url, options); };
+    const delivery = loader.chunkDelivery(originDescriptor);
+    assert.equal(hash(Buffer.from(await loader.fetchChunk(path, delivery, fetchImpl, "ctas/data/"))), hash(bytes));
+    assert.deepEqual(calls, [RAW + pinned + "/" + path]);
+    // the pinned commit is gone: one more request, to the branch tip
+    const tipOnly = served(new Map([[RAW + "ctas-data/" + path, bytes]])), tipCalls = [];
+    const fetched = await loader.fetchChunk(path, delivery, async (url, options) => { tipCalls.push(url); return tipOnly(url, options); }, "ctas/data/");
+    assert.equal(hash(Buffer.from(fetched)), hash(bytes));
+    assert.deepEqual(tipCalls, [RAW + pinned + "/" + path, RAW + "ctas-data/" + path]);
+    // neither answers: one error naming both, and no request to the site (pages_copy is false)
+    const noneCalls = [];
+    await assert.rejects(loader.fetchChunk(path, delivery, async (url) => { noneCalls.push(url); return {ok: false, status: 404, arrayBuffer: async () => new ArrayBuffer(0)}; }, "ctas/data/"),
+      /release's data commit: .*HTTP 404; nor from the data branch: .*HTTP 404/);
+    assert.equal(noneCalls.length, 2);
+  });
+  await test("without an origin, fetchChunk is the site's own file in the descriptor's encoding, one request", async () => {
+    const bytes = raw(sample()), calls = [];
+    const base = served(new Map([["data/candidate-chunks/efe.json.gz", zlib.gzipSync(bytes)]]));
+    const delivery = loader.chunkDelivery({schema: "ctas.delivery@1.0.0", candidate_chunk_encoding: "gzip"});
+    const fetched = await loader.fetchChunk("ctas/data/candidate-chunks/efe.json", delivery, async (url, options) => { calls.push(url); return base(url, options); }, "data/");
+    assert.equal(hash(Buffer.from(fetched)), hash(bytes));
+    assert.deepEqual(calls, ["data/candidate-chunks/efe.json.gz"]);
+  });
   console.log(passed + " CTAS chunk-loader tests passed.");
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

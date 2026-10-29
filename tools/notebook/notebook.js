@@ -22,9 +22,30 @@ def fetch_bytes(path):
 const CTAS_LOAD = (id, chunk) => `EVENT_ID = ${JSON.stringify(id)}
 DETAIL_CHUNK = ${chunk ? JSON.stringify(chunk) : "None"}   # the record's dossier bucket (None: look it up)
 
+def chunk_bytes(path):
+    """A dossier root or part. ctas/delivery.json says where the site serves them from:
+    since 2026-10-29 the release's data commit on raw.githubusercontent.com (plain JSON);
+    older deployments keep gzip copies on the site."""
+    delivery = json.loads(fetch_bytes("ctas/delivery.json"))
+    origin = (delivery.get("candidate_chunk_origin") or {}).get("base_url", "")
+    if origin.startswith("https://raw.githubusercontent.com/"):
+        for base in (origin, (delivery.get("candidate_chunk_origin") or {}).get("fallback_base_url") or ""):
+            if not base:
+                continue
+            try:
+                with urllib.request.urlopen(base + path) as response:
+                    raw = response.read()
+                return gzip.decompress(raw) if raw[:2] == b"\\x1f\\x8b" else raw
+            except Exception:
+                continue
+    try:
+        return fetch_bytes(path + ".gz")
+    except Exception:
+        return fetch_bytes(path)
+
 def ctas_dossier(event_id, detail_chunk=None):
-    """The complete public CTAS record: read its dossier chunk (gzip on GitHub Pages;
-    multipart roots are reassembled and checked against their SHA-256)."""
+    """The complete public CTAS record: read its dossier chunk (multipart roots are
+    reassembled and checked against their SHA-256)."""
     import hashlib
     if detail_chunk is None:   # the catalog index (about 14 MB) names every record's bucket
         index = json.loads(fetch_bytes("ctas/data/catalog-index.json"))
@@ -32,17 +53,11 @@ def ctas_dossier(event_id, detail_chunk=None):
         detail_chunk = next(r[cols.index("detail_chunk")] for r in index["candidate_rows"] if r[cols.index("event_id")] == event_id)
     row = {"detail_chunk": detail_chunk}
     path = "ctas/data/" + detail_chunk
-    try:
-        chunk = json.loads(fetch_bytes(path + ".gz"))
-    except Exception:
-        chunk = json.loads(fetch_bytes(path))
+    chunk = json.loads(chunk_bytes(path))
     if chunk.get("schema") == "ctas.candidate-chunk-parts@1.0.0":
         text = ""
         for part in chunk["parts"]:
-            try:
-                fragment = json.loads(fetch_bytes(part["path"] + ".gz"))
-            except Exception:
-                fragment = json.loads(fetch_bytes(part["path"]))
+            fragment = json.loads(chunk_bytes(part["path"]))
             text += fragment["json_fragment"]
         assert hashlib.sha256(text.encode()).hexdigest() == chunk["assembled_sha256"]
         chunk = json.loads(text)

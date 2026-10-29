@@ -475,6 +475,8 @@ UNBOUND_RESILIENCE_PATHS = {
     "scripts/build_release_manifest.py": "writes release/manifest.json into the deployed tree; not part of either release",
     "scripts/state_restore_drill.py": "backup-and-restore drill run by hand on saved state archives",
     "KNOWN_LIMITATIONS.md": "documentation released beside both products",
+    # Delivery batch: the deploy proves the chunk origin serves the release; it never changes release bytes.
+    "scripts/check_chunk_origin.py": "deploy-time check that raw.githubusercontent.com serves the release's data commit with CORS; not part of the release",
 }
 SOURCE_STATE_VOCABULARY = (
     "active-returning-data",

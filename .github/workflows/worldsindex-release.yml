@@ -213,9 +213,15 @@ jobs:
             echo "ctas_chunk_path=${chunk%% *}"
             echo "ctas_chunk_sha=${chunk##* }"
           } >> "$GITHUB_OUTPUT"
-      - name: Compress CTAS dossier chunks for GitHub Pages
+      # Delivery batch (2026-10-29): with main's script and the ctas-data commit, the dossier
+      # roots and parts leave the Pages tree and ctas/delivery.json points at that commit on
+      # raw.githubusercontent.com (scripts/check_chunk_origin.py proved it serves the release
+      # in the ctas-static group). A fallback candidate older than the batch keeps its own
+      # behaviour: gzip copies in the tree.
+      - name: Dossier chunks for GitHub Pages (origin pointer, or gzip copies for older site code)
         env:
           TREE: ${{ steps.choose.outputs.tree }}
+          CTAS_DATA_COMMIT: ${{ steps.overlay.outputs.ctas_commit }}
         run: |
           bash "$TREE/scripts/compress_ctas_chunks.sh" "$TREE" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "published site size: $(du -sh --exclude=.git "$TREE" | cut -f1)" | tee -a "$GITHUB_STEP_SUMMARY"
@@ -312,16 +318,33 @@ jobs:
           # GitHub Pages propagates a deploy over a minute or two, file by file: compare all four
           # together and retry until every one matches (a CTAS-only release leaves the WorldsIndex
           # manifest unchanged, so it cannot stand in for the CTAS files).
+          # The dossier chunk is read the way the browser reads it: from the origin that the live
+          # ctas/delivery.json names (the release's data commit on raw.githubusercontent.com, with
+          # CORS), or, for site code older than the delivery batch, the gzip copy on Pages.
+          chunk_origin() {
+            fetch ctas/delivery.json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); o=d.get("candidate_chunk_origin") or {}; print(o.get("base_url","") if d.get("schema")=="ctas.delivery@1.0.0" and str(o.get("base_url","")).startswith("https://raw.githubusercontent.com/") else "")' 2>/dev/null || true
+          }
+          live_chunk_bytes() {
+            local origin; origin=$(chunk_origin)
+            if [ -n "$origin" ]; then
+              # as the browser does: from the origin, with CORS; a missing CORS header is a mismatch
+              curl -fsSL --compressed -D "$RUNNER_TEMP/chunk-headers" -o "$RUNNER_TEMP/chunk-body" -H "Origin: https://jackmcguireastro.github.io" "${origin}${CTAS_CHUNK_PATH}" || return 1
+              grep -qi '^access-control-allow-origin: \*' "$RUNNER_TEMP/chunk-headers" || return 1
+              cat "$RUNNER_TEMP/chunk-body"
+            else
+              fetch "${CTAS_CHUNK_PATH}.gz" | gunzip -c
+            fi
+          }
           check_live() {
             live_manifest=$(fetch worldsindex/data/manifest.json | sha256sum | cut -d' ' -f1 || true)
             live_index=$(fetch worldsindex/data/catalog-index.json.gz | sha256sum | cut -d' ' -f1 || true)
             live_status=$(fetch ctas/data/status.json | sha256sum | cut -d' ' -f1 || true)
-            live_chunk=$( (fetch "${CTAS_CHUNK_PATH}.gz" | gunzip -c) 2>/dev/null | sha256sum | cut -d' ' -f1 || true)
+            live_chunk=$(live_chunk_bytes 2>/dev/null | sha256sum | cut -d' ' -f1 || true)
             mismatch=""
             [ "$live_manifest" = "$WI_MANIFEST_SHA" ] || mismatch="$mismatch WorldsIndex-manifest"
             [ "$live_index" = "$WI_INDEX_SHA" ] || mismatch="$mismatch WorldsIndex-catalog-index"
             [ "$live_status" = "$CTAS_STATUS_SHA" ] || mismatch="$mismatch CTAS-status"
-            [ "$live_chunk" = "$CTAS_CHUNK_SHA" ] || mismatch="$mismatch CTAS-chunk(${CTAS_CHUNK_PATH##*/}.gz)"
+            [ "$live_chunk" = "$CTAS_CHUNK_SHA" ] || mismatch="$mismatch CTAS-chunk(${CTAS_CHUNK_PATH##*/})"
             [ -z "$mismatch" ]
           }
           for attempt in $(seq 1 20); do
@@ -329,7 +352,8 @@ jobs:
             echo "attempt $attempt: not yet live:$mismatch; waiting for Pages to propagate"; sleep 20
           done
           [ -z "$mismatch" ] || { echo "the live site never matched the deployed release:$mismatch" >&2; exit 1; }
-          echo "live site verified: WorldsIndex ${WI_COMMIT:0:10} ($WI_OBJECTS objects, $WI_ROWS rows), CTAS ${CTAS_COMMIT:0:10} (status and compressed chunk ${CTAS_CHUNK_PATH##*/}.gz)" | tee -a "$GITHUB_STEP_SUMMARY"
+          origin=$(chunk_origin)
+          echo "live site verified: WorldsIndex ${WI_COMMIT:0:10} ($WI_OBJECTS objects, $WI_ROWS rows), CTAS ${CTAS_COMMIT:0:10} (status and chunk ${CTAS_CHUNK_PATH##*/} from ${origin:-the Pages gzip copy})" | tee -a "$GITHUB_STEP_SUMMARY"
 
   record:
     name: Record the outcome (check issues, check history, run report)

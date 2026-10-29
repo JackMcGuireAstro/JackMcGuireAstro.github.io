@@ -646,6 +646,14 @@
    "what": "the browser loader verifies part checksums and reassembles dossier chunks",
    "baseline": true
   },
+  "ctas.chunk-origin": {
+   "class": "integrity",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/check_chunk_origin.py: raw.githubusercontent.com serves the release's data commit (the largest dossier root, one part and the manifest: HTTP 200, CORS '*', exact bytes and SHA-256, byte ranges 206) before ctas/delivery.json points the deployed site there (delivery batch, 2026-10-29)",
+   "notes": "Integrity: a deployment whose chunk pointer cannot be read would open no dossier. Watch mode for its first day as every new integrity check; a GitHub outage during validation then blocks the deploy, which would not have worked either."
+  },
   "ctas.test_ctas_chunks": {
    "class": "integrity",
    "scopes": [

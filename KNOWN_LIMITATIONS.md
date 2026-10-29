@@ -17,12 +17,20 @@ validation and peer review are different things; none of them is implied by anot
 - **No manual screen-reader pass.** Automated accessibility checks (axe-core, WCAG 2.x A/AA)
   run in nine browser suites; the VoiceOver / second screen-reader pass in
   `review/accessibility-manual-pass.md` has not been done (gate 7).
-- **Loading budgets.** On a throttled mobile profile the CTAS page's Largest Contentful Paint
-  is about 4.5 s (target 2.5 s) and it loads about 206 kB of gzip-compressed JavaScript
-  (target 200 kB). The other main pages meet both targets. Measurements:
+- **Loading budgets.** On a throttled mobile profile every main page meets both targets
+  since the delivery batch (2026-10-29): the CTAS page's Largest Contentful Paint is about
+  1.8 s (target 2.5 s; it was 4.5 s) and it requests about 72 kB of gzip-compressed JavaScript
+  before its load event (target 200 kB; it was 206 kB). The dossier panels, workbench and sky
+  tools, about 138 kB more, load right after the load event and before any dossier renders;
+  a click in the first second or so after the page appears waits for them. Measurements:
   `benchmarks/performance/latest.json`.
-- **GitHub Pages size.** The deployed site is about 0.77 GB of the 1 GB Pages limit, most of
-  it CTAS dossier chunks (about 0.28 GB compressed). See `release/README.md`.
+- **GitHub Pages size and the dossier origin.** The deployed site is about 0.48 GB of the
+  1 GB Pages limit since the dossier chunks (about 0.28 GB compressed) moved to the
+  release's `ctas-data` commit on raw.githubusercontent.com (delivery batch, 2026-10-29).
+  Opening a dossier therefore needs raw.githubusercontent.com to answer; the pointer is pinned
+  to a commit that the data branch has moved past, which GitHub keeps readable but does not
+  promise forever, so the loader also tries the branch tip (the manifest's checksums reject a
+  newer release) and the deploy proves the origin on every run. See `release/README.md`.
 - **Visitor tools** (when landed): the TOM Toolkit broker was tested with stand-ins, not in a
   live TOM; the SQL page's Parquet reader is fetched by DuckDB-WASM from
   extensions.duckdb.org; the notebook link opens the public JupyterLite demo, whose version

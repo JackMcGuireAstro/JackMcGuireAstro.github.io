@@ -130,6 +130,8 @@ group_ctas_static() {
   check ctas.test_ctas_source_health python3 scripts/test_ctas_source_health.py
   check ctas.test_ctas_feed python3 scripts/test_ctas_feed.py
   check ctas.test_ctas_chunk_loader node scripts/test_ctas_chunk_loader.js
+  # Delivery batch: the dossier chunks are served from the release's data commit on raw.githubusercontent.com.
+  check ctas.chunk-origin python3 scripts/check_chunk_origin.py --tree .
   check ctas.front.presentation node scripts/test_ctas_presentation.js
   check ctas.front.live-sources node scripts/test_ctas_live_sources.js
   check ctas.front.live-relay node scripts/test_live_relay.mjs

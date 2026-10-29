@@ -18,9 +18,13 @@ info:
     research/manifest.json (every table export), bulk-downloads.json (VOParquet release assets),
     provenance.json (W3C PROV-JSON for the build).
 
-    Delivery note: on GitHub Pages the dossier chunks and parts are served as <path>.json.gz
-    (ctas/delivery.json says so); the release commit, the certificate and every checksum refer to
-    the plain JSON bytes. Claim boundary: automated checksum and structural verification of one
+    Delivery note: read /ctas/delivery.json first. Since 2026-10-29 the GitHub Pages site does
+    not carry the dossier chunks and parts; candidate_chunk_origin.base_url is the
+    raw.githubusercontent.com address of the exact ctas-data commit the deployed release came
+    from (plain JSON, CORS "*", byte ranges), and candidate-chunks/manifest.json on the site
+    binds every file's length and SHA-256. A deployment of older site code serves <path>.json.gz
+    on the site instead (candidate_chunk_encoding "gzip"); a checkout of main serves plain JSON.
+    The release commit, the certificate and every checksum refer to the plain JSON bytes. Claim boundary: automated checksum and structural verification of one
     static snapshot; not peer review, scientific truth, classification validation, discovery
     authority or a managed-service deployment claim.
   contact:
@@ -135,9 +139,10 @@ paths:
       description: |
         bucket = first 8 hex digits of sha256(event_id) as an integer, modulo 4096, as three lowercase hex digits;
         the catalog index carries it ready-made in the detail_chunk column. A root is either a complete chunk or a
-        parts descriptor whose ordered parts (candidate-chunks/{bucket}.part-NNNNNN.json) reassemble it. On GitHub
-        Pages this file is served as {bucket}.json.gz (see /ctas/delivery.json); the manifest's bytes and sha256
-        describe the decompressed JSON.
+        parts descriptor whose ordered parts (candidate-chunks/{bucket}.part-NNNNNN.json) reassemble it. On the
+        deployed site this path is not served: /ctas/delivery.json names the origin (the release's ctas-data commit
+        on raw.githubusercontent.com) to read it from, or, for older site code, {bucket}.json.gz on the site; the
+        manifest's bytes and sha256 describe the plain JSON either way.
       operationId: getCandidateChunk
       parameters:
         - name: bucket
@@ -526,7 +531,7 @@ paths:
   /ctas/delivery.json:
     get:
       tags: [status]
-      summary: How the deployed site serves dossier chunks (identity or gzip)
+      summary: How and from where the deployed site serves dossier chunks (identity or gzip; the release's data commit on raw.githubusercontent.com since 2026-10-29)
       operationId: getDelivery
       responses:
         "200":

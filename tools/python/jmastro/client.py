@@ -169,8 +169,49 @@ class CTAS(_Reader):
                 return r
         raise KeyError(f"no public CTAS record {event_id}")
 
+    def _chunk_delivery(self) -> dict:
+        """ctas/delivery.json: how and from where this deployment serves the dossier chunks.
+
+        Since the delivery batch (2026-10-29) the GitHub Pages site carries no chunk files;
+        candidate_chunk_origin.base_url is the raw.githubusercontent.com address of the exact
+        ctas-data commit the release came from (plain JSON there). Older deployments and a
+        checkout of main have no origin: the files are beside the manifest, gzip on Pages.
+        """
+        def load():
+            descriptor = self.json("ctas/delivery.json", optional=True) or {}
+            origin = descriptor.get("candidate_chunk_origin") or {}
+            base = origin.get("base_url", "")
+            if descriptor.get("schema") == "ctas.delivery@1.0.0" and isinstance(base, str) and base.startswith("https://raw.githubusercontent.com/"):
+                return {"origin": base, "fallback": origin.get("fallback_base_url") if isinstance(origin.get("fallback_base_url"), str) else None,
+                        "encoding": origin.get("encoding", "identity"), "pages_copy": origin.get("pages_copy", True) is not False,
+                        "local_encoding": descriptor.get("candidate_chunk_encoding", "identity")}
+            return {"origin": None, "fallback": None, "encoding": "identity", "pages_copy": True,
+                    "local_encoding": descriptor.get("candidate_chunk_encoding", "identity")}
+        return self.cached("chunk-delivery", load)
+
+    def _fetch_origin(self, url: str) -> bytes | None:
+        request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept-Encoding": "gzip"})
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                raw = response.read()
+                return gzip.decompress(raw) if response.headers.get("Content-Encoding") == "gzip" or raw[:2] == b"\x1f\x8b" else raw
+        except (urllib.error.URLError, OSError):
+            return None
+
     def _chunk_bytes(self, path: str) -> bytes:
-        raw = self.raw(path + ".gz", optional=True)  # GitHub Pages serves the gzip form
+        delivery = self._chunk_delivery()
+        if self.local is None and delivery["origin"]:
+            for base in (delivery["origin"], delivery["fallback"]):
+                if not base:
+                    continue
+                raw = self._fetch_origin(base + path + (".gz" if delivery["encoding"] == "gzip" else ""))
+                if raw is not None:
+                    return gzip.decompress(raw) if raw[:2] == b"\x1f\x8b" else raw
+            if not delivery["pages_copy"]:
+                raise OSError(f"{path}: the release's data commit could not be read from {delivery['origin']}")
+        # the site's own copy: one request, in the form ctas/delivery.json names
+        suffix = ".gz" if self.local is None and delivery["local_encoding"] == "gzip" else ""
+        raw = self.raw(path + suffix, optional=bool(suffix))
         if raw is None:
             raw = self.raw(path)
         return gzip.decompress(raw) if raw[:2] == b"\x1f\x8b" else raw

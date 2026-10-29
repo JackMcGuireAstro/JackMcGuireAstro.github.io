@@ -132,6 +132,47 @@
     return descriptor && descriptor.schema === "ctas.delivery@1.0.0" &&
       descriptor.candidate_chunk_encoding === "gzip" ? "gzip" : "identity";
   }
-  return Object.freeze({decode: decode, fetchPublished: fetchPublished, chunkEncoding: chunkEncoding, CHUNK_SCHEMA: CHUNK_SCHEMA,
+  // Delivery batch (2026-10-29): the deployed site no longer carries the dossier roots and
+  // parts (281 MB gzipped of a 1 GB GitHub Pages allowance). ctas/delivery.json names where
+  // they are: candidate_chunk_origin.base_url, the raw.githubusercontent.com address of the
+  // exact ctas-data commit the deployed release came from (the branch is replaced wholesale
+  // each release, so the address is pinned by commit, never by branch name), followed by the
+  // branch tip as a second try and, when pages_copy is not false, the site's own copy. Only
+  // raw.githubusercontent.com addresses of this repository are accepted; whatever the origin,
+  // every byte is still checked against the manifest's length and SHA-256 by decode(). A
+  // later origin is tried only when an earlier one failed, so nothing probes for 404s in
+  // normal operation. raw.githubusercontent.com sends the plain JSON (gzip on the wire, which
+  // the browser undoes), so the origin's encoding is "identity".
+  var ORIGIN_PATTERN = /^https:\/\/raw\.githubusercontent\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/(?:[0-9a-f]{40}|[A-Za-z0-9_.-]+)\/$/;
+  function chunkDelivery(descriptor) {
+    var local = {base: "", encoding: chunkEncoding(descriptor), label: "this site"};
+    var origin = descriptor && descriptor.schema === "ctas.delivery@1.0.0" ? descriptor.candidate_chunk_origin : null;
+    if (!object(origin) || typeof origin.base_url !== "string" || !ORIGIN_PATTERN.test(origin.base_url)) {
+      return {origins: [local], pinned: null};
+    }
+    var encoding = origin.encoding === "gzip" ? "gzip" : "identity";
+    var origins = [{base: origin.base_url, encoding: encoding, label: "the release's data commit"}];
+    if (typeof origin.fallback_base_url === "string" && ORIGIN_PATTERN.test(origin.fallback_base_url) && origin.fallback_base_url !== origin.base_url) {
+      origins.push({base: origin.fallback_base_url, encoding: encoding, label: "the data branch"});
+    }
+    if (origin.pages_copy !== false) origins.push(local);
+    return {origins: origins, pinned: typeof origin.commit === "string" ? origin.commit : null};
+  }
+  // publicPath is the manifest path ("ctas/data/candidate-chunks/<name>.json"); localPrefix is
+  // where this page serves ctas/data/ from ("ctas/data/" on ctas.html, "data/" on ctas/).
+  async function fetchChunk(publicPath, delivery, fetchImpl, localPrefix) {
+    var origins = delivery && Array.isArray(delivery.origins) && delivery.origins.length ? delivery.origins : [{base: "", encoding: "identity", label: "this site"}];
+    var relative = publicPath.replace(/^ctas\/data\//, "");
+    var failures = [];
+    for (var i = 0; i < origins.length; i += 1) {
+      var origin = origins[i];
+      var url = origin.base ? origin.base + publicPath : (localPrefix === undefined ? "ctas/data/" : localPrefix) + relative;
+      try { return await fetchPublished(url, fetchImpl, origin.encoding); }
+      catch (error) { failures.push(origin.label + ": " + (error && error.message ? error.message : String(error))); }
+    }
+    throw new Error("The dossier file could not be read from " + failures.join("; nor from ") + ".");
+  }
+  return Object.freeze({decode: decode, fetchPublished: fetchPublished, chunkEncoding: chunkEncoding, chunkDelivery: chunkDelivery,
+    fetchChunk: fetchChunk, CHUNK_SCHEMA: CHUNK_SCHEMA,
     DESCRIPTOR_SCHEMA: DESCRIPTOR_SCHEMA, PART_SCHEMA: PART_SCHEMA, MAX_FILE_BYTES: MAX_FILE_BYTES});
 }));

@@ -216,6 +216,70 @@ class BrowserTests(unittest.TestCase):
         self.assertGreater(rows, 10, "the shared no-evidence pattern must expand in the browser")
         self.assertIn("source-matrix-patterns.json", self.requests)
 
+    # ------------------------------------------------------------ delivery batch: chunk origin
+    RAW = "https://raw.githubusercontent.com/JackMcGuireAstro/JackMcGuireAstro.github.io/"
+
+    def _origin_delivery(self, page, pinned_fails=False):
+        """ctas/delivery.json as the deploy writes it since 2026-10-29 (the dossier roots and
+        parts read from the release's data commit on raw.githubusercontent.com, no copy on the
+        site), with both raw addresses answered from this tree. With pinned_fails the pinned
+        commit's address answers 404 (a garbage-collected commit) so the branch tip is used."""
+        commit = "f" * 40
+        page.route("**/ctas/delivery.json", lambda route: route.fulfill(status=200, content_type="application/json", body=json.dumps({
+            "schema": "ctas.delivery@1.0.0", "candidate_chunk_encoding": "gzip",
+            "candidate_chunk_origin": {"base_url": self.RAW + commit + "/", "encoding": "identity", "branch": "ctas-data",
+                                       "commit": commit, "fallback_base_url": self.RAW + "ctas-data/", "pages_copy": False}})))
+        served = []
+
+        def origin(route):
+            url = route.request.url
+            path = url.split(".github.io/", 1)[1].split("/", 1)[1]
+            served.append(url)
+            if pinned_fails and ("/" + commit + "/") in url:
+                return route.fulfill(status=404, body="not found")
+            file = ROOT / path
+            if not file.is_file():
+                return route.fulfill(status=404, body="not found")
+            route.fulfill(status=200, body=file.read_bytes(), headers={"Content-Type": "text/plain; charset=utf-8",
+                                                                      "Access-Control-Allow-Origin": "*"})
+        page.route(self.RAW + "**", origin)
+        return served, commit
+
+    def test_dossier_chunks_are_read_from_the_release_commit_named_by_delivery_json(self):
+        page = self.browser.new_page(viewport={"width": 1280, "height": 900})
+        errors = []
+        page.on("pageerror", lambda e: errors.append(str(e)))
+        page.on("console", lambda m: errors.append(m.text) if m.type == "error" and self.RAW not in m.text and not is_third_party_load_failure(m.text) else None)
+        served, commit = self._origin_delivery(page)
+        local_chunks = []
+        page.on("response", lambda r: local_chunks.append(r.url) if "/ctas/data/candidate-chunks/" in r.url and "manifest.json" not in r.url and r.url.startswith(self.url.rsplit("/", 1)[0]) else None)
+        page.goto(self.url, wait_until="networkidle", timeout=60000)
+        page.locator("#ctas-results [data-open-event]").first.click()
+        page.wait_for_selector("#candidate-workspace #dossier", state="attached", timeout=60000)
+        self.assertTrue(any(("/" + commit + "/ctas/data/candidate-chunks/") in url for url in served), served[:3])
+        self.assertFalse(any("/ctas-data/" in url for url in served), "the branch tip is tried only when the pinned commit fails")
+        self.assertEqual(local_chunks, [], "no chunk is requested from the site itself")
+        self.assertEqual(errors, [])
+        # the Downloads list points at the same origin, plain JSON
+        page.evaluate("document.getElementById('catalog-downloads').open = true")
+        page.wait_for_selector("#catalog-downloads ol a[download]", state="attached", timeout=60000)
+        hrefs = page.eval_on_selector_all("#catalog-downloads ol a[download]", "els => els.map(e => e.getAttribute('href'))")
+        self.assertTrue(hrefs and all(h.startswith(self.RAW + commit + "/ctas/data/candidate-chunks/") and h.endswith(".json") for h in hrefs), hrefs[:2])
+        self.assertIn("raw.githubusercontent.com", page.evaluate("document.getElementById('catalog-downloads').textContent"))
+        page.close()
+
+    def test_a_vanished_release_commit_falls_back_to_the_data_branch(self):
+        page = self.browser.new_page(viewport={"width": 1280, "height": 900})
+        served, commit = self._origin_delivery(page, pinned_fails=True)
+        page.goto(self.url, wait_until="networkidle", timeout=60000)
+        page.locator("#ctas-results [data-open-event]").first.click()
+        page.wait_for_selector("#candidate-workspace #dossier", state="attached", timeout=60000)
+        pinned = [u for u in served if ("/" + commit + "/") in u]
+        tip = [u for u in served if "/ctas-data/" in u]
+        self.assertTrue(pinned and tip, (pinned[:1], tip[:1]))
+        self.assertLess(served.index(pinned[0]), served.index(tip[0]), "the pinned commit is tried first")
+        page.close()
+
     def test_live_source_data_is_fetched_only_on_request_and_labelled(self):
         """The live panel contacts providers only when asked, draws what they return
         with the retained-data renderer, and says the values are outside the snapshot."""

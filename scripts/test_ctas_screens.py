@@ -178,8 +178,10 @@ class WiringTests(unittest.TestCase):
         classes = json.loads((ROOT / "scripts/check-classes.json").read_text())["checks"]
         self.assertEqual(classes["ctas.gate.analysis-screen-provenance"]["class"], "integrity")
         self.assertEqual(classes["ctas.test_ctas_screens"]["class"], "integrity")
-        page = (ROOT / "ctas.html").read_text()
-        self.assertLess(page.index("ctas/screens.js"), page.index("ctas/app.js"))
+        # Since the delivery batch (2026-10-29) the panel module is one of the deferred modules
+        # ctas/app.js loads after the page's load event and before any dossier renders.
+        app = (ROOT / "ctas/app.js").read_text()
+        self.assertIn('"ctas/screens.js?v=', app[app.index("DEFERRED_MODULES = ["):app.index("];", app.index("DEFERRED_MODULES = ["))])
         schema = json.loads((ROOT / "ctas/schemas/candidate-chunk.schema.json").read_text())
         self.assertIn("analysis_screens", schema["$defs"]["candidate"]["properties"])
 

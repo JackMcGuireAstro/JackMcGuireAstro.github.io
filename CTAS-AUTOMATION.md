@@ -109,13 +109,21 @@ commit carries. To preview the complete site locally, run
 `bash scripts/overlay_published_data.sh` in any checkout of `main`; generated paths
 are ignored by `.gitignore`.
 
-On the live site the dossier roots and overflow parts are served gzip-compressed as
-`<path>.json.gz` (the deployed copy is compressed by `scripts/compress_ctas_chunks.sh`;
-the release commit and its certificate keep plain JSON). Decompressed bytes match the
-manifest's byte counts and SHA-256 exactly. `ctas/delivery.json` names the form: it
-says `identity` on `main` (plain JSON, as in any local preview) and the deploy step
-rewrites the deployed copy to `gzip`; `ctas/chunk-loader.js` makes exactly one request
-per file in the declared form.
+On the live site the dossier roots and overflow parts are not in the Pages tree at all
+(delivery batch, 2026-10-29: they are 1.9 GB of JSON, 281 MB gzipped, of a 1 GB Pages
+allowance). The deploy step (`scripts/compress_ctas_chunks.sh` with `CTAS_DATA_COMMIT`)
+removes them and writes `ctas/delivery.json` with `candidate_chunk_origin`: the
+raw.githubusercontent.com address of the exact `ctas-data` commit the release came from,
+pinned by commit because the branch is replaced wholesale on every release (a commit stays
+readable at its SHA after that), with the branch tip as a second try. The manifest stays
+on the site and `ctas/chunk-loader.js` verifies every file's byte count and SHA-256
+against it whatever the origin; `scripts/check_chunk_origin.py` proves, in the deploy's
+`ctas-static` group, that the origin serves the release with CORS and byte ranges. Site
+code older than the batch (which the deploy fallback can choose) keeps the previous form:
+the files in the tree as `<path>.json.gz` with `candidate_chunk_encoding` `gzip`. On `main`
+and in local previews `ctas/delivery.json` says `identity` and the files are plain JSON
+beside the manifest. The loader makes one request per file; a later origin is tried only
+when an earlier one failed.
 
 The runtime checkout is kept at
 `~/Library/Application Support/CTASPublisher/site`. It is intentionally outside

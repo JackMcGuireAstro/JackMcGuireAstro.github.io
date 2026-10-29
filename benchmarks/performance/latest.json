@@ -1,19 +1,7 @@
 {
   "pages": {
     "ctas": {
-      "js_files": [
-        {
-          "gzip_bytes": 1979,
-          "path": "assets/js/site.js"
-        },
-        {
-          "gzip_bytes": 1849,
-          "path": "ctas/presentation.js"
-        },
-        {
-          "gzip_bytes": 5333,
-          "path": "ctas/catalog-model.js"
-        },
+      "js_deferred_files": [
         {
           "gzip_bytes": 13351,
           "path": "ctas/astro-evidence.js"
@@ -63,10 +51,6 @@
           "path": "ctas/changelog.js"
         },
         {
-          "gzip_bytes": 2705,
-          "path": "ctas/chunk-loader.js"
-        },
-        {
           "gzip_bytes": 5650,
           "path": "ctas/lightcurve-summary.js"
         },
@@ -81,20 +65,41 @@
         {
           "gzip_bytes": 18993,
           "path": "ctas/live-sources.js"
+        }
+      ],
+      "js_deferred_gzip_bytes": 137545,
+      "js_files": [
+        {
+          "gzip_bytes": 1979,
+          "path": "assets/js/site.js"
         },
         {
-          "gzip_bytes": 56880,
+          "gzip_bytes": 1849,
+          "path": "ctas/presentation.js"
+        },
+        {
+          "gzip_bytes": 5333,
+          "path": "ctas/catalog-model.js"
+        },
+        {
+          "gzip_bytes": 3721,
+          "path": "ctas/chunk-loader.js"
+        },
+        {
+          "gzip_bytes": 58678,
           "path": "ctas/app.js"
         }
       ],
-      "js_gzip_bytes": 206291,
-      "lcp_ms": 4500,
+      "js_gzip_bytes": 71560,
+      "lcp_ms": 1840,
       "within_target": {
-        "js": false,
-        "lcp": false
+        "js": true,
+        "lcp": true
       }
     },
     "home": {
+      "js_deferred_files": [],
+      "js_deferred_gzip_bytes": 0,
       "js_files": [
         {
           "gzip_bytes": 1141,
@@ -102,13 +107,15 @@
         }
       ],
       "js_gzip_bytes": 1141,
-      "lcp_ms": 1052,
+      "lcp_ms": 1016,
       "within_target": {
         "js": true,
         "lcp": true
       }
     },
     "tonight": {
+      "js_deferred_files": [],
+      "js_deferred_gzip_bytes": 0,
       "js_files": [
         {
           "gzip_bytes": 12048,
@@ -140,22 +147,26 @@
         }
       ],
       "js_gzip_bytes": 36055,
-      "lcp_ms": 620,
+      "lcp_ms": 596,
       "within_target": {
         "js": true,
         "lcp": true
       }
     },
     "tools": {
+      "js_deferred_files": [],
+      "js_deferred_gzip_bytes": 0,
       "js_files": [],
       "js_gzip_bytes": 0,
-      "lcp_ms": 592,
+      "lcp_ms": 556,
       "within_target": {
         "js": true,
         "lcp": true
       }
     },
     "worldsindex": {
+      "js_deferred_files": [],
+      "js_deferred_gzip_bytes": 0,
       "js_files": [
         {
           "gzip_bytes": 31782,
@@ -195,7 +206,7 @@
         }
       ],
       "js_gzip_bytes": 88149,
-      "lcp_ms": 1188,
+      "lcp_ms": 1112,
       "within_target": {
         "js": true,
         "lcp": true
@@ -204,7 +215,7 @@
   },
   "profile": {
     "cpu_slowdown": 4,
-    "js_bytes": "gzip -9 size of first-party scripts loaded before the load event",
+    "js_bytes": "gzip -9 size of first-party scripts requested before the load event; js_deferred_gzip_bytes: scripts the page adds after it",
     "network": {
       "downloadThroughput": 204800.0,
       "latency": 150,

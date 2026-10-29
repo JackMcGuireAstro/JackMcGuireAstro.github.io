@@ -86,6 +86,48 @@ class CTASClientTests(unittest.TestCase):
         event = next(r for r in self.rows if r["detail_chunk"] == bucket)
         self.assertEqual(self.ctas.get_dossier(event["event_id"])["event_id"], event["event_id"])
 
+    def test_a_deployment_that_names_a_chunk_origin_is_read_from_that_origin(self):
+        """Delivery batch (2026-10-29): the deployed site carries no chunk files; ctas/delivery.json
+        names the release's data commit on raw.githubusercontent.com. The client reads the files
+        there (plain JSON, no .gz probing), falls back to the branch tip when the pinned commit is
+        gone, and never asks the site for a chunk when pages_copy is false."""
+        raw_base = "https://raw.githubusercontent.com/JackMcGuireAstro/JackMcGuireAstro.github.io/"
+        commit = "f" * 40
+        delivery = {"schema": "ctas.delivery@1.0.0", "candidate_chunk_encoding": "gzip",
+                    "candidate_chunk_origin": {"base_url": raw_base + commit + "/", "encoding": "identity", "branch": "ctas-data",
+                                               "commit": commit, "fallback_base_url": raw_base + "ctas-data/", "pages_copy": False}}
+
+        class Remote(CTAS):
+            site_requests: list = []
+            origin_requests: list = []
+            pinned_gone = False
+
+            def raw(self, path, optional=False):  # the site: everything but the chunk files
+                self.site_requests.append(path)
+                if path == "ctas/delivery.json":
+                    return json.dumps(delivery).encode()
+                if "candidate-chunks/" in path and not path.endswith("manifest.json"):
+                    raise AssertionError("a chunk was requested from the site: " + path)
+                file = ROOT / path
+                return file.read_bytes() if file.exists() else (None if optional else (_ for _ in ()).throw(FileNotFoundError(path)))
+
+            def _fetch_origin(self, url):
+                self.origin_requests.append(url)
+                if self.pinned_gone and ("/" + commit + "/") in url:
+                    return None
+                file = ROOT / url.split(".github.io/", 1)[1].split("/", 1)[1]
+                return file.read_bytes() if file.exists() else None
+
+        client = Remote("https://example.test")
+        dossier = client.get_dossier(self.sample["event_id"])
+        self.assertEqual(dossier["event_id"], self.sample["event_id"])
+        self.assertTrue(client.origin_requests and all(u.startswith(raw_base + commit + "/ctas/data/candidate-chunks/") and u.endswith(".json") for u in client.origin_requests), client.origin_requests[:2])
+        Remote.origin_requests = []
+        Remote.pinned_gone = True
+        client = Remote("https://example.test")
+        self.assertEqual(client.get_dossier(self.sample["event_id"])["event_id"], self.sample["event_id"])
+        self.assertEqual([u.split(".github.io/", 1)[1].split("/", 1)[0] for u in client.origin_requests[:2]], [commit, "ctas-data"])
+
     @unittest.skipUnless(HAVE_ASTROPY, "astropy is not installed")
     def test_datalink_rows_belong_to_the_event(self):
         links = self.ctas.get_datalink(self.sample["event_id"])

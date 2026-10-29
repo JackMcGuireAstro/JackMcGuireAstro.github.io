@@ -9,8 +9,12 @@ This suite measures both with Playwright's Chromium, using the same throttling L
 uses for its mobile run (150 ms round trip, 1.6 Mbit/s down, 750 kbit/s up, CPU slowed 4x)
 on a 412 x 823 px phone viewport, with every third-party request blocked
 (browser_test_net.isolate_browser). JavaScript is counted as the gzip size of every
-first-party script the page loads before its load event, because GitHub Pages serves
-scripts gzip-compressed.
+first-party script the page requests before its load event, because GitHub Pages serves
+scripts gzip-compressed. Scripts a page adds after its load event (since the delivery batch
+of 2026-10-29 ctas/app.js loads the dossier panels, the workbench and the sky tools that
+way, so the first paint does not wait for them) are measured too and written to the report
+as js_deferred_gzip_bytes, but are not part of the first-load budget: they do not delay the
+first screen, and a dossier waits for them before it renders.
 
 Two kinds of numbers are kept in benchmarks/performance/budgets.json:
   - the framework's targets (LCP 2,500 ms, JS 200 kB);
@@ -108,7 +112,7 @@ class ReleasePagesTests(unittest.TestCase):
             Path(report).write_text(json.dumps({
                 "schema": "page-budget-measurements@1",
                 "profile": {"viewport": VIEWPORT, "network": THROTTLE, "cpu_slowdown": CPU_SLOWDOWN,
-                            "third_party": "blocked", "js_bytes": "gzip -9 size of first-party scripts loaded before the load event"},
+                            "third_party": "blocked", "js_bytes": "gzip -9 size of first-party scripts requested before the load event; js_deferred_gzip_bytes: scripts the page adds after it"},
                 "targets": cls.budgets["targets"],
                 "pages": cls.measurements,
             }, indent=2, sort_keys=True) + "\n")
@@ -124,8 +128,6 @@ class ReleasePagesTests(unittest.TestCase):
         cdp.send("Network.enable")
         cdp.send("Network.emulateNetworkConditions", THROTTLE)
         cdp.send("Emulation.setCPUThrottlingRate", {"rate": CPU_SLOWDOWN})
-        scripts: list[str] = []
-        page.on("request", lambda request: scripts.append(request.url) if request.resource_type == "script" else None)
         page.add_init_script("""
           window.__lcp = 0;
           new PerformanceObserver((list) => {
@@ -135,18 +137,37 @@ class ReleasePagesTests(unittest.TestCase):
         page.goto(f"{self.base}/{PAGES[key]}", wait_until="load", timeout=180_000)
         page.wait_for_timeout(1500)  # LCP is final only after the page settles
         lcp = page.evaluate("window.__lcp")
-        js_files, js_bytes = [], 0
-        for url in dict.fromkeys(scripts):
+        # Let the scripts the page adds after its load event finish, so they are all listed.
+        try:
+            page.wait_for_load_state("networkidle", timeout=120_000)
+        except Exception:  # pragma: no cover - a still-busy page is reported with what has arrived
+            pass
+        # Every script resource with when it was requested, against the load event.
+        scripts = page.evaluate("""() => {
+          const nav = performance.getEntriesByType('navigation')[0];
+          const loadStart = nav ? nav.loadEventStart : Infinity;
+          return performance.getEntriesByType('resource').filter(e => e.initiatorType === 'script')
+            .map(e => [e.name, e.startTime <= loadStart]);
+        }""")
+        js_files, js_bytes, deferred_files, deferred_bytes = [], 0, [], 0
+        seen = set()
+        for url, before_load in scripts:
             parts = urlsplit(url)
-            if f"{parts.scheme}://{parts.netloc}" != self.base:
+            if f"{parts.scheme}://{parts.netloc}" != self.base or url in seen:
                 continue
+            seen.add(url)
             path = ROOT / unquote(parts.path.lstrip("/"))
             if path.is_file():
                 size = gzip_size(path)
-                js_bytes += size
-                js_files.append({"path": str(path.relative_to(ROOT)), "gzip_bytes": size})
+                if before_load:
+                    js_bytes += size
+                    js_files.append({"path": str(path.relative_to(ROOT)), "gzip_bytes": size})
+                else:
+                    deferred_bytes += size
+                    deferred_files.append({"path": str(path.relative_to(ROOT)), "gzip_bytes": size})
         context.close()
         result = {"lcp_ms": round(lcp, 1), "js_gzip_bytes": js_bytes, "js_files": js_files,
+                  "js_deferred_gzip_bytes": deferred_bytes, "js_deferred_files": deferred_files,
                   "within_target": {"lcp": lcp <= self.budgets["targets"]["lcp_ms"],
                                     "js": js_bytes <= self.budgets["targets"]["js_gzip_bytes"]}}
         type(self).measurements[key] = result

@@ -2221,9 +2221,14 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertTrue(all(item["_ctas"]["event_id"] in event_ids for item in all_items))
         # the pages and the workflow that go with them
         page = (ROOT / "ctas.html").read_text()
-        for token in ('ctas/sky.js?v=', 'ctas/changelog.js?v=', 'href="ctas/status.html"', 'href="ctas/data/feeds/index.json"',
+        for token in ('href="ctas/status.html"', 'href="ctas/data/feeds/index.json"',
                       'type="application/feed+json"', 'ctas/data/feeds/all-events.xml'):
             self.assertIn(token, page)
+        # Since the delivery batch the two scripts are deferred modules listed in ctas/app.js
+        # (loaded after the load event and before any dossier renders), not script tags.
+        deferred = (ROOT / "ctas" / "app.js").read_text()
+        for token in ('"ctas/sky.js?v=', '"ctas/changelog.js?v='):
+            self.assertIn(token, deferred)
         status_page = (ROOT / "ctas/status.html").read_text()
         self.assertEqual(status_page.count("<h1"), 1)
         self.assertIn('src="status.js', status_page)

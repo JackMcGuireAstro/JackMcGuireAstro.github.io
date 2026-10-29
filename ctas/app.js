@@ -28,6 +28,71 @@
   };
 
   var BASE_TITLE = document.title;
+  // Delivery batch (2026-10-29): the first screen needs only the catalog model, the
+  // presentation helpers, the chunk loader and this file. The dossier panels, the workbench,
+  // the sky tools, the live-source fetchers and the spectrum readers are loaded by
+  // loadDeferredModules() right after the page's load event (so the first paint and the
+  // hero image are not competing with 470 kB of scripts) and, whatever the timing, before
+  // any dossier is rendered (openCandidate waits for them). The order is the order ctas.html
+  // used to list them; every file stays certificate-bound (BOUND_CODE_PATHS) and the budget
+  // tests count them (test_ctas_browser, test_release_pages_browser).
+  var DEFERRED_MODULES = [
+    "ctas/astro-evidence.js?v=20260829-evidence1",
+    "ctas/observability.js?v=20260830-workbench1",
+    "ctas/screens.js?v=20261026",
+    "ctas/comparison.js?v=20261027",
+    "ctas/lightcurve-science.js?v=20261027",
+    "ctas/host-association.js?v=20261029",
+    "ctas/multimessenger.js?v=20261030",
+    "ctas/observer.js?v=20261029",
+    "ctas/followup.js?v=20261029",
+    "ctas/workbench.js?v=20261019",
+    "ctas/sky.js?v=20261030",
+    "ctas/changelog.js?v=20261019",
+    "ctas/lightcurve-summary.js?v=20261004",
+    "ctas/spectrum-ascii.js?v=20261011",
+    "ctas/spectrum-fits.js?v=20261011",
+    "ctas/live-sources.js?v=20261017"
+  ];
+  var deferredModules = {promise: null, loaded: false, failed: []};
+  function loadDeferredModules() {
+    if (deferredModules.promise) return deferredModules.promise;
+    deferredModules.promise = new Promise(function (resolve) {
+      var pending = DEFERRED_MODULES.length;
+      function done() { if (--pending === 0) { deferredModules.loaded = true; afterDeferredModules(); resolve(); } }
+      DEFERRED_MODULES.forEach(function (src) {
+        var script = document.createElement("script");
+        script.src = src; script.async = false; // async=false keeps the execution order
+        script.onload = done;
+        script.onerror = function () { deferredModules.failed.push(src.split("?")[0]); done(); };
+        document.head.appendChild(script);
+      });
+    });
+    return deferredModules.promise;
+  }
+  // The modules that subscribe to the page's events (workbench, sky atlas, changelog,
+  // follow-up) joined after those events fired: replay the current state for them and
+  // redraw what they decorate (compare/watch buttons, the follow-up examples).
+  function afterDeferredModules() {
+    if (deferredModules.failed.length) console.warn("CTAS panel modules did not load: " + deferredModules.failed.join(", "));
+    if (state.snapshot) {
+      window.dispatchEvent(new CustomEvent("ctas:snapshot", {detail: {snapshot: state.snapshot, status: state.status,
+        candidates: state.candidates, sourceUniverse: state.sourceUniverse, releaseHistory: state.releaseHistory,
+        catalogManifest: state.catalogManifest, cached: state.cachedSnapshot}}));
+      if (state.completeCatalogLoaded) window.dispatchEvent(new CustomEvent("ctas:catalog-loaded", {detail: {candidates: state.candidates}}));
+      window.dispatchEvent(new CustomEvent("ctas:filters-changed", {detail: {filters: currentFilters(), candidates: filteredRows()}}));
+      renderTable(); renderFollowupExamples();
+    }
+    if (state.activeDetail && !el.workspace.hidden) {
+      el.workspace.innerHTML = renderDetails(state.activeDetail); restoreDossierView(state.activeDetail);
+      window.dispatchEvent(new CustomEvent("ctas:candidate-opened", {detail: {candidate: state.activeDetail, summary: state.activeSummary}}));
+    }
+  }
+  function scheduleDeferredModules() {
+    function start() { window.setTimeout(loadDeferredModules, 0); }
+    if (document.readyState === "complete") start();
+    else window.addEventListener("load", start, {once: true});
+  }
   var state = {
     candidates: [], skyCandidates: [], resolvedCandidates: {}, releaseEpoch: 0, routeRequest: 0,
     snapshot: null, status: null, sourceUniverse: null, releaseHistory: null,
@@ -1522,6 +1587,10 @@
       return;
     }
     var gzipped = state.chunkEncodingValue === "gzip";
+    // Delivery batch: when the deployment reads the dossier files from the release's data
+    // commit on raw.githubusercontent.com, the download links point there (plain JSON).
+    var remote = state.chunkDeliveryValue && state.chunkDeliveryValue.origins[0] && state.chunkDeliveryValue.origins[0].base ? state.chunkDeliveryValue.origins[0] : null;
+    if (remote) gzipped = remote.encoding === "gzip";
     if (!manifest || !Array.isArray(manifest.chunks)) {
       el.downloadStatus.textContent = state.catalogManifestPromise
         ? "Loading the complete-catalog download manifest…"
@@ -1541,13 +1610,15 @@
     el.downloadStatus.textContent = Number(manifest.candidate_count || 0).toLocaleString() +
       " complete records in " + validChunks.length + " catalog buckets and " + supplementalParts.length +
       " supplemental files · " + (totalBytes / 1048576).toFixed(1) + " MiB total. Download every listed file to reconstruct the complete catalog." +
-      (gzipped ? " This deployment serves each file gzip-compressed (.json.gz); sizes and SHA-256 checksums are those of the decompressed JSON." : "");
+      (remote ? " This deployment serves the files from the release's data commit on raw.githubusercontent.com" +
+        (state.chunkDeliveryValue.pinned ? " (commit " + state.chunkDeliveryValue.pinned.slice(0, 10) + ")" : "") + "; the manifest above is this site's and binds every file." : "") +
+      (gzipped ? " Each file is served gzip-compressed (.json.gz); sizes and SHA-256 checksums are those of the decompressed JSON." : "");
     el.downloadParts.innerHTML = '<ol aria-label="Complete catalog download parts">' + downloads.map(function (row, index) {
       var path = safeCatalogDownloadPath(row.path), supplemental = index >= validChunks.length;
       return '<li><div><strong>' + esc(path.split("/").pop()) + '</strong><span>' +
         (supplemental ? "Supplemental record data" : Number(row.candidate_count).toLocaleString() + " candidates") +
         " · " + (Number(row.bytes) / 1048576).toFixed(1) +
-        ' MiB</span><code aria-label="SHA-256 checksum">' + esc(row.sha256) + '</code></div><a href="' + esc(gzipped ? path + ".gz" : path) +
+        ' MiB</span><code aria-label="SHA-256 checksum">' + esc(row.sha256) + '</code></div><a href="' + esc((remote ? remote.base : "") + (gzipped ? path + ".gz" : path)) +
         '" download>Download part <span class="sr-only">' + (index + 1) + " of " + downloads.length + "</span></a></li>";
     }).join("") + "</ol>";
   }
@@ -2074,15 +2145,27 @@
   }
   // How this deployment serves dossier chunks: "gzip" on GitHub Pages, "identity" in a
   // checkout of main. A missing or unreadable descriptor means plain JSON.
+  function chunkDescriptor() {
+    if (!state.chunkDescriptorPromise) {
+      state.chunkDescriptorPromise = fetch("ctas/delivery.json", {cache: "no-cache"}).then(function (response) {
+        return response.ok ? response.json() : null;
+      }).catch(function () { return null; });
+    }
+    return state.chunkDescriptorPromise;
+  }
   function chunkEncoding() {
     if (!state.chunkEncodingPromise) {
-      state.chunkEncodingPromise = fetch("ctas/delivery.json", {cache: "no-cache"}).then(function (response) {
-        return response.ok ? response.json() : null;
-      }).catch(function () { return null; }).then(function (descriptor) {
+      state.chunkEncodingPromise = chunkDescriptor().then(function (descriptor) {
+        state.chunkDeliveryValue = window.CTASChunkLoader.chunkDelivery(descriptor);
         return window.CTASChunkLoader.chunkEncoding(descriptor);
       });
     }
     return state.chunkEncodingPromise;
+  }
+  // Where the dossier roots and parts are read from (delivery batch): the release's data
+  // commit on raw.githubusercontent.com when ctas/delivery.json names it, else this site.
+  function chunkDelivery() {
+    return chunkEncoding().then(function () { return state.chunkDeliveryValue; });
   }
   function loadChunk(path) {
     if (!state.chunks[path]) {
@@ -2092,9 +2175,9 @@
         checkRelease();
         if (!safeCatalogDownloadPath(publicPath)) return Promise.reject(new Error("Invalid candidate data path."));
         if (!window.CTASChunkLoader) return Promise.reject(new Error("The candidate data loader is unavailable. Refresh to load the current application."));
-        return chunkEncoding().then(function (encoding) {
+        return chunkDelivery().then(function (delivery) {
           checkRelease();
-          return window.CTASChunkLoader.fetchPublished(DATA_DIR + publicPath.replace(/^ctas\/data\//, ""), undefined, encoding);
+          return window.CTASChunkLoader.fetchChunk(publicPath, delivery, undefined, DATA_DIR);
         }).then(function (bytes) { checkRelease(); return bytes; });
       }
       state.chunks[path] = ensureCatalogManifest().then(function (manifest) {
@@ -2256,7 +2339,8 @@
     el.workspace.innerHTML = '<div class="ctas-loading" role="status" aria-live="polite" tabindex="-1" data-dossier-focus><strong>Loading ' + esc(summary.name) + '…</strong><span>Fetching its checksum-bound public evidence shard.</span><button type="button" data-close-candidate>Close</button></div>';
     if (scroll && !(window.matchMedia && window.matchMedia("(min-width: 961px)").matches)) el.workspace.scrollIntoView({behavior: reducedMotion() ? "auto" : "smooth", block: "start"});
     if (focusReplacement) focusDossierTarget();
-    loadChunk(summary.detail_chunk).then(function (document_) {
+    Promise.all([loadChunk(summary.detail_chunk), loadDeferredModules()]).then(function (results) {
+      var document_ = results[0];
       if (request !== state.routeRequest || epoch !== state.releaseEpoch || !state.activeSummary || state.activeSummary.event_id !== requestedEventId || el.workspace.hidden) return;
       var detail = (document_.candidates || []).find(function (candidate) { return candidate.event_id === summary.event_id; });
       if (!detail) throw new Error("Candidate was not found in its published detail shard.");
@@ -2795,6 +2879,6 @@
   var followupLoad=document.getElementById('ctas-followup-load');
   if(followupLoad)followupLoad.addEventListener('click',function(){followupLoad.disabled=true;followupLoad.textContent='Loading complete catalog…';loadCompleteCatalog().then(function(){renderFollowupExamples();followupLoad.textContent='Complete catalog loaded';}).catch(function(){followupLoad.disabled=false;followupLoad.textContent='Retry complete catalog';});});
   if(followupLoad && 'IntersectionObserver' in window){var followupObserver=new IntersectionObserver(function(entries){if(entries.some(function(entry){return entry.isIntersecting;})){followupObserver.disconnect();if(!state.completeCatalogLoaded&&!followupLoad.disabled)followupLoad.click();}},{rootMargin:'100px'});followupObserver.observe(followupLoad);}
-  bindInterface(); bindSky(); boot(); window.setInterval(pollStatus, 120000);
+  bindInterface(); bindSky(); boot(); scheduleDeferredModules(); window.setInterval(pollStatus, 120000);
   window.setInterval(renderStatus, 60000);
 }());
