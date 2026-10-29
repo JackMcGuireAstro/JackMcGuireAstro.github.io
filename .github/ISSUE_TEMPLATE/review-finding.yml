@@ -1,0 +1,44 @@
+name: Review finding
+description: A finding from the scientific or accessibility review of CTAS or WorldsIndex
+title: "[review] "
+labels: ["review-finding"]
+body:
+  - type: dropdown
+    id: product
+    attributes:
+      label: Product
+      options: ["CTAS", "WorldsIndex", "Both"]
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area (review/what-to-check.md)
+      options: ["Identity", "Sources and receipts", "Conflicts and selections", "Units, epochs, frames", "Methods and analysis", "Citations and rights", "Follow-up", "Accessibility", "Exports", "Other"]
+    validations:
+      required: true
+  - type: input
+    id: record
+    attributes:
+      label: Record or page (link or stable ID)
+    validations:
+      required: true
+  - type: textarea
+    id: finding
+    attributes:
+      label: What you found
+      description: What you expected, what the page or export shows, and why it matters.
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options: ["Wrong value or claim", "Missing or hidden evidence", "Misleading presentation", "Accessibility barrier", "Minor"]
+    validations:
+      required: true
+  - type: textarea
+    id: checked
+    attributes:
+      label: What you checked it against
+      description: Source, reference, tool or screen reader used.

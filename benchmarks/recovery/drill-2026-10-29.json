@@ -1,0 +1,87 @@
+{
+  "host": "Linux",
+  "notes": [
+    "CTAS: run on the sandbox's decompressed copy of soc-20261025T203212Z.db.gz (archive sha256 b3903ffd2d4c020b7f302daf8bb5c5c7c92839e2e8a34590ea8fde1e0e7e65a1, fetched 2026-10-25), opened read-only and immutable. Local exporter and collector test runs had written to that copy after it was restored (source_query_attempts reaches 2026-10-27), so it is not byte-identical to the archive; the .gz restore path (decompress into an empty directory) is exercised by the same code and by every cloud run's restore step, but was not repeated here for lack of disk.",
+    "WorldsIndex: not run in this sandbox (the wi-state archive is not present here and the Mac was offline). Run: python3 scripts/state_restore_drill.py --worldsindex wi-state-<time>.tar.gz --report benchmarks/recovery/drill-<date>.json after fetching the archive.",
+    "certification_runs latest row 2026-08-23: CTAS certificates have been files in each release (ctas/data/certification.json) since the cloud move; the table is kept, append-only."
+  ],
+  "products": {
+    "ctas": {
+      "archive": "soc.db",
+      "bytes": 5309837312,
+      "checks": [
+        {
+          "check": "sqlite quick_check",
+          "detail": "ok",
+          "ok": true
+        },
+        {
+          "check": "tables the exporter reads",
+          "detail": {
+            "missing": [],
+            "present": 46
+          },
+          "ok": true
+        },
+        {
+          "check": "append-only and immutable triggers",
+          "detail": {
+            "expected": [
+              "certification_runs_no_update",
+              "certification_runs_no_delete",
+              "publication_bundles_no_update",
+              "publication_bundles_no_delete",
+              "security_audit_events_no_update",
+              "security_audit_events_no_delete"
+            ],
+            "missing": []
+          },
+          "ok": true
+        },
+        {
+          "check": "evidence tables hold rows",
+          "detail": {
+            "alert_envelopes": 359577,
+            "analysis_runs": 449653,
+            "classification_assertions": 7268,
+            "events": 18029,
+            "observations": 330657,
+            "source_query_attempts": 246417,
+            "spectra": 163
+          },
+          "ok": true
+        },
+        {
+          "check": "latest record times readable",
+          "detail": {
+            "alert_envelopes": "2026-10-25 20:31:21.973492",
+            "certification_runs": "2026-08-23 01:31:00.719611",
+            "source_query_attempts": "2026-10-27 18:26:28.237448"
+          },
+          "ok": true
+        },
+        {
+          "check": "event count against the published release",
+          "detail": {
+            "archive_latest_alert": "2026-10-25T20:31:21.973492",
+            "archive_older_than_release": true,
+            "database_events": 18029,
+            "published_candidate_count": 18123,
+            "release": "2026-10-29T05:56:03Z"
+          },
+          "ok": true
+        }
+      ],
+      "mode": "already decompressed copy, opened read-only and immutable",
+      "ok": true,
+      "restore_seconds": 0.0,
+      "sha256": null
+    },
+    "worldsindex": {
+      "reason": "no archive given",
+      "state": "not-run"
+    }
+  },
+  "run_at": "2026-10-29T09:11:37Z",
+  "schema": "benchmark.restore-drill@1"
+}

@@ -1,0 +1,21 @@
+{
+  "schema": "benchmark.identity@1",
+  "product": "worldsindex",
+  "gold_set": {
+    "file": "packages/exonexus/identity/identity-gold-set.json (worldsindex-state, Track 6)",
+    "cases": 73,
+    "systems": 36,
+    "categories": {"high-proper-motion": 21, "close-pair": 12, "circumbinary": 12, "renamed-host": 23, "lookalike-name": 5}
+  },
+  "thresholds": {"false_merges_max": 0, "false_splits_max": 79, "false_splits_basis": "reviewed baseline on the identity rules v3 atlas"},
+  "results": [
+    {"atlas": "identity rules v3 (published atlas, 31,337 objects)", "false_merges": 0, "false_splits": 79, "missing_members": 0, "within_thresholds": true},
+    {"atlas": "identity rules v4 folded in (PROPOSED, not applied; 26,738 objects)", "false_merges": 0, "false_splits": 51, "missing_members": 0, "within_thresholds": true}
+  ],
+  "measured": {"by": "npm run identity:gold in worldsindex-state at commit 4405470 (Track 6) on wi-state-20261025T200024Z", "date": "2026-10-28"},
+  "rerun": "npm run identity:gold [atlas] in worldsindex-state; exit status 4 means a threshold is crossed. The cloud run's npm test scores the published atlas.",
+  "open": [
+    "CTAS half of the gold set (transient aliases, revised localisations) is not built.",
+    "18 gold-set queue rows and 57 v4 review rows await a person (worldsindex-identity-review-2026-10-28.md)."
+  ]
+}

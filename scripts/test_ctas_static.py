@@ -1479,7 +1479,8 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn("ctas-console-head", html)
         self.assertNotIn('class="ctas-hero__actions"', html)
         self.assertEqual(html.count('id="ctas-q"'), 1)
-        self.assertIn('["celestial-sphere", "recent-stream", "ranked-candidates", "ctas-learn", "about-ctas", "ctas-reference", "methods-and-use"]', app)
+        # Track 7 (page audit item 5): the follow-up examples join the reading order.
+        self.assertIn('["celestial-sphere", "recent-stream", "ranked-candidates", "followup-examples", "ctas-learn", "about-ctas", "ctas-reference", "methods-and-use"]', app)
         self.assertIn('data-candidate-id=', app)
         self.assertIn("function emphasizedEventId()", app)
         self.assertIn("function repaintCandidateLinks(redrawSky)", app)

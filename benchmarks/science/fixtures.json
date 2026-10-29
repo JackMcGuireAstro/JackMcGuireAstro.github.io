@@ -1,0 +1,122 @@
+{
+ "fixtures": [
+  {
+   "a_reviewer_should_see": [
+    "both classifications side by side in Compare sources, marked inconsistent, neither averaged nor hidden",
+    "the headline classification labelled a selection with its rule",
+    "the failed provider listed with state provider-failure and its time, not as no-match"
+   ],
+   "chunk": "ca5.json",
+   "event_id": "3e79a709-0c73-45a2-bcc7-c64c18bd9b98",
+   "event_type": "optical-transient",
+   "facts": {
+    "astro_evidence_conflict_sets": 0,
+    "classification_labels": [
+     "Nova",
+     "SN Ia"
+    ],
+    "classification_verdicts": {
+     "inconsistent": 1,
+     "reference": 1
+    },
+    "comparison_summary": {
+     "conflictCodes": [
+      "classification"
+     ],
+     "properties": 2,
+     "propertiesInConflict": 1,
+     "rows": 6,
+     "selections": 2,
+     "selectionsDifferingFromDisplay": 0
+    },
+    "provider_failures": [
+     "aavso-aid"
+    ],
+    "source_dispositions": {
+     "active-returning-data": 2,
+     "ambiguous-identity": 1,
+     "provider-failure": 1,
+     "searched-no-match": 14,
+     "searched-with-data": 3,
+     "temporarily-unavailable": 2
+    },
+    "timeline_mentions_retraction": false
+   },
+   "name": "SN2026aabx",
+   "record_sha256": "eadb06b3d07d242ff55533e62fd028c9ffe650b9d329abdfb0b0571f4431865a",
+   "role": "optical-transient-disagreeing-classifications-failed-provider"
+  },
+  {
+   "a_reviewer_should_see": [
+    "the retraction kept in the evidence timeline with its time and source",
+    "the retracted notice not counted as current evidence"
+   ],
+   "chunk": "b1f.json",
+   "event_id": "1040bcb8-ef58-4f1f-9a0c-08f7cf6ba867",
+   "event_type": "gamma-ray-transient",
+   "facts": {
+    "astro_evidence_conflict_sets": 0,
+    "classification_labels": [],
+    "classification_verdicts": {},
+    "comparison_summary": null,
+    "provider_failures": [],
+    "source_dispositions": {
+     "active-returning-data": 2
+    },
+    "timeline_mentions_retraction": true
+   },
+   "name": "GRB 260822A",
+   "record_sha256": "fd05a4df343316a39b3a11a31150ba773244c9e2d7ba6ac753720f6bc73d23da",
+   "role": "multimessenger-event-with-retraction"
+  },
+  {
+   "a_reviewer_should_see": [
+    "every published solution as its own row with its reference, none averaged",
+    "the selection rule named beside any selected value",
+    "transit windows padded by the ephemeris uncertainty"
+   ],
+   "facts": {
+    "conflict_sets_listed": 3,
+    "identity_state": "CANONICAL",
+    "in_controversial_retracted_excluded_view": false,
+    "normalized_status": "CONFIRMED",
+    "source_ids": [
+     "exoplanet-eu",
+     "nasa-ps",
+     "nasa-pscomppars",
+     "open-exoplanet-catalogue"
+    ],
+    "source_records": 131
+   },
+   "name": "HD 209458 b",
+   "object_id": "object-hd-209458-b",
+   "record_sha256": "275075ec756c32067b8b9d16415217744aaf96cea1dbeff34d5f8eedaddc2905",
+   "role": "hot-jupiter-reference-system",
+   "shard": "16.json.gz"
+  },
+  {
+   "a_reviewer_should_see": [
+    "the planet listed in the controversial / retracted / excluded view with the reason and source",
+    "identity shown as unreviewed until a person reviews it",
+    "no source's status silently overriding another's"
+   ],
+   "facts": {
+    "conflict_sets_listed": 1,
+    "identity_state": "UNREVIEWED",
+    "in_controversial_retracted_excluded_view": true,
+    "normalized_status": "CONFIRMED",
+    "source_ids": [
+     "exoplanet-eu",
+     "open-exoplanet-catalogue"
+    ],
+    "source_records": 2
+   },
+   "name": "HD 26965 b",
+   "object_id": "object-oec-7db63939d648877516fc",
+   "record_sha256": "2c1f57f1ad1a608f01be81fc90249d958969fe2831b99aca48c54fef8a98e796",
+   "role": "disputed-planet-40-eridani",
+   "shard": "46.json.gz"
+  }
+ ],
+ "schema": "benchmark.science-fixtures@1"
+}

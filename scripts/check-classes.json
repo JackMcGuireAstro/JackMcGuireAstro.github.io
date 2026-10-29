@@ -1381,6 +1381,20 @@
     "deploy"
    ],
    "what": "scripts/test_visitor_browser.py in a real browser: Follow (watchlist, regions, filters, new since last look, sharing, export), SQL engine, cone search and VOTable, notebook page and links; layout, console, accessibility"
+  },
+  "browser.release_pages": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_release_pages_browser.py in a real browser: loading budgets per main page on a throttled mobile profile (LCP and first-load JavaScript against the framework targets and a per-page ratchet in benchmarks/performance/budgets.json) and the page-audit fixes (search answer, plain first screen, gzip download links, deep-link title and landing, reading order)"
+  },
+  "release.evidence": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_release_evidence.py: benchmark files well formed, identity results within thresholds, science-fixture records still published with their stable facts, reproducibility manifests match their files, review packet links resolve, known limitations cover both products"
   }
  }
 }

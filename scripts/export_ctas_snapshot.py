@@ -467,6 +467,14 @@ UNBOUND_RESILIENCE_PATHS = {
     "scripts/cloud_run_marker.py": "the run marker, published beside the release and outside the certified snapshot (as before)",
     "RESILIENCE.md": "documentation of the resilience rules",
     ".github/workflows/worldsindex-release.yml": "workflows are not bound",
+    # Track 7: release evidence and its checks; run by the deploy or by hand, never by the publisher.
+    "scripts/test_release_pages_browser.py": "deploy-time browser budgets and page-audit checks; not part of the release",
+    "scripts/test_release_evidence.py": "deploy-time checks of the benchmark, reproducibility and review files",
+    "scripts/build_benchmarks.py": "regenerates benchmarks/ by hand from published releases",
+    "scripts/build_repro_bundles.py": "regenerates repro/ by hand from published releases",
+    "scripts/build_release_manifest.py": "writes release/manifest.json into the deployed tree; not part of either release",
+    "scripts/state_restore_drill.py": "backup-and-restore drill run by hand on saved state archives",
+    "KNOWN_LIMITATIONS.md": "documentation released beside both products",
 }
 SOURCE_STATE_VOCABULARY = (
     "active-returning-data",

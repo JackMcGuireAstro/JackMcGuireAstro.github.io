@@ -27,6 +27,7 @@
     "babamul.caltech.edu": 1, "pitt-broker.readthedocs.io": 1, "ztf.uw.edu": 1
   };
 
+  var BASE_TITLE = document.title;
   var state = {
     candidates: [], skyCandidates: [], resolvedCandidates: {}, releaseEpoch: 0, routeRequest: 0,
     snapshot: null, status: null, sourceUniverse: null, releaseHistory: null,
@@ -42,10 +43,12 @@
     autoRefreshPaused: false, exportBusy: false, refreshError: null, polling: false
   };
 
+  // Page audit item 5: the document order matches the visual (CSS order) order, so Tab follows
+  // the screen. ctas.html is written in this order too; the follow-up examples were missing here.
   function normalizeWorkspaceOrder() {
     var host = document.querySelector(".ctas-interface > .wrap");
     if (!host) return;
-    ["celestial-sphere", "recent-stream", "ranked-candidates", "ctas-learn", "about-ctas", "ctas-reference", "methods-and-use"].forEach(function (id) {
+    ["celestial-sphere", "recent-stream", "ranked-candidates", "followup-examples", "ctas-learn", "about-ctas", "ctas-reference", "methods-and-use"].forEach(function (id) {
       var section = document.getElementById(id); if (section) host.appendChild(section);
     });
   }
@@ -1510,6 +1513,15 @@
   function renderCatalogDownloads() {
     if (!el.downloadStatus || !el.downloadParts) return;
     var manifest = state.catalogManifest;
+    // Page audit item 3: GitHub Pages serves the chunk files gzip-compressed (<name>.json.gz,
+    // scripts/compress_ctas_chunks.sh), so links to <name>.json were 404s there.
+    if (manifest && Array.isArray(manifest.chunks) && state.chunkEncodingValue === undefined) {
+      el.downloadStatus.textContent = "Reading how this deployment serves the catalog files…";
+      el.downloadParts.innerHTML = "";
+      chunkEncoding().then(function (encoding) { state.chunkEncodingValue = encoding; renderCatalogDownloads(); });
+      return;
+    }
+    var gzipped = state.chunkEncodingValue === "gzip";
     if (!manifest || !Array.isArray(manifest.chunks)) {
       el.downloadStatus.textContent = state.catalogManifestPromise
         ? "Loading the complete-catalog download manifest…"
@@ -1528,13 +1540,14 @@
     var totalBytes = downloads.reduce(function (sum, row) { return sum + Number(row.bytes); }, 0);
     el.downloadStatus.textContent = Number(manifest.candidate_count || 0).toLocaleString() +
       " complete records in " + validChunks.length + " catalog buckets and " + supplementalParts.length +
-      " supplemental files · " + (totalBytes / 1048576).toFixed(1) + " MiB total. Download every listed file to reconstruct the complete catalog.";
+      " supplemental files · " + (totalBytes / 1048576).toFixed(1) + " MiB total. Download every listed file to reconstruct the complete catalog." +
+      (gzipped ? " This deployment serves each file gzip-compressed (.json.gz); sizes and SHA-256 checksums are those of the decompressed JSON." : "");
     el.downloadParts.innerHTML = '<ol aria-label="Complete catalog download parts">' + downloads.map(function (row, index) {
       var path = safeCatalogDownloadPath(row.path), supplemental = index >= validChunks.length;
       return '<li><div><strong>' + esc(path.split("/").pop()) + '</strong><span>' +
         (supplemental ? "Supplemental record data" : Number(row.candidate_count).toLocaleString() + " candidates") +
         " · " + (Number(row.bytes) / 1048576).toFixed(1) +
-        ' MiB</span><code aria-label="SHA-256 checksum">' + esc(row.sha256) + '</code></div><a href="' + esc(path) +
+        ' MiB</span><code aria-label="SHA-256 checksum">' + esc(row.sha256) + '</code></div><a href="' + esc(gzipped ? path + ".gz" : path) +
         '" download>Download part <span class="sr-only">' + (index + 1) + " of " + downloads.length + "</span></a></li>";
     }).join("") + "</ol>";
   }
@@ -1679,9 +1692,29 @@
     var rows=window.CTASPresentation.examples(state.candidates,key);var classified=document.getElementById('ctas-followup-classified');if(classified&&classified.checked)rows=rows.filter(function(c){var n=c.follow_up_counts||{};return Number(n.spectra)>0&&Boolean(window.CTASPresentation.classInfo(c).physical);});var shown=rows.slice(0,50);
     box.innerHTML='<p role="status">'+(state.completeCatalogLoaded?'Complete retained catalog':'Loaded summary only — load the complete catalog to find the richest examples')+' · '+rows.length.toLocaleString()+' records with photometry or spectra; showing '+shown.length+'.</p><div class="ctas-evidence-table-wrap"><table class="ctas-evidence-table"><caption>Most compiled follow-up records, ordered by '+esc(key)+'. Counts are retained rows. Detections are source-reported; forced measurements can include detections or limits. Spectra and reported classes do not alone certify a successful classification.</caption><thead><tr><th>Candidate / archival field</th><th>Physical class / alert</th><th>Follow-up outcomes</th><th>Photometry</th><th>Spectra</th><th>Classifications</th><th>Reports</th><th>Total</th><th>Evidence</th></tr></thead><tbody>'+shown.map(function(c){c=state.resolvedCandidates[c.event_id]||c;var n=c.follow_up_counts||{},info=window.CTASPresentation.classInfo(c);return '<tr><td><button type="button" data-open-event="'+esc(c.event_id)+'">'+window.CTASPresentation.thumbnail(c)+esc(c.name)+'</button></td><td>'+esc(info.physical||(info.alert?'Alert: '+info.alert:'Unclassified'))+'</td><td>'+esc(window.CTASPresentation.outcomeText(c))+'<br><button type="button" data-open-event="'+esc(c.event_id)+'">Inspect evidence &amp; timeline</button></td>'+['observations','spectra','classifications','publications'].map(function(k){return '<td>'+Number(n[k]||0).toLocaleString()+'</td>';}).join('')+'<td>'+window.CTASPresentation.weight(c).toLocaleString()+'</td><td>'+renderReferences(c.links||[])+'</td></tr>';}).join('')+'</tbody></table></div>';
   }
+  // Page audit item 1: the search box sits in the sticky navigation, far from the table,
+  // so the answer (match count, the first matches, alias-loading state) is shown under it.
+  function renderSearchAnswer(rows) {
+    var box = document.getElementById("ctas-q-answer");
+    if (!box) return;
+    var query = text(state.q).trim();
+    if (!query) { box.hidden = true; box.innerHTML = ""; return; }
+    var top = rows.slice(0, 5);
+    var scope = state.completeCatalogLoaded ? "the complete catalog" : "the loaded summary";
+    var aliasNote = state.aliasIndex ? "" : (state.aliasPromise ? " Provider aliases are still loading; more matches may appear." : "");
+    box.hidden = false;
+    box.innerHTML = "<p>" + (rows.length
+      ? rows.length.toLocaleString() + (rows.length === 1 ? " match" : " matches") + " for \u201c" + esc(query) + "\u201d in " + scope + "."
+      : "No match for \u201c" + esc(query) + "\u201d in " + scope + ".") + esc(aliasNote) + "</p>" +
+      (top.length ? '<ul aria-label="First matches">' + top.map(function (candidate) {
+        return '<li><button type="button" data-open-event="' + esc(candidate.event_id) + '">' + esc(candidate.name) + "</button></li>";
+      }).join("") + "</ul>" : "") +
+      (rows.length > top.length ? '<a href="#ranked-candidates" data-search-show-all>Show all ' + rows.length.toLocaleString() + " in the table</a>" : "");
+  }
   function renderTable() {
     renderFollowupExamples();
     var rows = visible(), shown = rows.slice(0, state.shown);
+    renderSearchAnswer(rows);
     var defaultLeaderboard = state.preset === "all" && !state.q && !state.cls && !state.msg && !state.stat && !state.survey &&
       !state.from && !state.to && state.scoreMin === null && state.scoreMax === null && state.magMax === null &&
       !state.spectrum && !state.conflict && !state.lcfit && !state.broker && !state.host && !state.prior && !state.unusual && !state.richness && state.coneRa === null && state.coneDec === null && state.coneRadius === null;
@@ -2228,10 +2261,17 @@
       var detail = (document_.candidates || []).find(function (candidate) { return candidate.event_id === summary.event_id; });
       if (!detail) throw new Error("Candidate was not found in its published detail shard.");
       state.activeDetail = detail; el.workspace.innerHTML = renderDetails(detail); restoreDossierView(detail);
+      document.title = text(summary.name) + " · CTAS · Jack McGuire";
+      // Page audit item 4: a deep link opened on a phone lands on the dossier, not 2,000+ px above it.
+      if (state.scrollAfterLoad) {
+        state.scrollAfterLoad = false;
+        if (!(window.matchMedia && window.matchMedia("(min-width: 961px)").matches)) el.workspace.scrollIntoView({behavior: "auto", block: "start"});
+      }
       window.dispatchEvent(new CustomEvent("ctas:candidate-opened", {detail: {candidate: detail, summary: summary}}));
       if (focusReplacement) focusDossierTarget();
     }).catch(function (error) {
       if (request !== state.routeRequest || epoch !== state.releaseEpoch || !state.activeSummary || state.activeSummary.event_id !== requestedEventId || el.workspace.hidden) return;
+      state.scrollAfterLoad = false;
       el.workspace.innerHTML = '<div class="ctas-empty ctas-empty--error"><h3 tabindex="-1" data-dossier-focus>Candidate details could not be loaded</h3><p>' +
         esc(error.message) + '</p><button type="button" data-retry-candidate>Retry this record</button><button type="button" data-close-candidate>Close</button></div>';
       if (focusReplacement) focusDossierTarget();
@@ -2241,6 +2281,7 @@
     state.routeRequest += 1;
     var opener = state.activeOpener, summary = state.activeSummary;
     state.activeSummary = null; state.activeDetail = null; el.workspace.hidden = true; el.workspace.innerHTML = ""; repaintCandidateLinks();
+    document.title = BASE_TITLE;
     window.dispatchEvent(new CustomEvent("ctas:candidate-closed"));
     var url = new URL(window.location.href);
     ["event", "view", "band", "alias", "source", "candidate", "at"].forEach(function (key) { url.searchParams.delete(key); });
@@ -2255,6 +2296,7 @@
     state.activeDetail = null;
     state.activeOpener = null;
     state.exportBusy = false;
+    document.title = BASE_TITLE;
     el.workspace.hidden = true;
     el.workspace.innerHTML = "";
     repaintCandidateLinks();
@@ -2376,6 +2418,12 @@
     if (el.q) el.q.addEventListener("input", function () {
       state.q = el.q.value; rerenderForFilters();
       if (state.q && !state.aliasIndex) ensureAliasIndex().then(rerenderForFilters).catch(function () { /* name and UUID search remain usable */ });
+    });
+    if (el.q) el.q.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter" || !text(state.q).trim()) return;
+      event.preventDefault();
+      var ranked = document.getElementById("ranked-candidates");
+      if (ranked) ranked.scrollIntoView({behavior: reducedMotion() ? "auto" : "smooth", block: "start"});
     });
     if (el.cls) el.cls.addEventListener("change", function () { state.cls = el.cls.value; rerenderForFilters(); });
     if (el.msg) el.msg.addEventListener("change", function () { state.msg = el.msg.value; rerenderForFilters(); });
@@ -2565,6 +2613,8 @@
     window.dispatchEvent(new CustomEvent("ctas:snapshot", {detail: {snapshot: state.snapshot, status: state.status,
       candidates: state.candidates, sourceUniverse: state.sourceUniverse, releaseHistory: state.releaseHistory,
       catalogManifest: state.catalogManifest, cached: state.cachedSnapshot}}));
+    if (!quietRefresh && !state.initialRouteHandled && routeMatches().kind) state.scrollAfterLoad = true;
+    state.initialRouteHandled = true;
     openRouteCandidate(false, quietRefresh);
     revealFragment();
   }

@@ -173,6 +173,7 @@ group_browser() {
   check browser.worldsindex_sky python3 scripts/test_worldsindex_sky_browser.py
   check browser.worldsindex_compare python3 scripts/test_worldsindex_compare_browser.py
   check browser.visitor python3 scripts/test_visitor_browser.py
+  check browser.release_pages python3 scripts/test_release_pages_browser.py
 }
 
 group_tooling() {
@@ -188,6 +189,7 @@ group_tooling() {
 group_content() {
   check site.whitespace git diff --check
   check site.credential-scan credential_scan
+  check release.evidence python3 scripts/test_release_evidence.py
 }
 
 case "$GROUP" in

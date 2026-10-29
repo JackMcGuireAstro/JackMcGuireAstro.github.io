@@ -234,6 +234,16 @@ jobs:
             echo "::warning title=Visitor tools::the deploy-time files were not built; the Follow, SQL and cone-search pages say so"
           fi
           echo "published site size with the visitor files: $(du -sh --exclude=.git "$TREE" | cut -f1)" | tee -a "$GITHUB_STEP_SUMMARY"
+      # Track 7: release/manifest.json, one record of this deployment (site and data commits,
+      # release checksums, source universes, known limitations, benchmark and reproducibility
+      # files with their SHA-256, DOI state). Made from the files being deployed; never fatal.
+      - name: Release manifest of this deployment
+        env:
+          TREE: ${{ steps.choose.outputs.tree }}
+        run: |
+          python3 scripts/build_release_manifest.py --tree "$TREE" \
+            --ctas-commit "${{ steps.overlay.outputs.ctas_commit }}" --worldsindex-commit "${{ steps.overlay.outputs.worldsindex_commit }}" \
+            | tee -a "$GITHUB_STEP_SUMMARY" || echo "::warning title=Release manifest::release/manifest.json was not written"
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

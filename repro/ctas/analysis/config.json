@@ -1,0 +1,31 @@
+{
+ "inputRule": "ZTF g/r/i difference-PSF detections (ALeRCE, Fink, Lasair; one row per exposure) and ATLAS o/c forced-PSF detections, AB, uncertainty <= 0.5 mag",
+ "methodName": "multiband-bazin",
+ "methodVersion": "1.0.0",
+ "parameters": {
+  "fitter": "scipy.optimize.least_squares (trf), deterministic starts",
+  "minimumBandDetections": 3,
+  "minimumDetections": 8,
+  "minimumSpanDays": 5.0,
+  "model": "F_b(t) = A_b exp(-(t-t0)/tau_fall) / (1 + exp(-(t-t0)/tau_rise))",
+  "sharedParameters": "timing (and the plateau slope s) shared across bands; one amplitude per band",
+  "space": "flux (microjansky, AB zero point 23.9)"
+ },
+ "references": [
+  "2009A&A...499..653B"
+ ],
+ "release": {
+  "catalog_content_checksum_sha256": "aa2f83a9a68af9b4c42c3344e2aace9c8667a4458d71cd9b52c608c9d5c92232",
+  "ctas_last_successful_update": "2026-10-29T05:56:03Z"
+ },
+ "reproduction_tolerance": {
+  "basis": "independent refit with SciPy from a generic start (brightest point, 20-day fall, 3-day rise); tolerances allow for optimizer and library-version differences",
+  "peak_days": 1.0,
+  "tau_fraction": 0.1
+ },
+ "software_at_release": {
+  "astropy": "7.2.2",
+  "numpy": "2.5.1",
+  "scipy": "1.18.0"
+ }
+}

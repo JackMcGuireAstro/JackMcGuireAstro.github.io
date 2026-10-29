@@ -1,0 +1,885 @@
+{
+ "denominators": {
+  "definitions": {
+   "applicable": "Applicable: scientifically relevant and queryable for at least one object of this release (an object states an identifier of the kind the source is keyed on).",
+   "dataBearing": "Data-bearing: valid rows were returned and retained for at least one object.",
+   "declared": "Declared: present in the versioned source universe.",
+   "executed": "Executed: an actual bounded query, snapshot lookup or retrieval attempt occurred for this release. Null for live per-target sources: they run in the visitor's browser and the builder records nothing about them (the monitor's canary checks are in source-monitor.json)."
+  },
+  "notComputable": {
+   "eso": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "gaia": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "high-contrast-imaging": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "kelt": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "mast": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "mast-products": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "microlensing-surveys": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "mission-target-catalogs": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "nasa-aliases": "executed count is a lower bound (the objects with retained rows): live per-target queries run in the visitor's browser on request and are not recorded by the builder",
+   "nasa-contributed-timeseries": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "nasa-kepler-reliability": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "nasa-kepler-timeseries": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "simbad": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "superwasp": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "timing-repositories": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder",
+   "ztf": "executed: live per-target source; queries run in the visitor's browser on request and are not recorded by the builder"
+  },
+  "sources": {
+   "applicable": 42,
+   "dataBearing": 22,
+   "declared": 42,
+   "executed": 22,
+   "executedUnknown": 15,
+   "notExecuted": 5
+  }
+ },
+ "input": {
+  "file": "worldsindex/data/source-coverage.json",
+  "generated_at": "2026-10-29T06:04:16.196Z",
+  "sha256": "7389863f8cafc5b6f38492400ffdb60d570ab27916be1071b109abcdef95d1ea"
+ },
+ "product": "worldsindex",
+ "schema": "benchmark.sources@1",
+ "sources": [
+  {
+   "applicable": true,
+   "attached": 9667,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "FROZEN_CONTEXT",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 9724,
+   "executed": true,
+   "objects": {
+    "applicable": 9724,
+    "dataBearing": 9667,
+    "declared": 31337,
+    "executed": 9724
+   },
+   "rows": 6354,
+   "source": "ads",
+   "state": "FROZEN_SNAPSHOT"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 31328,
+   "blocked_reason": "not configured: No supported cached adapter or source-specific quality contract is installed.",
+   "class": "NOT_CONFIGURED",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 31328,
+   "executed": false,
+   "objects": {
+    "applicable": 31328,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": 0
+   },
+   "rows": 0,
+   "source": "asas-sn",
+   "state": "NOT_CONFIGURED"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 648,
+   "blocked_reason": "not configured: No product-manifest or time-series adapter is installed.",
+   "class": "NOT_CONFIGURED",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 648,
+   "executed": false,
+   "objects": {
+    "applicable": 648,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": 0
+   },
+   "rows": 0,
+   "source": "corot",
+   "state": "NOT_CONFIGURED"
+  },
+  {
+   "applicable": true,
+   "attached": 594,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "ATLAS_INGESTED",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 594,
+   "executed": true,
+   "objects": {
+    "applicable": 594,
+    "dataBearing": 594,
+    "declared": 31337,
+    "executed": 594
+   },
+   "rows": 594,
+   "source": "corot-transit-catalog",
+   "state": "INGESTED"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 31328,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 31328,
+   "executed": null,
+   "objects": {
+    "applicable": 31328,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "eso",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 10732,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "FROZEN_CONTEXT",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 19671,
+   "executed": true,
+   "objects": {
+    "applicable": 19671,
+    "dataBearing": 10732,
+    "declared": 31337,
+    "executed": 19671
+   },
+   "rows": 13290,
+   "source": "exofop",
+   "state": "FROZEN_SNAPSHOT"
+  },
+  {
+   "applicable": true,
+   "attached": 11415,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "ATLAS_INGESTED",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 11415,
+   "executed": true,
+   "objects": {
+    "applicable": 11415,
+    "dataBearing": 11415,
+    "declared": 31337,
+    "executed": 11415
+   },
+   "rows": 11256,
+   "source": "exoplanet-eu",
+   "state": "INGESTED"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 31328,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 31328,
+   "executed": null,
+   "objects": {
+    "applicable": 31328,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "gaia",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 214,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "ATLAS_INGESTED",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 214,
+   "executed": true,
+   "objects": {
+    "applicable": 214,
+    "dataBearing": 214,
+    "declared": 31337,
+    "executed": 214
+   },
+   "rows": 214,
+   "source": "gaia-planetary-transit",
+   "state": "INGESTED"
+  },
+  {
+   "applicable": true,
+   "attached": 71,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "FROZEN_CONTEXT",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 85,
+   "executed": true,
+   "objects": {
+    "applicable": 85,
+    "dataBearing": 71,
+    "declared": 31337,
+    "executed": 85
+   },
+   "rows": 69,
+   "source": "hatnet",
+   "state": "FROZEN_SNAPSHOT"
+  },
+  {
+   "applicable": true,
+   "attached": 73,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "FROZEN_CONTEXT",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 78,
+   "executed": true,
+   "objects": {
+    "applicable": 78,
+    "dataBearing": 73,
+    "declared": 31337,
+    "executed": 78
+   },
+   "rows": 72,
+   "source": "hatsouth",
+   "state": "FROZEN_SNAPSHOT"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 31328,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 31328,
+   "executed": null,
+   "objects": {
+    "applicable": 31328,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "high-contrast-imaging",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 31328,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 31328,
+   "executed": null,
+   "objects": {
+    "applicable": 31328,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "kelt",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 31328,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 31328,
+   "executed": null,
+   "objects": {
+    "applicable": 31328,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "mast",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 31328,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 31328,
+   "executed": null,
+   "objects": {
+    "applicable": 31328,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "mast-products",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 629,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 629,
+   "executed": null,
+   "objects": {
+    "applicable": 629,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "microlensing-surveys",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 31328,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 31328,
+   "executed": null,
+   "objects": {
+    "applicable": 31328,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "mission-target-catalogs",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 9,
+   "blocked": 24935,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 24944,
+   "executed": true,
+   "objects": {
+    "applicable": 24944,
+    "dataBearing": 9,
+    "declared": 31337,
+    "executed": 9
+   },
+   "rows": 0,
+   "source": "nasa-aliases",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 376,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "FROZEN_CONTEXT",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 9675,
+   "executed": true,
+   "objects": {
+    "applicable": 9675,
+    "dataBearing": 376,
+    "declared": 31337,
+    "executed": 9675
+   },
+   "rows": 1875,
+   "source": "nasa-atmospheric-spectroscopy",
+   "state": "FROZEN_SNAPSHOT"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 31328,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 31328,
+   "executed": null,
+   "objects": {
+    "applicable": 31328,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "nasa-contributed-timeseries",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 81,
+   "blocked_reason": "not configured: No source-specific projection or product manifest is installed yet.",
+   "class": "NOT_CONFIGURED",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 81,
+   "executed": false,
+   "objects": {
+    "applicable": 81,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": 0
+   },
+   "rows": 0,
+   "source": "nasa-direct-imaging",
+   "state": "NOT_CONFIGURED"
+  },
+  {
+   "applicable": true,
+   "attached": 1806,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "ATLAS_INGESTED",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 1806,
+   "executed": true,
+   "objects": {
+    "applicable": 1806,
+    "dataBearing": 1806,
+    "declared": 31337,
+    "executed": 1806
+   },
+   "rows": 4068,
+   "source": "nasa-k2",
+   "state": "INGESTED"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 12441,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 12441,
+   "executed": null,
+   "objects": {
+    "applicable": 12441,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "nasa-kepler-reliability",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 12320,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "FROZEN_CONTEXT",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 12441,
+   "executed": true,
+   "objects": {
+    "applicable": 12441,
+    "dataBearing": 12320,
+    "declared": 31337,
+    "executed": 12441
+   },
+   "rows": 89090,
+   "source": "nasa-kepler-tce",
+   "state": "FROZEN_SNAPSHOT"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 12441,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 12441,
+   "executed": null,
+   "objects": {
+    "applicable": 12441,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "nasa-kepler-timeseries",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 9564,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "ATLAS_INGESTED",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 9564,
+   "executed": true,
+   "objects": {
+    "applicable": 9564,
+    "dataBearing": 9564,
+    "declared": 31337,
+    "executed": 9564
+   },
+   "rows": 9564,
+   "source": "nasa-koi",
+   "state": "INGESTED"
+  },
+  {
+   "applicable": true,
+   "attached": 12471,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "FROZEN_CONTEXT",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 12493,
+   "executed": true,
+   "objects": {
+    "applicable": 12493,
+    "dataBearing": 12471,
+    "declared": 31337,
+    "executed": 12493
+   },
+   "rows": 45091,
+   "source": "nasa-koi-historical",
+   "state": "FROZEN_SNAPSHOT"
+  },
+  {
+   "applicable": true,
+   "attached": 304,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "FROZEN_CONTEXT",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 304,
+   "executed": true,
+   "objects": {
+    "applicable": 304,
+    "dataBearing": 304,
+    "declared": 31337,
+    "executed": 304
+   },
+   "rows": 915,
+   "source": "nasa-microlensing",
+   "state": "FROZEN_SNAPSHOT"
+  },
+  {
+   "applicable": true,
+   "attached": 6132,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "FROZEN_CONTEXT",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 16625,
+   "executed": true,
+   "objects": {
+    "applicable": 16625,
+    "dataBearing": 6132,
+    "declared": 31337,
+    "executed": 16625
+   },
+   "rows": 3401,
+   "source": "nasa-name-tables",
+   "state": "FROZEN_SNAPSHOT"
+  },
+  {
+   "applicable": true,
+   "attached": 6354,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "ATLAS_INGESTED",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 6354,
+   "executed": true,
+   "objects": {
+    "applicable": 6354,
+    "dataBearing": 6354,
+    "declared": 31337,
+    "executed": 6354
+   },
+   "rows": 40106,
+   "source": "nasa-ps",
+   "state": "INGESTED"
+  },
+  {
+   "applicable": true,
+   "attached": 6354,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "ATLAS_INGESTED",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 6354,
+   "executed": true,
+   "objects": {
+    "applicable": 6354,
+    "dataBearing": 6354,
+    "declared": 31337,
+    "executed": 6354
+   },
+   "rows": 6354,
+   "source": "nasa-pscomppars",
+   "state": "INGESTED"
+  },
+  {
+   "applicable": true,
+   "attached": 12163,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "FROZEN_CONTEXT",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 27402,
+   "executed": true,
+   "objects": {
+    "applicable": 27402,
+    "dataBearing": 12163,
+    "declared": 31337,
+    "executed": 27402
+   },
+   "rows": 48101,
+   "source": "nasa-stellar-hosts",
+   "state": "FROZEN_SNAPSHOT"
+  },
+  {
+   "applicable": true,
+   "attached": 8136,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "ATLAS_INGESTED",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 8136,
+   "executed": true,
+   "objects": {
+    "applicable": 8136,
+    "dataBearing": 8136,
+    "declared": 31337,
+    "executed": 8136
+   },
+   "rows": 8136,
+   "source": "nasa-toi",
+   "state": "INGESTED"
+  },
+  {
+   "applicable": true,
+   "attached": 4928,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "FROZEN_CONTEXT",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 9749,
+   "executed": true,
+   "objects": {
+    "applicable": 9749,
+    "dataBearing": 4928,
+    "declared": 31337,
+    "executed": 9749
+   },
+   "rows": 36477,
+   "source": "nasa-transiting-planets",
+   "state": "FROZEN_SNAPSHOT"
+  },
+  {
+   "applicable": true,
+   "attached": 5414,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "ATLAS_INGESTED",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 5414,
+   "executed": true,
+   "objects": {
+    "applicable": 5414,
+    "dataBearing": 5414,
+    "declared": 31337,
+    "executed": 5414
+   },
+   "rows": 5414,
+   "source": "open-exoplanet-catalogue",
+   "state": "INGESTED"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 24024,
+   "blocked_reason": "not configured: No provider-specific rights and schema contract has passed.",
+   "class": "NOT_CONFIGURED",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 24024,
+   "executed": false,
+   "objects": {
+    "applicable": 24024,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": 0
+   },
+   "rows": 0,
+   "source": "public-rv-repositories",
+   "state": "NOT_CONFIGURED"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 31328,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 31328,
+   "executed": null,
+   "objects": {
+    "applicable": 31328,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "simbad",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 31328,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 31328,
+   "executed": null,
+   "objects": {
+    "applicable": 31328,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "superwasp",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 9668,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 9668,
+   "executed": null,
+   "objects": {
+    "applicable": 9668,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "timing-repositories",
+   "state": "LIVE_QUERY"
+  },
+  {
+   "applicable": true,
+   "attached": 12556,
+   "blocked": 0,
+   "blocked_reason": null,
+   "class": "FROZEN_CONTEXT",
+   "data_bearing": true,
+   "declared": true,
+   "eligible": 27418,
+   "executed": true,
+   "objects": {
+    "applicable": 27418,
+    "dataBearing": 12556,
+    "declared": 31337,
+    "executed": 27418
+   },
+   "rows": 6347,
+   "source": "vizier",
+   "state": "FROZEN_SNAPSHOT"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 31337,
+   "blocked_reason": "not configured: Wholesale merging across heterogeneous VizieR tables is explicitly excluded. The first two contracted catalogs (the SWEET-Cat table, the TESS prime-mission TOI catalog) are frozen under the vizier source; this entry covers any further catalog, which needs its own contract first.",
+   "class": "NOT_CONFIGURED",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 31337,
+   "executed": false,
+   "objects": {
+    "applicable": 31337,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": 0
+   },
+   "rows": 0,
+   "source": "vizier-contract-catalogs",
+   "state": "NOT_CONFIGURED"
+  },
+  {
+   "applicable": true,
+   "attached": 0,
+   "blocked": 31328,
+   "blocked_reason": "live per-target source: queried in the browser for one object on request, never frozen into a release",
+   "class": "LIVE_PER_TARGET",
+   "data_bearing": false,
+   "declared": true,
+   "eligible": 31328,
+   "executed": null,
+   "objects": {
+    "applicable": 31328,
+    "dataBearing": 0,
+    "declared": 31337,
+    "executed": null
+   },
+   "rows": 0,
+   "source": "ztf",
+   "state": "LIVE_QUERY"
+  }
+ ]
+}
