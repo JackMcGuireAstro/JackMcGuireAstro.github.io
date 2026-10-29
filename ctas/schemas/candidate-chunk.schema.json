@@ -999,6 +999,147 @@
             "runs"
           ],
           "additionalProperties": false
+        },
+        "multimessenger": {
+          "description": "Track 3d: a multimessenger event page. Gravitational waves: the LVK alert's own fields (significance flag, false-alarm rate, classification, HasNS/HasRemnant/HasMassGap/HasSSM, external coincidence, notice history, retraction), the collector's credible-region MOCs and Space-Time MOC, the galaxy ranking and the counterpart registry with every revision. Neutrinos, FRBs and X-ray localisations: the published circular region and the public optical events inside it in a stated window. Absent for every other event.",
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "ctas.multimessenger@1"
+            },
+            "kind": {
+              "enum": [
+                "gravitational-wave",
+                "neutrino",
+                "radio",
+                "x-ray"
+              ]
+            },
+            "lvk": {
+              "type": "object",
+              "properties": {
+                "significant": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "falseAlarmRateHz": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "falseAlarmRatePerYear": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "classification": {
+                  "type": "object"
+                },
+                "properties": {
+                  "type": "object"
+                },
+                "noticeHistory": {
+                  "type": "array"
+                },
+                "retracted": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "significant",
+                "falseAlarmRateHz",
+                "classification",
+                "properties",
+                "noticeHistory",
+                "retracted"
+              ]
+            },
+            "localization": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/multimessengerRun"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "galaxies": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/multimessengerRun"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "counterparts": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/multimessengerRun"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "candidates": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/multimessengerRun"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "region": {
+              "type": "object",
+              "properties": {
+                "centerRaDeg": {
+                  "type": "number",
+                  "minimum": 0,
+                  "exclusiveMaximum": 360
+                },
+                "centerDecDeg": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90
+                },
+                "radiusDeg": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "areaSqDeg": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "required": [
+                "centerRaDeg",
+                "centerDecDeg",
+                "radiusDeg",
+                "areaSqDeg"
+              ]
+            },
+            "coverage": {
+              "type": "string"
+            },
+            "refreshPolicy": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "schema",
+            "kind",
+            "coverage"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [
@@ -2053,6 +2194,66 @@
         }
       ],
       "additionalProperties": false
+    },
+    "multimessengerRun": {
+      "description": "One multimessenger analysis run (Track 3d): a collector run (gw-localization-moc, gw-galaxy-ranking) published with its method, version, inputs, checksums, result and revisions, or an exporter run (counterpart-registry, region-candidates).",
+      "type": "object",
+      "properties": {
+        "analysisType": {
+          "enum": [
+            "gw-localization-moc",
+            "gw-galaxy-ranking",
+            "counterpart-registry",
+            "region-candidates"
+          ]
+        },
+        "methodName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "methodVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "complete",
+            "not-computed",
+            "insufficient-data"
+          ]
+        },
+        "inputs": {
+          "type": "object"
+        },
+        "inputChecksumSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "result": {
+          "type": "object"
+        },
+        "resultChecksumSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "claimBoundary": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "analysisType",
+        "methodName",
+        "methodVersion",
+        "status",
+        "inputs",
+        "inputChecksumSha256"
+      ]
     }
   }
 }

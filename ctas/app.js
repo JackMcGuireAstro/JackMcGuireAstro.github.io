@@ -1371,6 +1371,7 @@
       (window.CTASWorkbench && window.CTASWorkbench.skyContextPanel ? window.CTASWorkbench.skyContextPanel(candidate) : "") +
       renderIdentity(candidate) + renderScoreFactors(candidate) + renderCompleteness(candidate) + renderSourceCoverage(candidate) +
       (window.CTASLightcurveScience ? window.CTASLightcurveScience.brokerPanel(candidate) : "") +
+      (window.CTASMultimessenger ? window.CTASMultimessenger.panel(candidate) : "") +
       (window.CTASHostAssociation ? window.CTASHostAssociation.panel(candidate) : "") +
       (window.CTASComparison ? window.CTASComparison.panel(candidate) : "") + renderEvidenceLedger(candidate) +
       renderPhotometry(candidate) + renderSpectra(candidate) +

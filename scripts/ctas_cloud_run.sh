@@ -136,6 +136,11 @@ GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/cloud_run_marker.py" --workflow c
 
 # ------------------------------------------------------------------ 2. collect
 [ -f "$BACKEND/.env" ] || say "no .env for the collector; sources that need keys will be skipped"
+# Retained public sky maps live beside the database and are kept between runs with it
+# (scripts/ctas_cloud_state.py, skymaps.tar.gz) so that the hourly Track 3d refresh can
+# re-rank a young event's candidates and galaxies in later runs.
+export SKYMAP_ARTIFACT_DIR="$DATA/skymaps"
+mkdir -p "$SKYMAP_ARTIFACT_DIR"
 say "starting the collector"
 ( cd "$BACKEND" && exec supernova-ops api --host 127.0.0.1 --port "$PORT" ) >"$LOGS/collector.log" 2>&1 &
 COLLECTOR_PID=$!

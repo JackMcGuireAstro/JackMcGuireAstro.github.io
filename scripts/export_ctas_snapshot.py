@@ -80,11 +80,13 @@ try:
     import ctas_lightcurve_science as lightcurve_science
     import ctas_host_association as host_association
     import ctas_population_anomaly as population_anomaly
+    import ctas_multimessenger as multimessenger
 except ModuleNotFoundError:
     from scripts import ctas_broker_classes as broker_classes  # type: ignore[no-redef]
     from scripts import ctas_lightcurve_science as lightcurve_science  # type: ignore[no-redef]
     from scripts import ctas_host_association as host_association  # type: ignore[no-redef]
     from scripts import ctas_population_anomaly as population_anomaly  # type: ignore[no-redef]
+    from scripts import ctas_multimessenger as multimessenger  # type: ignore[no-redef]
 
 
 def interop():
@@ -410,6 +412,8 @@ BOUND_CODE_PATHS = (
     "scripts/ctas_reference_data.sh",
     "scripts/ctas_host_association.py", "scripts/ctas_population_anomaly.py", "scripts/test_ctas_host_association.py",
     "ctas/host-association.js", "scripts/test_ctas_host_association.js",
+    "scripts/ctas_multimessenger.py", "scripts/test_ctas_multimessenger.py",
+    "ctas/multimessenger.js", "scripts/test_ctas_multimessenger.js",
     "tests/fixtures/ctas-brokers/alerce-ZTF26abljbah.json", "tests/fixtures/ctas-brokers/fink-ZTF26abljbah.json",
     "tests/fixtures/ctas-brokers/antares-ZTF26abljbah.json", "tests/fixtures/ctas-brokers/alerce-404-ZTF99zzzzzzz.json",
     "tests/fixtures/ctas-brokers/fink-empty-ZTF99zzzzzzz.json", "tests/fixtures/ctas-brokers/antares-empty-ZTF99zzzzzzz.json",
@@ -2548,6 +2552,9 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         ORDER BY ar.event_id, COALESCE(ar.completed_at, ar.created_at), ar.id
         """,
     )
+    # Track 3d: the collector's localization MOCs, galaxy rankings and counterpart rankings,
+    # every revision, for the multimessenger event pages; scripts/ctas_multimessenger.py.
+    multimessenger_runs = rows_by_event(cur, ids, multimessenger.RUNS_SQL)
     # Track 2b: every retained source assertion of position, classification, redshift and
     # host, side by side under the comparison key; scripts/ctas_comparison.py.
     comparison_envelopes = rows_by_event(cur, ids, comparison.ENVELOPE_SQL)
@@ -3056,6 +3063,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
     counts["all_attempts"] = all_attempts
     counts["analysis_runs"] = analysis_runs
     counts["analysis_screen_runs"] = analysis_screen_runs
+    counts["multimessenger_runs"] = multimessenger_runs
     counts["comparison_inputs"] = {
         "envelopes": comparison_envelopes, "classifications": comparison_classifications, "hosts": comparison_hosts,
     }
@@ -5211,6 +5219,7 @@ def main() -> int:
     lightcurve_blocks = lightcurve_science.build_all(candidates, broker_blocks,
                                                      probable_offsets={k: v for k, v in probable_offsets.items() if v is not None})
     clock.done("lightcurve-science")
+    multimessenger_index = multimessenger.public_index(candidates, host_blocks)
     for candidate in candidates:
         event_id = str(candidate["event_id"])
         candidate_attempts = counts["all_attempts"].get(event_id, [])
@@ -5265,6 +5274,11 @@ def main() -> int:
             candidate[lightcurve_science.CANDIDATE_KEY] = lightcurve_blocks[event_id]
         if event_id in host_blocks:
             candidate[host_association.CANDIDATE_KEY] = host_blocks[event_id]
+        multimessenger_block = multimessenger.build_multimessenger(
+            candidate, counts.get("multimessenger_runs", {}).get(event_id, []), multimessenger_index,
+        )
+        if multimessenger_block is not None:
+            candidate[multimessenger.CANDIDATE_KEY] = multimessenger_block
         candidate["source_accounting"] = accounting
         complete_source_matrix = [
             {key: row.get(key) for key in SOURCE_MATRIX_ROW_KEYS}
@@ -6047,6 +6061,7 @@ def main() -> int:
     broker_problems = broker_classes.broker_problems(candidates)
     host_problems = host_association.host_problems(candidates)
     population_problems = population_anomaly.problems(json.loads(population_anomaly_raw), candidates)
+    multimessenger_problems = multimessenger.multimessenger_problems(candidates)
     required_contract = all(
         candidate.get("name") and "ctas_score" in candidate and
         isinstance(candidate.get("follow_up_counts"), dict) and
@@ -6586,6 +6601,13 @@ def main() -> int:
             f"{sum(1 for c in candidates for r in (c.get(host_association.CANDIDATE_KEY) or {}).get('runs', []) if r.get('analysisType') == 'host-posterior' and r.get('status') == 'complete')} "
             "host posteriors, each normalised with the host-missed hypothesis and tracing every ranked galaxy to retained catalogue rows"
             + ("" if not host_problems else "; " + "; ".join(host_problems[:5]))
+        )),
+        gate("multimessenger-provenance", not multimessenger_problems, (
+            f"{sum(1 for c in candidates if c.get(multimessenger.CANDIDATE_KEY))} dossiers carry a multimessenger block "
+            f"({sum(1 for c in candidates if (c.get(multimessenger.CANDIDATE_KEY) or {}).get('kind') == 'gravitational-wave')} gravitational-wave); "
+            "every run names its method version and inputs with a checksum, MOC areas nest, galaxy lists name their catalogue, "
+            "and every registry and region row is an event of this release inside its region"
+            + ("" if not multimessenger_problems else "; " + "; ".join(multimessenger_problems[:5]))
         )),
         gate("population-anomaly-provenance", not population_problems, (
             f"{POPULATION_ANOMALY_PATH}: {json.loads(population_anomaly_raw).get('status')}, "

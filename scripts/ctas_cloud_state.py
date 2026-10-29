@@ -8,6 +8,8 @@ private state repository (default JackMcGuireAstro/ctas-state):
 
     static-inputs.tar.gz      reference tables, benchmarks, templates (rarely change)
     soc-<UTC stamp>.db.gz     the database after a run; the newest is the current one
+    skymaps.tar.gz            the retained public sky maps of the last 30 days (Track 3d),
+                              replaced on every save; absent until a map has been retained
 
     ctas_cloud_state.py restore <data-dir>
         Download the static inputs and the newest database into <data-dir>
@@ -45,6 +47,8 @@ STATIC = "static-inputs.tar.gz"
 DB_PREFIX, DB_SUFFIX = "soc-", ".db.gz"
 KEEP_RECENT = int(os.environ.get("CTAS_STATE_KEEP_RECENT", "3"))
 KEEP_DAYS = int(os.environ.get("CTAS_STATE_KEEP_DAYS", "2"))
+SKYMAPS = "skymaps.tar.gz"
+SKYMAP_KEEP_DAYS = int(os.environ.get("CTAS_SKYMAP_KEEP_DAYS", "30"))
 
 
 def gh(*args: str, capture: bool = True) -> str:
@@ -128,6 +132,15 @@ def restore(data_dir: Path) -> None:
         print(f"restored {STATIC}")
     else:
         print(f"no {STATIC} in {STATE_REPO}; continuing without static inputs")
+    if SKYMAPS in names:
+        gh("release", "download", TAG, "--repo", STATE_REPO, "--pattern", SKYMAPS, "--dir", str(work), capture=False)
+        maps = data_dir / "skymaps"
+        maps.mkdir(exist_ok=True)
+        with tarfile.open(work / SKYMAPS) as archive:
+            members = [m for m in archive.getmembers() if m.isfile() and "/" not in m.name and m.name.endswith(".fits")]
+            for member in members:
+                archive.extract(member, maps, **({"filter": "data"} if hasattr(tarfile, "data_filter") else {}))
+        print(f"restored {SKYMAPS} ({len(members)} sky maps)")
     databases = database_assets(listing)
     if not databases:
         raise RuntimeError(f"no database copy ({DB_PREFIX}*{DB_SUFFIX}) in {STATE_REPO} release {TAG}")
@@ -174,7 +187,41 @@ def save(data_dir: Path) -> None:
     for asset in to_delete(listing):
         gh("api", "-X", "DELETE", f"repos/{STATE_REPO}/releases/assets/{asset['id']}")
         print(f"removed older copy {asset['name']}")
+    save_skymaps(data_dir, database)
     print(f"saved {name} ({uploaded / 1e6:.0f} MB compressed) in {time.monotonic() - started:.0f}s")
+
+
+def recent_skymap_files(data_dir: Path, database: Path) -> list[Path]:
+    """Retained sky-map files whose revision is younger than SKYMAP_KEEP_DAYS."""
+
+    maps = data_dir / "skymaps"
+    if not maps.is_dir():
+        return []
+    con = sqlite3.connect(f"file:{database}?mode=ro", uri=True)
+    try:
+        rows = con.execute(
+            "SELECT artifact_path FROM skymap_revisions WHERE created_at >= datetime('now', ?)",
+            (f"-{SKYMAP_KEEP_DAYS} days",),
+        ).fetchall()
+    except sqlite3.Error:
+        rows = []
+    finally:
+        con.close()
+    names = sorted({Path(str(row[0])).name for row in rows})
+    return [maps / name for name in names if (maps / name).is_file()]
+
+
+def save_skymaps(data_dir: Path, database: Path) -> None:
+    files = recent_skymap_files(data_dir, database)
+    if not files:
+        return
+    staged = data_dir.parent / SKYMAPS
+    with tarfile.open(staged, "w:gz") as archive:
+        for path in files:
+            archive.add(path, arcname=path.name)
+    gh("release", "upload", TAG, str(staged), "--repo", STATE_REPO, "--clobber", capture=False)
+    print(f"saved {SKYMAPS} ({len(files)} sky maps, {staged.stat().st_size / 1e6:.1f} MB)")
+    staged.unlink()
 
 
 def main(argv: list[str]) -> int:

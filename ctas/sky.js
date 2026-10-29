@@ -439,7 +439,7 @@
     ALADIN_VERSION: ALADIN_VERSION, ALADIN_URL: ALADIN_URL, LAYERS: LAYERS, SAMP_NOTE: SAMP_NOTE,
     coordinates: coordinates, localisation: localisation, finderSources: finderSources, legacyCutoutUrl: legacyCutoutUrl,
     ps1CutoutUrl: ps1CutoutUrl, hips2fitsUrl: hips2fitsUrl, scaleBar: scaleBar, finderOverlaySvg: finderOverlaySvg,
-    finderPanel: finderPanel, printDocument: printDocument, openDossierAtlas: openDossierAtlas,
+    finderPanel: finderPanel, printDocument: printDocument, openDossierAtlas: openDossierAtlas, loadAladinRuntime: loadAladinRuntime,
     enhanceDossier: enhanceDossier, renderCatalogAtlas: renderCatalogAtlas, layerButtons: layerButtons
   };
 }());
