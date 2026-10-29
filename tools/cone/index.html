@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cone search | Jack McGuire</title>
+<meta name="description" content="Find every CTAS transient and WorldsIndex planet within a radius of a position, and download the result as a VOTable or CSV.">
+<meta name="theme-color" content="#f4f1ea">
+<link rel="canonical" href="https://jackmcguireastro.github.io/tools/cone/">
+<link rel="stylesheet" href="../tools.css?v=20261003">
+<link rel="stylesheet" href="../visitor.css?v=20261029">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
+<script type="module" src="cone.js?v=20261029"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="top"><div class="shell top-inner">
+  <a class="wordmark" href="../../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
+  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../" aria-current="page">Tools</a></nav>
+</div></header>
+<main id="main" class="shell">
+  <section class="intro">
+    <p class="eyebrow">Tools / Cone search</p>
+    <h1>Cone search</h1>
+    <p>Every CTAS transient and WorldsIndex planet or candidate within a radius of a position, from a sky index the deployment builds from the public releases. Download the result as a VOTable (the IVOA Simple Cone Search response form) or CSV.</p>
+    <p class="muted">The search runs in your browser: it fetches only the index cells around the position (HEALPix order 2, NESTED) and measures every separation exactly. A script can do the same with the files under <code>tools/data/cone/</code> (see <a href="../../tools/data/manifest.json">the manifest</a>); a server-side Simple Cone Search endpoint is not offered.</p>
+  </section>
+  <form class="controls" id="cone-form" aria-labelledby="cone-title" novalidate>
+    <h2 id="cone-title">Position</h2>
+    <div class="field wide"><label for="cone-ra">Right ascension</label><input id="cone-ra" inputmode="decimal" autocomplete="off" placeholder="210.8023 or 14:03:12.6"></div>
+    <div class="field wide"><label for="cone-dec">Declination</label><input id="cone-dec" inputmode="decimal" autocomplete="off" placeholder="54.3489 or +54:20:56"></div>
+    <div class="field"><label for="cone-radius">Radius</label><input id="cone-radius" inputmode="decimal" value="30"></div>
+    <div class="field"><label for="cone-unit">Unit</label><select id="cone-unit"><option value="arcmin">arcminutes</option><option value="arcsec">arcseconds</option><option value="deg">degrees</option></select></div>
+    <fieldset class="choices"><legend>Catalogs</legend>
+      <label class="choice"><input type="checkbox" id="cone-ctas" checked> CTAS transients</label>
+      <label class="choice"><input type="checkbox" id="cone-worlds" checked> WorldsIndex planets and candidates</label>
+    </fieldset>
+    <div class="actions">
+      <button type="submit" class="button" id="cone-run">Search</button>
+      <button type="button" class="button button-quiet" id="cone-votable" disabled>Download VOTable</button>
+      <button type="button" class="button button-quiet" id="cone-csv" disabled>Download CSV</button>
+      <p id="cone-status" class="status" role="status"></p>
+    </div>
+    <p class="hint full-hint">Radius up to 10 degrees. Positions in ICRS, decimal degrees or sexagesimal (hours for RA). The link of this page carries the search (?ra=&amp;dec=&amp;r=), so it can be shared.</p>
+  </form>
+  <section aria-labelledby="cone-results-title" class="results-block">
+    <h2 id="cone-results-title" class="block-title">Results</h2>
+    <p id="cone-meta" class="result-meta">Search to see results.</p>
+    <div id="cone-results"></div>
+  </section>
+</main>
+<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../">Tools</a> · <a href="../follow/">Follow</a> · <a href="../sql/">SQL</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../worldsindex/">WorldsIndex</a></p></div></footer>
+</body>
+</html>

@@ -130,9 +130,9 @@ jobs:
         run: |
           python3 -m pip install --quiet --disable-pip-version-check "astropy>=7.0,<9" "astropy-healpix>=1.0,<3" \
             "pyarrow>=21,<27" "pandas>=2.2,<4" "check-jsonschema>=0.33,<1" "pyyaml>=6,<7" "playwright==1.64.1" jsonschema \
-            "scipy>=1.13,<2" "coniferest==0.2.2"
+            "scipy>=1.13,<2" "coniferest==0.2.2" "matplotlib>=3.8,<4" "duckdb>=1.4,<3"
           python3 -m playwright install --with-deps chromium >/dev/null
-          npm install --no-save --silent --prefix .. axe-core@4.14.0 >/dev/null
+          npm install --no-save --silent --prefix .. axe-core@4.14.0 @duckdb/duckdb-wasm@1.32.0 esbuild@0.25.10 >/dev/null
       # Watch-mode pass counts: the publishers' (published with each release) and the
       # deploy's own (history/deploy.json on the run-reports branch).
       - name: Check history of the newer checks
@@ -165,8 +165,9 @@ jobs:
       # either; the results recorded before the limit stay, the missing ones were advisory.
       # The evidence schema (integrity) runs first, under its own `timeout`, so a hang there
       # is recorded as a failure (fail-closed) well inside the limit.
+      # 15 minutes since Track 5 added a ninth suite (the visitor tools, about 1–2 minutes).
       - name: CTAS page in a real browser, and evidence schema
-        timeout-minutes: 12
+        timeout-minutes: 15
         continue-on-error: true
         run: bash scripts/deploy_checks.sh browser .
       - name: Freshness watchdog, publishing, housekeeping and database retention
@@ -218,6 +219,21 @@ jobs:
         run: |
           bash "$TREE/scripts/compress_ctas_chunks.sh" "$TREE" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "published site size: $(du -sh --exclude=.git "$TREE" | cut -f1)" | tee -a "$GITHUB_STEP_SUMMARY"
+      # Track 5: the visitor tools' files (VOParquet copies for the SQL page, the cone-search index,
+      # one feed per gallery filter) made from the releases being deployed, with main's builder.
+      # Not part of either certified release; a failure here never stops the deploy (the pages
+      # then say "not available in this deployment").
+      - name: Visitor-tool files from the releases being deployed
+        env:
+          TREE: ${{ steps.choose.outputs.tree }}
+        run: |
+          if python3 scripts/build_visitor_products.py --tree "$TREE" > "$RUNNER_TEMP/visitor-products.txt" 2>&1; then
+            tail -1 "$RUNNER_TEMP/visitor-products.txt" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            cat "$RUNNER_TEMP/visitor-products.txt"
+            echo "::warning title=Visitor tools::the deploy-time files were not built; the Follow, SQL and cone-search pages say so"
+          fi
+          echo "published site size with the visitor files: $(du -sh --exclude=.git "$TREE" | cut -f1)" | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

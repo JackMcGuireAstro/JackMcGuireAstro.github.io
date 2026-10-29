@@ -1,0 +1,30 @@
+/* The visitor tools (Follow, SQL, cone search, notebook): additions to tools.css. */
+.privacy-note { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--ok); border-radius:8px; padding:.8rem 1rem; color:var(--ink)!important; font-size:.92rem }
+.results-block { margin:0 0 1.6rem }
+.block-title { font-size:1.25rem; margin:0 0 .6rem }
+.follow-item { border-top:1px solid var(--line); padding:.8rem 0 }
+.follow-item h3 { font-size:1.05rem; margin:0 0 .2rem; overflow-wrap:anywhere }
+.follow-item h3 small { font-weight:400 }
+.follow-item p { margin:.2rem 0 .6rem }
+.row-actions { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.6rem }
+.badge-new { display:inline-block; font:600 .62rem var(--mono); text-transform:uppercase; letter-spacing:.06em; background:var(--rust); color:var(--on-rust); border-radius:4px; padding:.05rem .35rem; vertical-align:middle }
+tr.is-new th, tr.is-new td { background:color-mix(in srgb, var(--rust) 8%, var(--card)) }
+.clause-row { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) auto; gap:.5rem; margin:0 0 .5rem }
+.full-hint { grid-column:1/-1 }
+.gallery-list { list-style:none; margin:0; padding:0; border-top:1px solid var(--line) }
+.gallery-list li { display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; justify-content:space-between; padding:.7rem 0; border-bottom:1px solid var(--line) }
+.gallery-list li > div { flex:1 1 22rem; min-width:0 }
+.file-button { cursor:pointer }
+.sql-editor { min-height:7rem }
+.sql-examples { display:flex; flex-wrap:wrap; gap:.4rem; grid-column:1/-1 }
+.sql-examples .button { font-size:.8rem; min-height:40px; padding:.4rem .7rem }
+.result-meta { font-size:.85rem; color:var(--muted); margin:.4rem 0 }
+.schema-list { columns:2 18rem; font-size:.85rem; color:var(--muted); padding-left:1.1rem }
+.schema-list code { color:var(--ink) }
+#tables h3, #tables p, #tables li { overflow-wrap:anywhere }
+.nb-code { white-space:pre-wrap; overflow-wrap:anywhere; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:.8rem 1rem; font:.8rem/1.5 var(--mono); max-height:28rem; overflow:auto }
+@media (max-width:560px) {
+  .clause-row { grid-template-columns:1fr 1fr; }
+  .clause-row .cv { grid-column:1/2 }
+  .gallery-list li .button { flex:1 1 100% }
+}

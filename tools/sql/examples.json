@@ -1,0 +1,38 @@
+{
+ "schema": "jm.sql-examples@1",
+ "description": "Example queries of the SQL page; scripts/test_visitor_products.py runs each one with DuckDB against the deploy's tables.",
+ "examples": [
+  {
+   "title": "CTAS classifications",
+   "sql": "SELECT classification, count(*) AS n\nFROM ctas_candidates\nGROUP BY classification\nORDER BY n DESC\nLIMIT 20"
+  },
+  {
+   "title": "Bright type Ia supernovae",
+   "sql": "SELECT name, discovery_time, discovery_magnitude, redshift\nFROM ctas_candidates\nWHERE classification LIKE 'SN Ia%' AND discovery_magnitude < 17\nORDER BY discovery_time DESC\nLIMIT 50"
+  },
+  {
+   "title": "CTAS events per survey and month",
+   "sql": "SELECT discovery_survey, substr(discovery_time, 1, 7) AS month, count(*) AS n\nFROM ctas_candidates\nWHERE discovery_time >= '2026-01'\nGROUP BY ALL\nORDER BY month DESC, n DESC\nLIMIT 60"
+  },
+  {
+   "title": "Planets by method and decade",
+   "sql": "SELECT method_code, (discovery_year // 10) * 10 AS decade, count(*) AS n\nFROM worldsindex_objects\nWHERE status = 'CONFIRMED' AND discovery_year IS NOT NULL\nGROUP BY ALL\nORDER BY decade, n DESC"
+  },
+  {
+   "title": "Temperate small planets",
+   "sql": "SELECT name, host_name, radius_earth, insolation_earth, equilibrium_temperature_k\nFROM worldsindex_objects\nWHERE status = 'CONFIRMED' AND radius_earth < 1.8 AND insolation_earth BETWEEN 0.3 AND 1.7\nORDER BY insolation_earth"
+  },
+  {
+   "title": "Catalogs that disagree on a period",
+   "sql": "SELECT name, count(DISTINCT source_id) AS catalogs, min(value) AS shortest, max(value) AS longest\nFROM worldsindex_measurements\nWHERE property_code = 'orbital_period'\nGROUP BY name\nHAVING catalogs > 1 AND max(value) > 1.01 * min(value)\nORDER BY longest / shortest DESC\nLIMIT 30"
+  },
+  {
+   "title": "Bright transit hosts",
+   "sql": "SELECT name, period_days, depth_ppt, host_mag, host_mag_band\nFROM worldsindex_transit_ephemerides\nWHERE host_mag < 10 AND depth_ppt > 5\nORDER BY host_mag\nLIMIT 40"
+  },
+  {
+   "title": "Cone around M 101",
+   "sql": "SELECT name, classification, discovery_time, ra_deg, dec_deg\nFROM ctas_candidates\nWHERE 2 * asin(sqrt(pow(sin(radians(dec_deg - 54.3489) / 2), 2) + cos(radians(dec_deg)) * cos(radians(54.3489)) * pow(sin(radians(ra_deg - 210.8023) / 2), 2))) < radians(0.5)"
+  }
+ ]
+}

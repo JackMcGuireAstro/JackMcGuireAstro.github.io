@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Follow objects, regions and filters | Jack McGuire</title>
+<meta name="description" content="Follow CTAS transients and WorldsIndex planets by name, position, sky region or saved filter. Your lists stay in your own browser; nothing is sent to this site.">
+<meta name="theme-color" content="#f4f1ea">
+<link rel="canonical" href="https://jackmcguireastro.github.io/tools/follow/">
+<link rel="stylesheet" href="../tools.css?v=20261003">
+<link rel="stylesheet" href="../visitor.css?v=20261029">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
+<script type="module" src="follow.js?v=20261029"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="top"><div class="shell top-inner">
+  <a class="wordmark" href="../../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
+  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../" aria-current="page">Tools</a></nav>
+</div></header>
+<main id="main" class="shell">
+  <section class="intro">
+    <p class="eyebrow">Tools / Follow</p>
+    <h1>Follow objects, regions and filters</h1>
+    <p>Keep a list of CTAS transients and WorldsIndex planets by name or position, watch sky regions, and save filters over the public catalogs. Each visit shows what is new since you last looked.</p>
+    <p class="privacy-note"><strong>Your lists stay in this browser.</strong> They are kept in your browser’s local storage and compared with the public releases here; nothing about them is sent to this site or anyone else. Export them to move to another device.</p>
+    <p id="storage-warning" class="status" hidden>This browser is not keeping local storage (a private window or blocked site data), so your lists last only until you close the page. Export them to keep them.</p>
+    <p id="release-line" class="muted" aria-live="polite">Reading the latest releases…</p>
+  </section>
+
+  <section class="controls" aria-labelledby="watch-title">
+    <h2 id="watch-title">Watchlist</h2>
+    <div class="field full">
+      <label for="watch-text">Names or positions, one per line</label>
+      <textarea id="watch-text" spellcheck="false" placeholder="SN 2024ggi&#10;TRAPPIST-1 e&#10;210.9108 54.3117 10&#10;14:03:38.6 +54:18:42 5"></textarea>
+      <p class="hint">A name (CTAS designations and aliases, WorldsIndex planet or host names), or a position as RA Dec [radius in arcseconds, default 5] in degrees or as hh:mm:ss ±dd:mm:ss.</p>
+    </div>
+    <div class="actions"><button type="button" class="button" id="watch-save">Save and check</button><p id="watch-status" class="status" role="status"></p></div>
+  </section>
+  <section aria-labelledby="watch-results-title" class="results-block">
+    <h2 id="watch-results-title" class="block-title">On your watchlist</h2>
+    <div id="watch-results"><p class="muted">Nothing on your watchlist yet.</p></div>
+  </section>
+
+  <section class="controls" aria-labelledby="region-title">
+    <h2 id="region-title">Sky regions</h2>
+    <div class="field wide"><label for="region-name">Region name</label><input id="region-name" placeholder="e.g. My survey field"></div>
+    <div class="field wide"><label for="region-file">MOC file (JSON or MOC 2.0 text)</label><input id="region-file" type="file" accept=".json,.txt,.moc,application/json,text/plain"></div>
+    <div class="field full"><label for="region-text">…or paste a MOC, or give a circle as RA Dec radius (degrees)</label>
+      <textarea id="region-text" spellcheck="false" placeholder='{"5":[1024,1025,1026]}   or   5/1024-1026   or   83.82 -5.39 2'></textarea>
+      <p class="hint">MOC JSON as mocpy and Aladin write it, or MOC 2.0 text. FITS MOCs: convert with mocpy (<code>moc.to_string("json")</code>). A circle is turned into a MOC of order 8 cells (about 0.05 square degrees each).</p></div>
+    <div class="actions"><button type="button" class="button" id="region-add">Add region</button><p id="region-status" class="status" role="status"></p></div>
+  </section>
+  <section aria-labelledby="region-results-title" class="results-block">
+    <h2 id="region-results-title" class="block-title">Inside your regions</h2>
+    <div id="region-results"><p class="muted">No regions yet.</p></div>
+  </section>
+
+  <section class="controls" aria-labelledby="filter-title">
+    <h2 id="filter-title">Saved filters</h2>
+    <div class="field wide"><label for="filter-name">Filter name</label><input id="filter-name" placeholder="e.g. Bright new supernovae"></div>
+    <div class="field"><label for="filter-product">Catalog</label><select id="filter-product"><option value="ctas">CTAS transients</option><option value="worldsindex">WorldsIndex planets</option></select></div>
+    <div class="field"><label for="filter-match">Match</label><select id="filter-match"><option value="all">all conditions</option><option value="any">any condition</option></select></div>
+    <div class="field full" id="filter-clauses" role="group" aria-label="Conditions"></div>
+    <div class="actions">
+      <button type="button" class="button button-quiet" id="filter-add-clause">Add a condition</button>
+      <button type="button" class="button" id="filter-save">Save filter</button>
+      <p id="filter-status" class="status" role="status"></p>
+    </div>
+    <p class="hint full-hint">“Within the last N days” counts back from the time of the release, so a filter gives the same answer for the same release anywhere.</p>
+  </section>
+  <section aria-labelledby="filter-results-title" class="results-block">
+    <h2 id="filter-results-title" class="block-title">Your filters</h2>
+    <div id="filter-results"><p class="muted">No saved filters yet. Start from the gallery below, or build one above.</p></div>
+  </section>
+
+  <section aria-labelledby="gallery-title" class="results-block">
+    <h2 id="gallery-title" class="block-title">Filter gallery</h2>
+    <p class="muted">Starting points kept in the site’s repository (<a href="gallery.json">gallery.json</a>). Each also has a public feed rebuilt with every deployment, for a feed reader.</p>
+    <div id="gallery"><p class="muted">Reading the gallery…</p></div>
+  </section>
+
+  <section class="controls" aria-labelledby="files-title">
+    <h2 id="files-title">Move your lists</h2>
+    <p class="hint full-hint">Export your watchlist, regions and filters as a JSON file, and import it on another device or browser.</p>
+    <div class="actions">
+      <button type="button" class="button button-quiet" id="export-state">Export JSON</button>
+      <label class="button button-quiet file-button" for="import-state">Import JSON</label>
+      <input id="import-state" type="file" accept=".json,application/json" class="visually-hidden">
+      <button type="button" class="button button-quiet" id="forget-seen">Forget what I have seen</button>
+      <p id="files-status" class="status" role="status"></p>
+    </div>
+  </section>
+</main>
+<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../">Tools</a> · <a href="../sql/">SQL</a> · <a href="../cone/">Cone search</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../worldsindex/">WorldsIndex</a></p></div></footer>
+</body>
+</html>

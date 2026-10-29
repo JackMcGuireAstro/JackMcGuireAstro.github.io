@@ -1346,6 +1346,41 @@
     "deploy"
    ],
    "what": "Track 4 transit planner: windows against astropy (the Tonight fixture), baseline and sigma padding, circular-orbit phase events, iCal/CSV export, custom sites, and the precomputed 30-night list for WIRO and Red Buttes"
+  },
+  "visitor.syntax": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "Track 5 visitor-tool modules parse (healpix, filters, data loader, Follow, SQL, cone search, notebook)"
+  },
+  "visitor.tools": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "Track 5 unit checks: HEALPix and MOC against astropy-healpix values, the filter/watchlist/sharing engine, cone selection and the VOTable writer, the notebook generator, the SQL examples file"
+  },
+  "visitor.products": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "Track 5 deploy-time files built from this tree's releases: VOParquet tables round-trip and every SQL example runs (DuckDB), the cone index holds every positioned record once in its astropy-healpix cell, gallery feeds are valid and select exactly what the browser's JavaScript engine selects, the notebooks run"
+  },
+  "visitor.python-client": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "Track 5 Python client (jmastro) and TOM Toolkit broker (tom_ctas) against this tree's releases"
+  },
+  "browser.visitor": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_visitor_browser.py in a real browser: Follow (watchlist, regions, filters, new since last look, sharing, export), SQL engine, cone search and VOTable, notebook page and links; layout, console, accessibility"
   }
  }
 }

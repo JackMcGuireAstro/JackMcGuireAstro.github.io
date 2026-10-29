@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQL over the catalogs | Jack McGuire</title>
+<meta name="description" content="Query the CTAS and WorldsIndex catalogs with SQL in your browser: DuckDB-WASM over VOParquet copies of the public exports.">
+<meta name="theme-color" content="#f4f1ea">
+<link rel="canonical" href="https://jackmcguireastro.github.io/tools/sql/">
+<link rel="stylesheet" href="../tools.css?v=20261003">
+<link rel="stylesheet" href="../visitor.css?v=20261029">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
+<script type="module" src="sql.js?v=20261029"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="top"><div class="shell top-inner">
+  <a class="wordmark" href="../../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
+  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../" aria-current="page">Tools</a></nav>
+</div></header>
+<main id="main" class="shell">
+  <section class="intro">
+    <p class="eyebrow">Tools / SQL</p>
+    <h1>SQL over the catalogs</h1>
+    <p>Ask the CTAS and WorldsIndex catalogs anything with SQL. The query runs in your browser with DuckDB-WASM, reading VOParquet copies of the public exports that this site serves; only the byte ranges a query needs are downloaded.</p>
+    <p class="muted">The query engine (DuckDB-WASM <span id="duckdb-version">1.32.0</span>, about 8 MB compressed) is downloaded from cdn.jsdelivr.net the first time you run a query, and DuckDB then fetches its Parquet reader from extensions.duckdb.org. Your queries are not sent anywhere. The release VOParquet files on GitHub Releases cannot be used from a browser (GitHub sends no CORS header for them), so these copies are rebuilt with every deployment.</p>
+    <p id="tables-line" class="muted" aria-live="polite">Reading the table list…</p>
+  </section>
+  <section class="controls" aria-labelledby="query-title">
+    <h2 id="query-title">Query</h2>
+    <div class="field full"><label for="sql-text">SQL (DuckDB dialect)</label>
+      <textarea id="sql-text" class="sql-editor" spellcheck="false">SELECT classification, count(*) AS n
+FROM ctas_candidates
+GROUP BY classification
+ORDER BY n DESC
+LIMIT 20</textarea></div>
+    <div class="sql-examples" id="sql-examples" role="group" aria-label="Example queries"></div>
+    <div class="actions">
+      <button type="button" class="button" id="sql-run">Run query</button>
+      <button type="button" class="button button-quiet" id="sql-csv" disabled>Download result as CSV</button>
+      <p id="sql-status" class="status" role="status"></p>
+    </div>
+  </section>
+  <section aria-labelledby="result-title" class="results-block">
+    <h2 id="result-title" class="block-title">Result</h2>
+    <p id="result-meta" class="result-meta">Run a query to see rows here.</p>
+    <div id="result"></div>
+  </section>
+  <section aria-labelledby="tables-title" class="results-block notes">
+    <h2 id="tables-title" class="block-title">Tables</h2>
+    <div id="tables"><p class="muted">Reading…</p></div>
+  </section>
+</main>
+<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../">Tools</a> · <a href="../follow/">Follow</a> · <a href="../cone/">Cone search</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../worldsindex/">WorldsIndex</a></p></div></footer>
+</body>
+</html>

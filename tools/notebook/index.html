@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open in a notebook | Jack McGuire</title>
+<meta name="description" content="A ready-made Jupyter notebook for one CTAS transient or WorldsIndex planet: download it, or open the same code in JupyterLite in your browser.">
+<meta name="theme-color" content="#f4f1ea">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://jackmcguireastro.github.io/tools/notebook/">
+<link rel="stylesheet" href="../tools.css?v=20261003">
+<link rel="stylesheet" href="../visitor.css?v=20261029">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
+<script type="module" src="notebook.js?v=20261029"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="top"><div class="shell top-inner">
+  <a class="wordmark" href="../../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
+  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../" aria-current="page">Tools</a></nav>
+</div></header>
+<main id="main" class="shell">
+  <section class="intro">
+    <p class="eyebrow">Tools / Notebook</p>
+    <h1>Open in a notebook</h1>
+    <p id="nb-target" aria-live="polite">Reading the record…</p>
+    <p class="muted">The notebook reads this site’s public files with astropy: the record, its photometry or catalog values, a plot, and (for CTAS) its DataLink links. It runs in Jupyter on your computer, or in JupyterLite in your browser.</p>
+  </section>
+  <section class="controls" aria-labelledby="nb-title">
+    <h2 id="nb-title">Get the notebook</h2>
+    <div class="actions">
+      <button type="button" class="button" id="nb-download" disabled>Download .ipynb</button>
+      <a class="button button-quiet" id="nb-repl" href="#" aria-disabled="true" target="_blank" rel="noopener">Run in the JupyterLite demo ↗</a>
+      <p id="nb-status" class="status" role="status"></p>
+    </div>
+    <p class="hint full-hint">The JupyterLite link opens the public JupyterLite demo (jupyterlite.github.io, run by the Jupyter project, not by this site) with the notebook’s code; the first run installs astropy and matplotlib there, which takes a minute. That demo is not version-pinned by this site. To keep a fixed copy, download the .ipynb and open it in Jupyter or upload it to any JupyterLite.</p>
+  </section>
+  <section aria-labelledby="nb-code-title" class="results-block">
+    <h2 id="nb-code-title" class="block-title">The code</h2>
+    <pre id="nb-code" class="nb-code" tabindex="0" aria-label="The notebook’s code"></pre>
+  </section>
+</main>
+<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../">Tools</a> · <a href="../follow/">Follow</a> · <a href="../sql/">SQL</a> · <a href="../cone/">Cone search</a></p></div></footer>
+</body>
+</html>

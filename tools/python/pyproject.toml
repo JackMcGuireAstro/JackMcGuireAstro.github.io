@@ -1,0 +1,16 @@
+# Not published to PyPI (a decision of 2026-10-19: nothing is published at this stage).
+# This file only lets `pip install -e tools/python` put both packages on a local path.
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jmastro-local"
+version = "1.0.0"
+description = "Readers for the CTAS and WorldsIndex public releases, and a TOM Toolkit broker for CTAS (local use only)"
+requires-python = ">=3.9"
+optional-dependencies = { tables = ["astropy>=6"] }
+classifiers = ["Private :: Do Not Upload"]
+
+[tool.setuptools]
+packages = ["jmastro", "tom_ctas"]

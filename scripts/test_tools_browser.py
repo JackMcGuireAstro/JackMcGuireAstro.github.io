@@ -154,7 +154,7 @@ class ToolsBrowserTests(unittest.TestCase):
     def test_index_lists_the_tools(self):
         page = self.open("tools/")
         hrefs = page.eval_on_selector_all(".tool-card", "els => els.map(e => e.getAttribute('href'))")
-        self.assertEqual(hrefs, ["coordinates/", "exposure/", "finder/", "../tonight/"])
+        self.assertEqual(hrefs, ["coordinates/", "exposure/", "finder/", "follow/", "sql/", "cone/", "../tonight/"])
         self.assertEqual(page.title(), "Observing tools | Jack McGuire")
         self.assertEqual(page.errors, [])
         page.close()

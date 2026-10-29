@@ -109,6 +109,13 @@ group_tonight() {
   check tools.exposure node scripts/test_tools_exposure.mjs
   check tools.finder node scripts/test_tools_finder.mjs
   check research.census node scripts/test_research_census.mjs
+  # Track 5 visitor tools: the browser modules, the deploy-time files built from this tree's releases
+  # (SQL Parquet, cone index, gallery feeds, notebooks) and the Python client and TOM broker.
+  check visitor.syntax node_check tools/lib/healpix.js tools/lib/visitor-filters.js tools/lib/visitor-data.js tools/follow/follow.js \
+    tools/sql/sql.js tools/cone/cone.js tools/notebook/notebook.js
+  check visitor.tools node scripts/test_visitor_tools.mjs
+  check visitor.products python3 scripts/test_visitor_products.py
+  check visitor.python-client python3 -m unittest discover -s tools/python/tests
 }
 
 group_ctas_static() {
@@ -165,6 +172,7 @@ group_browser() {
   check browser.worldsindex_live_sources python3 scripts/test_worldsindex_live_sources_browser.py
   check browser.worldsindex_sky python3 scripts/test_worldsindex_sky_browser.py
   check browser.worldsindex_compare python3 scripts/test_worldsindex_compare_browser.py
+  check browser.visitor python3 scripts/test_visitor_browser.py
 }
 
 group_tooling() {

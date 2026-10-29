@@ -1,0 +1,30 @@
+{
+  "schema": "jm.visitor-filter-gallery@1",
+  "description": "Curated starting filters for the Follow page. Each is evaluated in the visitor's browser against the latest public release; the deploy also publishes one JSON Feed and one Atom feed per filter (tools/data/feeds/<id>.json and .xml). Edit this file to add or change a filter; ids are stable feed names.",
+  "filters": [
+    {"schema": "jm.visitor-filter@1", "id": "ctas-new-sn-ia", "title": "Newly classified type Ia supernovae", "product": "ctas", "match": "all",
+     "clauses": [{"field": "classification", "op": "contains", "value": "SN Ia"}, {"field": "latest_classification_at", "op": "within_days", "value": 14}]},
+    {"schema": "jm.visitor-filter@1", "id": "ctas-bright-new", "title": "Bright new transients (discovered within 7 days, brighter than mag 18)", "product": "ctas", "match": "all",
+     "clauses": [{"field": "discovery_time", "op": "within_days", "value": 7}, {"field": "discovery_magnitude", "op": "lte", "value": 18}]},
+    {"schema": "jm.visitor-filter@1", "id": "ctas-unclassified-bright", "title": "Unclassified and brighter than mag 18.5, discovered within 30 days", "product": "ctas", "match": "all",
+     "clauses": [{"field": "classification", "op": "eq", "value": "Unclassified"}, {"field": "discovery_magnitude", "op": "lte", "value": 18.5}, {"field": "discovery_time", "op": "within_days", "value": 30}]},
+    {"schema": "jm.visitor-filter@1", "id": "ctas-multimessenger", "title": "Neutrino, radio-burst and multimessenger alerts", "product": "ctas", "match": "all",
+     "clauses": [{"field": "primary_messenger", "op": "in", "value": ["neutrino", "radio", "multimessenger"]}]},
+    {"schema": "jm.visitor-filter@1", "id": "ctas-source-conflicts", "title": "Events where sources disagree", "product": "ctas", "match": "all",
+     "clauses": [{"field": "conflict_count", "op": "gte", "value": 1}]},
+    {"schema": "jm.visitor-filter@1", "id": "ctas-fast-risers", "title": "Fast risers (fitted rise time of 3 days or less)", "product": "ctas", "match": "all",
+     "clauses": [{"field": "lc_rise_days", "op": "lte", "value": 3}]},
+    {"schema": "jm.visitor-filter@1", "id": "ctas-new-spectra", "title": "Spectra added within 14 days", "product": "ctas", "match": "all",
+     "clauses": [{"field": "latest_spectrum_at", "op": "within_days", "value": 14}]},
+    {"schema": "jm.visitor-filter@1", "id": "ctas-retracted", "title": "Retracted events", "product": "ctas", "match": "all",
+     "clauses": [{"field": "status", "op": "eq", "value": "retracted"}]},
+    {"schema": "jm.visitor-filter@1", "id": "worldsindex-discovered-2025-2026", "title": "Planets and candidates discovered in 2025 or 2026", "product": "worldsindex", "match": "all",
+     "clauses": [{"field": "discoveryYear", "op": "gte", "value": 2025}]},
+    {"schema": "jm.visitor-filter@1", "id": "worldsindex-imaged", "title": "Confirmed planets found by direct imaging", "product": "worldsindex", "match": "all",
+     "clauses": [{"field": "normalizedStatus", "op": "eq", "value": "CONFIRMED"}, {"field": "methodCode", "op": "eq", "value": "direct-imaging"}]},
+    {"schema": "jm.visitor-filter@1", "id": "worldsindex-controversial", "title": "Controversial or refuted planets", "product": "worldsindex", "match": "all",
+     "clauses": [{"field": "normalizedStatus", "op": "in", "value": ["CONTROVERSIAL", "REFUTED"]}]},
+    {"schema": "jm.visitor-filter@1", "id": "worldsindex-identity-ambiguous", "title": "Objects whose catalog identity is ambiguous", "product": "worldsindex", "match": "all",
+     "clauses": [{"field": "identityState", "op": "eq", "value": "AMBIGUOUS"}]}
+  ]
+}
