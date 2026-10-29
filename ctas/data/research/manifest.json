@@ -1,0 +1,2390 @@
+{
+  "catalog_content_checksum_sha256": "5534832310de4d04252c3962c3ad5c2c662118f064038d469b9bdd39975f4d73",
+  "format_note": "The zero-optional-dependency static publisher emits normalized UTF-8 CSV, an IVOA VOTable summary, and a TOM Toolkit target-import table. Complete nested evidence remains in the checksum-bound candidate shards.",
+  "interoperability": {
+    "round_trip_problem_count": 0,
+    "round_trip_problems": [],
+    "statement": "Every public research table is also published as ECSV 1.0 and VOTable 1.5 with a UCD on every column, a VOUnits string on every column that carries a physical unit and a description per column; each file was read back with Astropy and compared cell by cell with its JSON source before this release was certified. Bulk VOParquet tables are listed in ctas/data/bulk-downloads.json; DataLink links documents in ctas/data/links/manifest.json.",
+    "tables": [
+      "candidates",
+      "aliases",
+      "sources",
+      "tom-targets",
+      "source-accounting",
+      "release-history"
+    ]
+  },
+  "schema": "ctas.research-table-manifest@1.0.0",
+  "tables": [
+    {
+      "bytes": 1525575,
+      "format": "UTF-8 CSV with RFC 4180 quoting and LF line endings",
+      "limitations": [
+        "An alias is a retained assertion, not independent identity validation."
+      ],
+      "media_type": "text/csv; charset=utf-8",
+      "path": "ctas/data/research/aliases.csv",
+      "row_count": 24903,
+      "scope": "Provider-scoped public designations linked to CTAS event identifiers.",
+      "sha256": "5fcdbb7ede2113731886a086de4b3757bc467cedab206c7a8ead308e6e9b7e0b"
+    },
+    {
+      "absent_value_convention": "numbers and booleans are masked; text columns are empty; JSON-typed columns hold compact JSON text",
+      "bytes": 1528220,
+      "column_count": 4,
+      "columns": [
+        {
+          "datatype": "str",
+          "description": "CTAS public event identifier the alias is bound to.",
+          "name": "event_id",
+          "ucd": "meta.id;meta.main",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Source-universe key of the provider that asserted the designation.",
+          "name": "source_key",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Provider-scoped public designation as asserted.",
+          "name": "designation",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "bool",
+          "description": "True when the unscoped designation is bound to more than one CTAS record.",
+          "name": "ambiguous",
+          "ucd": "meta.code",
+          "unit": null
+        }
+      ],
+      "coordinate_frame": "ICRS",
+      "format": "ECSV 1.0 (Astropy APE 6): CSV with a YAML header carrying datatype, unit, UCD and description per column",
+      "limitations": [
+        "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public evidence as the JSON release, not an independent measurement."
+      ],
+      "media_type": "text/ecsv; charset=utf-8",
+      "path": "ctas/data/research/aliases.ecsv",
+      "row_count": 24903,
+      "scope": "Provider-scoped public designations linked to CTAS event identifiers.",
+      "sha256": "9e00cf9adf02186cfccf69557a1db7710132ebe233e71f59e8de042fa7cfb636",
+      "table_name": "ctas_aliases"
+    },
+    {
+      "absent_value_convention": "numbers and booleans are masked; text columns are empty; JSON-typed columns hold compact JSON text",
+      "bytes": 2448922,
+      "column_count": 4,
+      "columns": [
+        {
+          "datatype": "str",
+          "description": "CTAS public event identifier the alias is bound to.",
+          "name": "event_id",
+          "ucd": "meta.id;meta.main",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Source-universe key of the provider that asserted the designation.",
+          "name": "source_key",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Provider-scoped public designation as asserted.",
+          "name": "designation",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "bool",
+          "description": "True when the unscoped designation is bound to more than one CTAS record.",
+          "name": "ambiguous",
+          "ucd": "meta.code",
+          "unit": null
+        }
+      ],
+      "coordinate_frame": "ICRS",
+      "format": "IVOA VOTable 1.5 TABLEDATA with a UCD and VOUnits string per FIELD",
+      "limitations": [
+        "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public evidence as the JSON release, not an independent measurement."
+      ],
+      "media_type": "application/x-votable+xml",
+      "path": "ctas/data/research/aliases.vot",
+      "row_count": 24903,
+      "scope": "Provider-scoped public designations linked to CTAS event identifiers.",
+      "sha256": "390ebd3a589d8cd9e0b078495d729c53efbaf4f98b74961405d4994d5214e456",
+      "table_name": "ctas_aliases"
+    },
+    {
+      "absent_value_convention": "numbers and booleans are masked; text columns are empty; JSON-typed columns hold compact JSON text",
+      "bytes": 13494453,
+      "column_count": 63,
+      "columns": [
+        {
+          "datatype": "str",
+          "description": "Stable CTAS public event identifier (RFC 4122 UUID).",
+          "name": "event_id",
+          "ucd": "meta.id;meta.main",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Preferred public designation.",
+          "name": "name",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "CTAS event type (controlled vocabulary).",
+          "name": "event_type",
+          "ucd": "src.class",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Primary retained messenger channel.",
+          "name": "primary_messenger",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of retained messenger channels.",
+          "name": "messenger_channels",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Source-retained ICRS right ascension.",
+          "name": "ra_deg",
+          "ucd": "pos.eq.ra;meta.main",
+          "unit": "deg"
+        },
+        {
+          "datatype": "float",
+          "description": "Source-retained ICRS declination.",
+          "name": "dec_deg",
+          "ucd": "pos.eq.dec;meta.main",
+          "unit": "deg"
+        },
+        {
+          "datatype": "float",
+          "description": "Source-reported positional uncertainty when retained.",
+          "name": "coordinate_error_arcsec",
+          "ucd": "stat.error;pos.eq",
+          "unit": "arcsec"
+        },
+        {
+          "datatype": "str",
+          "description": "Source-reported discovery time. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "discovery_time",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Source-reported discovery survey or facility.",
+          "name": "discovery_survey",
+          "ucd": "meta.id;instr.obsty",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Source-reported discovery instrument.",
+          "name": "discovery_instrument",
+          "ucd": "meta.id;instr",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Source-reported discovery magnitude when retained.",
+          "name": "discovery_magnitude",
+          "ucd": "phot.mag",
+          "unit": "mag"
+        },
+        {
+          "datatype": "str",
+          "description": "Current retained CTAS record state.",
+          "name": "status",
+          "ucd": "meta.code.status",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained reported classification label.",
+          "name": "classification",
+          "ucd": "src.class",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Whether the latest label is a physical class, an operational label, or none.",
+          "name": "reported_label_kind",
+          "ucd": "meta.code.class",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Provider-reported classification probability when retained.",
+          "name": "classification_probability",
+          "ucd": "stat.probability",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Operational CTAS follow-up ordering score (0-100); not a probability or a measure of scientific importance.",
+          "name": "ctas_score",
+          "ucd": "stat.rank",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Release score clock the score refers to. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "score_as_of",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "End of the score clock validity window. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "score_valid_until",
+          "ucd": "time.end",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Version of the score method that produced ctas_score.",
+          "name": "score_method_version",
+          "ucd": "meta.version",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of score terms that applied to this record.",
+          "name": "score_applicable_terms",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of physical messengers the score counted as detected.",
+          "name": "score_detected_messengers",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Count of retained public follow-up records.",
+          "name": "follow_up_total",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Retained redshift value when available.",
+          "name": "redshift",
+          "ucd": "src.redshift",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained record update. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "updated_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained classification assertion time. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "latest_classification_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained spectrum observation time. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "latest_spectrum_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained messenger signal time. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "latest_messenger_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained retraction time. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "latest_retraction_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Path of the dossier chunk, relative to ctas/data/, that holds the complete record.",
+          "name": "detail_chunk",
+          "ucd": "meta.ref",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained classification assertions.",
+          "name": "n_classifications",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained superseded or retracted classification assertions.",
+          "name": "n_classification_history",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained photometric observations and limits.",
+          "name": "n_observations",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained spectra.",
+          "name": "n_spectra",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained messenger signals and notices.",
+          "name": "n_messenger_signals",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained public reports and circulars.",
+          "name": "n_publications",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained report revisions.",
+          "name": "n_publication_revisions",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained host-context records.",
+          "name": "n_host_context",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained positional catalog counterparts.",
+          "name": "n_catalog_counterparts",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained released archive products.",
+          "name": "n_archive_products",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON object counting active, detection, limit and forced photometry rows.",
+          "name": "photometry_outcomes",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "What kind of record this is (follow-up target, detector trigger, localization alert, known terrestrial or solar event).",
+          "name": "record_role",
+          "ucd": "meta.code.class",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Cohort the record may be ranked inside.",
+          "name": "ranking_channel",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "bool",
+          "description": "True when the record may enter the default follow-up leaderboard.",
+          "name": "default_leaderboard_eligible",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Record-completeness label; describes retained fields, not scientific quality.",
+          "name": "record_label",
+          "ucd": "meta.code.qual",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Completeness components present.",
+          "name": "record_present",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Completeness components applicable to this record.",
+          "name": "record_applicable",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Completeness components not assessed.",
+          "name": "record_not_assessed",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Present divided by applicable completeness components.",
+          "name": "record_fraction",
+          "ucd": "arith.ratio",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Source-universe key of the preferred public source record.",
+          "name": "primary_source_key",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Preferred public source-record URL when available.",
+          "name": "primary_source_url",
+          "ucd": "meta.ref.url",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Designation at the preferred public source.",
+          "name": "primary_source_designation",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Provider-scoped identity resolution state.",
+          "name": "identity_state",
+          "ucd": "meta.code.status",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Count of retained measurement conflict sets.",
+          "name": "conflict_count",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Declared sources in the source universe of this release.",
+          "name": "source_declared",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Sources applicable to this record.",
+          "name": "source_applicable",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Executed query receipts for this record.",
+          "name": "source_executed",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Sources that returned retained data for this record.",
+          "name": "source_data_bearing",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Multiband light-curve fit chosen for the features (Track 3c), when computed.",
+          "name": "lc_fit_model",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Half-maximum rise time of the chosen multiband fit, when computed.",
+          "name": "lc_rise_days",
+          "ucd": "time.duration",
+          "unit": "d"
+        },
+        {
+          "datatype": "float",
+          "description": "Peak absolute magnitude (Planck 2018, SFD x0.86 extinction, bandwidth k-term), when computed.",
+          "name": "lc_peak_abs_mag",
+          "ucd": "phys.magAbs",
+          "unit": "mag"
+        },
+        {
+          "datatype": "str",
+          "description": "Agreement of the broker readings and the TNS label (agree, disagree, single-reading, no-broker-reading).",
+          "name": "broker_consensus",
+          "ucd": "meta.code.class",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Coarse classes given by the broker readings and the TNS label.",
+          "name": "broker_classes_seen",
+          "ucd": "src.class",
+          "unit": null
+        }
+      ],
+      "coordinate_frame": "ICRS",
+      "format": "ECSV 1.0 (Astropy APE 6): CSV with a YAML header carrying datatype, unit, UCD and description per column",
+      "limitations": [
+        "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public evidence as the JSON release, not an independent measurement."
+      ],
+      "media_type": "text/ecsv; charset=utf-8",
+      "path": "ctas/data/research/candidates.ecsv",
+      "row_count": 18137,
+      "scope": "The complete catalog-index candidate table (every CATALOG_CANDIDATE_COLUMNS column) with the release score clock.",
+      "sha256": "8e3c73c668f5b9f3e99e61d6d9d9009e4fef3dea59af4a800fcc4cb30a35970b",
+      "table_name": "ctas_candidates"
+    },
+    {
+      "absent_value_convention": "numbers and booleans are masked; text columns are empty; JSON-typed columns hold compact JSON text",
+      "bytes": 20847454,
+      "column_count": 63,
+      "columns": [
+        {
+          "datatype": "str",
+          "description": "Stable CTAS public event identifier (RFC 4122 UUID).",
+          "name": "event_id",
+          "ucd": "meta.id;meta.main",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Preferred public designation.",
+          "name": "name",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "CTAS event type (controlled vocabulary).",
+          "name": "event_type",
+          "ucd": "src.class",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Primary retained messenger channel.",
+          "name": "primary_messenger",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of retained messenger channels.",
+          "name": "messenger_channels",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Source-retained ICRS right ascension.",
+          "name": "ra_deg",
+          "ucd": "pos.eq.ra;meta.main",
+          "unit": "deg"
+        },
+        {
+          "datatype": "float",
+          "description": "Source-retained ICRS declination.",
+          "name": "dec_deg",
+          "ucd": "pos.eq.dec;meta.main",
+          "unit": "deg"
+        },
+        {
+          "datatype": "float",
+          "description": "Source-reported positional uncertainty when retained.",
+          "name": "coordinate_error_arcsec",
+          "ucd": "stat.error;pos.eq",
+          "unit": "arcsec"
+        },
+        {
+          "datatype": "str",
+          "description": "Source-reported discovery time. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "discovery_time",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Source-reported discovery survey or facility.",
+          "name": "discovery_survey",
+          "ucd": "meta.id;instr.obsty",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Source-reported discovery instrument.",
+          "name": "discovery_instrument",
+          "ucd": "meta.id;instr",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Source-reported discovery magnitude when retained.",
+          "name": "discovery_magnitude",
+          "ucd": "phot.mag",
+          "unit": "mag"
+        },
+        {
+          "datatype": "str",
+          "description": "Current retained CTAS record state.",
+          "name": "status",
+          "ucd": "meta.code.status",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained reported classification label.",
+          "name": "classification",
+          "ucd": "src.class",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Whether the latest label is a physical class, an operational label, or none.",
+          "name": "reported_label_kind",
+          "ucd": "meta.code.class",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Provider-reported classification probability when retained.",
+          "name": "classification_probability",
+          "ucd": "stat.probability",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Operational CTAS follow-up ordering score (0-100); not a probability or a measure of scientific importance.",
+          "name": "ctas_score",
+          "ucd": "stat.rank",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Release score clock the score refers to. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "score_as_of",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "End of the score clock validity window. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "score_valid_until",
+          "ucd": "time.end",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Version of the score method that produced ctas_score.",
+          "name": "score_method_version",
+          "ucd": "meta.version",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of score terms that applied to this record.",
+          "name": "score_applicable_terms",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of physical messengers the score counted as detected.",
+          "name": "score_detected_messengers",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Count of retained public follow-up records.",
+          "name": "follow_up_total",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Retained redshift value when available.",
+          "name": "redshift",
+          "ucd": "src.redshift",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained record update. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "updated_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained classification assertion time. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "latest_classification_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained spectrum observation time. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "latest_spectrum_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained messenger signal time. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "latest_messenger_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained retraction time. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "latest_retraction_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Path of the dossier chunk, relative to ctas/data/, that holds the complete record.",
+          "name": "detail_chunk",
+          "ucd": "meta.ref",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained classification assertions.",
+          "name": "n_classifications",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained superseded or retracted classification assertions.",
+          "name": "n_classification_history",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained photometric observations and limits.",
+          "name": "n_observations",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained spectra.",
+          "name": "n_spectra",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained messenger signals and notices.",
+          "name": "n_messenger_signals",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained public reports and circulars.",
+          "name": "n_publications",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained report revisions.",
+          "name": "n_publication_revisions",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained host-context records.",
+          "name": "n_host_context",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained positional catalog counterparts.",
+          "name": "n_catalog_counterparts",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Retained released archive products.",
+          "name": "n_archive_products",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON object counting active, detection, limit and forced photometry rows.",
+          "name": "photometry_outcomes",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "What kind of record this is (follow-up target, detector trigger, localization alert, known terrestrial or solar event).",
+          "name": "record_role",
+          "ucd": "meta.code.class",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Cohort the record may be ranked inside.",
+          "name": "ranking_channel",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "bool",
+          "description": "True when the record may enter the default follow-up leaderboard.",
+          "name": "default_leaderboard_eligible",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Record-completeness label; describes retained fields, not scientific quality.",
+          "name": "record_label",
+          "ucd": "meta.code.qual",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Completeness components present.",
+          "name": "record_present",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Completeness components applicable to this record.",
+          "name": "record_applicable",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Completeness components not assessed.",
+          "name": "record_not_assessed",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Present divided by applicable completeness components.",
+          "name": "record_fraction",
+          "ucd": "arith.ratio",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Source-universe key of the preferred public source record.",
+          "name": "primary_source_key",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Preferred public source-record URL when available.",
+          "name": "primary_source_url",
+          "ucd": "meta.ref.url",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Designation at the preferred public source.",
+          "name": "primary_source_designation",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Provider-scoped identity resolution state.",
+          "name": "identity_state",
+          "ucd": "meta.code.status",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Count of retained measurement conflict sets.",
+          "name": "conflict_count",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Declared sources in the source universe of this release.",
+          "name": "source_declared",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Sources applicable to this record.",
+          "name": "source_applicable",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Executed query receipts for this record.",
+          "name": "source_executed",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Sources that returned retained data for this record.",
+          "name": "source_data_bearing",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Multiband light-curve fit chosen for the features (Track 3c), when computed.",
+          "name": "lc_fit_model",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Half-maximum rise time of the chosen multiband fit, when computed.",
+          "name": "lc_rise_days",
+          "ucd": "time.duration",
+          "unit": "d"
+        },
+        {
+          "datatype": "float",
+          "description": "Peak absolute magnitude (Planck 2018, SFD x0.86 extinction, bandwidth k-term), when computed.",
+          "name": "lc_peak_abs_mag",
+          "ucd": "phys.magAbs",
+          "unit": "mag"
+        },
+        {
+          "datatype": "str",
+          "description": "Agreement of the broker readings and the TNS label (agree, disagree, single-reading, no-broker-reading).",
+          "name": "broker_consensus",
+          "ucd": "meta.code.class",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Coarse classes given by the broker readings and the TNS label.",
+          "name": "broker_classes_seen",
+          "ucd": "src.class",
+          "unit": null
+        }
+      ],
+      "coordinate_frame": "ICRS",
+      "format": "IVOA VOTable 1.5 TABLEDATA with a UCD and VOUnits string per FIELD",
+      "limitations": [
+        "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public evidence as the JSON release, not an independent measurement."
+      ],
+      "media_type": "application/x-votable+xml",
+      "path": "ctas/data/research/candidates.vot",
+      "row_count": 18137,
+      "scope": "The complete catalog-index candidate table (every CATALOG_CANDIDATE_COLUMNS column) with the release score clock.",
+      "sha256": "847ee5cab35b098f699c7db6cf78d4d4520ec955ff2f8ab2dd23e0de81691578",
+      "table_name": "ctas_candidates"
+    },
+    {
+      "bytes": 12246768,
+      "format": "UTF-8 CSV with RFC 4180 quoting and LF line endings",
+      "limitations": [
+        "Complete nested evidence is stored in candidate shards."
+      ],
+      "media_type": "text/csv; charset=utf-8",
+      "path": "ctas/data/research/events.csv",
+      "row_count": 18137,
+      "scope": "One compact summary row for every public CTAS candidate.",
+      "sha256": "dbbb58deaef98b4be3e4b5343c34fe8e0c609d8906eaf48e51a4b736531c309a"
+    },
+    {
+      "bytes": 7514896,
+      "coordinate_frame": "ICRS",
+      "format": "IVOA VOTable 1.5 TABLEDATA",
+      "limitations": [
+        "Missing retained values are empty cells.",
+        "This is a summary table; complete nested evidence is stored in candidate shards."
+      ],
+      "media_type": "application/x-votable+xml",
+      "path": "ctas/data/research/events.vot",
+      "row_count": 18137,
+      "scope": "One VO-compatible summary row for every public CTAS candidate.",
+      "sha256": "040cd6300d59c21a4315ce93fd905739f34e5ba5c0249845a75819fc0c164630"
+    },
+    {
+      "absent_value_convention": "numbers and booleans are masked; text columns are empty; JSON-typed columns hold compact JSON text",
+      "bytes": 13438,
+      "column_count": 15,
+      "columns": [
+        {
+          "datatype": "str",
+          "description": "Release clock of the catalog change. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "published_at",
+          "ucd": "time.epoch;meta.main",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "candidate-intake or record-update.",
+          "name": "change_kind",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Public candidates in the previous release.",
+          "name": "previous_candidate_count",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Public candidates in this release.",
+          "name": "candidate_count",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Records added since the previous release.",
+          "name": "added_count",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Records removed since the previous release.",
+          "name": "removed_count",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Existing records whose public content changed.",
+          "name": "changed_count",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Plain-words summary of the change.",
+          "name": "summary",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON object counting added records by discovery survey.",
+          "name": "added_source_summary",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of up to twelve added designations.",
+          "name": "sample_added",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of up to twelve removed designations.",
+          "name": "sample_removed",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Semantic catalog checksum of this release.",
+          "name": "catalog_content_checksum_sha256",
+          "ucd": "meta.id;meta.cryptographic",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Semantic catalog checksum of the previous release.",
+          "name": "previous_catalog_content_checksum_sha256",
+          "ucd": "meta.id;meta.cryptographic",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Git commit of the published release the diff was taken against.",
+          "name": "base_commit",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "How the entry was derived.",
+          "name": "history_basis",
+          "ucd": "meta.code",
+          "unit": null
+        }
+      ],
+      "coordinate_frame": "ICRS",
+      "format": "ECSV 1.0 (Astropy APE 6): CSV with a YAML header carrying datatype, unit, UCD and description per column",
+      "limitations": [
+        "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public evidence as the JSON release, not an independent measurement."
+      ],
+      "media_type": "text/ecsv; charset=utf-8",
+      "path": "ctas/data/research/release-history.ecsv",
+      "row_count": 24,
+      "scope": "The public release history entries of this release.",
+      "sha256": "a6c3fa8fb246194e47a44342ef9e9c483f46bf1879e441df3141fe1395ad8331",
+      "table_name": "ctas_release_history"
+    },
+    {
+      "absent_value_convention": "numbers and booleans are masked; text columns are empty; JSON-typed columns hold compact JSON text",
+      "bytes": 17378,
+      "column_count": 15,
+      "columns": [
+        {
+          "datatype": "str",
+          "description": "Release clock of the catalog change. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "published_at",
+          "ucd": "time.epoch;meta.main",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "candidate-intake or record-update.",
+          "name": "change_kind",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Public candidates in the previous release.",
+          "name": "previous_candidate_count",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Public candidates in this release.",
+          "name": "candidate_count",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Records added since the previous release.",
+          "name": "added_count",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Records removed since the previous release.",
+          "name": "removed_count",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Existing records whose public content changed.",
+          "name": "changed_count",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Plain-words summary of the change.",
+          "name": "summary",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON object counting added records by discovery survey.",
+          "name": "added_source_summary",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of up to twelve added designations.",
+          "name": "sample_added",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of up to twelve removed designations.",
+          "name": "sample_removed",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Semantic catalog checksum of this release.",
+          "name": "catalog_content_checksum_sha256",
+          "ucd": "meta.id;meta.cryptographic",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Semantic catalog checksum of the previous release.",
+          "name": "previous_catalog_content_checksum_sha256",
+          "ucd": "meta.id;meta.cryptographic",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Git commit of the published release the diff was taken against.",
+          "name": "base_commit",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "How the entry was derived.",
+          "name": "history_basis",
+          "ucd": "meta.code",
+          "unit": null
+        }
+      ],
+      "coordinate_frame": "ICRS",
+      "format": "IVOA VOTable 1.5 TABLEDATA with a UCD and VOUnits string per FIELD",
+      "limitations": [
+        "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public evidence as the JSON release, not an independent measurement."
+      ],
+      "media_type": "application/x-votable+xml",
+      "path": "ctas/data/research/release-history.vot",
+      "row_count": 24,
+      "scope": "The public release history entries of this release.",
+      "sha256": "c507143df9e62e141b85003e0c2c79fa3d4bd3fb851e18fdb473ec155ce44f58",
+      "table_name": "ctas_release_history"
+    },
+    {
+      "absent_value_convention": "numbers and booleans are masked; text columns are empty; JSON-typed columns hold compact JSON text",
+      "bytes": 1542750,
+      "column_count": 17,
+      "columns": [
+        {
+          "datatype": "str",
+          "description": "CTAS public event identifier.",
+          "name": "event_id",
+          "ucd": "meta.id;meta.main",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Preferred public designation.",
+          "name": "name",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Sources declared in the source universe of this release.",
+          "name": "declared_sources",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Sources whose contract applies to this record.",
+          "name": "applicable_sources",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Query receipts that were executed for this record.",
+          "name": "executed_query_receipts",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources that hold retained data for this record.",
+          "name": "data_bearing_sources",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is DATA_RETURNED.",
+          "name": "outcome_data_returned",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is SEARCHED_NO_MATCH.",
+          "name": "outcome_searched_no_match",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is PARTIAL_RESULT.",
+          "name": "outcome_partial_result",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is QUERY_FAILED.",
+          "name": "outcome_query_failed",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is QUERY_BLOCKED.",
+          "name": "outcome_query_blocked",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is NOT_CONFIGURED.",
+          "name": "outcome_not_configured",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is NOT_APPLICABLE.",
+          "name": "outcome_not_applicable",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is AMBIGUOUS.",
+          "name": "outcome_ambiguous",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is STALE_LAST_GOOD_RETAINED.",
+          "name": "outcome_stale_last_good_retained",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is LINK_ONLY_NOT_QUERIED.",
+          "name": "outcome_link_only_not_queried",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is NOT_QUERIED.",
+          "name": "outcome_not_queried",
+          "ucd": "meta.number",
+          "unit": null
+        }
+      ],
+      "coordinate_frame": "ICRS",
+      "format": "ECSV 1.0 (Astropy APE 6): CSV with a YAML header carrying datatype, unit, UCD and description per column",
+      "limitations": [
+        "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public evidence as the JSON release, not an independent measurement."
+      ],
+      "media_type": "text/ecsv; charset=utf-8",
+      "path": "ctas/data/research/source-accounting.ecsv",
+      "row_count": 18137,
+      "scope": "One row per public candidate with its source accounting and query-outcome counts.",
+      "sha256": "36f67a4f4c186948e146931b76a5270b26b19f7623f68a4eb356d8d790afa11f",
+      "table_name": "ctas_source_accounting"
+    },
+    {
+      "absent_value_convention": "numbers and booleans are masked; text columns are empty; JSON-typed columns hold compact JSON text",
+      "bytes": 4173095,
+      "column_count": 17,
+      "columns": [
+        {
+          "datatype": "str",
+          "description": "CTAS public event identifier.",
+          "name": "event_id",
+          "ucd": "meta.id;meta.main",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Preferred public designation.",
+          "name": "name",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Sources declared in the source universe of this release.",
+          "name": "declared_sources",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Sources whose contract applies to this record.",
+          "name": "applicable_sources",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Query receipts that were executed for this record.",
+          "name": "executed_query_receipts",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources that hold retained data for this record.",
+          "name": "data_bearing_sources",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is DATA_RETURNED.",
+          "name": "outcome_data_returned",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is SEARCHED_NO_MATCH.",
+          "name": "outcome_searched_no_match",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is PARTIAL_RESULT.",
+          "name": "outcome_partial_result",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is QUERY_FAILED.",
+          "name": "outcome_query_failed",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is QUERY_BLOCKED.",
+          "name": "outcome_query_blocked",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is NOT_CONFIGURED.",
+          "name": "outcome_not_configured",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is NOT_APPLICABLE.",
+          "name": "outcome_not_applicable",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is AMBIGUOUS.",
+          "name": "outcome_ambiguous",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is STALE_LAST_GOOD_RETAINED.",
+          "name": "outcome_stale_last_good_retained",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is LINK_ONLY_NOT_QUERIED.",
+          "name": "outcome_link_only_not_queried",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "int",
+          "description": "Applicable sources whose current query outcome is NOT_QUERIED.",
+          "name": "outcome_not_queried",
+          "ucd": "meta.number",
+          "unit": null
+        }
+      ],
+      "coordinate_frame": "ICRS",
+      "format": "IVOA VOTable 1.5 TABLEDATA with a UCD and VOUnits string per FIELD",
+      "limitations": [
+        "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public evidence as the JSON release, not an independent measurement."
+      ],
+      "media_type": "application/x-votable+xml",
+      "path": "ctas/data/research/source-accounting.vot",
+      "row_count": 18137,
+      "scope": "One row per public candidate with its source accounting and query-outcome counts.",
+      "sha256": "c4f9798c77b408e4e80a58621a97483fb34f03296ebf407e2b24cee99941f1bc",
+      "table_name": "ctas_source_accounting"
+    },
+    {
+      "bytes": 49355,
+      "format": "UTF-8 CSV with RFC 4180 quoting and LF line endings",
+      "limitations": [
+        "Source inclusion does not imply uninterrupted or complete provider coverage."
+      ],
+      "media_type": "text/csv; charset=utf-8",
+      "path": "ctas/data/research/sources.csv",
+      "row_count": 143,
+      "scope": "Declared public source-universe contracts represented by this release.",
+      "sha256": "ffaec57d48a1223f6e9da76a64ee19c9ac7ade62f69a43c54f6e8ce8e0a81d1d"
+    },
+    {
+      "absent_value_convention": "numbers and booleans are masked; text columns are empty; JSON-typed columns hold compact JSON text",
+      "bytes": 131417,
+      "column_count": 32,
+      "columns": [
+        {
+          "datatype": "str",
+          "description": "Stable source-universe key.",
+          "name": "source_key",
+          "ucd": "meta.id;meta.main",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Source name.",
+          "name": "name",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Operating organization or facility.",
+          "name": "organization_or_facility",
+          "ucd": "meta.id;instr.obsty",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Primary source family.",
+          "name": "source_family",
+          "ucd": "meta.code.class",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of secondary families.",
+          "name": "secondary_families",
+          "ucd": "meta.code.class",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of data types the contract covers.",
+          "name": "data_types",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of declared product contracts.",
+          "name": "product_contracts",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of declared topic contracts.",
+          "name": "topic_contracts",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Declared access mode.",
+          "name": "access_mode",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Declared protocol.",
+          "name": "protocol",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Provider documentation URL.",
+          "name": "documentation_url",
+          "ucd": "meta.ref.url",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Rights or public-access basis for retained records.",
+          "name": "rights_or_public_access_basis",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Authentication the provider requires.",
+          "name": "authentication_requirement",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Declared query scope.",
+          "name": "query_scope",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Provider rate or cadence limit CTAS honours.",
+          "name": "rate_or_cadence_limit",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Pagination policy for the provider interface, when documented.",
+          "name": "pagination_policy",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Redistribution constraint on retained records, when documented.",
+          "name": "redistribution_constraint",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Connector implementation state as declared by the collector.",
+          "name": "connector_implementation_state",
+          "ucd": "meta.code.status",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Public implementation state (controlled vocabulary).",
+          "name": "implementation_state",
+          "ucd": "meta.code.status",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Public operational state for this release (controlled vocabulary).",
+          "name": "operational_state",
+          "ucd": "meta.code.status",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "How the source is represented in this release (controlled vocabulary).",
+          "name": "representation_state",
+          "ucd": "meta.code.status",
+          "unit": null
+        },
+        {
+          "datatype": "bool",
+          "description": "True when retained records came from this source directly.",
+          "name": "represented_directly",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of provider keys this source is represented through, when any.",
+          "name": "represented_through",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest successful provider response. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "last_successful_response",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest successful retrieval. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "last_successful_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest query attempt. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "last_attempt_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON object of retained public record counts by type.",
+          "name": "public_record_counts",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON object of query dispositions by state.",
+          "name": "public_disposition_counts",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Known limitations of this source in CTAS.",
+          "name": "known_limitations",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Date the contract was last verified against provider documentation.",
+          "name": "last_verified",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Contract version.",
+          "name": "contract_version",
+          "ucd": "meta.version",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "SHA-256 of the contract row including operational state.",
+          "name": "contract_checksum_sha256",
+          "ucd": "meta.id;meta.cryptographic",
+          "unit": null
+        }
+      ],
+      "coordinate_frame": "ICRS",
+      "format": "ECSV 1.0 (Astropy APE 6): CSV with a YAML header carrying datatype, unit, UCD and description per column",
+      "limitations": [
+        "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public evidence as the JSON release, not an independent measurement."
+      ],
+      "media_type": "text/ecsv; charset=utf-8",
+      "path": "ctas/data/research/sources.ecsv",
+      "row_count": 143,
+      "scope": "The complete source universe (every contract field, lists as JSON text).",
+      "sha256": "fe086c1f9e30812e00d1bef0436075ff75ae07f7655a05a2a7616b59e959fb82",
+      "table_name": "ctas_source_universe"
+    },
+    {
+      "absent_value_convention": "numbers and booleans are masked; text columns are empty; JSON-typed columns hold compact JSON text",
+      "bytes": 161981,
+      "column_count": 32,
+      "columns": [
+        {
+          "datatype": "str",
+          "description": "Stable source-universe key.",
+          "name": "source_key",
+          "ucd": "meta.id;meta.main",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Source name.",
+          "name": "name",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Operating organization or facility.",
+          "name": "organization_or_facility",
+          "ucd": "meta.id;instr.obsty",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Primary source family.",
+          "name": "source_family",
+          "ucd": "meta.code.class",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of secondary families.",
+          "name": "secondary_families",
+          "ucd": "meta.code.class",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of data types the contract covers.",
+          "name": "data_types",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of declared product contracts.",
+          "name": "product_contracts",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of declared topic contracts.",
+          "name": "topic_contracts",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Declared access mode.",
+          "name": "access_mode",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Declared protocol.",
+          "name": "protocol",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Provider documentation URL.",
+          "name": "documentation_url",
+          "ucd": "meta.ref.url",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Rights or public-access basis for retained records.",
+          "name": "rights_or_public_access_basis",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Authentication the provider requires.",
+          "name": "authentication_requirement",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Declared query scope.",
+          "name": "query_scope",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Provider rate or cadence limit CTAS honours.",
+          "name": "rate_or_cadence_limit",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Pagination policy for the provider interface, when documented.",
+          "name": "pagination_policy",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Redistribution constraint on retained records, when documented.",
+          "name": "redistribution_constraint",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Connector implementation state as declared by the collector.",
+          "name": "connector_implementation_state",
+          "ucd": "meta.code.status",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Public implementation state (controlled vocabulary).",
+          "name": "implementation_state",
+          "ucd": "meta.code.status",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Public operational state for this release (controlled vocabulary).",
+          "name": "operational_state",
+          "ucd": "meta.code.status",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "How the source is represented in this release (controlled vocabulary).",
+          "name": "representation_state",
+          "ucd": "meta.code.status",
+          "unit": null
+        },
+        {
+          "datatype": "bool",
+          "description": "True when retained records came from this source directly.",
+          "name": "represented_directly",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON list of provider keys this source is represented through, when any.",
+          "name": "represented_through",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest successful provider response. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "last_successful_response",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest successful retrieval. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "last_successful_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest query attempt. ISO 8601 UTC text; empty when the public record does not retain it.",
+          "name": "last_attempt_at",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON object of retained public record counts by type.",
+          "name": "public_record_counts",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "json",
+          "description": "JSON object of query dispositions by state.",
+          "name": "public_disposition_counts",
+          "ucd": "meta.number",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Known limitations of this source in CTAS.",
+          "name": "known_limitations",
+          "ucd": "meta.note",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Date the contract was last verified against provider documentation.",
+          "name": "last_verified",
+          "ucd": "time.epoch",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Contract version.",
+          "name": "contract_version",
+          "ucd": "meta.version",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "SHA-256 of the contract row including operational state.",
+          "name": "contract_checksum_sha256",
+          "ucd": "meta.id;meta.cryptographic",
+          "unit": null
+        }
+      ],
+      "coordinate_frame": "ICRS",
+      "format": "IVOA VOTable 1.5 TABLEDATA with a UCD and VOUnits string per FIELD",
+      "limitations": [
+        "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public evidence as the JSON release, not an independent measurement."
+      ],
+      "media_type": "application/x-votable+xml",
+      "path": "ctas/data/research/sources.vot",
+      "row_count": 143,
+      "scope": "The complete source universe (every contract field, lists as JSON text).",
+      "sha256": "065acb35aecf5e6dd4acb82aff7cfda504098facea40e8667a11123a6b5755e1",
+      "table_name": "ctas_source_universe"
+    },
+    {
+      "alias_column_count": 7,
+      "bytes": 4583396,
+      "coordinate_epoch": 2000.0,
+      "coordinate_frame": "ICRS",
+      "format": "TOM Toolkit base target-import CSV",
+      "limitations": [
+        "Coordinate-incomplete candidates are omitted rather than assigned invented positions.",
+        "Columns other than TOM base target fields import as TargetExtra values; custom TOM target models or configurations may require adaptation.",
+        "Importing this file does not request telescope observations."
+      ],
+      "media_type": "text/csv; charset=utf-8",
+      "omitted_candidate_count": 759,
+      "path": "ctas/data/research/tom-targets.csv",
+      "row_count": 17378,
+      "scope": "Public CTAS candidates with complete valid ICRS coordinates.",
+      "sha256": "7c46948a83e7b3baadf6926c60b25572904a89cb8c1fe4aa0ceb7a967ab527db"
+    },
+    {
+      "absent_value_convention": "numbers and booleans are masked; text columns are empty; JSON-typed columns hold compact JSON text",
+      "bytes": 4833569,
+      "column_count": 18,
+      "columns": [
+        {
+          "datatype": "str",
+          "description": "Preferred public designation (TOM Toolkit target name).",
+          "name": "name",
+          "ucd": "meta.id;meta.main",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "TOM Toolkit target type (SIDEREAL).",
+          "name": "type",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "ICRS right ascension.",
+          "name": "ra",
+          "ucd": "pos.eq.ra;meta.main",
+          "unit": "deg"
+        },
+        {
+          "datatype": "float",
+          "description": "ICRS declination.",
+          "name": "dec",
+          "ucd": "pos.eq.dec;meta.main",
+          "unit": "deg"
+        },
+        {
+          "datatype": "float",
+          "description": "Coordinate epoch (Julian year).",
+          "name": "epoch",
+          "ucd": "time.epoch",
+          "unit": "yr"
+        },
+        {
+          "datatype": "str",
+          "description": "CTAS public event identifier.",
+          "name": "ctas_event_id",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Operational CTAS follow-up ordering score; not a probability.",
+          "name": "ctas_score",
+          "ucd": "stat.rank",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained reported classification label.",
+          "name": "classification",
+          "ucd": "src.class",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Primary retained messenger channel.",
+          "name": "primary_messenger",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "CTAS public dossier URL.",
+          "name": "ctas_url",
+          "ucd": "meta.ref.url",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Preferred public source-record URL when available.",
+          "name": "source_url",
+          "ucd": "meta.ref.url",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name2).",
+          "name": "name2",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name3).",
+          "name": "name3",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name4).",
+          "name": "name4",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name5).",
+          "name": "name5",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name6).",
+          "name": "name6",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name7).",
+          "name": "name7",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name8).",
+          "name": "name8",
+          "ucd": "meta.id",
+          "unit": null
+        }
+      ],
+      "coordinate_frame": "ICRS",
+      "format": "ECSV 1.0 (Astropy APE 6): CSV with a YAML header carrying datatype, unit, UCD and description per column",
+      "limitations": [
+        "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public evidence as the JSON release, not an independent measurement."
+      ],
+      "media_type": "text/ecsv; charset=utf-8",
+      "path": "ctas/data/research/tom-targets.ecsv",
+      "row_count": 17378,
+      "scope": "Public CTAS candidates with complete valid ICRS coordinates, in TOM Toolkit base-import columns.",
+      "sha256": "98e259d6b564c107ec27ae19d47a31952e5298122664c14d36f812a3dea26a6d",
+      "table_name": "ctas_tom_targets"
+    },
+    {
+      "absent_value_convention": "numbers and booleans are masked; text columns are empty; JSON-typed columns hold compact JSON text",
+      "bytes": 6716291,
+      "column_count": 18,
+      "columns": [
+        {
+          "datatype": "str",
+          "description": "Preferred public designation (TOM Toolkit target name).",
+          "name": "name",
+          "ucd": "meta.id;meta.main",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "TOM Toolkit target type (SIDEREAL).",
+          "name": "type",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "ICRS right ascension.",
+          "name": "ra",
+          "ucd": "pos.eq.ra;meta.main",
+          "unit": "deg"
+        },
+        {
+          "datatype": "float",
+          "description": "ICRS declination.",
+          "name": "dec",
+          "ucd": "pos.eq.dec;meta.main",
+          "unit": "deg"
+        },
+        {
+          "datatype": "float",
+          "description": "Coordinate epoch (Julian year).",
+          "name": "epoch",
+          "ucd": "time.epoch",
+          "unit": "yr"
+        },
+        {
+          "datatype": "str",
+          "description": "CTAS public event identifier.",
+          "name": "ctas_event_id",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "float",
+          "description": "Operational CTAS follow-up ordering score; not a probability.",
+          "name": "ctas_score",
+          "ucd": "stat.rank",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Latest retained reported classification label.",
+          "name": "classification",
+          "ucd": "src.class",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Primary retained messenger channel.",
+          "name": "primary_messenger",
+          "ucd": "meta.code",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "CTAS public dossier URL.",
+          "name": "ctas_url",
+          "ucd": "meta.ref.url",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Preferred public source-record URL when available.",
+          "name": "source_url",
+          "ucd": "meta.ref.url",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name2).",
+          "name": "name2",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name3).",
+          "name": "name3",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name4).",
+          "name": "name4",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name5).",
+          "name": "name5",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name6).",
+          "name": "name6",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name7).",
+          "name": "name7",
+          "ucd": "meta.id",
+          "unit": null
+        },
+        {
+          "datatype": "str",
+          "description": "Additional public designation (name8).",
+          "name": "name8",
+          "ucd": "meta.id",
+          "unit": null
+        }
+      ],
+      "coordinate_frame": "ICRS",
+      "format": "IVOA VOTable 1.5 TABLEDATA with a UCD and VOUnits string per FIELD",
+      "limitations": [
+        "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public evidence as the JSON release, not an independent measurement."
+      ],
+      "media_type": "application/x-votable+xml",
+      "path": "ctas/data/research/tom-targets.vot",
+      "row_count": 17378,
+      "scope": "Public CTAS candidates with complete valid ICRS coordinates, in TOM Toolkit base-import columns.",
+      "sha256": "fe614dd85d8ceaddf1ed5807a3dbd4c7441d23f1f56ff339c88c5caaddd097c3",
+      "table_name": "ctas_tom_targets"
+    }
+  ]
+}
