@@ -18,6 +18,58 @@ export function transitFlux(time,{period,epoch,ratio,scaledAxis,impact}) {
   if(Math.cos(angle)<0)return 1;
   return 1-overlap(Math.hypot(scaledAxis*Math.sin(angle),impact*Math.cos(angle)),ratio);
 }
+// ------------------------------------------------------------------ limb darkening (Track 3b)
+// Effective wavelengths of the bands the light-curve viewer shows (nm).
+export const LIMB_DARKENING_BANDS = {
+  TESS: { wavelengthNm: 786.5, label: 'TESS (600-1000 nm)' },
+  Kepler: { wavelengthNm: 640, label: 'Kepler / K2 (420-900 nm)' },
+  V: { wavelengthNm: 551, label: 'Johnson V' },
+  R: { wavelengthNm: 658, label: 'Cousins R / Sloan r' },
+  I: { wavelengthNm: 806, label: 'Cousins I / Sloan i' },
+};
+// Quadratic-law coefficients (u1, u2) of a gray Eddington atmosphere at one wavelength:
+// I(mu) = B_lambda(T(tau = mu)), T^4 = (3/4) Teff^4 (tau + 2/3), fitted by least squares on
+// 101 mu points. A physical approximation stated as such, not a tabulated model atmosphere.
+export function grayAtmosphereLimbDarkening(teffK, wavelengthNm) {
+  if (!(teffK > 0) || !(wavelengthNm > 0)) return null;
+  const lambda = wavelengthNm * 1e-9, c2 = 0.0143877688;
+  const intensity = (mu) => 1 / Math.expm1(c2 / (lambda * Math.pow(0.75 * (mu + 2 / 3), 0.25) * teffK));
+  const centre = intensity(1);
+  if (!(centre > 0)) return null;
+  let sxx = 0, sxy = 0, syy = 0, sx3 = 0, sx4 = 0;
+  for (let i = 0; i <= 100; i += 1) {
+    const mu = i / 100, x = 1 - mu, deficit = 1 - intensity(mu) / centre;
+    sxx += x * x; sx3 += x * x * x; sx4 += x * x * x * x; sxy += x * deficit; syy += x * x * deficit;
+  }
+  const det = sxx * sx4 - sx3 * sx3;
+  if (!det) return null;
+  return { u1: (sxy * sx4 - syy * sx3) / det, u2: (sxx * syy - sx3 * sxy) / det };
+}
+// Fraction of a quadratic limb-darkened stellar disc's flux hidden by a planet of radius ratio k at
+// projected separation z (both in stellar radii), by integration over 400 annuli of the star.
+export function occultedFractionQuadratic(z, k, u1, u2, annuli = 400) {
+  if (!Number.isFinite(z) || !Number.isFinite(k) || k <= 0 || z >= 1 + k) return 0;
+  if (![u1, u2].every(Number.isFinite)) return null;
+  const covered = (r) => (r <= 0 ? 0 : r * r * Math.PI * overlap(z / r, k / r));
+  let hidden = 0, total = 0, previous = 0;
+  for (let i = 1; i <= annuli; i += 1) {
+    const r = i / annuli, mid = (i - 0.5) / annuli, mu = Math.sqrt(Math.max(0, 1 - mid * mid));
+    const weight = 1 - u1 * (1 - mu) - u2 * (1 - mu) * (1 - mu);
+    const area = covered(r);
+    hidden += weight * (area - previous);
+    total += weight * Math.PI * (r * r - ((i - 1) / annuli) ** 2);
+    previous = area;
+  }
+  return total > 0 ? hidden / total : null;
+}
+// Circular-orbit transit flux with quadratic limb darkening (same geometry as transitFlux).
+export function transitFluxQuadratic(time,{period,epoch,ratio,scaledAxis,impact},u1,u2) {
+  if(![time,period,epoch,ratio,scaledAxis,impact].every(Number.isFinite)||period<=0||ratio<=0||scaledAxis<=1+ratio||impact<0||impact>scaledAxis)return null;
+  const angle=2*Math.PI*((time-epoch)/period);
+  if(Math.cos(angle)<0)return 1;
+  const hidden=occultedFractionQuadratic(Math.hypot(scaledAxis*Math.sin(angle),impact*Math.cos(angle)),ratio,u1,u2);
+  return hidden===null?null:1-hidden;
+}
 export function eccentricAnomaly(mean,e) {
   if(!Number.isFinite(mean)||!Number.isFinite(e)||e<0||e>=1)return null;
   let E=e<.8?mean:Math.PI;

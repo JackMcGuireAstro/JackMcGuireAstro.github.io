@@ -518,3 +518,13 @@ footer nav a { display: inline-flex; align-items: center; min-height: 44px; colo
 .status-page .exceptions-controls{display:flex;flex-wrap:wrap;gap:.6rem;align-items:end;margin:.5rem 0}
 .status-page .exceptions-controls label{display:flex;flex-direction:column;gap:.25rem;color:var(--muted);font-size:.8rem}
 .status-page .exceptions-controls select{min-height:40px;padding:.4rem .6rem;border:1px solid var(--line);border-radius:8px;background:var(--panel-solid);color:var(--text)}
+/* Track 3b: calculated quantities, population plots, ephemeris staleness */
+.derived-quantities{margin-top:1.5rem}
+.derived-table{width:100%;min-width:640px;border-collapse:collapse}
+.derived-table th,.derived-table td{padding:.45rem .5rem;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.derived-table tr[data-state="not-computed"] td{color:var(--muted)}
+.derived-table details ul{margin:.3rem 0;padding-left:1.1rem}
+.derived-staleness{margin:1rem 0;padding:.8rem;border:1px solid var(--line);border-radius:var(--radius-small)}
+.derived-population{margin:1rem 0 0}
+.population-plot{max-width:720px;color:var(--text)}
+.population-plot svg{display:block;width:100%;height:auto}

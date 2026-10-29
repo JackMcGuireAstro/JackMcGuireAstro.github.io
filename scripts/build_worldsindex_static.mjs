@@ -12,7 +12,8 @@ import * as interop from './worldsindex_interop.mjs';
 import { atomFeed, CHANGELOG_SCHEMA_VERSION, diffReleases, jsonFeed, loadPreviousRelease, renderChangelogMarkdown } from './worldsindex_changelog.mjs';
 import { provenanceDocument, PROVENANCE_SCHEMA_VERSION } from './worldsindex_provenance.mjs';
 import { acceptSourceContributions, describeSourceContributions } from './worldsindex_contributions.mjs';
-import { buildConflictArtifacts, manifestBlock as conflictManifestBlock } from './worldsindex_conflicts.mjs';
+import { buildConflictArtifacts, manifestBlock as conflictManifestBlock, INPUTS as CONFLICT_INPUTS } from './worldsindex_conflicts.mjs';
+import { buildDerivedArtifacts, manifestBlock as derivedManifestBlock } from './worldsindex_derived.mjs';
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const sourceRoot = resolve(process.env.WORLDSINDEX_SOURCE_DIR ?? '/Users/johnmcguire/Documents/Codex/CTAS and WorldsIndex/WorldsIndex Development/work/worldsindex');
@@ -295,12 +296,16 @@ for (const [table, records] of [['toi', toiRecords], ['cumulative', koiRecords],
   }
 }
 
+const euMagsByRecordId = new Map();
 const exoplanetEu = parseCsv(await readFile(join(sourceRoot, 'data/snapshots/exoplanet-eu', exoplanetEuPointer.directory, 'catalog.csv'), 'utf8'));
 const euFields = ['planet_status','mass','mass_error_min','mass_error_max','mass_sini','mass_sini_error_min','mass_sini_error_max','radius','radius_error_min','radius_error_max','orbital_period','orbital_period_error_min','orbital_period_error_max','semi_major_axis','semi_major_axis_error_min','semi_major_axis_error_max','eccentricity','eccentricity_error_min','eccentricity_error_max','inclination','inclination_error_min','inclination_error_max','discovered','updated','temp_calculated','temp_measured','publication','detection_type','mass_measurement_type','radius_measurement_type','alternate_names','molecules','star_name','ra','dec','star_distance','star_mass','star_radius','star_teff'];
 for (const row of exoplanetEu) {
   const slug = row.name.normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const sourceRecordId = `exoplanet-eu-${slug}-${createHash('sha256').update(JSON.stringify(row)).digest('hex').slice(0, 12)}`;
   attachByName(row.name, { sourceId: 'exoplanet-eu', sourceRecordId, recordType: 'catalog row', name: row.name, values: selected(row, euFields) }, `object-${sourceRecordId}`);
+  // J and K magnitudes feed only the derived TSM and ESM (Track 3b); the detail rows are unchanged.
+  const magJ = Number.parseFloat(row.mag_j), magK = Number.parseFloat(row.mag_k);
+  if (Number.isFinite(magJ) || Number.isFinite(magK)) euMagsByRecordId.set(sourceRecordId, { j: Number.isFinite(magJ) ? magJ : null, k: Number.isFinite(magK) ? magK : null });
 }
 
 for (const [objectId, contribution] of Object.entries(contributions?.objects ?? {})) {
@@ -385,6 +390,15 @@ const identityRulesVersion = await readFile(join(sourceRoot, 'data/atlas/release
 const { artifacts: conflictArtifacts, reason: conflictReason } = await buildConflictArtifacts({ sourceRoot, outputRoot, atlas, detectionsById });
 if (conflictArtifacts) console.log(`conflict sets: ${conflictArtifacts.counts.objects.toLocaleString()} objects, ${conflictArtifacts.counts.multiRowSets.toLocaleString()} multi-row sets, ${conflictArtifacts.counts.setsInConflict.toLocaleString()} in conflict, ${conflictArtifacts.counts.selectedValues.toLocaleString()} selected values`);
 else console.warn(`conflict sets not published: ${conflictReason}`);
+// ---- Derived quantities, population plots and the ephemeris staleness index (Track 3b) ----------
+// Calculated from the builder's selections (the conflict-set product above), one stated stellar
+// parameter set per object and the Exoplanet.eu J/K magnitudes; regenerated every build, never
+// stored in the builder state. Optional: without the conflict product there is no derived block.
+let derivedArtifacts = null;
+if (conflictArtifacts) {
+  derivedArtifacts = await buildDerivedArtifacts({ outputRoot, products: join(sourceRoot, CONFLICT_INPUTS.product), details, catalogObjects, euMagsByRecordId, transitEphemerides, generatedAt: atlas.generatedAt });
+  console.log(`derived quantities: ${derivedArtifacts.counts.objects.toLocaleString()} objects, ${derivedArtifacts.population.toLocaleString()} confirmed planets in the population plots, staleness ${JSON.stringify(derivedArtifacts.staleness)}`);
+} else console.warn('derived quantities not published: no conflict-set product');
 const exportTables = {
   objects: interop.objectsTable(catalogObjects, detectionsById, detailCounts),
   measurements: interop.measurementsTable(details, detectionsById),
@@ -468,6 +482,7 @@ const artifactPaths = [
   'feed.xml',
   ...[...buckets.keys()].sort().map((bucket) => `details/${bucket}.json.gz`),
   ...(conflictArtifacts?.paths ?? []),
+  ...(derivedArtifacts?.paths ?? []),
 ].sort();
 const artifactsBeforeProvenance = Object.fromEntries(await Promise.all(artifactPaths.map(describeArtifact)));
 
@@ -533,6 +548,8 @@ const manifest = {
   feeds: { json: 'feed.json', atom: 'feed.xml', items: feed.items.length },
   // Framework v2 Track 2a (additive): conflict sets, selections, reconciliation flags and the exceptions list.
   conflictSets: conflictArtifacts ? conflictManifestBlock(conflictArtifacts) : null,
+  // Framework v2 Track 3b (additive): calculated quantities, population plots, ephemeris staleness.
+  derivedQuantities: derivedArtifacts ? derivedManifestBlock(derivedArtifacts) : null,
   artifacts,
   scientificBoundary: 'Static public catalog projection. Source membership is not independent confirmation; source-composite values are not self-consistent publication solutions; catalog projections are not completeness-corrected populations.',
 };

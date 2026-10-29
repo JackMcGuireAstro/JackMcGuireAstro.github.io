@@ -74,9 +74,10 @@ group_worldsindex_static() {
   check worldsindex.front-syntax node_check worldsindex/assets/lightcurves.js worldsindex/assets/app.js \
     worldsindex/assets/science.js worldsindex/assets/live-mast.js worldsindex/assets/live-nasa.js \
     worldsindex/assets/live-sources.js worldsindex/assets/ephemeris.js worldsindex/assets/sky.js worldsindex/assets/status.js \
-    worldsindex/assets/compare.js
+    worldsindex/assets/compare.js worldsindex/assets/derived.js worldsindex/assets/photometry.js
   check worldsindex.tooling-syntax node_check scripts/build_worldsindex_static.mjs scripts/worldsindex_transit_ephemerides.mjs \
-    scripts/worldsindex_interop.mjs scripts/worldsindex_changelog.mjs scripts/worldsindex_provenance.mjs scripts/worldsindex_contributions.mjs scripts/worldsindex_conflicts.mjs
+    scripts/worldsindex_interop.mjs scripts/worldsindex_changelog.mjs scripts/worldsindex_provenance.mjs scripts/worldsindex_contributions.mjs scripts/worldsindex_conflicts.mjs \
+    scripts/worldsindex_derived.mjs
   check worldsindex.test_worldsindex_publisher_recovery python3 scripts/test_worldsindex_publisher_recovery.py
   check worldsindex.front.live-mast node scripts/test_worldsindex_live_mast.mjs
   check worldsindex.front.live-nasa node scripts/test_worldsindex_live_nasa.mjs
@@ -85,6 +86,7 @@ group_worldsindex_static() {
   check worldsindex.test_worldsindex_interop_js node --test scripts/test_worldsindex_interop.mjs
   check worldsindex.test_worldsindex_front node --test scripts/test_worldsindex_front.mjs
   check worldsindex.test_worldsindex_compare node --test scripts/test_worldsindex_compare.mjs
+  check worldsindex.test_worldsindex_derived node --test scripts/test_worldsindex_derived.mjs
 }
 
 group_worldsindex_interop() {

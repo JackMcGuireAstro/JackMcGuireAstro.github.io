@@ -62,10 +62,16 @@ SCHEMA_FOR = [
     (r"^conflict-summary\.json$", "conflict-summary.schema.json"),
     (r"^conflict-index\.json\.gz$", "conflict-index.schema.json"),
     (r"^controversial-retracted-excluded\.json\.gz$", "status-exceptions.schema.json"),
+    # Framework v2 Track 3b: calculated quantities (sharded like details/), their summary, the
+    # population plot tables and the ephemeris staleness index (the plots themselves are SVG).
+    (r"^derived/[0-9a-f]{2}\.json\.gz$", "derived-shard.schema.json"),
+    (r"^derived-summary\.json$", "derived-summary.schema.json"),
+    (r"^populations\.json$", "populations.schema.json"),
+    (r"^staleness\.json$", "staleness.schema.json"),
 ]
 # Sharded record types: validated by a deterministic sample within the time budget, not in full.
-SHARDED = ("details-shard.schema.json", "conflict-sets-shard.schema.json")
-NOT_JSON = re.compile(r"\.(ecsv\.gz|vot\.gz|md|xml)$")
+SHARDED = ("details-shard.schema.json", "conflict-sets-shard.schema.json", "derived-shard.schema.json")
+NOT_JSON = re.compile(r"\.(ecsv\.gz|vot\.gz|md|xml|svg)$")
 
 
 def schema_for(relative: str) -> str | None:

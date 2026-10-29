@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/staleness.schema.json",
+  "title": "worldsindex-ephemeris-staleness.v1",
+  "description": "worldsindex/data/staleness.json: every transiting planet with an ephemeris ranked by predicted 1-sigma mid-transit uncertainty at +1, +6 and +12 months, with a priority class under the stated rule (WorldsIndex's own rule; no ExoClock data).",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "rule",
+    "columns",
+    "rows"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "worldsindex-ephemeris-staleness.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "referenceBjd": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "rule": {
+      "type": "string"
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "columns": {
+      "const": [
+        "rank",
+        "objectId",
+        "name",
+        "status",
+        "priority",
+        "sigma1MonthMin",
+        "sigma6MonthMin",
+        "sigma12MonthMin",
+        "thresholdMin",
+        "durationHours",
+        "sourceId",
+        "sourceRecordId"
+      ]
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 12,
+        "maxItems": 12,
+        "prefixItems": [
+          {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          {
+            "enum": [
+              "alert",
+              "high",
+              "medium",
+              "low",
+              "unranked"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -380,6 +380,68 @@
           "additionalProperties": true
         }
       ]
+    },
+    "derivedQuantities": {
+      "description": "Track 3b (additive): calculated quantities, population plots and the ephemeris staleness index; null when the release has no conflict-set product to calculate from.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "schemaVersion",
+            "summaryPath",
+            "shardPathPattern",
+            "shards"
+          ],
+          "properties": {
+            "schemaVersion": {
+              "const": "worldsindex-derived-quantities.v1"
+            },
+            "summaryPath": {
+              "const": "derived-summary.json"
+            },
+            "shardPathPattern": {
+              "const": "derived/{shard}.json.gz"
+            },
+            "shards": {
+              "const": 256
+            },
+            "objects": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "formulaRegistryVersion": {
+              "type": "string"
+            },
+            "formulas": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "populationsPath": {
+              "const": "populations.json"
+            },
+            "populationPlots": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "stalenessPath": {
+              "const": "staleness.json"
+            },
+            "stalenessPriorities": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer"
+              }
+            },
+            "claimBoundary": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "required": [

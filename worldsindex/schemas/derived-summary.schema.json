@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/derived-summary.schema.json",
+  "title": "worldsindex-derived-summary.v1",
+  "description": "worldsindex/data/derived-summary.json: the formula registry (one entry per calculation with citation), the stellar-input, same-publication and propagation rules, counts per quantity and state, the staleness priorities and the population plot specifications.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "formulaRegistryVersion",
+    "formulas",
+    "quantities",
+    "claimBoundary",
+    "stellarRule",
+    "propagation",
+    "shardPathPattern",
+    "shards"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "worldsindex-derived-summary.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "formulaRegistryVersion": {
+      "type": "string"
+    },
+    "claimBoundary": {
+      "type": "string"
+    },
+    "stellarRule": {
+      "type": "string"
+    },
+    "samePublicationRule": {
+      "type": "string"
+    },
+    "stalenessRule": {
+      "type": "string"
+    },
+    "propagation": {
+      "type": "string"
+    },
+    "skippedStatuses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "shardPathPattern": {
+      "const": "derived/{shard}.json.gz"
+    },
+    "shards": {
+      "const": 256
+    },
+    "objects": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "skippedForStatus": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "formulas": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "label",
+          "unit",
+          "inputs",
+          "formula",
+          "citation"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "formula": {
+            "type": "string"
+          },
+          "citation": {
+            "type": "object",
+            "required": [
+              "text"
+            ],
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "assumptions": {
+            "type": "object"
+          },
+          "archiveProperty": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "limbDarkeningBands": {
+      "type": "object"
+    },
+    "quantities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "calculated",
+          "notComputed",
+          "reasons"
+        ],
+        "properties": {
+          "calculated": {
+            "type": "integer"
+          },
+          "notComputed": {
+            "type": "integer"
+          },
+          "reasons": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "stalenessPriorities": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "populationPlots": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "plots": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

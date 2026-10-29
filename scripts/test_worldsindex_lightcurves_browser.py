@@ -154,6 +154,35 @@ class LightcurveBrowserTests(unittest.TestCase):
         self.assertEqual(errors, [])
         page.close()
 
+    def test_calculated_quantities_population_marker_and_limb_darkened_model(self):
+        # Track 3b: the System & orbit tab lists calculated quantities with formula and inputs,
+        # "not computed" rows with a reason, and marks the planet on a population plot; the
+        # light-curve model states its limb-darkening law. Skipped on a release without them.
+        manifest = json.loads((ROOT / "worldsindex" / "data" / "manifest.json").read_text())
+        if not manifest.get("derivedQuantities"):
+            self.skipTest("this release has no calculated quantities")
+        for width in (1280, 390):
+            page, errors = self.open(width=width, object_id="object-hd-209458-b")
+            page.click("#object-tab-system")
+            page.wait_for_selector("#derived-section .derived-table tbody tr", timeout=30000)
+            rows = page.locator("#derived-section .derived-table tbody tr")
+            self.assertGreater(rows.count(), 15)
+            self.assertGreater(page.locator('#derived-section tr[data-state="calculated"]').count(), 10)
+            teq = page.text_content('#derived-section tr[data-code="equilibrium_temperature"]')
+            self.assertIn("Archive value", teq, "the archive's own value is shown beside ours")
+            self.assertIn("calculated", teq)
+            for state in page.eval_on_selector_all('#derived-section tr[data-state="not-computed"] td:first-of-type', "els => els.map(e => e.textContent)"):
+                self.assertIn("not computed", state)
+            page.wait_for_selector("#derived-plot-svg svg .population-marker", timeout=30000)
+            self.assertIn("red ring marks this planet", page.text_content("#derived-plot-summary"))
+            overflow = page.evaluate("() => document.documentElement.scrollWidth - document.documentElement.clientWidth")
+            self.assertLessEqual(overflow, 1, f"no sideways scroll at {width} px")
+            page.click("#object-tab-lightcurves")
+            page.wait_for_function("document.querySelector('#lc-model-law') && document.querySelector('#lc-model-law').textContent.length > 0", timeout=30000)
+            self.assertIn("quadratic limb darkening", page.text_content("#lc-model-law"))
+            self.assertEqual(errors, [])
+            page.close()
+
     def test_planet_page_folds_on_the_release_ephemeris(self):
         # A NASA planet whose own rows carry no mid-transit epoch: the fold uses the release's
         # chosen row (here a TOI row matched by TIC and period), and the TIC comes from the

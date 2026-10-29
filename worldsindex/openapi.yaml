@@ -37,6 +37,8 @@ tags:
     description: Retained observation products (light curves).
   - name: conflicts
     description: Conflict sets (one row per source assertion, relations at k sigma), selections (a selection, not a measurement), reconciliation flags and the controversial / retracted / excluded list (Framework v2, Track 2a).
+  - name: derived
+    description: Calculated quantities (each with its formula, inputs and sources; calculated, not measured), population plots and the ephemeris staleness index (Framework v2, Track 3b).
 components:
   schemas:
     Manifest:
@@ -81,6 +83,14 @@ components:
       $ref: schemas/conflict-index.schema.json
     StatusExceptions:
       $ref: schemas/status-exceptions.schema.json
+    DerivedShard:
+      $ref: schemas/derived-shard.schema.json
+    DerivedSummary:
+      $ref: schemas/derived-summary.schema.json
+    Populations:
+      $ref: schemas/populations.schema.json
+    EphemerisStaleness:
+      $ref: schemas/staleness.schema.json
   parameters:
     shard:
       name: shard
@@ -441,3 +451,74 @@ paths:
             application/gzip:
               schema:
                 $ref: "#/components/schemas/StatusExceptions"
+  /data/derived/{shard}.json.gz:
+    get:
+      tags: [derived]
+      summary: Calculated quantities of the objects in one shard
+      description: The worldsindex-derived-quantities.v1 blocks of the objects whose id hashes to the shard (as details/). Every quantity names its formula (derived-summary.json), its inputs with their sources, an asymmetric propagated uncertainty, or state not-computed with the reason; calculated, not measured. Present only when manifest.derivedQuantities is not null.
+      operationId: getDerivedShard
+      parameters:
+        - $ref: "#/components/parameters/shard"
+      responses:
+        "200":
+          description: gzip-compressed JSON.
+          content:
+            application/gzip:
+              schema:
+                $ref: "#/components/schemas/DerivedShard"
+  /data/derived-summary.json:
+    get:
+      tags: [derived]
+      summary: Formula registry and counts of the calculated quantities
+      description: One entry per calculation with formula and citation, the stellar-input, same-publication and propagation rules, counts per quantity and state, staleness priorities and population plot specifications.
+      operationId: getDerivedSummary
+      responses:
+        "200":
+          description: JSON.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DerivedSummary"
+  /data/populations.json:
+    get:
+      tags: [derived]
+      summary: Population plot tables
+      description: Data table, axes and text summary of every population plot (populations/<plot>.svg) of confirmed planets; a catalog projection, not a completeness-corrected population.
+      operationId: getPopulations
+      responses:
+        "200":
+          description: JSON.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Populations"
+  /data/populations/{plot}.svg:
+    get:
+      tags: [derived]
+      summary: One static population plot
+      description: mass-period, radius-period, mass-radius (with Zeng et al. 2016 rocky-planet curves), discovery-method or discovery-year; regenerated every build. The page marks the planet on it.
+      operationId: getPopulationPlot
+      parameters:
+        - name: plot
+          in: path
+          required: true
+          schema:
+            enum: [mass-period, radius-period, mass-radius, discovery-method, discovery-year]
+      responses:
+        "200":
+          description: SVG image.
+          content:
+            image/svg+xml: {}
+  /data/staleness.json:
+    get:
+      tags: [derived]
+      summary: Ephemeris staleness index
+      description: Every transiting planet ranked by predicted mid-transit uncertainty at +1, +6 and +12 months with a priority class under the stated rule (WorldsIndex's own rule; no ExoClock data).
+      operationId: getEphemerisStaleness
+      responses:
+        "200":
+          description: JSON.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EphemerisStaleness"

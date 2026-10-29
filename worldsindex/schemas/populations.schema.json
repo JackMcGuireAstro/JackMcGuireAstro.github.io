@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/populations.schema.json",
+  "title": "worldsindex-populations.v1",
+  "description": "worldsindex/data/populations.json: the data table, axis specification and text summary of every population plot (populations/<plot>.svg) of confirmed planets, with the selected values; a catalog projection, not a completeness-corrected population.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "plots",
+    "claimBoundary"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "worldsindex-populations.v1"
+    },
+    "generatedAt": {
+      "$ref": "common.schema.json#/$defs/isoDateTime"
+    },
+    "population": {
+      "type": "string"
+    },
+    "claimBoundary": {
+      "type": "string"
+    },
+    "plots": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "title",
+          "path",
+          "kind",
+          "columns",
+          "rows",
+          "summary"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^populations/[a-z-]+\\.svg$"
+          },
+          "kind": {
+            "enum": [
+              "scatter",
+              "histogram"
+            ]
+          },
+          "field": {
+            "type": "string"
+          },
+          "x": {
+            "type": "object"
+          },
+          "y": {
+            "type": "object"
+          },
+          "frame": {
+            "type": "object"
+          },
+          "curves": {
+            "type": "array"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

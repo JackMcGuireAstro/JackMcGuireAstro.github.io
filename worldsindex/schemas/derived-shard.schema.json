@@ -1,0 +1,371 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/derived-shard.schema.json",
+  "title": "worldsindex-derived-quantities.v1",
+  "description": "worldsindex/data/derived/<xx>.json.gz: calculated quantities of the objects whose id hashes to the shard (first two hex digits of sha256(objectId), as details/). Each quantity names its formula (derived-summary.json), its inputs with their sources, an asymmetric propagated uncertainty, or state not-computed with the reason. Calculated, not measured.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "objects"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "worldsindex-derived-quantities.v1"
+    },
+    "objects": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "objectId",
+          "inputs",
+          "quantities",
+          "massIsMinimum"
+        ],
+        "properties": {
+          "objectId": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inputs": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": [
+                "value",
+                "unit"
+              ],
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "errPlus": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "errMinus": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "unit": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "limit": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "sourceRecordIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "selectionId": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string"
+                },
+                "definition": {
+                  "type": "string"
+                },
+                "derivedFrom": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "selected": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "massIsMinimum": {
+            "type": "boolean"
+          },
+          "stellarSetsConsidered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quantities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "code",
+                "formulaId",
+                "state"
+              ],
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "pattern": "^[a-z_]+$"
+                },
+                "formulaId": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9-]+\\.v[0-9]+$"
+                },
+                "state": {
+                  "enum": [
+                    "calculated",
+                    "not-computed"
+                  ]
+                },
+                "value": {
+                  "type": [
+                    "number",
+                    "string",
+                    "null"
+                  ]
+                },
+                "errPlus": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "errMinus": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "uncertaintyOmits": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "reason": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "text"
+                  ],
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "input-missing",
+                        "input-is-limit",
+                        "minimum-mass",
+                        "outside-domain",
+                        "outside-calibration",
+                        "degenerate-branch",
+                        "measured-radius-selected",
+                        "measured-mass-selected",
+                        "eccentric-orbit"
+                      ]
+                    },
+                    "input": {
+                      "type": "string"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "archive": {
+                  "type": "object",
+                  "required": [
+                    "value"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "unit": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "sourceRecordIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "label": {
+                  "enum": [
+                    "estimate",
+                    "estimated"
+                  ]
+                },
+                "assumptions": {
+                  "type": "object"
+                },
+                "massBasis": {
+                  "type": "string"
+                },
+                "basis": {
+                  "enum": [
+                    "radius",
+                    "mass"
+                  ]
+                },
+                "edges": {
+                  "type": "object",
+                  "required": [
+                    "optimisticInner",
+                    "conservativeInner",
+                    "conservativeOuter",
+                    "optimisticOuter"
+                  ],
+                  "properties": {
+                    "optimisticInner": {
+                      "type": "number"
+                    },
+                    "conservativeInner": {
+                      "type": "number"
+                    },
+                    "conservativeOuter": {
+                      "type": "number"
+                    },
+                    "optimisticOuter": {
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "semimajorAxisIn": {
+                  "type": "string"
+                },
+                "conservative": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "optimistic": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "semimajorAxisOverRocheLimit": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "law": {
+                  "const": "quadratic"
+                },
+                "coefficients": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 2,
+                    "maxItems": 2
+                  }
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "state": {
+                        "const": "not-computed"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "reason"
+                    ]
+                  }
+                }
+              ],
+              "additionalProperties": false
+            }
+          },
+          "ephemerisStaleness": {
+            "type": "object",
+            "required": [
+              "priority",
+              "rank"
+            ],
+            "properties": {
+              "rank": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1
+              },
+              "priority": {
+                "enum": [
+                  "alert",
+                  "high",
+                  "medium",
+                  "low",
+                  "unranked"
+                ]
+              },
+              "sigma1MonthMin": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "sigma6MonthMin": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "sigma12MonthMin": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "thresholdMin": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "sourceRecordId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
