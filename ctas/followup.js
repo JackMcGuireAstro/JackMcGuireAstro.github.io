@@ -38,8 +38,8 @@
     {id: "wiro", observatory_id: "wyoming-infrared-observatory", name: "WIRO 2.3 m", latitude_deg: 41.0983, longitude_deg: -105.976, timezone: "America/Denver", telescope: "wiro"},
     {id: "rbo", observatory_id: "red-buttes-observatory", name: "Red Buttes 0.6 m", latitude_deg: 41.1764, longitude_deg: -105.5739, timezone: "America/Denver", telescope: "rbo"}
   ];
-  // PLACEHOLDER spectroscopy thresholds, labelled as such wherever they are shown. Replace
-  // with measured limits once the instrument profiles in tools/exposure/ccd.js are real.
+  // Spectroscopy thresholds. The live values come from tools/exposure/instruments.js (through the
+  // exposure model, ccd.SPECTROSCOPY); these copies keep the card working offline and under node.
   var SPECTROSCOPY = {
     wiro: {limit_mag: 19.0, placeholder: true, text: "classification spectrum practical to about 19.0 mag"},
     rbo: {limit_mag: null, placeholder: true, text: "imaging only; no spectrograph in the profile"}
@@ -318,8 +318,9 @@
     return {filter: filterId, system: filter.system, seconds: seconds, text: formatSeconds(seconds), exposures: exposures,
       feasible: seconds !== null && seconds <= MAX_TOTAL_S, saturation_risk: Boolean(saturated), sky: params.sky, airmass: airmass};
   }
-  function spectroscopyPlan(telescope, magnitude) {
-    var profile = SPECTROSCOPY[telescope.id] || {limit_mag: null, placeholder: true, text: "no spectroscopic profile"};
+  function spectroscopyPlan(telescope, magnitude, ccd) {
+    var table = ccd && ccd.SPECTROSCOPY ? ccd.SPECTROSCOPY : SPECTROSCOPY;
+    var profile = table[telescope.id] || {limit_mag: null, placeholder: true, text: "no spectroscopic profile"};
     if (profile.limit_mag === null) return {state: "not-available", margin: null, text: profile.text, placeholder: profile.placeholder, limit_mag: null};
     if (!finite(magnitude)) return {state: "unknown", margin: null, text: "no magnitude to compare with the " + profile.limit_mag.toFixed(1) + " mag threshold", placeholder: profile.placeholder, limit_mag: profile.limit_mag};
     var margin = Math.round((profile.limit_mag - Number(magnitude)) * 100) / 100;
@@ -343,7 +344,7 @@
         ? IMAGING_FILTERS.map(function (filterId) { return imagingPlan(telescope, filterId, Number(magnitude), ccd, airmass, sky); }).filter(Boolean) : [];
       return {id: telescope.id, name: telescope.name, placeholder: Boolean(telescope.placeholder), airmass: airmass, sky_preset: sky,
         assumed_geometry: !window_, imaging: imaging, imaging_feasible: imaging.length ? imaging.some(function (row) { return row.feasible; }) : null,
-        spectroscopy: kinds.spectroscopy ? spectroscopyPlan(telescope, magnitude) : null};
+        spectroscopy: kinds.spectroscopy ? spectroscopyPlan(telescope, magnitude, ccd) : null};
     });
   }
   // Short per-telescope verdicts for the Tonight planner's rows.
@@ -457,6 +458,8 @@
       (block.objectives.length ? '<div class="ctas-followup__telescopes">' + telescopes + "</div>" : "") +
       // Track 3a: the GW counterpart ranking and the WIRO / Red Buttes tiling drafts (ctas/screens.js).
       (typeof globalThis !== "undefined" && globalThis.CTASScreens ? globalThis.CTASScreens.gwFollowup(candidate) : "") +
+      // Track 4: the information-gap ranking, prefilled requests, report drafts and the observing-log import (ctas/observer.js).
+      (typeof globalThis !== "undefined" && globalThis.CTASObserver ? globalThis.CTASObserver.panel(candidate, {now: now, base: base, ccd: ccd}) : "") +
       '<p class="ctas-claim-boundary">' + esc(block.claim_boundary) + " Windows are a browser-local geometric estimate (no weather or telescope state); exposure times come from the site's CCD model with " +
       (placeholder ? "placeholder WIRO and Red Buttes instrument values" : "the preset instrument values") + ". Nothing here is sent anywhere or requests telescope time." +
       (found.source === "browser" ? " This release predates the published draft, so the browser derived it with the same rules." : "") + "</p></section>";
@@ -491,7 +494,7 @@
   // Re-draw the card once the exposure model and the published site coordinates are in.
   function complete(candidate, options) {
     options = options || {};
-    return Promise.all([loadExposureModel(options.ccdUrl || "tools/exposure/ccd.js?v=20261017"), loadSites(options.sitesUrl || "ctas/data/observatories.json")]).then(function (loaded) {
+    return Promise.all([loadExposureModel(options.ccdUrl || "tools/exposure/ccd.js?v=20261029"), loadSites(options.sitesUrl || "ctas/data/observatories.json")]).then(function (loaded) {
       // Only the card of the dossier that asked: the reader may have opened another since.
       var card = typeof document !== "undefined" && candidate
         ? document.querySelector('[data-followup-card][data-followup-event="' + String(candidate.event_id).replace(/["\\]/g, "") + '"]') : null;

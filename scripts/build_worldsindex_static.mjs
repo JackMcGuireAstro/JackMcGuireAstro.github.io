@@ -14,6 +14,7 @@ import { provenanceDocument, PROVENANCE_SCHEMA_VERSION } from './worldsindex_pro
 import { acceptSourceContributions, describeSourceContributions } from './worldsindex_contributions.mjs';
 import { buildConflictArtifacts, manifestBlock as conflictManifestBlock, INPUTS as CONFLICT_INPUTS } from './worldsindex_conflicts.mjs';
 import { buildDerivedArtifacts, manifestBlock as derivedManifestBlock } from './worldsindex_derived.mjs';
+import { buildObservingArtifacts } from './worldsindex_observing.mjs';
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const sourceRoot = resolve(process.env.WORLDSINDEX_SOURCE_DIR ?? '/Users/johnmcguire/Documents/Codex/CTAS and WorldsIndex/WorldsIndex Development/work/worldsindex');
@@ -399,6 +400,10 @@ if (conflictArtifacts) {
   derivedArtifacts = await buildDerivedArtifacts({ outputRoot, products: join(sourceRoot, CONFLICT_INPUTS.product), details, catalogObjects, euMagsByRecordId, transitEphemerides, generatedAt: atlas.generatedAt });
   console.log(`derived quantities: ${derivedArtifacts.counts.objects.toLocaleString()} objects, ${derivedArtifacts.population.toLocaleString()} confirmed planets in the population plots, staleness ${JSON.stringify(derivedArtifacts.staleness)}`);
 } else console.warn('derived quantities not published: no conflict-set product');
+// ---- The precomputed 30-night transit list for WIRO and Red Buttes (Track 4) ---------------------
+// From the transit ephemerides above, starting at this build's time (regenerated every build).
+const observingArtifacts = await buildObservingArtifacts({ outputRoot, transitEphemerides, generatedAt: atlas.generatedAt, startMs: Date.now() });
+console.log(`observing windows: ${observingArtifacts.counts.rows.toLocaleString()} full transit windows over 30 nights at WIRO and Red Buttes from ${observingArtifacts.counts.eligible.toLocaleString()} eligible planets`);
 const exportTables = {
   objects: interop.objectsTable(catalogObjects, detectionsById, detailCounts),
   measurements: interop.measurementsTable(details, detectionsById),
@@ -483,6 +488,7 @@ const artifactPaths = [
   ...[...buckets.keys()].sort().map((bucket) => `details/${bucket}.json.gz`),
   ...(conflictArtifacts?.paths ?? []),
   ...(derivedArtifacts?.paths ?? []),
+  observingArtifacts.path,
 ].sort();
 const artifactsBeforeProvenance = Object.fromEntries(await Promise.all(artifactPaths.map(describeArtifact)));
 
@@ -550,6 +556,8 @@ const manifest = {
   conflictSets: conflictArtifacts ? conflictManifestBlock(conflictArtifacts) : null,
   // Framework v2 Track 3b (additive): calculated quantities, population plots, ephemeris staleness.
   derivedQuantities: derivedArtifacts ? derivedManifestBlock(derivedArtifacts) : null,
+  // Framework v2 Track 4 (additive): the precomputed 30-night transit list for WIRO and Red Buttes.
+  observingWindows: { path: observingArtifacts.path, nights: 30, rows: observingArtifacts.counts.rows, eligiblePlanets: observingArtifacts.counts.eligible, perSite: observingArtifacts.counts.perSite },
   artifacts,
   scientificBoundary: 'Static public catalog projection. Source membership is not independent confirmation; source-composite values are not self-consistent publication solutions; catalog projections are not completeness-corrected populations.',
 };

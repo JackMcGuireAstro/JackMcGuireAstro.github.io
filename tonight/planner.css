@@ -115,3 +115,33 @@ small { color:var(--muted) }
   .actions .button { flex:1 1 100% }
 }
 @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important } }
+
+/* Track 4: kept sites, the run sheet, print */
+.label-spacer { font-size:.78rem }
+.sheet-target { border-top:2px solid var(--ink); padding:1.2rem 0 1.6rem; break-inside:avoid; page-break-inside:avoid }
+.sheet-target h2 { margin:0 0 .8rem; font-size:1.45rem }
+.sheet-target h2 small { font:.85rem var(--sans) }
+.sheet-grid { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:1.2rem; align-items:start }
+.sheet-facts { display:grid; grid-template-columns:1fr; gap:.4rem; margin:0 0 .8rem }
+.sheet-facts dt { font:600 .66rem var(--mono); text-transform:uppercase; letter-spacing:.06em; color:var(--muted) }
+.sheet-facts dd { margin:0 }
+.sheet-exp { margin-bottom:.6rem }
+.sheet-exp caption { text-align:left; font-size:.8rem; color:var(--muted); padding-bottom:.3rem }
+.sheet-exp th, .sheet-exp td { white-space:normal }
+.sheet-finder { margin:0 }
+.sheet-finder__frame { position:relative; width:100%; aspect-ratio:1/1; background:#000; border:1px solid var(--line) }
+.sheet-finder__frame img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover }
+.sheet-finder__frame .overlay { position:absolute; inset:0; width:100%; height:100%; stroke:#ff4d4d; stroke-width:3; fill:none }
+.sheet-finder__frame .overlay text { fill:#ff4d4d; stroke:none; font:28px var(--sans) }
+.sheet-finder__frame .overlay .arrowhead { fill:#ff4d4d; stroke:none }
+.sheet-finder figcaption { font-size:.78rem; color:var(--muted); margin-top:.3rem }
+.runsheet tbody tr { cursor:auto }
+@media (max-width:700px) { .sheet-grid { grid-template-columns:minmax(0,1fr) } }
+@media print {
+  .no-print, .skip-link { display:none!important }
+  body { background:#fff; color:#000; font-size:11pt }
+  .shell { width:100% }
+  .intro { padding:0 0 .5rem }
+  .chart svg, .table-wrap { border-color:#999 }
+  a { text-decoration:none }
+}

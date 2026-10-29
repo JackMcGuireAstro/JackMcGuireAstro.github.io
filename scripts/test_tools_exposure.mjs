@@ -1,7 +1,7 @@
 // Checks for the exposure-time calculator (tools/exposure/ccd.js): the CCD equation against
 // hand-computed cases, its limits, and the inversions (time for a S/N, limiting magnitude).
 import assert from "node:assert/strict";
-import { FILTERS, SKY, TELESCOPES, rates, snrFor, timeFor, sourceFor, magnitudeFor, noiseBudget, peakPixel, solve, erf, FWHM_PER_SIGMA } from "../tools/exposure/ccd.js";
+import { FILTERS, SKY, TELESCOPES, SPECTROSCOPY, INSTRUMENT_PROFILES_SCHEMA, isPlaceholder, rates, snrFor, timeFor, sourceFor, magnitudeFor, noiseBudget, peakPixel, solve, erf, FWHM_PER_SIGMA } from "../tools/exposure/ccd.js";
 import { chartSvg, readParams, prefillFromQuery } from "../tools/exposure/exposure.js";
 
 let passed = 0;
@@ -155,6 +155,23 @@ test("a CTAS dossier link prefills the calculator; unknown or out-of-range value
   assert.deepEqual(bad, {});
   assert.deepEqual(prefillFromQuery(new URLSearchParams("")), {});
   assert.equal(prefillFromQuery(new URLSearchParams("target=" + "x".repeat(200))).target.length, 80);
+});
+
+test("the instrument values file: every value is either measured (with a source) or listed as a placeholder", () => {
+  assert.equal(INSTRUMENT_PROFILES_SCHEMA, "site-instrument-profiles.v1");
+  const paths = (t) => ["diameter", "obstruction", "plateScale", "gain", "readNoise", "dark", "fullWell", "seeing", "fieldOfViewDeg",
+    ...Object.keys(t.throughput).map((f) => `throughput.${f}`), ...Object.keys(t.extinction).map((f) => `extinction.${f}`)];
+  for (const t of TELESCOPES) {
+    for (const key of Object.keys(t.measured)) assert.ok(paths(t).includes(key), `${t.id}: measured ${key} is a real field`);
+    for (const key of t.placeholderFields) assert.ok(paths(t).includes(key) || ["throughput", "extinction"].includes(key), `${t.id}: placeholder ${key} is a real field`);
+    for (const key of paths(t)) assert.ok(Boolean(t.measured[key]) !== isPlaceholder(t, key), `${t.id}: ${key} is exactly one of measured or placeholder`);
+    assert.equal(t.placeholder, t.placeholderFields.length > 0);
+    assert.equal(t.fieldOfViewDeg.length, 2);
+  }
+  const wiro = TELESCOPES.find((t) => t.id === "wiro");
+  assert.ok(!isPlaceholder(wiro, "gain") && !isPlaceholder(wiro, "throughput.r") && isPlaceholder(wiro, "throughput.g"), "WIRO's DoublePrime values are measured");
+  assert.equal(SPECTROSCOPY.wiro.limit_mag, 19.0);
+  assert.equal(SPECTROSCOPY.rbo.limit_mag, null);
 });
 
 console.log(`\n${passed} exposure checks passed`);

@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/ctas/schemas/tns-classification-report.schema.json",
+  "title": "TNS classification report (bulk-report JSON) draft",
+  "description": "The shape of the TNS bulk-report JSON for a classification report, as ctas/observer.js drafts it (Framework v2 Track 4); empty strings are filled by the classifier, and CTAS never submits it.",
+  "type": "object",
+  "required": [
+    "classification_report"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "classification_report": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[0-9]+$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "classifier",
+          "objtypeid",
+          "redshift",
+          "groupid",
+          "remarks",
+          "spectra"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^$|^\\d{4}[a-z]{2,4}$"
+          },
+          "classifier": {
+            "type": "string"
+          },
+          "objtypeid": {
+            "type": [
+              "string",
+              "number"
+            ]
+          },
+          "redshift": {
+            "type": [
+              "string",
+              "number"
+            ]
+          },
+          "groupid": {
+            "type": [
+              "string",
+              "number"
+            ]
+          },
+          "remarks": {
+            "type": "string"
+          },
+          "spectra": {
+            "type": "object",
+            "required": [
+              "spectra_group"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "spectra_group": {
+                "type": "object",
+                "minProperties": 1,
+                "propertyNames": {
+                  "pattern": "^[0-9]+$"
+                },
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "obsdate",
+                    "instrumentid",
+                    "spectypeid",
+                    "ascii_file",
+                    "fits_file"
+                  ],
+                  "properties": {
+                    "obsdate": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "instrumentid": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "exptime": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "observer": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "reducer": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "spectypeid": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "ascii_file": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "fits_file": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "remarks": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "spec_proprietary_period": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

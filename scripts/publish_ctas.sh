@@ -711,7 +711,7 @@ for suite in scripts/test_ctas_static.py scripts/test_ctas_links.py scripts/test
              scripts/test_ctas_interop.py scripts/test_ctas_changelog.py scripts/test_ctas_feed.py \
              scripts/test_ctas_screens.py scripts/test_ctas_comparison.py \
              scripts/test_ctas_lightcurve_science.py scripts/test_ctas_host_association.py \
-             scripts/test_ctas_multimessenger.py; do
+             scripts/test_ctas_multimessenger.py scripts/test_ctas_observer.py; do
   check "ctas.$(basename "$suite" .py)" python3 "$suite" \
     || block "$suite failed against the generated release; nothing committed"
   phase_done "$(basename "$suite")"

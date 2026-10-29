@@ -1,0 +1,274 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/ctas/schemas/tns-at-report.schema.json",
+  "title": "TNS AT report (bulk-report JSON) draft",
+  "description": "The shape of the TNS bulk-report JSON for an AT report, as the CTAS observer tools (ctas/observer.js, Framework v2 Track 4) draft it from a dossier. Empty strings are fields the reporter fills from the TNS lists; the draft is never submitted by CTAS.",
+  "type": "object",
+  "required": [
+    "at_report"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "at_report": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[0-9]+$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ra",
+          "dec",
+          "reporting_group_id",
+          "discovery_data_source_id",
+          "reporter",
+          "discovery_datetime",
+          "at_type",
+          "internal_name",
+          "non_detection",
+          "photometry"
+        ],
+        "properties": {
+          "ra": {
+            "$ref": "#/$defs/coordinate"
+          },
+          "dec": {
+            "$ref": "#/$defs/coordinate"
+          },
+          "reporting_group_id": {
+            "type": [
+              "string",
+              "number"
+            ]
+          },
+          "discovery_data_source_id": {
+            "type": [
+              "string",
+              "number"
+            ]
+          },
+          "reporter": {
+            "type": "string"
+          },
+          "discovery_datetime": {
+            "type": "string",
+            "pattern": "^$|^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(\\.\\d+)?$"
+          },
+          "at_type": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "host_name": {
+            "type": "string"
+          },
+          "host_redshift": {
+            "type": [
+              "string",
+              "number"
+            ]
+          },
+          "transient_redshift": {
+            "type": [
+              "string",
+              "number"
+            ]
+          },
+          "internal_name": {
+            "type": "string"
+          },
+          "remarks": {
+            "type": "string"
+          },
+          "non_detection": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "obsdate": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "limiting_flux": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "flux_units": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "filter_value": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "instrument_value": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "exptime": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "observer": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "comments": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "archiveid": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              },
+              "archival_remarks": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              }
+            }
+          },
+          "photometry": {
+            "type": "object",
+            "required": [
+              "photometry_group"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "photometry_group": {
+                "type": "object",
+                "minProperties": 1,
+                "propertyNames": {
+                  "pattern": "^[0-9]+$"
+                },
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "obsdate",
+                    "flux",
+                    "flux_units",
+                    "filter_value",
+                    "instrument_value"
+                  ],
+                  "properties": {
+                    "obsdate": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "flux": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "flux_error": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "limiting_flux": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "flux_units": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "filter_value": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "instrument_value": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "exptime": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "observer": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    },
+                    "comments": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "coordinate": {
+      "type": "object",
+      "required": [
+        "value",
+        "units"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "error": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "units": {
+          "enum": [
+            "arcsec",
+            "arcmin",
+            "deg"
+          ]
+        }
+      }
+    }
+  }
+}

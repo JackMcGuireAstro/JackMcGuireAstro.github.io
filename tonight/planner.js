@@ -6,8 +6,9 @@ import { transitsBetween } from "../worldsindex/assets/ephemeris.js?v=20261004";
 // The CTAS follow-up rules (objective kind per record) and the CCD model behind the exposure
 // calculator, so the CTAS list doubles as tonight's follow-up sheet. followup.js is a classic
 // script that registers itself on globalThis.
-import "../ctas/followup.js?v=20261017";
-import * as ccd from "../tools/exposure/ccd.js?v=20261003";
+import "../ctas/followup.js?v=20261029";
+import * as ccd from "../tools/exposure/ccd.js?v=20261029";
+import { savedSites, saveSite } from "./sites.js?v=20261029";
 const Followup = globalThis.CTASFollowup;
 
 export const SITES = [
@@ -70,7 +71,7 @@ export function prefillFromQuery(params) {
   const get = (key) => (params.get(key) ?? "").trim();
   const out = {};
   if (SITES.some((s) => s.id === get("site"))) out.site = get("site");
-  if (["ctas", "worlds", "transits"].includes(get("list"))) out.list = get("list");
+  if (["ctas", "worlds", "transits", "both", "next30"].includes(get("list"))) out.list = get("list");
   if (/^\d{4}-\d{2}-\d{2}$/.test(get("date"))) out.date = get("date");
   const ra = Number(get("ra")), dec = Number(get("dec")), mag = Number(get("mag"));
   if (get("ra") !== "" && get("dec") !== "" && ra >= 0 && ra < 360 && Math.abs(dec) <= 90) {
@@ -153,6 +154,48 @@ export function transitsTonight(ephemerides, { grid, latDeg, lonDeg, altLimit })
   return out.sort((a, b) => (b.full ? 1 : 0) - (a.full ? 1 : 0) || (a.full ? a.midMs - b.midMs : b.fraction - a.fraction) || a.midMs - b.midMs || a.name.localeCompare(b.name));
 }
 
+// The cross-product list (Track 4): the CTAS follow-up targets up longest tonight and the fully
+// observable transits, with the same dark window, altitude limit and Moon. `ephemerides` may be
+// null when the transit list is not published.
+export const TOP_COUNT = 10;
+export function topTonight({ ctas, ephemerides, grid, site, altLimit, sigmaMax = Infinity, count = TOP_COUNT }) {
+  const transients = (ctas || []).map((t) => ({ ...t, vis: visibility(grid, t.ra, t.dec, site.lat, altLimit) }))
+    .filter((t) => t.vis.hours > 0)
+    .sort((a, b) => b.vis.hours - a.vis.hours || (b.score ?? 0) - (a.score ?? 0) || b.vis.maxAlt - a.vis.maxAlt)
+    .slice(0, count);
+  const transits = ephemerides ? transitsTonight(ephemerides, { grid, latDeg: site.lat, lonDeg: site.lon, altLimit })
+    .filter((t) => t.full && t.sigmaMinutes !== null && t.sigmaMinutes <= sigmaMax).slice(0, count) : null;
+  return { transients, transits };
+}
+
+export function runSheetHref(site, date, ids) {
+  const params = new URLSearchParams({ site: site.id, date });
+  if (ids && ids.length) params.set("events", ids.slice(0, 20).join(","));
+  return `runsheet.html?${params.toString()}`;
+}
+
+// The release's precomputed 30-night transit list for WIRO and Red Buttes (Track 4): rows of
+// one site from `fromDate` on, grouped by night.
+export function next30Rows(doc, siteId, fromDate) {
+  const cols = doc?.columns || [], at = Object.fromEntries(cols.map((c, i) => [c, i]));
+  const nights = new Map();
+  for (const r of doc?.rows || []) {
+    if (r[at.site] !== siteId || r[at.night] < fromDate) continue;
+    if (!nights.has(r[at.night])) nights.set(r[at.night], []);
+    nights.get(r[at.night]).push(Object.fromEntries(cols.map((c, i) => [c, r[i]])));
+  }
+  return [...nights.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+}
+let observingPromise = null;
+async function loadObservingWindows() {
+  observingPromise ??= fetch("../worldsindex/data/observing-windows.json", { cache: "no-cache" }).then((r) => {
+    if (r.status === 404) throw Error("the 30-night list is not published yet; it arrives with the next WorldsIndex release");
+    if (!r.ok) throw Error(`WorldsIndex 30-night list unavailable (${r.status})`);
+    return r.json();
+  });
+  return observingPromise;
+}
+
 async function loadCtas() {
   if (state.ctas) return state.ctas;
   const r = await fetch("../ctas/data/live-summary.json", { cache: "no-cache" });
@@ -187,8 +230,9 @@ async function loadTransits() {
 function settings() {
   const siteId = $("#site").value;
   const site = siteId === "custom"
-    ? { id: "custom", name: "Custom site", lat: Number($("#lat").value), lon: Number($("#lon").value), tz: $("#tz").value || "UTC" }
-    : SITES.find((s) => s.id === siteId);
+    ? { id: "custom", name: "Custom site", lat: Number($("#lat").value), lon: Number($("#lon").value), tz: $("#tz").value || "UTC",
+        elevation: $("#elev").value === "" ? null : Number($("#elev").value) }
+    : [...SITES, ...savedSites()].find((s) => s.id === siteId);
   return { site, date: $("#date").value, twilight: Number($("#twilight").value), altLimit: Number($("#altlimit").value),
            list: $("#list").value, magLimit: $("#maglimit").value === "" ? NaN : Number($("#maglimit").value), candidates: $("#withcandidates").checked,
            sigmaMax: $("#sigmamax").value === "" ? Infinity : Number($("#sigmamax").value), fullOnly: $("#fullonly").checked };
@@ -209,6 +253,21 @@ async function run() {
         `<div><dt>Dark until</dt><dd>${timeFmt(g.darkEnd, s.site.tz)}</dd></div><div><dt>Sunrise</dt><dd>${timeFmt(g.sunrise, s.site.tz)}</dd></div>` +
         `<div><dt>Moon</dt><dd>${Math.round(g.moonIllumination * 100)}% lit</dd></div></dl><p class="muted">Times in ${esc(s.site.tz)}. "Dark" means the Sun is more than ${-s.twilight}° below the horizon.</p>`
       : `<p>The Sun never gets ${-s.twilight}° below the horizon at this site on this night.</p>`;
+    if (s.list === "next30") {
+      const doc = await loadObservingWindows();
+      renderNext30(s, doc);
+      state.rows = [];
+      status.textContent = "";
+      return;
+    }
+    if (s.list === "both") {
+      const [ctasAll, ephemerides] = await Promise.all([loadCtas(), loadTransits().then((a) => transitTargets(a, { includeCandidates: false })).catch(() => null)]);
+      const top = topTonight({ ctas: ctasAll, ephemerides, grid: g, site: s.site, altLimit: s.altLimit, sigmaMax: s.sigmaMax });
+      state.rows = [];
+      renderTop(s, top);
+      status.textContent = "";
+      return;
+    }
     if (s.list === "transits") {
       const ephemerides = transitTargets(await loadTransits(), { includeCandidates: s.candidates });
       const all = transitsTonight(ephemerides, { grid: g, latDeg: s.site.lat, lonDeg: s.site.lon, altLimit: s.altLimit });
@@ -243,12 +302,46 @@ async function run() {
   }
 }
 
+function renderNext30(s, doc) {
+  if (!(doc.sites || []).some((site) => site.id === s.site.id)) {
+    $("#results").innerHTML = `<p>The precomputed list covers ${(doc.sites || []).map((site) => esc(site.name)).join(" and ")} only. Choose one of them, or use “Transits tonight” for another site.</p>`;
+    $("#chart").innerHTML = "";
+    return;
+  }
+  const tz = s.site.tz, nights = next30Rows(doc, s.site.id, s.date).slice(0, 30);
+  const day = (iso) => new Intl.DateTimeFormat("en-GB", { timeZone: tz, weekday: "short", month: "short", day: "numeric" }).format(new Date(`${iso}T18:00:00Z`));
+  $("#results").innerHTML = `<p class="muted">From the WorldsIndex release of ${esc(String(doc.windowStart || "").slice(0, 10))}: ${esc(doc.selection)} Times in ${esc(tz)}.</p>` +
+    (nights.length ? nights.map(([night, rows]) => `<h3>${esc(day(night))}</h3><div class="table-wrap" role="region" aria-label="Transits on ${esc(night)}" tabindex="0"><table><caption class="visually-hidden">Full transit windows on the night of ${esc(night)}</caption><thead><tr><th scope="col">Planet</th><th scope="col">Window</th><th scope="col">Mid ±1σ</th><th scope="col">Depth</th><th scope="col">Alt (mid)</th><th scope="col">Moon</th></tr></thead><tbody>` +
+      rows.slice(0, 12).map((r) => `<tr><th scope="row"><a href="../worldsindex/?object=${encodeURIComponent(r.objectId)}&amp;section=object">${esc(r.name)}</a></th><td>${timeFmt(Date.parse(r.windowStartUtc), tz)}–${timeFmt(Date.parse(r.windowEndUtc), tz)}</td>` +
+        `<td>${timeFmt(Date.parse(r.midUtc), tz)} <small>±${Math.max(1, Math.round(r.sigmaMinutes))} min</small></td><td>${r.depthPpt == null ? "—" : `${Number(r.depthPpt).toPrecision(r.depthPpt < 1 ? 2 : 3)} ppt`}</td><td>${Math.round(r.altMidDeg)}°</td><td>${Math.round(r.moonSepDeg)}°, ${Math.round(r.moonIllumination * 100)}%</td></tr>`).join("") +
+      `</tbody></table></div>`).join("") : "<p>No night of the list is on or after this date.</p>");
+  $("#chart").innerHTML = "";
+}
+
+function renderTop(s, top) {
+  const tz = s.site.tz, moon = state.grid ? state.grid.moonIllumination : null;
+  const telescopes = (t) => feasibleTelescopes(t.followup, { airmass: t.vis.bestAirmass, moonIllumination: moon }).filter((f) => f.feasible).map((f) => `${f.label}: ${f.text}`).join("; ") || "—";
+  const ids = top.transients.map((t) => t.id);
+  const sheet = s.site.id !== "custom" && ids.length ? ` <a href="${esc(runSheetHref(s.site, s.date, ids))}" data-runsheet-link>Print a run sheet of these transients</a>.` : "";
+  $("#results").innerHTML = `<h3>Transients</h3><p class="muted">The ${top.transients.length} CTAS follow-up targets up longest above ${s.altLimit}° while it is dark.${sheet}</p>` +
+    (top.transients.length ? `<div class="table-wrap" role="region" aria-label="Top transients tonight" tabindex="0"><table><caption class="visually-hidden">Top CTAS transients tonight</caption><thead><tr><th scope="col">Transient</th><th scope="col">Class · survey</th><th scope="col">Mag</th><th scope="col">Objective</th><th scope="col">Feasible at</th><th scope="col">Hours up</th><th scope="col">Best time</th><th scope="col">Moon sep.</th></tr></thead><tbody>` +
+      top.transients.map((t) => `<tr><th scope="row"><a href="${esc(t.href)}">${esc(t.name)}</a></th><td>${esc(t.detail)}</td><td>${t.mag == null ? "—" : Number(t.mag).toFixed(1)}</td><td>${esc(t.followup ? t.followup.text : "—")}</td><td>${esc(telescopes(t))}</td><td>${t.vis.hours.toFixed(1)}</td><td>${timeFmt(t.vis.bestMs, tz)}</td><td>${t.vis.moonSep == null ? "—" : Math.round(t.vis.moonSep) + "°"}</td></tr>`).join("") +
+      `</tbody></table></div>` : "<p>No CTAS follow-up target is up tonight with these settings.</p>") +
+    `<h3>Transits</h3>` + (top.transits === null ? "<p>The transit list is not published yet.</p>" :
+      `<p class="muted">The first ${top.transits.length} transits seen from start to end with the star above ${s.altLimit}° in the dark${Number.isFinite(s.sigmaMax) ? ` and a mid-time uncertainty of at most ${s.sigmaMax} minutes` : ""}, in time order.</p>` +
+      (top.transits.length ? `<div class="table-wrap" role="region" aria-label="Top transits tonight" tabindex="0"><table><caption class="visually-hidden">Top transits tonight</caption><thead><tr><th scope="col">Planet</th><th scope="col">Star</th><th scope="col">Ingress</th><th scope="col">Mid</th><th scope="col">Egress</th><th scope="col">Depth</th><th scope="col">Mid ±1σ</th><th scope="col">Moon sep.</th></tr></thead><tbody>` +
+        top.transits.map((t) => `<tr><th scope="row"><a href="${esc(t.href)}">${esc(t.name)}</a></th><td>${esc(t.host)}</td><td>${timeFmt(t.ingressMs, tz)}</td><td>${timeFmt(t.midMs, tz)}</td><td>${timeFmt(t.egressMs, tz)}</td><td>${t.depthPpt == null ? "—" : `${Number(t.depthPpt).toPrecision(t.depthPpt < 1 ? 2 : 3)} ppt`}</td><td>±${Math.max(1, Math.round(t.sigmaMinutes))} min</td><td>${Math.round(t.moonSep)}°</td></tr>`).join("") +
+        `</tbody></table></div>` : "<p>No transit fits tonight with these settings.</p>"));
+  $("#chart").innerHTML = "";
+}
+
 function renderTable(s, considered) {
   const shown = state.rows.slice(0, 200);
   const ctas = s.list === "ctas";
   const moon = state.grid ? state.grid.moonIllumination : null;
   const telescopes = (t) => feasibleTelescopes(t.followup, { airmass: t.vis.bestAirmass, moonIllumination: moon }).filter((f) => f.feasible).map((f) => `${f.label}: ${f.text}`).join("; ") || "—";
   $("#results").innerHTML = `<p class="muted">${state.rows.length.toLocaleString()} of ${considered.toLocaleString()} ${ctas ? "CTAS transients" : "planetary systems"} are above ${s.altLimit}° while it is dark${state.rows.length > 200 ? "; showing the 200 up longest" : ""}. Select a row for its altitude curve.</p>` +
+    (ctas && s.site.id !== "custom" && state.rows.length ? `<p class="muted"><a href="${esc(runSheetHref(s.site, s.date, state.rows.slice(0, 10).map((t) => t.id)))}" data-runsheet-link>Print a run sheet of the first ten</a> (finder charts, airmass curves, exposure at WIRO and Red Buttes).</p>` : "") +
     (ctas ? `<p class="muted">“Objective” is the CTAS suggested follow-up for each record (imaging, spectroscopy, counterpart or monitoring) and “Feasible at” names which of WIRO and Red Buttes could reach S/N 20 in r within 3 × 600 s at the target’s best airmass tonight, or take a classification spectrum, using the <a href="../tools/exposure/#placeholder-note">placeholder instrument values</a> of the exposure calculator and the discovery magnitude. It is a heuristic draft, not an observing request.</p>` : "") +
     `<div class="table-wrap" role="region" aria-label="Observable targets" tabindex="0"><table><caption class="visually-hidden">Targets observable tonight</caption><thead><tr>` +
     `<th scope="col">${ctas ? "Transient" : "Host star"}</th><th scope="col">${ctas ? "Class · survey" : "Planets"}</th>${ctas ? '<th scope="col">Disc. mag</th><th scope="col">CTAS score</th><th scope="col">Objective</th><th scope="col">Feasible at</th>' : ""}` +
@@ -334,11 +427,20 @@ function select(index) {
 
 export function init() {
   const siteSelect = $("#site");
-  siteSelect.innerHTML = SITES.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join("") + '<option value="custom">Custom latitude/longitude…</option>';
+  const fillSites = () => {
+    siteSelect.innerHTML = [...SITES, ...savedSites()].map((s) => `<option value="${esc(s.id)}">${esc(s.name)}${s.custom ? " (yours)" : ""}</option>`).join("") + '<option value="custom">Custom latitude/longitude…</option>';
+  };
+  fillSites();
   const today = new Date();
   $("#date").value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   state.prefill = prefillFromQuery(new URL(window.location.href).searchParams);
   if (state.prefill.site) siteSelect.value = state.prefill.site;
+  $("#savesite")?.addEventListener("click", () => {
+    const saved = saveSite({ name: $("#sitename").value, lat: $("#lat").value, lon: $("#lon").value, elevation: $("#elev").value, tz: $("#tz").value });
+    if (!saved) { $("#status").textContent = "Give the site a name and a valid latitude, longitude, elevation and time zone (and allow this browser to keep it)."; return; }
+    fillSites(); siteSelect.value = saved.id; toggleCustom();
+    $("#status").textContent = `${saved.name} is kept in this browser only.`;
+  });
   if (state.prefill.date) $("#date").value = state.prefill.date;
   if (state.prefill.list) $("#list").value = state.prefill.list;
   $("#tz").value = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -348,7 +450,7 @@ export function init() {
     const list = $("#list").value;
     $("#ctas-only").hidden = list !== "ctas";
     $("#worlds-only").hidden = list !== "worlds" && list !== "transits";
-    document.querySelectorAll(".transits-only").forEach((el) => { el.hidden = list !== "transits"; });
+    document.querySelectorAll(".transits-only").forEach((el) => { el.hidden = list !== "transits" && !(list === "both" && el.querySelector("#sigmamax")); });
   };
   $("#list").addEventListener("change", toggleList);
   toggleList();

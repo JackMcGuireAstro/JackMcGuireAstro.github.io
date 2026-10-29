@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run sheet | Jack McGuire</title>
+<meta name="description" content="A printable observing run sheet for CTAS transients: coordinates, tonight's window and airmass, finder charts and exposure estimates for WIRO and Red Buttes.">
+<meta name="theme-color" content="#f4f1ea">
+<link rel="canonical" href="https://jackmcguireastro.github.io/tonight/runsheet.html">
+<link rel="stylesheet" href="planner.css?v=20261029">
+<script src="../ctas/followup.js?v=20261029"></script>
+<script type="module" src="runsheet.js?v=20261029"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
+</head>
+<body class="runsheet">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="top no-print"><div class="shell top-inner">
+  <a class="wordmark" href="../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
+  <nav aria-label="Primary"><a href="../index.html">Home</a><a href="../worldsindex/">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="./">Tonight</a></nav>
+</div></header>
+<main id="main" class="shell">
+  <section class="intro">
+    <p class="eyebrow">Observing / Run sheet</p>
+    <h1>Run sheet</h1>
+    <p class="no-print">CTAS transients for one night at one site, ready to print: coordinates, tonight’s window and airmass curve, a finder chart and the S/N-20 exposure at WIRO and Red Buttes. A CTAS dossier opens this page with its own target; without a list the sheet takes the ten follow-up targets up longest tonight. Everything is computed in your browser.</p>
+  </section>
+  <form id="sheet-form" class="controls no-print" aria-describedby="status">
+    <div class="field wide"><label for="site">Observatory</label><select id="site"></select></div>
+    <div class="field"><label for="date">Night starting</label><input id="date" type="date" required></div>
+    <div class="actions"><button type="submit" class="button">Build the sheet</button><button type="button" id="print" class="button button-quiet">Print</button></div>
+  </form>
+  <p id="status" class="status no-print" role="status" aria-live="polite"></p>
+  <div id="sheet-head"></div>
+  <div id="sheet"></div>
+  <section class="notes" aria-labelledby="standards-title">
+    <h2 id="standards-title">Standard stars</h2>
+    <p>Standard stars are not listed yet: the Landolt (1992, 2009) and Smith et al. (2002) standard-star catalogues are not part of this site’s release, and nothing is filled in from memory. Pick a field near your targets’ airmass from <a href="https://vizier.cds.unistra.fr/viz-bin/VizieR?-source=J/AJ/137/4186">Landolt (2009), J/AJ/137/4186</a>, <a href="https://vizier.cds.unistra.fr/viz-bin/VizieR?-source=II/183A">Landolt (1992), II/183A</a> or, for <em>u′g′r′i′z′</em>, <a href="https://vizier.cds.unistra.fr/viz-bin/VizieR?-source=J/AJ/123/2121">Smith et al. (2002), J/AJ/123/2121</a>.</p>
+    <h2>How this is worked out</h2>
+    <p>The window and airmass come from the same almanac formulae as the <a href="./">Tonight planner</a> (dark means the Sun below −12°). The exposure is the CTAS suggested follow-up’s S/N-20 estimate in r at the target’s best airmass tonight, from the <a href="../tools/exposure/">exposure calculator</a>’s instrument profiles; values still marked placeholder there are marked here too. The brightness is the latest magnitude the CTAS release retained, not a forecast. The finder chart is a plain image from CDS hips2fits; if it does not load, the coordinates and the full finder chart link still work.</p>
+  </section>
+</main>
+<footer class="foot no-print"><div class="shell"><p>© 2026 Jack McGuire · <a href="../index.html">Home</a> · <a href="../ctas.html">CTAS</a> · <a href="./">Tonight</a></p></div></footer>
+</body>
+</html>

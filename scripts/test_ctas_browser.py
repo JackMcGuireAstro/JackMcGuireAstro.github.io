@@ -721,6 +721,39 @@ class BrowserTests(unittest.TestCase):
                 overflow = self.page.evaluate("() => document.documentElement.scrollWidth - document.documentElement.clientWidth")
                 self.assertLessEqual(overflow, 1)
 
+    def test_dossier_offers_observer_tools(self):
+        """Track 4: the follow-up card lists what the record lacks (ranked by the stated rule),
+        links the run sheet with this event, downloads a TNS classification-report draft that
+        names the object, keeps axe clean and fits a phone."""
+        candidate = self._followup_dossier()
+        self._open_dossier(candidate["event_id"])
+        self.page.wait_for_selector("[data-followup-card] [data-observer-panel]", state="attached", timeout=30000)
+        panel = self.page.locator("[data-observer-panel]")
+        self.assertIn("WHAT THE RECORD LACKS", panel.inner_text().upper())
+        self.assertIn("Nothing is submitted, stored or requested by CTAS.", panel.inner_text())
+        href = panel.locator("[data-observer-runsheet]").get_attribute("href")
+        self.assertEqual(href, f"tonight/runsheet.html?site=wiro&events={candidate['event_id']}")
+        response = self.page.request.get(self.url.rsplit("/", 1)[0] + "/tonight/runsheet.html")
+        self.assertEqual(response.status, 200)
+        with self.page.expect_download() as info:
+            panel.locator('[data-observer-download="tns-classification"]').click()
+        draft = json.loads(Path(info.value.path()).read_text())
+        self.assertIn("classification_report", draft)
+        with self.page.expect_download() as info:
+            panel.locator('[data-observer-download="swift"]').click()
+        swift = json.loads(Path(info.value.path()).read_text())
+        self.assertEqual(swift["source_name"], candidate.get("name") or candidate["event_id"])
+        self.assertEqual(self._axe_violations(), [])
+        errors = [entry for entry in self.console if entry[0] in {"error", "pageerror"}
+                  and not any(host in entry[1] for host in THIRD_PARTY_HOSTS) and not is_third_party_load_failure(entry[1])]
+        self.assertEqual(errors, [])
+        for width, height in ((320, 568), (390, 844)):
+            with self.subTest(viewport=f"{width}x{height}"):
+                self.page.set_viewport_size({"width": width, "height": height})
+                self.page.wait_for_timeout(300)
+                overflow = self.page.evaluate("() => document.documentElement.scrollWidth - document.documentElement.clientWidth")
+                self.assertLessEqual(overflow, 1)
+
     def test_dossier_compares_sources_with_filters_and_exports(self):
         """Track 2b: the comparison panel lists every source row with its rule and compatibility,
         the brief links to it, filters only hide rows, a ticked row exports as ECSV with exactly

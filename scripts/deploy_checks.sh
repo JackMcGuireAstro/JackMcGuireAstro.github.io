@@ -74,10 +74,10 @@ group_worldsindex_static() {
   check worldsindex.front-syntax node_check worldsindex/assets/lightcurves.js worldsindex/assets/app.js \
     worldsindex/assets/science.js worldsindex/assets/live-mast.js worldsindex/assets/live-nasa.js \
     worldsindex/assets/live-sources.js worldsindex/assets/ephemeris.js worldsindex/assets/sky.js worldsindex/assets/status.js \
-    worldsindex/assets/compare.js worldsindex/assets/derived.js worldsindex/assets/photometry.js
+    worldsindex/assets/compare.js worldsindex/assets/derived.js worldsindex/assets/photometry.js worldsindex/assets/observe.js
   check worldsindex.tooling-syntax node_check scripts/build_worldsindex_static.mjs scripts/worldsindex_transit_ephemerides.mjs \
     scripts/worldsindex_interop.mjs scripts/worldsindex_changelog.mjs scripts/worldsindex_provenance.mjs scripts/worldsindex_contributions.mjs scripts/worldsindex_conflicts.mjs \
-    scripts/worldsindex_derived.mjs
+    scripts/worldsindex_derived.mjs scripts/worldsindex_observing.mjs
   check worldsindex.test_worldsindex_publisher_recovery python3 scripts/test_worldsindex_publisher_recovery.py
   check worldsindex.front.live-mast node scripts/test_worldsindex_live_mast.mjs
   check worldsindex.front.live-nasa node scripts/test_worldsindex_live_nasa.mjs
@@ -87,6 +87,7 @@ group_worldsindex_static() {
   check worldsindex.test_worldsindex_front node --test scripts/test_worldsindex_front.mjs
   check worldsindex.test_worldsindex_compare node --test scripts/test_worldsindex_compare.mjs
   check worldsindex.test_worldsindex_derived node --test scripts/test_worldsindex_derived.mjs
+  check worldsindex.test_worldsindex_observe node --test scripts/test_worldsindex_observe.mjs
 }
 
 group_worldsindex_interop() {
@@ -101,7 +102,8 @@ group_qualquest() {
 
 group_tonight() {
   check tonight.syntax node_check tonight/planner.js tonight/astro.js tools/lib/astrometry.js tools/coordinates/coordinates.js \
-    tools/exposure/exposure.js tools/finder/finder.js research/barium-dwarfs/census.js
+    tools/exposure/exposure.js tools/exposure/ccd.js tools/exposure/instruments.js tools/finder/finder.js research/barium-dwarfs/census.js \
+    tonight/sites.js tonight/runsheet.js
   check tonight.planner node scripts/test_tonight_planner.mjs
   check tools.coordinates node scripts/test_tools_coordinates.mjs
   check tools.exposure node scripts/test_tools_exposure.mjs
@@ -127,7 +129,7 @@ group_ctas_static() {
   check ctas.front.spectrum-ascii node scripts/test_ctas_spectrum_ascii.js
   check ctas.front.spectrum-fits node scripts/test_ctas_spectrum_fits.js
   check ctas.front.lightcurve-summary node scripts/test_ctas_lightcurve_summary.js
-  check ctas.front-syntax node_check ctas/followup.js ctas/sky.js ctas/changelog.js ctas/status.js ctas/screens.js ctas/lightcurve-science.js ctas/host-association.js ctas/multimessenger.js ctas/comparison.js
+  check ctas.front-syntax node_check ctas/followup.js ctas/sky.js ctas/changelog.js ctas/status.js ctas/screens.js ctas/lightcurve-science.js ctas/host-association.js ctas/multimessenger.js ctas/comparison.js ctas/observer.js
   check ctas.front.followup node scripts/test_ctas_followup.mjs
   check ctas.test_ctas_interop python3 scripts/test_ctas_interop.py
   check ctas.test_ctas_changelog python3 scripts/test_ctas_changelog.py
@@ -142,6 +144,8 @@ group_ctas_static() {
   check ctas.front.host-association node scripts/test_ctas_host_association.js
   check ctas.test_ctas_multimessenger python3 scripts/test_ctas_multimessenger.py
   check ctas.front.multimessenger node scripts/test_ctas_multimessenger.js
+  check ctas.test_ctas_observer python3 scripts/test_ctas_observer.py
+  check ctas.front.observer node scripts/test_ctas_observer.js
 }
 
 group_ctas_schemas() {

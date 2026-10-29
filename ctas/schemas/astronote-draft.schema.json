@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/ctas/schemas/astronote-draft.schema.json",
+  "title": "ctas.astronote-draft@1",
+  "description": "A draft for the TNS AstroNotes form made by ctas/observer.js from the public facts of a dossier (Framework v2 Track 4); bracketed text is for the author to write.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "title",
+    "type",
+    "authors",
+    "related_objects",
+    "body",
+    "notes"
+  ],
+  "properties": {
+    "schema": {
+      "const": "ctas.astronote-draft@1"
+    },
+    "title": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string"
+    },
+    "authors": {
+      "type": "string"
+    },
+    "related_objects": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^\\d{4}[a-z]{2,4}$"
+      }
+    },
+    "body": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

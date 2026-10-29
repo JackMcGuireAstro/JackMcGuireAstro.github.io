@@ -91,6 +91,8 @@ components:
       $ref: schemas/populations.schema.json
     EphemerisStaleness:
       $ref: schemas/staleness.schema.json
+    ObservingWindows:
+      $ref: schemas/observing-windows.schema.json
   parameters:
     shard:
       name: shard
@@ -522,3 +524,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EphemerisStaleness"
+  /data/observing-windows.json:
+    get:
+      tags: [derived]
+      summary: Precomputed 30-night transit list for WIRO and Red Buttes
+      description: Full transit windows (ingress to egress padded by a baseline plus 1 sigma, dark with the star above 30 degrees) over the next 30 nights at WIRO and Red Buttes, regenerated every build (Framework v2, Track 4).
+      operationId: getObservingWindows
+      responses:
+        "200":
+          description: JSON.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservingWindows"

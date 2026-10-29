@@ -442,6 +442,42 @@
           "additionalProperties": false
         }
       ]
+    },
+    "observingWindows": {
+      "description": "Track 4 (additive): the precomputed 30-night transit list for WIRO and Red Buttes.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "path",
+            "nights",
+            "rows"
+          ],
+          "properties": {
+            "path": {
+              "const": "observing-windows.json"
+            },
+            "nights": {
+              "const": 30
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "eligiblePlanets": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "perSite": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
     }
   },
   "required": [

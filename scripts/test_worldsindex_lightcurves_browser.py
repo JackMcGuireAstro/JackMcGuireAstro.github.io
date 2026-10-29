@@ -183,6 +183,32 @@ class LightcurveBrowserTests(unittest.TestCase):
             self.assertEqual(errors, [])
             page.close()
 
+    def test_observe_this_planet_windows_and_ical(self):
+        # Track 4: the System & orbit tab's transit planner lists windows at WIRO over the next
+        # nights from the release ephemeris, switches site, and downloads an iCal file.
+        release = [{"objectId": "object-wasp-12-b", "name": "WASP-12 b", "host": "WASP-12", "raDeg": 97.636645, "decDeg": 29.6722662, "status": "CONFIRMED",
+                    "periodDays": 1.0914304, "periodErrDays": 2e-7, "t0Bjd": 2458842.997159, "t0ErrDays": 5.6e-5, "durationHours": 3.05, "depthPpt": 15.4,
+                    "sourceId": "nasa-toi", "sourceTable": "toi", "sourceRecordId": "toi:849", "matchedVia": "tic+period"}]
+        for width in (1280, 390):
+            page, errors = self.open(width=width, object_id="object-wasp-12-b", release_rows=release)
+            page.click("#object-tab-system")
+            page.wait_for_selector("#observe-section [data-observe-result] p", timeout=30000)
+            section = page.locator("#observe-section")
+            self.assertIn("Observe this planet", section.inner_text())
+            self.assertIn("transit window", section.locator("[data-observe-result]").inner_text())
+            self.assertGreater(section.locator(".observe-table tbody tr").count(), 0)
+            section.locator('select[name="site"]').select_option("rbo")
+            page.wait_for_function("document.querySelector('#observe-section [data-observe-result]').textContent.includes('Red Buttes')", timeout=10000)
+            with page.expect_download() as info:
+                section.locator('[data-observe-download="ics"]').click()
+            ics = Path(info.value.path()).read_text()
+            self.assertTrue(ics.startswith("BEGIN:VCALENDAR"))
+            self.assertIn("WASP-12 b transit", ics.replace("\r\n ", ""))
+            overflow = page.evaluate("document.documentElement.scrollWidth - document.documentElement.clientWidth")
+            self.assertLessEqual(overflow, 1, f"{width}px")
+            self.assertEqual(errors, [])
+            page.close()
+
     def test_planet_page_folds_on_the_release_ephemeris(self):
         # A NASA planet whose own rows carry no mid-transit epoch: the fold uses the release's
         # chosen row (here a TOI row matched by TIC and period), and the TIC comes from the

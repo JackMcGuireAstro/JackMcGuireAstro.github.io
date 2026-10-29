@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/ctas/schemas/swift-too-request.schema.json",
+  "title": "Swift ToO request draft",
+  "description": "The prefilled Swift ToO request fields ctas/observer.js drafts from a dossier (field names of the Swift TOO request form, swifttools Swift_TOO); the observer reviews every value and submits with their own account (Framework v2 Track 4).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_name",
+    "source_type",
+    "ra",
+    "dec",
+    "poserr",
+    "instrument",
+    "urgency",
+    "obs_type",
+    "exp_time_per_visit",
+    "num_of_visits",
+    "immediate_objective",
+    "science_just",
+    "exp_time_just"
+  ],
+  "properties": {
+    "source_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_type": {
+      "type": "string"
+    },
+    "ra": {
+      "type": "number",
+      "minimum": 0,
+      "exclusiveMaximum": 360
+    },
+    "dec": {
+      "type": "number",
+      "minimum": -90,
+      "maximum": 90
+    },
+    "poserr": {
+      "type": "number",
+      "minimum": 0
+    },
+    "instrument": {
+      "enum": [
+        "XRT",
+        "UVOT",
+        "BAT"
+      ]
+    },
+    "urgency": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4
+    },
+    "obs_type": {
+      "enum": [
+        "Spectroscopy",
+        "Light Curve",
+        "Position",
+        "Timing"
+      ]
+    },
+    "opt_mag": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "opt_filt": {
+      "type": "string"
+    },
+    "exp_time_per_visit": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "num_of_visits": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "monitoring_freq": {
+      "type": "string"
+    },
+    "uvot_mode": {
+      "type": "string"
+    },
+    "xrt_mode": {
+      "type": "string"
+    },
+    "immediate_objective": {
+      "type": "string"
+    },
+    "science_just": {
+      "type": "string"
+    },
+    "exp_time_just": {
+      "type": "string"
+    }
+  }
+}

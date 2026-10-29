@@ -97,7 +97,11 @@ test("feasible telescopes come from the placeholder CCD profiles at tonight's ai
   const faint = feasibleTelescopes(followupFor({ record_role: "follow-up-target-candidate", ranking_channel: "optical", status: "candidate", ra_deg: 1, dec_deg: 2, discovery_magnitude: 22.5, classification: "Unclassified" }), { airmass: 1.2, moonIllumination: 0.1 });
   assert.deepEqual(faint.map((f) => f.feasible), [true, false], "22.5 mag: the 2.3 m within 3 x 600 s, the 0.6 m not");
   const faintBright = feasibleTelescopes(followupFor({ record_role: "follow-up-target-candidate", ranking_channel: "optical", status: "candidate", ra_deg: 1, dec_deg: 2, discovery_magnitude: 22.5, classification: "Unclassified" }), { airmass: 2.5, moonIllumination: 0.95 });
-  assert.deepEqual(faintBright.map((f) => f.feasible), [false, false], "low and in moonlight, neither");
+  // WIRO's r throughput is measured since e6406e1e (0.58, from the DoublePrime zero point), so at
+  // 22.5 mag the 2.3 m still reaches S/N 20 in r within 3 x 600 s low and in moonlight; the 0.6 m does not.
+  assert.deepEqual(faintBright.map((f) => f.feasible), [true, false], "22.5 mag low and in moonlight: the 2.3 m only");
+  const fainter = feasibleTelescopes(followupFor({ record_role: "follow-up-target-candidate", ranking_channel: "optical", status: "candidate", ra_deg: 1, dec_deg: 2, discovery_magnitude: 24, classification: "Unclassified" }), { airmass: 2.5, moonIllumination: 0.95 });
+  assert.deepEqual(fainter.map((f) => f.feasible), [false, false], "24 mag low and in moonlight: neither");
   assert.deepEqual(feasibleTelescopes(followupFor({ record_role: "retracted-event", status: "retracted", ra_deg: 1, dec_deg: 2 }), {}), []);
   assert.deepEqual(feasibleTelescopes(null, {}), []);
 });
@@ -275,3 +279,48 @@ test("transits tonight lists fully observable transits first, then partial ones 
     else assert.ok(a.fraction >= b.fraction);
   }
 });
+
+// ---- Track 4: the cross-product list, the 30-night list and the run sheet
+const { topTonight, next30Rows, runSheetHref } = await import("../tonight/planner.js");
+const runsheet = await import("../tonight/runsheet.js");
+
+test("top tonight: the transients up longest and the full transits within the timing limit, with the same night", () => {
+  const site = SITES[0];
+  const g = nightGrid({ noonUtcMs: localNoonUtc("2026-10-03", site.tz), latDeg: site.lat, lonDeg: site.lon, twilightDeg: -12 });
+  const ctas = [{ id: "a", name: "A", ra: 300, dec: 40, score: 10, followup: null }, { id: "b", name: "B", ra: 120, dec: -60, score: 99, followup: null }, { id: "c", name: "C", ra: 330, dec: 30, score: 50, followup: null }];
+  const fixture = JSON.parse(readFileSync(new URL("../tests/fixtures/tonight-transits.json", import.meta.url)));
+  const top = topTonight({ ctas, ephemerides: fixture.transits.map((t) => t.ephemeris), grid: g, site, altLimit: 30, sigmaMax: 60 });
+  assert.deepEqual(top.transients.map((t) => t.id).sort(), ["a", "c"], "B never rises at Wyoming's latitude");
+  assert.ok(top.transients[0].vis.hours >= top.transients[1].vis.hours);
+  assert.ok(top.transits.every((t) => t.full && t.sigmaMinutes <= 60));
+  assert.equal(topTonight({ ctas: [], ephemerides: null, grid: g, site, altLimit: 30 }).transits, null);
+  assert.equal(runSheetHref(site, "2026-10-03", ["x", "y"]), "runsheet.html?site=wiro&date=2026-10-03&events=x%2Cy");
+});
+
+test("the 30-night list: one site's nights from the chosen date, grouped and in order", () => {
+  const doc = { columns: ["site", "night", "objectId", "name"], rows: [["wiro", "2026-10-30", "o1", "B"], ["rbo", "2026-10-30", "o2", "C"], ["wiro", "2026-10-29", "o3", "A"], ["wiro", "2026-10-28", "o4", "Z"], ["wiro", "2026-10-30", "o5", "D"]] };
+  const nights = next30Rows(doc, "wiro", "2026-10-29");
+  assert.deepEqual(nights.map(([night, rows]) => [night, rows.map((r) => r.name)]), [["2026-10-29", ["A"]], ["2026-10-30", ["B", "D"]]]);
+});
+
+test("run sheet: query parsing, target choice and the finder survey", () => {
+  const ids = "123e4567-e89b-42d3-a456-426614174000,not-an-id,123e4567-e89b-42d3-a456-426614174000";
+  const q = runsheet.parseQuery(new URLSearchParams(`events=${ids}&site=rbo&date=2026-10-03&alt=40`));
+  assert.deepEqual(q, { events: ["123e4567-e89b-42d3-a456-426614174000"], top: null, site: "rbo", date: "2026-10-03", altLimit: 40 });
+  assert.deepEqual(runsheet.parseQuery(new URLSearchParams("top=99&site=keck&alt=7")), { events: [], top: 20, altLimit: 30 });
+  assert.equal(runsheet.finderSurvey(10).id, "ps1-color");
+  assert.equal(runsheet.finderSurvey(-45).id, "dss2-red");
+  const site = SITES[0];
+  const g = nightGrid({ noonUtcMs: localNoonUtc("2026-10-03", site.tz), latDeg: site.lat, lonDeg: site.lon, twilightDeg: -12 });
+  const all = [{ id: "123e4567-e89b-42d3-a456-426614174000", name: "Listed", ra: 120, dec: -60 }, { id: "b", name: "Up", ra: 300, dec: 40, score: 1 }];
+  assert.deepEqual(runsheet.chooseTargets(all, q, g, site.lat).map((t) => t.name), ["Listed"], "a listed target is kept even when it is not up");
+  assert.deepEqual(runsheet.chooseTargets(all, { events: [], top: 5, altLimit: 30 }, g, site.lat).map((t) => t.name), ["Up"]);
+  const target = { ...all[1], vis: visibility(g, 300, 40, site.lat, 30), detail: "SN Ia · ZTF", mag: 17.2, href: "../ctas.html",
+    followup: followupFor({ record_role: "follow-up-target-candidate", ranking_channel: "optical", status: "candidate", ra_deg: 300, dec_deg: 40, discovery_magnitude: 17.2, classification: "Unclassified" }) };
+  const html = runsheet.targetHtml(target, 0, { site, grid: g, altLimit: 30 });
+  assert.match(html, /data-sheet-target="b"/);
+  assert.match(html, /hips2fits\?hips=CDS\/P\/PanSTARRS\/DR1\/color-z-zg-g/);
+  assert.match(html, /<th scope="row">WIRO <small>\(placeholder values\)<\/small><\/th>/);
+  assert.match(html, /<svg viewBox/);
+});
+console.log(`${passed} planner checks passed`);

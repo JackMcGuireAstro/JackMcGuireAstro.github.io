@@ -230,6 +230,87 @@ class TonightBrowserTests(unittest.TestCase):
                                   for v in result["violations"]], [])
                 page.close()
 
+    # ---- Track 4: kept sites, the cross-product list, the 30-night list and the run sheet
+    def test_top_tonight_and_run_sheet_link(self):
+        page, errors = self.open()
+        page.select_option("#list", "both")
+        self.assertTrue(page.is_visible("#sigmamax"))
+        page.click("button[type=submit]")
+        page.wait_for_function("document.querySelector('#results h3')?.textContent === 'Transients'", timeout=30000)
+        self.assertIn("Transits", page.inner_text("#results"))
+        link = page.locator("[data-runsheet-link]")
+        if link.count():
+            href = link.first.get_attribute("href")
+            self.assertTrue(href.startswith("runsheet.html?site=wiro&date="), href)
+        self.assertEqual(self.first_party(errors), [])
+        page.close()
+
+    def test_next_thirty_nights_list(self):
+        page, errors = self.open()
+        page.select_option("#list", "next30")
+        page.click("button[type=submit]")
+        page.wait_for_function("document.querySelector('#results p') || document.querySelector('#status').textContent.includes('not published')", timeout=30000)
+        if (ROOT / "worldsindex" / "data" / "observing-windows.json").exists():
+            self.assertGreater(page.locator("#results table").count(), 0)
+            self.assertIn("deepest first", page.inner_text("#results p"))
+        else:
+            self.assertIn("not published yet", page.text_content("#status"))
+        page.select_option("#site", "custom")
+        page.fill("#lat", "-30.24"); page.fill("#lon", "-70.74"); page.fill("#tz", "America/Santiago")
+        page.click("button[type=submit]")
+        page.wait_for_timeout(500)
+        if (ROOT / "worldsindex" / "data" / "observing-windows.json").exists():
+            self.assertIn("covers", page.inner_text("#results"))
+            self.assertEqual(self.first_party(errors), [])
+        else:  # the release predates the list: its 404 is the expected answer
+            self.assertEqual([e for e in self.first_party(errors) if "404" not in e], [])
+        page.close()
+
+    def test_a_kept_site_appears_in_the_list(self):
+        page, _ = self.open()
+        page.select_option("#site", "custom")
+        page.fill("#lat", "41.3"); page.fill("#lon", "-105.6"); page.fill("#tz", "America/Denver"); page.fill("#elev", "2200")
+        page.fill("#sitename", "Test Backyard")
+        page.click("#savesite")
+        page.wait_for_function("document.querySelector('#status').textContent.includes('kept in this browser only')", timeout=10000)
+        self.assertEqual(page.input_value("#site"), "custom-test-backyard")
+        stored = page.evaluate("JSON.parse(localStorage.getItem('jm.observatories.v1'))")
+        self.assertEqual(stored, [{"id": "custom-test-backyard", "name": "Test Backyard", "lat": 41.3, "lon": -105.6, "elevation": 2200, "tz": "America/Denver", "custom": True}])
+        page.close()
+
+    def test_run_sheet(self):
+        summary = json.loads((ROOT / "ctas" / "data" / "live-summary.json").read_text())
+        at = {c: i for i, c in enumerate(summary["candidate_columns"])}
+        ids = [r[at["event_id"]] for r in summary["candidate_rows"] if r[at["record_role"]] == "follow-up-target-candidate" and r[at["ra_deg"]] is not None][:2]
+        for width, height in ((390, 844), (1280, 900)):
+            page = self.browser.new_page(viewport={"width": width, "height": height}, timezone_id="America/Denver")
+            errors = []
+            page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto(f"{self.base}/tonight/runsheet.html?site=wiro&date=2026-10-03&events={','.join(ids)}", wait_until="networkidle", timeout=60000)
+            page.wait_for_selector("#sheet article, #sheet p", timeout=30000)
+            self.assertEqual(page.locator("#sheet article").count(), len(ids))
+            first = page.locator("#sheet article").first
+            self.assertIn("RA, Dec", first.text_content())
+            self.assertGreater(first.locator(".chart svg").count(), 0)
+            self.assertIn("WIRO", first.locator(".sheet-exp").inner_text())
+            self.assertIn("Landolt", page.inner_text("#standards-title + p"))
+            overflow = page.evaluate("document.documentElement.scrollWidth - document.documentElement.clientWidth")
+            self.assertLessEqual(overflow, 1, f"{width}px")
+            self.assertEqual(self.first_party(errors), [], f"{width}px")
+            page.close()
+        page = self.browser.new_page(viewport={"width": 1280, "height": 900}, timezone_id="America/Denver")
+        page.goto(f"{self.base}/tonight/runsheet.html?site=wiro&date=2026-10-03", wait_until="networkidle", timeout=60000)
+        page.wait_for_selector("#sheet article, #sheet p", timeout=30000)
+        self.assertIn("up longest tonight", page.inner_text("#sheet-head"))
+        axe = next((p for p in (ROOT / "node_modules" / "axe-core" / "axe.min.js",
+                                ROOT.parent / "node_modules" / "axe-core" / "axe.min.js") if p.exists()), None)
+        if axe is not None:
+            page.add_script_tag(content=axe.read_text())
+            result = page.evaluate("async () => await axe.run(document, {runOnly: {type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']}})")
+            self.assertEqual([f"{v['id']} ({len(v['nodes'])}): {v['help']}" for v in result["violations"]], [])
+        page.close()
+
     def test_homepage_links_to_the_planner(self):
         page = self.browser.new_page()
         page.goto(f"{self.base}/index.html", wait_until="domcontentloaded")

@@ -250,7 +250,10 @@ class ToolsBrowserTests(unittest.TestCase):
         page.fill("#airmass", "0.5")
         page.wait_for_function("document.querySelector('#etc-status').textContent.includes('Airmass')")
         self.assertEqual(page.get_attribute("#airmass", "aria-invalid"), "true")
-        self.assertIn("Placeholder values", page.text_content("#placeholder-note"))
+        note = page.text_content("#placeholder-note")
+        # Since e6406e1e WIRO's camera values are measured; the note says which values are still typical.
+        self.assertIn("Partly measured", note)
+        self.assertIn("still typical values", note)
         self.assertEqual(page.errors, [])
         self.assertEqual(page.requests, [])
         page.close()

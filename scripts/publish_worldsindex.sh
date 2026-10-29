@@ -63,6 +63,8 @@ PUBLIC_FILES=(
   worldsindex/data/populations/discovery-method.svg
   worldsindex/data/populations/discovery-year.svg
   worldsindex/data/staleness.json
+  # Framework v2 Track 4: the precomputed 30-night transit list for WIRO and Red Buttes.
+  worldsindex/data/observing-windows.json
 )
 for export_table in objects measurements transit_ephemerides source_coverage identity_states references conflicts selections; do
   PUBLIC_FILES+=("worldsindex/data/exports/$export_table.ecsv.gz" "worldsindex/data/exports/$export_table.vot.gz")
@@ -182,7 +184,7 @@ INPUT_STAMP="$LOG_DIR/.published-inputs.sha256"
 input_fingerprint() {
   {
     for file in "$SOURCE/public/data/lightcurves/index.json" "$SOURCE/public/data/sky-detections.json.gz" "$SOURCE/public/data/sync/latest.json" \
-                "$SOURCE/public/data/conflict-summary.json" "$SITE/scripts/worldsindex_conflicts.mjs" "$SITE/scripts/worldsindex_derived.mjs" "$SITE/worldsindex/assets/derived.js" "$SITE/worldsindex/assets/photometry.js" "$SITE/worldsindex/assets/compare.js" "$SITE/worldsindex/assets/status.js" "$SITE/worldsindex/status.html" \
+                "$SOURCE/public/data/conflict-summary.json" "$SITE/scripts/worldsindex_conflicts.mjs" "$SITE/scripts/worldsindex_derived.mjs" "$SITE/scripts/worldsindex_observing.mjs" "$SITE/worldsindex/assets/observe.js" "$SITE/worldsindex/assets/derived.js" "$SITE/worldsindex/assets/photometry.js" "$SITE/worldsindex/assets/compare.js" "$SITE/worldsindex/assets/status.js" "$SITE/worldsindex/status.html" \
                 "$SOURCE/data/snapshots/exoplanet-eu/ACTIVE.json" "$SOURCE/data/atlas/release-contract.json" \
                 "$SOURCE/outputs/promotion/exoplanet-eu/latest.json" \
                 "$SITE/scripts/build_worldsindex_static.mjs" "$SITE/scripts/worldsindex_transit_ephemerides.mjs" "$SITE/worldsindex/assets/ephemeris.js" \
@@ -366,7 +368,7 @@ PY_OBSERVATIONS
 )
 check worldsindex.test_worldsindex_static in_site python3 scripts/test_worldsindex_static.py \
   || block "static release validation failed"
-check worldsindex.front-syntax in_site node_check worldsindex/assets/app.js worldsindex/assets/sky.js worldsindex/assets/status.js worldsindex/assets/compare.js worldsindex/assets/derived.js worldsindex/assets/photometry.js worldsindex/assets/lightcurves.js \
+check worldsindex.front-syntax in_site node_check worldsindex/assets/app.js worldsindex/assets/sky.js worldsindex/assets/status.js worldsindex/assets/compare.js worldsindex/assets/derived.js worldsindex/assets/photometry.js worldsindex/assets/lightcurves.js worldsindex/assets/observe.js \
   || block "static release validation failed: a front-end script does not parse"
 check worldsindex.test_worldsindex_front in_site node --test scripts/test_worldsindex_front.mjs \
   || block "static release validation failed: front-end helpers"
@@ -374,6 +376,8 @@ check worldsindex.test_worldsindex_compare in_site node --test scripts/test_worl
   || block "static release validation failed: Compare tab and conflict sets"
 check worldsindex.test_worldsindex_derived in_site node --test scripts/test_worldsindex_derived.mjs \
   || block "static release validation failed: calculated quantities, population plots, staleness index"
+check worldsindex.test_worldsindex_observe in_site node --test scripts/test_worldsindex_observe.mjs \
+  || block "static release validation failed: transit planner and the 30-night list"
 check worldsindex.whitespace in_site git diff --check \
   || block "static release validation failed: whitespace"
 # Track 1 gates: the exports read back with Astropy and pyarrow cell for cell (values, units,
