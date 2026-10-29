@@ -969,7 +969,7 @@ def build_all(candidates: list[dict[str, Any]], broker_blocks: dict[str, dict[st
                              "host_context": (candidate.get("follow_up") or {}).get("host_context") or []}
         jobs.append((str(candidate["event_id"]), slim, broker_blocks.get(str(candidate["event_id"]))))
     if workers is None:
-        workers = int(os.environ.get("CTAS_LIGHTCURVE_WORKERS") or min(4, os.cpu_count() or 1))
+        workers = default_workers()
     results: dict[str, dict[str, Any] | None] = {}
     if workers <= 1 or len(jobs) < 50:
         for event_id, slim, broker in jobs:
@@ -977,8 +977,31 @@ def build_all(candidates: list[dict[str, Any]], broker_blocks: dict[str, dict[st
         return results
     from concurrent.futures import ProcessPoolExecutor
     import multiprocessing
-    context = multiprocessing.get_context("fork") if hasattr(os, "fork") else None
+    # Workers are started fresh ("spawn"), never forked from the exporter. By the time the
+    # fits run the exporter holds the whole catalog (several GB); a forked child shares those
+    # pages copy-on-write until its first garbage-collection pass touches every object header,
+    # after which each worker owns a private copy of the parent. Four such workers on a 16 GB
+    # hosted runner were killed with the runner (2026-10-29). A spawned worker imports this
+    # module and receives its jobs over a pipe: tens of MB each, whatever the catalog size.
+    context = multiprocessing.get_context("spawn")
     with ProcessPoolExecutor(max_workers=workers, mp_context=context) as pool:
         for (event_id, _slim, _broker), block in zip(jobs, pool.map(_build_one, [(slim, broker) for _, slim, broker in jobs], chunksize=8)):
             results[event_id] = block
     return results
+
+
+def default_workers() -> int:
+    """CTAS_LIGHTCURVE_WORKERS, or one worker per CPU up to four, bounded by memory: each
+    spawned worker needs about 0.5 GB on top of the exporter, so with less than 2 GB available
+    the fits run in-process (slower, never killed)."""
+
+    override = os.environ.get("CTAS_LIGHTCURVE_WORKERS")
+    if override:
+        return max(1, int(override))
+    workers = min(4, os.cpu_count() or 1)
+    try:
+        with open("/proc/meminfo") as handle:
+            available_kb = next(int(line.split()[1]) for line in handle if line.startswith("MemAvailable:"))
+    except (OSError, StopIteration, ValueError):
+        return workers
+    return max(1, min(workers, int(available_kb / (1024 * 1024) // 0.5)))

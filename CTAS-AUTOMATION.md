@@ -166,6 +166,32 @@ Static-catalog assurance verifies release integrity and claim boundaries. It is
 not peer review, scientific truth, classification validation, discovery
 authority, or a managed-service uptime claim.
 
+## Analysis blocks, memory and the publishing safety valve
+
+The exporter builds, for every public event, the per-event analysis blocks of Tracks 2b,
+3c and 3d (`comparison`, `broker_classes`, `lightcurve_science`, `host_association`,
+`multimessenger`). On 2026-10-29 the first releases carrying all of them were killed on
+the hosted runner (16 GB) with no log line: the exporter held the complete catalog and
+the previous release as Python objects at once, made three whole-catalog JSON strings
+for checksums, and forked four light-curve workers that each grew into a copy of the
+parent. The exporter now:
+
+- streams every whole-catalog checksum one dossier at a time (same digests);
+- reads the previous release as per-dossier digests and five compared fields
+  (`git_catalog_digest`), never as a second catalog in memory;
+- runs light-curve fits in spawned worker processes (`CTAS_LIGHTCURVE_WORKERS`, default
+  one per CPU up to four, fewer when free memory is short);
+- prints its peak resident memory with the phase timings in the publish log.
+
+`CTAS_EXPORT_HEAVY` is the safety valve. The workflow passes the repository variable
+of that name (Settings → Secrets and variables → Actions → Variables); unset or `1`
+builds the blocks, `0` publishes the release without them. A release made with the
+switch off carries no such block in any dossier (the pages show nothing for them, never
+a default) and `status.json` says `analysis_blocks.state = "not computed"` with the
+reason; the next run with the switch on recomputes everything. Set it to `0` when
+releases stop and the publish log shows the exporter running out of memory or time;
+set it back once the cause is fixed.
+
 ## Install or replace the service
 
 Run once:

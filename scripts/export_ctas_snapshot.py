@@ -41,7 +41,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 UTC = timezone.utc  # datetime.UTC is 3.11+; this works on 3.9+
 
@@ -4127,6 +4127,30 @@ def canonical_candidate_list_bytes(candidates: list[dict[str, Any]]) -> bytes:
     ).encode()
 
 
+def canonical_candidate_bytes(candidate: dict[str, Any]) -> bytes:
+    """One candidate's slice of canonical_candidate_list_bytes (no list brackets)."""
+
+    return json.dumps(candidate, sort_keys=True, separators=(",", ":")).encode()
+
+
+def canonical_candidate_list_sha256(candidate_bytes: Iterable[bytes]) -> str:
+    """sha256 of canonical_candidate_list_bytes, fed one candidate at a time.
+
+    json.dumps of a list with these separators is exactly "[" + ",".join(each element's
+    dump) + "]", so hashing the pieces in order gives the same digest as hashing the whole
+    document without ever holding the ~2 GB string for a complete catalog (the exporter
+    needed three such strings per release; see export-memory-hotfix-2026-10-29).
+    """
+
+    digest = hashlib.sha256(b"[")
+    for index, raw in enumerate(candidate_bytes):
+        if index:
+            digest.update(b",")
+        digest.update(raw)
+    digest.update(b"]\n")
+    return digest.hexdigest()
+
+
 def complete_catalog_manifest_artifact(
     candidates: list[dict[str, Any]],
     index_candidates: list[dict[str, Any]],
@@ -4161,9 +4185,9 @@ def complete_catalog_manifest_artifact(
             "sha256": hashlib.sha256(catalog_index_raw).hexdigest(),
             "ordering_field": "candidate_rows[][event_id column]",
         },
-        "assembled_candidates_checksum_sha256": hashlib.sha256(
-            canonical_candidate_list_bytes(index_ordered_candidates)
-        ).hexdigest(),
+        "assembled_candidates_checksum_sha256": canonical_candidate_list_sha256(
+            canonical_candidate_bytes(candidate) for candidate in index_ordered_candidates
+        ),
         "reconstruction": {
             "contract_version": "1.0.0",
             "description": (
@@ -4347,10 +4371,222 @@ def git_catalog_document(repo: Path, ref: str) -> dict[str, Any] | None:
     return {**index, "candidates": ordered}
 
 
+PREVIOUS_RELEASE_SLIM_FIELDS = ("event_id", "name", "classification", "status", "latest_retraction_at")
+
+
+def git_catalog_digest(repo: Path, ref: str) -> dict[str, Any] | None:
+    """The previous release as the exporter's history needs it, without the dossiers.
+
+    git_catalog_document materialises every dossier of the base release as Python objects
+    (several GB for the complete catalog) beside the release being built, and the exporter
+    then deep-copied them again for the semantic checksum. This reads the same chunks under
+    the same byte, count and checksum verification, but keeps per dossier only its canonical
+    JSON (zlib-compressed, about a sixth of the raw bytes), its sha256, and the five fields
+    the release history and changelog compare. The assembled and semantic checksums are the
+    same digests as before, streamed in index order. Returns None exactly when
+    git_catalog_document would (the base release is unreadable or inconsistent).
+    """
+
+    import zlib
+
+    legacy_raw = git_blob(repo, ref, "ctas/data/candidates.json")
+    if legacy_raw:
+        legacy_document = git_catalog_document(repo, ref)
+        if legacy_document is None:
+            return None
+        return _catalog_digest_from_rows(legacy_document, legacy_document.get("candidates", []))
+
+    manifest_raw = git_blob(repo, ref, "ctas/data/candidate-chunks/manifest.json")
+    if not manifest_raw:
+        return None
+    try:
+        manifest = json.loads(manifest_raw)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    if (not isinstance(manifest, dict) or manifest.get("schema") not in CANDIDATE_MANIFEST_READABLE_SCHEMAS
+            or not isinstance(manifest.get("chunks"), list)
+            or type(manifest.get("chunk_count")) is not int
+            or manifest["chunk_count"] != len(manifest["chunks"])
+            or type(manifest.get("candidate_count")) is not int
+            or manifest["candidate_count"] < 0):
+        return None
+
+    def valid_metadata(row: Any, path_pattern: str, *, candidate_count: bool = False) -> bool:
+        return bool(
+            isinstance(row, dict)
+            and isinstance(row.get("path"), str)
+            and re.fullmatch(path_pattern, row["path"])
+            and type(row.get("bytes")) is int and row["bytes"] > 0
+            and isinstance(row.get("sha256"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", row["sha256"])
+            and (not candidate_count or (
+                type(row.get("candidate_count")) is int and row["candidate_count"] >= 0
+            ))
+        )
+
+    chunks = manifest["chunks"]
+    if not all(valid_metadata(row, r"ctas/data/candidate-chunks/[0-9a-f]{2,4}\.json",
+                              candidate_count=True) for row in chunks):
+        return None
+    chunk_paths = [row["path"] for row in chunks]
+    if chunk_paths != sorted(set(chunk_paths)):
+        return None
+    index_meta = manifest.get("catalog_index")
+    if not valid_metadata(index_meta, r"ctas/data/catalog-index\.json"):
+        return None
+    index_path = str(index_meta.get("path") or "ctas/data/catalog-index.json")
+    index_raw = git_blob(repo, ref, index_path)
+    if not index_raw:
+        return None
+    if index_meta.get("bytes") is not None and index_meta.get("bytes") != len(index_raw):
+        return None
+    if index_meta.get("sha256") and index_meta.get("sha256") != hashlib.sha256(index_raw).hexdigest():
+        return None
+    try:
+        index = json.loads(index_raw)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    try:
+        index_rows = inflate_catalog_candidates(index) if isinstance(index, dict) else None
+    except (TypeError, ValueError):
+        index_rows = None
+    if not isinstance(index_rows, list):
+        return None
+
+    part_rows = manifest.get("parts", [])
+    if not isinstance(part_rows, list):
+        return None
+    if not all(valid_metadata(row, r"ctas/data/candidate-chunks/[0-9a-f]{3}\.part-[0-9]{6}\.json")
+               for row in part_rows):
+        return None
+    part_paths = [row["path"] for row in part_rows]
+    if part_paths != sorted(set(part_paths)):
+        return None
+    declared_parts = {row["path"]: row for row in part_rows}
+    used_parts = set()
+
+    def read_part(path):
+        metadata = declared_parts.get(path)
+        if metadata is None or path in used_parts:
+            raise ValueError("undeclared or duplicate historical candidate part")
+        raw = git_blob(repo, ref, path)
+        if (not raw
+                or metadata.get("bytes") != len(raw)
+                or metadata.get("sha256") != hashlib.sha256(raw).hexdigest()):
+            raise ValueError("invalid historical candidate part")
+        used_parts.add(path)
+        return raw
+
+    compressed_by_id: dict[str, bytes] = {}
+    slim_by_id: dict[str, dict[str, Any]] = {}
+    for chunk_meta in manifest["chunks"]:
+        if not isinstance(chunk_meta, dict):
+            return None
+        path = str(chunk_meta.get("path") or "")
+        raw = git_blob(repo, ref, path)
+        if not raw or chunk_meta.get("bytes") != len(raw):
+            return None
+        if chunk_meta.get("sha256") != hashlib.sha256(raw).hexdigest():
+            return None
+        try:
+            document = decode_chunk(raw, read_part)
+        except (TypeError, ValueError):
+            return None
+        if document.get("bucket") != Path(path).stem:
+            return None
+        rows = document.get("candidates") if isinstance(document, dict) else None
+        if not isinstance(rows, list) or document.get("candidate_count") != len(rows):
+            return None
+        if chunk_meta.get("candidate_count") != len(rows):
+            return None
+        for candidate in rows:
+            if not isinstance(candidate, dict):
+                return None
+            event_id = str(candidate.get("event_id") or "")
+            if not event_id or event_id in compressed_by_id:
+                return None
+            compressed_by_id[event_id] = zlib.compress(canonical_candidate_bytes(candidate), 1)
+            slim_by_id[event_id] = {field: candidate.get(field) for field in PREVIOUS_RELEASE_SLIM_FIELDS}
+        del document, rows
+    if used_parts != set(declared_parts):
+        return None
+    index_ids = [str(row.get("event_id") or "") for row in index_rows if isinstance(row, dict)]
+    if (
+        len(index_ids) != len(index_rows)
+        or "" in index_ids
+        or len(set(index_ids)) != len(index_ids)
+        or set(index_ids) != set(compressed_by_id)
+        or manifest.get("candidate_count") != len(index_ids)
+        or index.get("candidate_count") != len(index_ids)
+    ):
+        return None
+    assembled_checksum = canonical_candidate_list_sha256(
+        zlib.decompress(compressed_by_id[event_id]) for event_id in index_ids
+    )
+    if manifest.get("assembled_candidates_checksum_sha256") != assembled_checksum:
+        return None
+
+    def ordered_candidates():
+        for event_id in index_ids:
+            yield json.loads(zlib.decompress(compressed_by_id[event_id]))
+
+    semantic_checksum = catalog_semantic_checksum(ordered_candidates())
+    digest_by_name = {
+        str(slim_by_id[event_id].get("name")): hashlib.sha256(zlib.decompress(compressed_by_id[event_id])).hexdigest()
+        for event_id in index_ids if slim_by_id[event_id].get("name")
+    }
+    return {
+        **{key: value for key, value in index.items() if key != "candidates"},
+        "candidate_count": len(index_ids),
+        "slim_candidates": [slim_by_id[event_id] for event_id in index_ids],
+        "semantic_checksum": semantic_checksum,
+        "digest_by_name": digest_by_name,
+    }
+
+
+def _catalog_digest_from_rows(index: dict[str, Any], candidates: list[dict[str, Any]]) -> dict[str, Any]:
+    """git_catalog_digest's shape from an already materialised candidate list (legacy
+    single-document releases and tests)."""
+
+    return {
+        **{key: value for key, value in index.items() if key != "candidates"},
+        "candidate_count": len(candidates),
+        "slim_candidates": [{field: row.get(field) for field in PREVIOUS_RELEASE_SLIM_FIELDS} for row in candidates],
+        "semantic_checksum": catalog_semantic_checksum(candidates),
+        "digest_by_name": {
+            str(row.get("name")): hashlib.sha256(canonical_candidate_bytes(row)).hexdigest()
+            for row in candidates if row.get("name")
+        },
+    }
+
+
 def atomic_write(path: Path, raw: bytes) -> None:
     temporary = path.with_name(path.name + ".tmp")
     temporary.write_bytes(raw)
     os.replace(temporary, path)
+
+
+HEAVY_ANALYSIS_BLOCKS = ("comparison", "broker_classes", "lightcurve_science", "host_association", "multimessenger")
+
+
+def heavy_analyses_enabled() -> bool:
+    """CTAS_EXPORT_HEAVY: unset or 1 → the per-event analysis blocks are built (normal);
+    0/false/no/off → they are left out of this release (the publishing safety valve)."""
+
+    value = (os.environ.get("CTAS_EXPORT_HEAVY") or "1").strip().lower()
+    return value not in {"0", "false", "no", "off"}
+
+
+def heavy_analyses_status(enabled: bool) -> dict[str, Any]:
+    """status.json: whether this release carries the per-event analysis blocks."""
+
+    if enabled:
+        return {"state": "computed", "blocks": list(HEAVY_ANALYSIS_BLOCKS)}
+    return {
+        "state": "not computed",
+        "reason": "disabled this run (CTAS_EXPORT_HEAVY=0): the release was published without the per-event analysis blocks so that the catalog could be published at all; the next run with the switch on recomputes them",
+        "blocks": list(HEAVY_ANALYSIS_BLOCKS),
+    }
 
 
 class PhaseClock:
@@ -4370,7 +4606,21 @@ class PhaseClock:
     def report(self) -> str:
         lines = [f"timing          : {phase} {seconds:.1f}s" for phase, seconds in self.phases]
         lines.append(f"timing          : total {time.monotonic() - self.started:.1f}s")
+        lines.append(f"memory          : peak {peak_rss_mb():.0f} MB resident (this process), "
+                     f"{peak_rss_mb(children=True):.0f} MB (largest worker)")
         return "\n".join(lines)
+
+
+def peak_rss_mb(children: bool = False) -> float:
+    """Peak resident set size, so a publish log says what a release needed (the hosted
+    runner has 16 GB; the 2026-10-29 releases died there without a line of log)."""
+
+    try:
+        import resource
+        usage = resource.getrusage(resource.RUSAGE_CHILDREN if children else resource.RUSAGE_SELF)
+    except (ImportError, OSError, ValueError):
+        return 0.0
+    return usage.ru_maxrss / 1024.0 if sys.platform != "darwin" else usage.ru_maxrss / (1024.0 * 1024.0)
 
 
 def output_path_for_public_artifact(output_dir: Path, public_path: str) -> Path:
@@ -4615,7 +4865,13 @@ def semantic_catalog_candidates(candidates: list[dict[str, Any]]) -> list[dict[s
     semantic checksum lets the two-minute watcher refresh operational metadata
     without manufacturing a new catalog release.
     """
-    semantic = json.loads(json.dumps(candidates))
+    return [semantic_candidate(candidate) for candidate in candidates]
+
+
+def semantic_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
+    """One candidate's semantic content (a scrubbed deep copy; the original is untouched)."""
+
+    semantic = [json.loads(json.dumps(candidate))]
     for candidate in semantic:
         for coverage in candidate.get("source_coverage", []):
             coverage.pop("checked_at", None)
@@ -4639,17 +4895,24 @@ def semantic_catalog_candidates(candidates: list[dict[str, Any]]) -> list[dict[s
             # timestamp itself remains checksum-bearing; the ticking duration
             # must not manufacture a new catalog release every heartbeat.
             source_row.pop("retainedEvidenceAgeSeconds", None)
-    return semantic
+    return semantic[0]
 
 
-def catalog_semantic_checksum(candidates: list[dict[str, Any]]) -> str:
-    return hashlib.sha256(
-        json.dumps(
-            semantic_catalog_candidates(candidates),
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode()
-    ).hexdigest()
+def semantic_candidate_bytes(candidate: dict[str, Any]) -> bytes:
+    return json.dumps(semantic_candidate(candidate), sort_keys=True, separators=(",", ":")).encode()
+
+
+def catalog_semantic_checksum(candidates: Iterable[dict[str, Any]]) -> str:
+    """sha256 of json.dumps(semantic_catalog_candidates(candidates), sort_keys, compact),
+    computed one candidate at a time (same digest; see canonical_candidate_list_sha256)."""
+
+    digest = hashlib.sha256(b"[")
+    for index, candidate in enumerate(candidates):
+        if index:
+            digest.update(b",")
+        digest.update(semantic_candidate_bytes(candidate))
+    digest.update(b"]")
+    return digest.hexdigest()
 
 
 def source_universe_contract_checksum(source_universe: dict[str, Any]) -> str:
@@ -5215,25 +5478,33 @@ def main() -> int:
     }
     # Track 3c part 1: broker classes first (the SALT3 selection rule reads them), then the
     # light-curve science, fitted in worker processes because it is the slow part.
+    # CTAS_EXPORT_HEAVY=0 (the workflow variable CTAS_EXPORT_HEAVY) publishes without the
+    # per-event analysis blocks of Tracks 2b, 3c and 3d: the release's safety valve when a
+    # run cannot finish them. The dossiers then carry no such block (the pages show nothing
+    # rather than a default) and the status document says the analyses were disabled this run.
+    heavy_analyses = heavy_analyses_enabled()
     broker_blocks: dict[str, dict[str, Any]] = {}
-    for candidate in candidates:
-        block = broker_classes.build_broker_classes(candidate, counts.get("broker_rows", {}).get(str(candidate["event_id"]), []))
-        if block is not None:
-            broker_blocks[str(candidate["event_id"])] = block
-    # Track 3c part 2: host association first, because the nuclear screen of the light-curve
-    # science reads the probable host's offset.
-    sfd_dir = lightcurve_science.sfd_directory()
     host_blocks: dict[str, dict[str, Any]] = {}
-    for candidate in candidates:
-        block = host_association.build_host_association(candidate, sfd_dir, lightcurve_science.sfd_ebv if sfd_dir else None)
-        if block is not None:
-            host_blocks[str(candidate["event_id"])] = block
+    lightcurve_blocks: dict[str, dict[str, Any] | None] = {}
+    if heavy_analyses:
+        for candidate in candidates:
+            block = broker_classes.build_broker_classes(candidate, counts.get("broker_rows", {}).get(str(candidate["event_id"]), []))
+            if block is not None:
+                broker_blocks[str(candidate["event_id"])] = block
+        # Track 3c part 2: host association first, because the nuclear screen of the light-curve
+        # science reads the probable host's offset.
+        sfd_dir = lightcurve_science.sfd_directory()
+        for candidate in candidates:
+            block = host_association.build_host_association(candidate, sfd_dir, lightcurve_science.sfd_ebv if sfd_dir else None)
+            if block is not None:
+                host_blocks[str(candidate["event_id"])] = block
     clock.done("host-association")
-    probable_offsets = {event_id: host_association.probable_host_offset(block) for event_id, block in host_blocks.items()}
-    lightcurve_blocks = lightcurve_science.build_all(candidates, broker_blocks,
-                                                     probable_offsets={k: v for k, v in probable_offsets.items() if v is not None})
+    if heavy_analyses:
+        probable_offsets = {event_id: host_association.probable_host_offset(block) for event_id, block in host_blocks.items()}
+        lightcurve_blocks = lightcurve_science.build_all(candidates, broker_blocks,
+                                                         probable_offsets={k: v for k, v in probable_offsets.items() if v is not None})
     clock.done("lightcurve-science")
-    multimessenger_index = multimessenger.public_index(candidates, host_blocks)
+    multimessenger_index = multimessenger.public_index(candidates, host_blocks) if heavy_analyses else None
     for candidate in candidates:
         event_id = str(candidate["event_id"])
         candidate_attempts = counts["all_attempts"].get(event_id, [])
@@ -5270,29 +5541,31 @@ def main() -> int:
         )
         if screens is not None:
             candidate[analysis_screens.CANDIDATE_KEY] = screens
-        comparison_inputs = counts.get("comparison_inputs") or {}
-        photometry_envelopes = comparison.envelope_ids_for_photometry(candidate)
-        comparison_block = comparison.build_comparison(
-            candidate,
-            envelopes=(comparison_inputs.get("envelopes") or {}).get(event_id, []),
-            classifications=(comparison_inputs.get("classifications") or {}).get(event_id, []),
-            hosts=(comparison_inputs.get("hosts") or {}).get(event_id, []),
-            measurements=projection["measurements"] if photometry_envelopes else [],
-            envelope_receipts=comparison_envelope_receipts(db, photometry_envelopes),
-        )
-        if comparison_block is not None:
-            candidate[comparison.CANDIDATE_KEY] = comparison_block
-        if event_id in broker_blocks:
-            candidate[broker_classes.CANDIDATE_KEY] = broker_blocks[event_id]
-        if lightcurve_blocks.get(event_id) is not None:
-            candidate[lightcurve_science.CANDIDATE_KEY] = lightcurve_blocks[event_id]
-        if event_id in host_blocks:
-            candidate[host_association.CANDIDATE_KEY] = host_blocks[event_id]
-        multimessenger_block = multimessenger.build_multimessenger(
-            candidate, counts.get("multimessenger_runs", {}).get(event_id, []), multimessenger_index,
-        )
-        if multimessenger_block is not None:
-            candidate[multimessenger.CANDIDATE_KEY] = multimessenger_block
+        if heavy_analyses:
+            comparison_inputs = counts.get("comparison_inputs") or {}
+            photometry_envelopes = comparison.envelope_ids_for_photometry(candidate)
+            comparison_block = comparison.build_comparison(
+                candidate,
+                envelopes=(comparison_inputs.get("envelopes") or {}).get(event_id, []),
+                classifications=(comparison_inputs.get("classifications") or {}).get(event_id, []),
+                hosts=(comparison_inputs.get("hosts") or {}).get(event_id, []),
+                measurements=projection["measurements"] if photometry_envelopes else [],
+                envelope_receipts=comparison_envelope_receipts(db, photometry_envelopes),
+            )
+            if comparison_block is not None:
+                candidate[comparison.CANDIDATE_KEY] = comparison_block
+            if event_id in broker_blocks:
+                candidate[broker_classes.CANDIDATE_KEY] = broker_blocks[event_id]
+            if lightcurve_blocks.get(event_id) is not None:
+                candidate[lightcurve_science.CANDIDATE_KEY] = lightcurve_blocks[event_id]
+                lightcurve_blocks[event_id] = None  # the dossier owns it now; drop the duplicate reference
+            if event_id in host_blocks:
+                candidate[host_association.CANDIDATE_KEY] = host_blocks[event_id]
+            multimessenger_block = multimessenger.build_multimessenger(
+                candidate, counts.get("multimessenger_runs", {}).get(event_id, []), multimessenger_index,
+            )
+            if multimessenger_block is not None:
+                candidate[multimessenger.CANDIDATE_KEY] = multimessenger_block
         candidate["source_accounting"] = accounting
         complete_source_matrix = [
             {key: row.get(key) for key in SOURCE_MATRIX_ROW_KEYS}
@@ -5705,22 +5978,19 @@ def main() -> int:
     if release_history.get("schema") != RELEASE_HISTORY_SCHEMA or not isinstance(release_history.get("entries"), list):
         release_history = {"schema": RELEASE_HISTORY_SCHEMA, "entries": []}
 
-    previous_snapshot = git_catalog_document(site_root, args.release_base_ref)
+    # The base release is read as digests and five fields per dossier, never as a second
+    # complete catalog in memory (git_catalog_digest; the comparison is the same).
+    previous_snapshot = git_catalog_digest(site_root, args.release_base_ref)
     clock.done("read-previous-release")
-    previous_checksum = (
-        catalog_semantic_checksum(previous_snapshot.get("candidates", []))
-        if previous_snapshot else None
-    )
+    previous_checksum = previous_snapshot["semantic_checksum"] if previous_snapshot else None
     if previous_snapshot and previous_checksum != payload["catalog_content_checksum_sha256"]:
-        previous_by_name = {
-            str(row.get("name")): row for row in previous_snapshot.get("candidates", []) if row.get("name")
-        }
+        previous_by_name = previous_snapshot["digest_by_name"]
         current_by_name = {str(row["name"]): row for row in candidates}
         added = sorted(set(current_by_name) - set(previous_by_name))
         removed = sorted(set(previous_by_name) - set(current_by_name))
         changed = sorted(
             name for name in set(current_by_name) & set(previous_by_name)
-            if current_by_name[name] != previous_by_name[name]
+            if hashlib.sha256(canonical_candidate_bytes(current_by_name[name])).hexdigest() != previous_by_name[name]
         )
         survey_counts_for_added: dict[str, int] = {}
         for name in added:
@@ -5780,7 +6050,7 @@ def main() -> int:
     previous_universe = _previous_json("ctas/data/source-universe.json")
     previous_changelog = _previous_json(CHANGELOG_PATH)
     changelog_entry = changelog_module().build_entry(
-        previous_candidates=previous_snapshot.get("candidates") if previous_snapshot else None,
+        previous_candidates=previous_snapshot.get("slim_candidates") if previous_snapshot else None,
         current_candidates=candidates,
         previous_universe=previous_universe if isinstance(previous_universe, dict) else None,
         current_universe=source_universe,
@@ -6321,9 +6591,9 @@ def main() -> int:
             "sha256": hashlib.sha256(catalog_index_raw).hexdigest(),
             "ordering_field": "candidate_rows[][event_id column]",
         }
-        and candidate_manifest.get("assembled_candidates_checksum_sha256") == hashlib.sha256(
-            canonical_candidate_list_bytes(reconstructed_in_index_order)
-        ).hexdigest()
+        and candidate_manifest.get("assembled_candidates_checksum_sha256") == canonical_candidate_list_sha256(
+            canonical_candidate_bytes(candidate) for candidate in reconstructed_in_index_order
+        )
         and all(
             row.get("detail_chunk") == f"candidate-chunks/{candidate_bucket(str(row['event_id']))}.json"
             for row in index_candidates
@@ -6645,9 +6915,14 @@ def main() -> int:
         gate("exact-claim-boundary", CERTIFICATE_CLAIM.endswith("deployment claim."), CERTIFICATE_CLAIM),
     ]
     clock.done("verification-gates")
-    release_id = hashlib.sha256(
-        b"".join(name.encode() + b"\0" + raw for name, raw in sorted(bound_files.items()))
-    ).hexdigest()
+    # Hashed piecewise: joining every bound file into one bytes object was a ~3 GB spike at
+    # the end of a complete export (same digest as the former b"".join).
+    release_digest = hashlib.sha256()
+    for name, raw in sorted(bound_files.items()):
+        release_digest.update(name.encode())
+        release_digest.update(b"\0")
+        release_digest.update(raw)
+    release_id = release_digest.hexdigest()
     certificate = {
         "schema": CERTIFICATE_SCHEMA,
         "generated_at": payload["generated_at"],
@@ -6700,6 +6975,7 @@ def main() -> int:
     status["feeds_index_path"] = FEEDS_INDEX_PATH
     status["population_anomaly_path"] = POPULATION_ANOMALY_PATH
     status["status_page_path"] = "ctas/status.html"
+    status["analysis_blocks"] = heavy_analyses_status(heavy_analyses)
     status_raw = (json.dumps(status, indent=2, sort_keys=True) + "\n").encode()
     certificate_raw = (json.dumps(certificate, indent=2, sort_keys=True) + "\n").encode()
     final_public_bytes = {

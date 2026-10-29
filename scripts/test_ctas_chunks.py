@@ -298,5 +298,48 @@ class MultipartHistoryReaderTests(unittest.TestCase):
                 self.assertEqual(self.load()["candidates"], [small])
 
 
+class DigestOnlyHistoryTests(MultipartHistoryReaderTests):
+    """git_catalog_digest (export-memory-hotfix-2026-10-29) reads the base release under the
+    same verification as git_catalog_document but keeps digests and five fields per dossier.
+    Every rejection case of the full reader must hold, and the digests must equal those the
+    full documents give."""
+
+    def load(self):
+        self.blobs["ctas/data/candidate-chunks/manifest.json"] = raw_json(self.manifest)
+        with patch.object(self.exporter, "git_blob", side_effect=lambda _repo, _ref, path: self.blobs.get(path)):
+            digest = self.exporter.git_catalog_digest(Path.cwd(), "history-fixture")
+            if digest is None:
+                return None
+            full = self.exporter.git_catalog_document(Path.cwd(), "history-fixture")
+        self.assertIsNotNone(full)
+        candidates = full["candidates"]
+        self.assertEqual(digest["semantic_checksum"], self.exporter.catalog_semantic_checksum(candidates))
+        self.assertEqual(digest["slim_candidates"],
+                         [{f: row.get(f) for f in self.exporter.PREVIOUS_RELEASE_SLIM_FIELDS} for row in candidates])
+        self.assertEqual(digest["digest_by_name"], {
+            row["name"]: hashlib.sha256(self.exporter.canonical_candidate_bytes(row)).hexdigest() for row in candidates})
+        self.assertEqual(digest["candidate_count"], len(candidates))
+        self.assertNotIn("candidates", digest)
+        return {**digest, "candidates": candidates}
+
+    def test_streamed_digests_equal_the_whole_document_digests(self):
+        rows = [self.candidate, {"event_id": "b", "name": "AT2026b", "ctas_score": 3.5, "score_model": {"x": 1},
+                                 "source_coverage": [{"source": "s", "checked_at": "t", "next_eligible_at": "u"}],
+                                 "astro_evidence": {"generatedAt": "now", "k": [1, 2.0, None, "é"]},
+                                 "source_matrix": {"rows": [{"retainedEvidenceAgeSeconds": 5, "a": 1}]}}]
+        whole_semantic = hashlib.sha256(json.dumps(
+            self.exporter.semantic_catalog_candidates(rows), sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        self.assertEqual(self.exporter.catalog_semantic_checksum(rows), whole_semantic)
+        self.assertEqual(self.exporter.catalog_semantic_checksum(iter(rows)), whole_semantic)
+        self.assertEqual(
+            self.exporter.canonical_candidate_list_sha256(self.exporter.canonical_candidate_bytes(r) for r in rows),
+            hashlib.sha256(self.exporter.canonical_candidate_list_bytes(rows)).hexdigest())
+        self.assertEqual(self.exporter.canonical_candidate_list_sha256([]),
+                         hashlib.sha256(self.exporter.canonical_candidate_list_bytes([])).hexdigest())
+        # the scrub never touches the caller's records
+        self.assertEqual(rows[1]["ctas_score"], 3.5)
+        self.assertIn("checked_at", rows[1]["source_coverage"][0])
+
+
 if __name__ == "__main__":
     unittest.main()

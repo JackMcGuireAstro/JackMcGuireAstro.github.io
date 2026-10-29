@@ -136,6 +136,12 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
           CHAIN: ${{ (github.event_name == 'schedule' || inputs.chain) && '1' || '0' }}
           WORK: ${{ runner.temp }}/ctas-cloud
+          # Publishing safety valve (CTAS-AUTOMATION.md, "Analysis blocks"): the repository
+          # variable CTAS_EXPORT_HEAVY=0 publishes without the per-event analysis blocks.
+          CTAS_EXPORT_HEAVY: ${{ vars.CTAS_EXPORT_HEAVY || '1' }}
+          # Light-curve fits run in spawned worker processes; the exporter sizes the pool by
+          # CPUs and free memory unless this is set.
+          CTAS_LIGHTCURVE_WORKERS: ${{ vars.CTAS_LIGHTCURVE_WORKERS || '' }}
           # Named in fallback-active and release-blocked issues so they reach email.
           RELEASE_ISSUE_MENTION: "@JackMcGuireAstro"
         run: bash site/scripts/ctas_cloud_run.sh
