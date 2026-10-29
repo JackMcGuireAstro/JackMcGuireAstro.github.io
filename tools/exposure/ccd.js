@@ -34,16 +34,21 @@ export const SKY = {
 };
 
 // ------------------------------------------------------------------ telescopes
-// PLACEHOLDERS. Only the apertures are the telescopes' real sizes. Every other number
-// (obstruction, throughput, plate scale, gain, read noise, dark current, full well, seeing,
-// extinction) is a typical value for this class of telescope and CCD, to be replaced with the
-// values from the instrument manuals and site measurements.
+// WIRO + DoublePrime (prime focus): measured values from the WIRO DoublePrime page
+// (physics.uwyo.edu/~WIRO/DoublePrime/doubleprime.html): plate scale 0.58″/pixel; gain 2.62–2.66 e⁻/ADU
+// (mean 2.64); read noise 5.2–5.4 e⁻ (5.3); dark < 0.01 ADU/s at −110 °C (< 0.026 e⁻/s, an upper limit);
+// linear to at least 60,000 ADU (≈ 158,000 e⁻). Seeing: "typical seeing about 1 arcsec" (WIRO design notes,
+// physics.uwyo.edu/~mpierce/WIRO/Design_Considerations.html). r throughput: from the measured r′ zero point
+// (24.90 mag for 1 ADU/s, same page; taken as airmass ~1, the page does not say) with r extinction 0.13 — and
+// lightpath's physical model of DoublePrime (measured r′ filter and QE, assumed mirror and corrector) gives
+// 24.94, so the two agree. Still placeholders: the obstruction, the other bands' throughputs and the
+// extinctions (lightpath's atmosphere model for r only). Red Buttes: all placeholders except the aperture.
 export const TELESCOPES = [
   {
     id: "wiro", name: "WIRO 2.3 m (Wyoming Infrared Observatory)", placeholder: true,
-    diameter: 2.3, obstruction: 0.6, plateScale: 0.5, gain: 2.0, readNoise: 5, dark: 0.002, fullWell: 100000, seeing: 1.5,
-    throughput: { U: 0.12, B: 0.30, V: 0.35, R: 0.38, I: 0.25, u: 0.10, g: 0.33, r: 0.38, i: 0.30, z: 0.14 },
-    extinction: { U: 0.45, B: 0.22, V: 0.13, R: 0.09, I: 0.06, u: 0.45, g: 0.17, r: 0.09, i: 0.06, z: 0.05 },
+    diameter: 2.3, obstruction: 0.6, plateScale: 0.58, gain: 2.64, readNoise: 5.3, dark: 0.026, fullWell: 158000, seeing: 1.0,
+    throughput: { U: 0.12, B: 0.30, V: 0.35, R: 0.38, I: 0.25, u: 0.10, g: 0.33, r: 0.58, i: 0.30, z: 0.14 },
+    extinction: { U: 0.45, B: 0.22, V: 0.13, R: 0.09, I: 0.06, u: 0.45, g: 0.17, r: 0.13, i: 0.06, z: 0.05 },
   },
   {
     id: "rbo", name: "Red Buttes Observatory 0.6 m (University of Wyoming)", placeholder: true,

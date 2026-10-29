@@ -1,6 +1,6 @@
 // Exposure-time calculator page. The physics is in ccd.js; this file reads the form, checks
 // it, and draws the result and the S/N curve. Nothing is stored or sent anywhere.
-import { FILTERS, SKY, TELESCOPES, solve, snrFor, noiseBudget, peakPixel } from "./ccd.js?v=20261003";
+import { FILTERS, SKY, TELESCOPES, solve, snrFor, noiseBudget, peakPixel } from "./ccd.js?v=20261026";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 

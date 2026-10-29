@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#f4f1ea">
 <link rel="canonical" href="https://jackmcguireastro.github.io/tools/exposure/">
 <link rel="stylesheet" href="../tools.css?v=20261003">
-<script type="module" src="exposure.js?v=20261017"></script>
+<script type="module" src="exposure.js?v=20261026"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
 </head>
@@ -52,7 +52,7 @@
 
     <fieldset class="controls" aria-labelledby="setup-title">
       <div class="field wide"><label for="telescope">Preset</label><select id="telescope" aria-describedby="placeholder-note"></select></div>
-      <p class="hint field wide" id="placeholder-note"><strong class="warn">Placeholder values.</strong> Only the mirror sizes are real. The other WIRO and Red Buttes numbers (detector, throughput, seeing, extinction) are typical values for telescopes of this kind. They are not taken from the instrument manuals yet, and I will replace them once I have checked them. Until then, edit any field to match your own setup. Changing a field switches the preset to Custom.</p>
+      <p class="hint field wide" id="placeholder-note"><strong class="warn">Partly measured.</strong> WIRO’s plate scale, gain, read noise, dark-current limit, linearity and r-band throughput now come from the <a href="https://physics.uwyo.edu/~WIRO/DoublePrime/doubleprime.html">DoublePrime page</a> (the r throughput from its measured r′ zero point), and the seeing from the WIRO design notes. The obstruction, the other bands’ throughputs and the extinctions are still typical values, as are all Red Buttes numbers except the mirror size. Edit any field to match your own setup; changing a field switches the preset to Custom.</p>
       <div class="field"><label for="diameter">Mirror diameter (m)</label><input id="diameter" type="number" step="any" min="0"></div>
       <div class="field"><label for="obstruction">Central obstruction (m)</label><input id="obstruction" type="number" step="any" min="0"></div>
       <div class="field"><label for="throughput">Total throughput (0–1)</label><input id="throughput" type="number" step="any" min="0" max="1" aria-describedby="throughput-hint"><p class="hint" id="throughput-hint">Optics × filter × detector QE, for this filter</p></div>
