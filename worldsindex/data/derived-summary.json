@@ -1,0 +1,774 @@
+{
+  "schemaVersion": "worldsindex-derived-summary.v1",
+  "generatedAt": "2026-10-22T14:23:03.506Z",
+  "formulaRegistryVersion": "worldsindex-derived-formulas.v1",
+  "claimBoundary": "Calculated by WorldsIndex from the values this release selects (a selection, not a measurement) and one stated stellar parameter set. Not a fitted solution, not a self-consistent publication solution and not a completeness-corrected population. Every value names its formula, inputs and their sources.",
+  "stellarRule": "stellar-inputs.v1: the NASA stellar-host parameter set (stellarhosts) whose reference equals the reference of the selected planet period or radius; otherwise the set stating the most of effective temperature, radius and mass (ties by source record id). A field that set lacks is taken from the next set in the same ranking, then from the Exoplanet.eu row of the object. Distances follow the same chain (sy_dist, then Exoplanet.eu star_distance). Magnitudes (J, K) come only from Exoplanet.eu.",
+  "samePublicationRule": "Inclination, impact parameter and radius ratio are not selected by the selection rule; when used, they are the row of the same publication as the selected period or radius (the same source record, else a row citing the same bibcode or reference), never a row of another publication.",
+  "stalenessRule": "Predicted 1-sigma mid-transit uncertainty sqrt(sigma_T0^2 + (n sigma_P)^2) at +1, +6 and +12 months after the release reference time, from the release's one chosen ephemeris per planet. Priority (our rule, not ExoClock's): alert when the +1 month uncertainty exceeds 30 minutes or half the transit duration; high when the +6 month uncertainty does; medium when the +12 month uncertainty does; low otherwise; unranked when the ephemeris states no uncertainty. Rank 1 is the largest +12 month uncertainty.",
+  "propagation": "asymmetric finite differences: f is re-evaluated with each input at value + upper error and value - lower error; positive and negative changes are added in quadrature separately. Correlations between inputs are ignored. Inputs without a reported error contribute nothing (listed in uncertaintyOmits).",
+  "skippedStatuses": [
+    "FALSE_POSITIVE",
+    "REFUTED"
+  ],
+  "shardPathPattern": "derived/{shard}.json.gz",
+  "shards": 256,
+  "objects": 6354,
+  "skippedForStatus": 6917,
+  "formulas": [
+    {
+      "id": "stellar-luminosity-stefan-boltzmann.v1",
+      "code": "stellar_luminosity",
+      "label": "Stellar luminosity",
+      "unit": "L_sun",
+      "inputs": [
+        "stellar_teff",
+        "stellar_radius"
+      ],
+      "formula": "L/L_sun = (R*/R_sun)^2 (Teff / 5772 K)^4",
+      "citation": {
+        "text": "IAU 2015 Resolution B3 (nominal solar effective temperature 5772 K)",
+        "url": "https://arxiv.org/abs/1510.07674"
+      }
+    },
+    {
+      "id": "insolation-luminosity.v1",
+      "code": "insolation",
+      "label": "Insolation",
+      "unit": "S_earth",
+      "inputs": [
+        "stellar_teff",
+        "stellar_radius",
+        "semimajor_axis"
+      ],
+      "formula": "S/S_earth = (L/L_sun) / (a/au)^2",
+      "citation": {
+        "text": "Inverse-square law with the stellar luminosity above",
+        "url": null
+      },
+      "archiveProperty": "insolation"
+    },
+    {
+      "id": "teq-zero-albedo-full-redistribution.v1",
+      "code": "equilibrium_temperature",
+      "label": "Equilibrium temperature (zero albedo, full redistribution)",
+      "unit": "K",
+      "inputs": [
+        "stellar_teff",
+        "stellar_radius",
+        "semimajor_axis"
+      ],
+      "formula": "Teq = Teff sqrt(R* / (2a))",
+      "citation": {
+        "text": "Kempton et al. 2018, PASP 130, 114401, eq. 3",
+        "url": "https://doi.org/10.1088/1538-3873/aadf6f"
+      },
+      "archiveProperty": "equilibrium_temperature"
+    },
+    {
+      "id": "bulk-density.v1",
+      "code": "density",
+      "label": "Bulk density",
+      "unit": "g/cm3",
+      "inputs": [
+        "planet_mass",
+        "planet_radius"
+      ],
+      "formula": "rho = 5.514 g/cm3 (M/M_earth) / (R/R_earth)^3",
+      "citation": {
+        "text": "Mean density of the Earth 5.514 g/cm3 (IAU 2015 nominal radius and mass)",
+        "url": null
+      }
+    },
+    {
+      "id": "angular-separation.v1",
+      "code": "angular_separation",
+      "label": "Maximum angular separation",
+      "unit": "mas",
+      "inputs": [
+        "semimajor_axis",
+        "distance"
+      ],
+      "formula": "theta = 1000 (a/au) / (d/pc) mas (semi-major axis; the apastron separation is larger for an eccentric orbit)",
+      "citation": {
+        "text": "Definition of the parsec",
+        "url": null
+      }
+    },
+    {
+      "id": "chen-kipping-2017-mass-radius.v1",
+      "code": "radius_from_mass",
+      "label": "Radius estimated from mass (Chen & Kipping 2017)",
+      "unit": "R_earth",
+      "inputs": [
+        "planet_mass"
+      ],
+      "formula": "R = C M^S, piecewise: Terran M < 2.04 M_earth (C 1.008, S 0.279); Neptunian < 131.6 M_earth (S 0.589); Jovian < 0.08 M_sun (S -0.044); stellar (S 0.881); C continuous",
+      "citation": {
+        "text": "Chen & Kipping 2017, ApJ 834, 17 (mean relation, Table 1)",
+        "url": "https://doi.org/10.3847/1538-4357/834/1/17"
+      }
+    },
+    {
+      "id": "chen-kipping-2017-radius-mass.v1",
+      "code": "mass_from_radius",
+      "label": "Mass estimated from radius (Chen & Kipping 2017)",
+      "unit": "M_earth",
+      "inputs": [
+        "planet_radius"
+      ],
+      "formula": "inverse of the Terran and Neptunian branches; not computed above 14.3 R_earth, where the Jovian branch is degenerate",
+      "citation": {
+        "text": "Chen & Kipping 2017, ApJ 834, 17",
+        "url": "https://doi.org/10.3847/1538-4357/834/1/17"
+      }
+    },
+    {
+      "id": "kopparapu-2014-habitable-zone.v1",
+      "code": "habitable_zone",
+      "label": "Habitable-zone edges (Kopparapu et al. 2014)",
+      "unit": "au",
+      "inputs": [
+        "stellar_teff",
+        "stellar_radius"
+      ],
+      "formula": "Seff = S0 + a T + b T^2 + c T^3 + d T^4, T = Teff - 5780 K, d = sqrt((L/L_sun)/Seff); conservative: runaway greenhouse (1 M_earth) to maximum greenhouse; optimistic: recent Venus to early Mars; valid 2600-7200 K",
+      "citation": {
+        "text": "Kopparapu et al. 2014, ApJL 787, L29 (Table 1)",
+        "url": "https://doi.org/10.1088/2041-8205/787/2/L29"
+      }
+    },
+    {
+      "id": "habitable-zone-orbit-fraction.v1",
+      "code": "habitable_zone_orbit_fraction",
+      "label": "Fraction of the orbit inside the habitable zone",
+      "unit": "fraction",
+      "inputs": [
+        "stellar_teff",
+        "stellar_radius",
+        "semimajor_axis",
+        "eccentricity"
+      ],
+      "formula": "fraction of orbital time with r = a(1 - e cos E) between the zone edges, 7200 steps in mean anomaly",
+      "citation": {
+        "text": "Kepler's equation over one orbit; edges from Kopparapu et al. 2014",
+        "url": null
+      }
+    },
+    {
+      "id": "earth-similarity-index-flux.v1",
+      "code": "earth_similarity_index",
+      "label": "Earth Similarity Index (radius and stellar flux)",
+      "unit": "dimensionless",
+      "inputs": [
+        "planet_radius",
+        "stellar_teff",
+        "stellar_radius",
+        "semimajor_axis"
+      ],
+      "formula": "ESI = 1 - sqrt(0.5 [((S - 1)/(S + 1))^2 + ((R - 1)/(R + 1))^2]), S and R relative to Earth",
+      "citation": {
+        "text": "Schulze-Makuch et al. 2011, Astrobiology 11, 1041 (flux form of the Planetary Habitability Laboratory)",
+        "url": "https://doi.org/10.1089/ast.2010.0592"
+      }
+    },
+    {
+      "id": "snow-line-hayashi-1981.v1",
+      "code": "snow_line",
+      "label": "Snow line (minimum-mass solar nebula scaling)",
+      "unit": "au",
+      "inputs": [
+        "stellar_teff",
+        "stellar_radius"
+      ],
+      "formula": "a_snow = 2.7 au (L/L_sun)^(1/2)",
+      "citation": {
+        "text": "Hayashi 1981, PThPS 70, 35",
+        "url": "https://doi.org/10.1143/PTPS.70.35"
+      }
+    },
+    {
+      "id": "tidal-locking-gladman-1996.v1",
+      "code": "tidal_locking_timescale",
+      "label": "Tidal locking timescale (order-of-magnitude estimate)",
+      "unit": "yr",
+      "inputs": [
+        "planet_mass",
+        "planet_radius",
+        "semimajor_axis",
+        "stellar_mass"
+      ],
+      "formula": "t = omega a^6 I Q / (3 G M*^2 k2 R^5), I = 0.4 M R^2",
+      "citation": {
+        "text": "Gladman et al. 1996, Icarus 122, 166, eq. 9 (assumed initial spin, Q and k2 stated in `assumptions`)",
+        "url": "https://doi.org/10.1006/icar.1996.0117"
+      },
+      "assumptions": {
+        "initialSpinPeriodHours": 12,
+        "Q": 100,
+        "k2": 0.3,
+        "momentOfInertiaFactor": 0.4
+      }
+    },
+    {
+      "id": "rv-semi-amplitude.v1",
+      "code": "rv_semi_amplitude",
+      "label": "Radial-velocity semi-amplitude",
+      "unit": "m/s",
+      "inputs": [
+        "planet_mass",
+        "orbital_period",
+        "stellar_mass",
+        "eccentricity"
+      ],
+      "formula": "K = 28.4329 m/s (M_p sin i / M_jup) ((M* + M_p)/M_sun)^(-2/3) (P/yr)^(-1/3) / sqrt(1 - e^2)",
+      "citation": {
+        "text": "Lovis & Fischer 2010, in Exoplanets (Seager ed.), eq. 14",
+        "url": null
+      }
+    },
+    {
+      "id": "astrometric-amplitude.v1",
+      "code": "astrometric_amplitude",
+      "label": "Astrometric signature",
+      "unit": "uas",
+      "inputs": [
+        "planet_mass",
+        "semimajor_axis",
+        "stellar_mass",
+        "distance"
+      ],
+      "formula": "alpha = (M_p / M*) (a/au) / (d/pc) arcsec",
+      "citation": {
+        "text": "Perryman 2011, The Exoplanet Handbook, eq. 3.4",
+        "url": null
+      }
+    },
+    {
+      "id": "transit-depth-geometric.v1",
+      "code": "transit_depth",
+      "label": "Transit depth (geometric)",
+      "unit": "ppm",
+      "inputs": [
+        "radius_ratio"
+      ],
+      "formula": "delta = (Rp/R*)^2 (no limb darkening)",
+      "citation": {
+        "text": "Winn 2010, in Exoplanets (Seager ed.), eq. 1",
+        "url": "https://arxiv.org/abs/1001.2010"
+      },
+      "archiveProperty": "transit_depth"
+    },
+    {
+      "id": "transit-duration-winn-2010.v1",
+      "code": "transit_duration",
+      "label": "Transit duration T14",
+      "unit": "hour",
+      "inputs": [
+        "orbital_period",
+        "scaled_semimajor_axis",
+        "radius_ratio",
+        "impact_parameter",
+        "eccentricity"
+      ],
+      "formula": "T14 = (P/pi) asin[(R*/a) sqrt((1 + k)^2 - b^2) / sin i] (circular orbits; eccentric orbits need the argument of periastron)",
+      "citation": {
+        "text": "Winn 2010, eq. 14",
+        "url": "https://arxiv.org/abs/1001.2010"
+      },
+      "archiveProperty": "transit_duration"
+    },
+    {
+      "id": "transit-probability-winn-2010.v1",
+      "code": "transit_probability",
+      "label": "Geometric transit probability",
+      "unit": "fraction",
+      "inputs": [
+        "stellar_radius",
+        "planet_radius",
+        "semimajor_axis",
+        "eccentricity"
+      ],
+      "formula": "p = ((R* + Rp)/a) / (1 - e^2) (averaged over the argument of periastron)",
+      "citation": {
+        "text": "Winn 2010, eq. 9",
+        "url": "https://arxiv.org/abs/1001.2010"
+      }
+    },
+    {
+      "id": "hill-radius.v1",
+      "code": "hill_radius",
+      "label": "Hill radius",
+      "unit": "au",
+      "inputs": [
+        "semimajor_axis",
+        "eccentricity",
+        "planet_mass",
+        "stellar_mass"
+      ],
+      "formula": "r_H = a (1 - e) (M_p / (3 M*))^(1/3) (at periastron)",
+      "citation": {
+        "text": "Hamilton & Burns 1992, Icarus 96, 43",
+        "url": "https://doi.org/10.1016/0019-1035(92)90005-R"
+      }
+    },
+    {
+      "id": "roche-limit-fluid.v1",
+      "code": "roche_limit",
+      "label": "Roche limit (fluid planet)",
+      "unit": "au",
+      "inputs": [
+        "stellar_radius",
+        "stellar_mass",
+        "planet_mass",
+        "planet_radius"
+      ],
+      "formula": "a_R = 2.44 R* (rho* / rho_p)^(1/3); a / a_R is given beside it",
+      "citation": {
+        "text": "Chandrasekhar 1969, Ellipsoidal Figures of Equilibrium",
+        "url": null
+      }
+    },
+    {
+      "id": "planet-class-borucki-2011.v1",
+      "code": "planet_class",
+      "label": "Size or mass class",
+      "unit": "class",
+      "inputs": [
+        "planet_radius"
+      ],
+      "formula": "by radius (Borucki et al. 2011): Earth-size < 1.25, super-Earth 1.25-2, Neptune-size 2-6, Jupiter-size 6-15, very large 15-22.4 R_earth; without a radius, by mass (Chen & Kipping 2017): Terran < 2.04, Neptunian < 131.6, Jovian < 26,600 M_earth",
+      "citation": {
+        "text": "Borucki et al. 2011, ApJ 736, 19; Chen & Kipping 2017, ApJ 834, 17",
+        "url": "https://doi.org/10.1088/0004-637X/736/1/19"
+      }
+    },
+    {
+      "id": "tsm-kempton-2018.v1",
+      "code": "tsm",
+      "label": "Transmission spectroscopy metric (TSM)",
+      "unit": "dimensionless",
+      "inputs": [
+        "planet_radius",
+        "planet_mass",
+        "stellar_radius",
+        "stellar_teff",
+        "semimajor_axis",
+        "j_mag"
+      ],
+      "formula": "TSM = s Rp^3 Teq / (Mp R*^2) 10^(-mJ/5); s = 0.190 (Rp < 1.5), 1.26 (1.5-2.75), 1.28 (2.75-4), 1.15 (4-10 R_earth); mass from Chen & Kipping 2017 when none is selected, as in the paper",
+      "citation": {
+        "text": "Kempton et al. 2018, PASP 130, 114401, eq. 1 and Table 1",
+        "url": "https://doi.org/10.1088/1538-3873/aadf6f"
+      }
+    },
+    {
+      "id": "esm-kempton-2018.v1",
+      "code": "esm",
+      "label": "Emission spectroscopy metric (ESM)",
+      "unit": "dimensionless",
+      "inputs": [
+        "radius_ratio",
+        "stellar_teff",
+        "stellar_radius",
+        "semimajor_axis",
+        "k_mag"
+      ],
+      "formula": "ESM = 4.29e6 B(7.5 um, 1.10 Teq) / B(7.5 um, Teff) (Rp/R*)^2 10^(-mK/5)",
+      "citation": {
+        "text": "Kempton et al. 2018, PASP 130, 114401, eq. 4",
+        "url": "https://doi.org/10.1088/1538-3873/aadf6f"
+      }
+    },
+    {
+      "id": "limb-darkening-gray-eddington.v1",
+      "code": "limb_darkening",
+      "label": "Quadratic limb-darkening coefficients (gray Eddington atmosphere)",
+      "unit": "dimensionless",
+      "inputs": [
+        "stellar_teff"
+      ],
+      "formula": "I(mu) = B_lambda(T(tau = mu)), T^4 = (3/4) Teff^4 (tau + 2/3); quadratic law fitted by least squares on 101 mu points at each band's effective wavelength",
+      "citation": {
+        "text": "Eddington approximation of a gray atmosphere (Mihalas 1978, Stellar Atmospheres, ch. 3); quadratic law of Kopal 1950",
+        "url": null
+      }
+    }
+  ],
+  "limbDarkeningBands": {
+    "TESS": {
+      "wavelengthNm": 786.5,
+      "label": "TESS (600-1000 nm)"
+    },
+    "Kepler": {
+      "wavelengthNm": 640,
+      "label": "Kepler / K2 (420-900 nm)"
+    },
+    "V": {
+      "wavelengthNm": 551,
+      "label": "Johnson V"
+    },
+    "R": {
+      "wavelengthNm": 658,
+      "label": "Cousins R / Sloan r"
+    },
+    "I": {
+      "wavelengthNm": 806,
+      "label": "Cousins I / Sloan i"
+    }
+  },
+  "quantities": {
+    "stellar_luminosity": {
+      "calculated": 6034,
+      "notComputed": 320,
+      "reasons": {
+        "input-missing": 320
+      }
+    },
+    "insolation": {
+      "calculated": 5461,
+      "notComputed": 893,
+      "reasons": {
+        "input-missing": 890,
+        "input-is-limit": 3
+      }
+    },
+    "equilibrium_temperature": {
+      "calculated": 5461,
+      "notComputed": 893,
+      "reasons": {
+        "input-missing": 890,
+        "input-is-limit": 3
+      }
+    },
+    "density": {
+      "calculated": 1559,
+      "notComputed": 4795,
+      "reasons": {
+        "minimum-mass": 891,
+        "input-missing": 3661,
+        "input-is-limit": 243
+      }
+    },
+    "angular_separation": {
+      "calculated": 5709,
+      "notComputed": 645,
+      "reasons": {
+        "input-missing": 642,
+        "input-is-limit": 3
+      }
+    },
+    "radius_from_mass": {
+      "calculated": 655,
+      "notComputed": 5699,
+      "reasons": {
+        "minimum-mass": 877,
+        "measured-radius-selected": 4774,
+        "input-is-limit": 41,
+        "input-missing": 7
+      }
+    },
+    "mass_from_radius": {
+      "calculated": 2993,
+      "notComputed": 3361,
+      "reasons": {
+        "measured-mass-selected": 3348,
+        "degenerate-branch": 6,
+        "input-missing": 7
+      }
+    },
+    "habitable_zone": {
+      "calculated": 5960,
+      "notComputed": 394,
+      "reasons": {
+        "input-missing": 320,
+        "outside-calibration": 74
+      }
+    },
+    "habitable_zone_orbit_fraction": {
+      "calculated": 2496,
+      "notComputed": 3858,
+      "reasons": {
+        "input-missing": 3463,
+        "outside-calibration": 74,
+        "input-is-limit": 321
+      }
+    },
+    "earth_similarity_index": {
+      "calculated": 4209,
+      "notComputed": 2145,
+      "reasons": {
+        "input-missing": 2139,
+        "input-is-limit": 6
+      }
+    },
+    "snow_line": {
+      "calculated": 6034,
+      "notComputed": 320,
+      "reasons": {
+        "input-missing": 320
+      }
+    },
+    "tidal_locking_timescale": {
+      "calculated": 1554,
+      "notComputed": 4800,
+      "reasons": {
+        "minimum-mass": 891,
+        "input-missing": 3665,
+        "input-is-limit": 244
+      }
+    },
+    "rv_semi_amplitude": {
+      "calculated": 2264,
+      "notComputed": 4090,
+      "reasons": {
+        "input-missing": 3575,
+        "input-is-limit": 515
+      }
+    },
+    "astrometric_amplitude": {
+      "calculated": 3064,
+      "notComputed": 3290,
+      "reasons": {
+        "input-missing": 3046,
+        "input-is-limit": 244
+      }
+    },
+    "transit_depth": {
+      "calculated": 4771,
+      "notComputed": 1583,
+      "reasons": {
+        "input-missing": 1583
+      }
+    },
+    "transit_duration": {
+      "calculated": 559,
+      "notComputed": 5795,
+      "reasons": {
+        "input-missing": 4970,
+        "eccentric-orbit": 592,
+        "input-is-limit": 230,
+        "outside-domain": 3
+      }
+    },
+    "transit_probability": {
+      "calculated": 1404,
+      "notComputed": 4950,
+      "reasons": {
+        "input-missing": 4658,
+        "input-is-limit": 292
+      }
+    },
+    "hill_radius": {
+      "calculated": 2264,
+      "notComputed": 4090,
+      "reasons": {
+        "input-missing": 3636,
+        "input-is-limit": 454
+      }
+    },
+    "roche_limit": {
+      "calculated": 1557,
+      "notComputed": 4797,
+      "reasons": {
+        "minimum-mass": 891,
+        "input-missing": 3667,
+        "input-is-limit": 239
+      }
+    },
+    "planet_class": {
+      "calculated": 5427,
+      "notComputed": 927,
+      "reasons": {
+        "input-missing": 925,
+        "input-is-limit": 2
+      }
+    },
+    "tsm": {
+      "calculated": 2391,
+      "notComputed": 3963,
+      "reasons": {
+        "input-missing": 3846,
+        "outside-calibration": 111,
+        "input-is-limit": 6
+      }
+    },
+    "esm": {
+      "calculated": 1948,
+      "notComputed": 4406,
+      "reasons": {
+        "input-missing": 4405,
+        "input-is-limit": 1
+      }
+    },
+    "limb_darkening": {
+      "calculated": 6058,
+      "notComputed": 296,
+      "reasons": {
+        "input-missing": 296
+      }
+    }
+  },
+  "stalenessPriorities": {
+    "alert": 5919,
+    "high": 113,
+    "medium": 149,
+    "low": 6226,
+    "unranked": 316
+  },
+  "populationPlots": [
+    "mass-period",
+    "radius-period",
+    "mass-radius",
+    "discovery-method",
+    "discovery-year"
+  ],
+  "plots": {
+    "mass-period": {
+      "title": "Mass and orbital period of confirmed planets",
+      "path": "populations/mass-period.svg",
+      "kind": "scatter",
+      "x": {
+        "key": "periodDays",
+        "label": "Orbital period (days)",
+        "log": true,
+        "min": 0.1,
+        "max": 1000000
+      },
+      "y": {
+        "key": "massEarth",
+        "label": "Mass or minimum mass (Earth masses)",
+        "log": true,
+        "min": 0.01,
+        "max": 100000
+      },
+      "frame": {
+        "width": 720,
+        "height": 480,
+        "left": 70,
+        "right": 20,
+        "top": 30,
+        "bottom": 56
+      },
+      "columns": [
+        "objectId",
+        "periodDays",
+        "massEarth",
+        "massIsMinimum"
+      ],
+      "summary": "2,718 confirmed planets with both values; median orbital period (days) 13.1, median mass or minimum mass (earth masses) 155."
+    },
+    "radius-period": {
+      "title": "Radius and orbital period of confirmed planets",
+      "path": "populations/radius-period.svg",
+      "kind": "scatter",
+      "x": {
+        "key": "periodDays",
+        "label": "Orbital period (days)",
+        "log": true,
+        "min": 0.1,
+        "max": 1000000
+      },
+      "y": {
+        "key": "radiusEarth",
+        "label": "Radius (Earth radii)",
+        "log": true,
+        "min": 0.1,
+        "max": 50
+      },
+      "frame": {
+        "width": 720,
+        "height": 480,
+        "left": 70,
+        "right": 20,
+        "top": 30,
+        "bottom": 56
+      },
+      "columns": [
+        "objectId",
+        "periodDays",
+        "radiusEarth",
+        "massIsMinimum"
+      ],
+      "summary": "4,731 confirmed planets with both values; median orbital period (days) 8.01, median radius (earth radii) 2.47."
+    },
+    "mass-radius": {
+      "title": "Mass and radius of confirmed planets (true masses only)",
+      "path": "populations/mass-radius.svg",
+      "kind": "scatter",
+      "x": {
+        "key": "massEarth",
+        "label": "Mass (Earth masses)",
+        "log": true,
+        "min": 0.01,
+        "max": 100000
+      },
+      "y": {
+        "key": "radiusEarth",
+        "label": "Radius (Earth radii)",
+        "log": true,
+        "min": 0.1,
+        "max": 50
+      },
+      "frame": {
+        "width": 720,
+        "height": 480,
+        "left": 70,
+        "right": 20,
+        "top": 30,
+        "bottom": 56
+      },
+      "columns": [
+        "objectId",
+        "massEarth",
+        "radiusEarth",
+        "massIsMinimum"
+      ],
+      "curves": [
+        {
+          "label": "Earth-like rock and iron (32.5% iron core)",
+          "cmf": 0.325,
+          "citation": "Zeng, Sasselov & Jacobsen 2016, ApJ 819, 127, eq. 10: R/R_earth = (1.07 - 0.21 CMF) (M/M_earth)^(1/3.7), valid 1-8 M_earth",
+          "url": "https://doi.org/10.3847/0004-637X/819/2/127",
+          "massRange": [
+            1,
+            8
+          ]
+        },
+        {
+          "label": "Pure rock (no iron core)",
+          "cmf": 0,
+          "citation": "Zeng, Sasselov & Jacobsen 2016, ApJ 819, 127, eq. 10: R/R_earth = (1.07 - 0.21 CMF) (M/M_earth)^(1/3.7), valid 1-8 M_earth",
+          "url": "https://doi.org/10.3847/0004-637X/819/2/127",
+          "massRange": [
+            1,
+            8
+          ]
+        }
+      ],
+      "summary": "1,553 confirmed planets with both values; median mass (earth masses) 88, median radius (earth radii) 9.66."
+    },
+    "discovery-method": {
+      "title": "Confirmed planets by discovery method",
+      "path": "populations/discovery-method.svg",
+      "kind": "histogram",
+      "field": "methodCode",
+      "columns": [
+        "bin",
+        "count"
+      ],
+      "summary": "6,296 confirmed planets; the largest bin is primary-transit-photometry with 4,681."
+    },
+    "discovery-year": {
+      "title": "Confirmed planets by discovery year",
+      "path": "populations/discovery-year.svg",
+      "kind": "histogram",
+      "field": "discoveryYear",
+      "columns": [
+        "bin",
+        "count"
+      ],
+      "summary": "6,296 confirmed planets; the largest bin is 1992 with 2."
+    }
+  }
+}
