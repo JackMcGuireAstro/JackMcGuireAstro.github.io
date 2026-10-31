@@ -1,0 +1,198 @@
+{
+  "check_counts": {
+    "block": 1,
+    "pass": 105,
+    "skip": 71,
+    "warn": 3
+  },
+  "checks": [
+    {
+      "class": "integrity",
+      "id": "ctas.test_ctas_static",
+      "mode": "block",
+      "outcome": "block",
+      "parts": [
+        "CertificateAndArtifactTests.test_changelog_source_accounting_and_feeds_are_certified_and_reconcile",
+        "CertificateAndArtifactTests.test_columnar_index_is_lossless",
+        "CertificateAndArtifactTests.test_first_screen_loads_a_summary_not_the_complete_catalog",
+        "CertificateAndArtifactTests.test_interoperability_products_are_certified",
+        "CertificateAndArtifactTests.test_research_artifacts_are_parseable_complete_and_checksum_bound",
+        "CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound"
+      ],
+      "scope": "deploy"
+    },
+    {
+      "class": "integrity",
+      "id": "ctas.schemas",
+      "mode": "block",
+      "outcome": "warn",
+      "parts": [
+        "catalog-index.schema.json 1 file(s)",
+        "catalog-page-manifest.schema.json 1 file(s)",
+        "catalog-page.schema.json 14 file(s)",
+        "live-summary.schema.json 1 file(s)"
+      ],
+      "scope": "deploy"
+    },
+    {
+      "class": "advisory",
+      "id": "browser.tonight",
+      "mode": "warn",
+      "outcome": "warn",
+      "parts": [],
+      "scope": "deploy"
+    },
+    {
+      "class": "advisory",
+      "id": "worldsindex.schemas",
+      "mode": "block",
+      "outcome": "warn",
+      "parts": [
+        "published JSON files with no schema (add one to worldsindex/schemas and SCHEMA_FOR): derived-summary.json, derived/00.json.gz, derived/01.json.gz, derived/02.json.gz, derived/03.json.gz, derived/04.json.gz, derived/05.json.gz, derived/06.json.gz, derived/07.json.gz, derived/08.json.gz, derived/09.js"
+      ],
+      "scope": "deploy"
+    }
+  ],
+  "commit": "ca883c03949a83e6873a322abc61bfe4c356620c",
+  "decision": {
+    "action": "use-fallback",
+    "blocking": [
+      "ctas.test_ctas_static"
+    ],
+    "candidates": [
+      {
+        "blocking": [
+          "ctas.test_ctas_static"
+        ],
+        "commit": "ca883c03949a83e6873a322abc61bfe4c356620c",
+        "label": "main",
+        "status": "blocked",
+        "warnings": [
+          "ctas.schemas",
+          "browser.tonight"
+        ]
+      },
+      {
+        "blocking": [],
+        "commit": "5f903a93db9fc59ceed8c6bbe4a7b542c83b4fcc",
+        "label": "ctas-release",
+        "status": "passed",
+        "warnings": [
+          "worldsindex.schemas"
+        ]
+      }
+    ],
+    "decided_at": "2026-10-31T06:18:37Z",
+    "explanation": "main's code failed ctas.test_ctas_static; deployed ctas-release 5f903a93db with the same data",
+    "fallback": true,
+    "fallback_label": "ctas-release",
+    "landing_window": false,
+    "main_commit": "ca883c03949a83e6873a322abc61bfe4c356620c",
+    "reason": "fallback-candidate-passed",
+    "release_commit": "5f903a93db9fc59ceed8c6bbe4a7b542c83b4fcc",
+    "schema": "release-decision@1",
+    "scope": "deploy"
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "integrity",
+    "id": "ctas.test_ctas_static",
+    "mode": "block",
+    "outcome": "block",
+    "output_tail": [
+      "",
+      "Diff is 1669 characters long. Set self.maxDiff to None to see it.",
+      "",
+      "======================================================================",
+      "FAIL: test_interoperability_products_are_certified (__main__.CertificateAndArtifactTests.test_interoperability_products_are_certified)",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_ctas_static.py\", line 2149, in test_interoperability_products_are_certified",
+      "    self.assertIn(path, self.certificate[\"files\"], path)",
+      "AssertionError: 'ctas/schemas/population-anomaly.schema.json' not found in {'CTAS-AUTOMATION.md': {'bytes': 26506, 'sha256': 'a640070af51b53796760e6016564a4f0b85f1edd085816f59ace4a8be980c29a'}, 'ctas.html': {'bytes': 39792, 'sha256': 'af8ff2afb923f5f887be565f8f04d487d08484fa488be196f6cab9e7d704a216'}, 'ctas/app.js': {'bytes': 226780, 'sha256': '812ec3d96ade2a32e6e68c5dbff72146806b07bfe0365c6fad4242d44e71dd37'}, 'ctas/astro-evidence.js': {'bytes': 51590, 'sha256': '3129826c6be64ca89a4aa7e014e94cf",
+      "",
+      "======================================================================",
+      "FAIL: test_research_artifacts_are_parseable_complete_and_checksum_bound (__main__.CertificateAndArtifactTests.test_research_artifacts_are_parseable_complete_and_checksum_bound)",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_ctas_static.py\", line 1732, in test_research_artifacts_are_parseable_complete_and_checksum_bound",
+      "    self.assertEqual(",
+      "AssertionError: Lists differ: ['eve[1253 chars]seen'] != ['eve[1253 chars]seen', 'host_verdict', 'host_probable', 'host_[73 chars]ile']",
+      "",
+      "Second list contains 6 additional elements.",
+      "First extra element 63:",
+      "'host_verdict'",
+      "",
+      "Diff is 1669 characters long. Set self.maxDiff to None to see it.",
+      "",
+      "======================================================================",
+      "FAIL: test_schema_projector_and_contract_tests_are_checksum_bound (__main__.CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound)",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_ctas_static.py\", line 1383, in test_schema_projector_and_contract_tests_are_checksum_bound",
+      "    self.assertEqual(",
+      "AssertionError: 'af8ff2afb923f5f887be565f8f04d487d08484fa488be196f6cab9e7d704a216' != '401f7aaf3544a53641a06d61dff15ed05ac47d5ba4e014a4edb0a930066f59c0'",
+      "- af8ff2afb923f5f887be565f8f04d487d08484fa488be196f6cab9e7d704a216",
+      "+ 401f7aaf3544a53641a06d61dff15ed05ac47d5ba4e014a4edb0a930066f59c0",
+      "",
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 106 tests in 112.510s",
+      "",
+      "FAILED (failures=6)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 41 checksum-bound files",
+      "snapshot verification: verified-static-snapshot (4/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)"
+    ],
+    "parts": [
+      "CertificateAndArtifactTests.test_changelog_source_accounting_and_feeds_are_certified_and_reconcile",
+      "CertificateAndArtifactTests.test_columnar_index_is_lossless",
+      "CertificateAndArtifactTests.test_first_screen_loads_a_summary_not_the_complete_catalog",
+      "CertificateAndArtifactTests.test_interoperability_products_are_certified",
+      "CertificateAndArtifactTests.test_research_artifacts_are_parseable_complete_and_checksum_bound",
+      "CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound"
+    ],
+    "reason": "promoted 2026-10-24T01:59:11Z",
+    "scope": "deploy"
+  },
+  "failing_checks": [
+    "ctas.test_ctas_static"
+  ],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "choose.log: FAIL  published JSON files with no schema (add one to worldsindex/schemas and SCHEMA_FOR): derived-summary.json, derived/00.json.gz, derived/01.json.gz, derived/02.json.gz, derived/03.json.gz, derived/04.json.gz, derived/05.json.gz, derived/06.json.gz, derived/07.json.gz, derived/08.json.gz, derived/09.json.gz, derived/0a.json.gz, derived/0b.json.gz, derived/0c.json.gz, derived/0d.json.gz, derived",
+    "choose.log: WARN  check worldsindex.schemas failed (published JSON files with no schema (add one to worldsindex/schemas and SCHEMA_FOR): derived-summary.json, derived/00.json.gz, derived/01.json.gz, derived/02.json.gz, derived/03.json.gz, derived/04.json.gz, derived/05.json.gz, derived/06.json.gz, derived/07.json.gz, derived/08.json.gz, derived/09.js): advisory, not blocking [no failure blocks (advisory parts"
+  ],
+  "note": "jobs: validate=success deploy=success verify-live=success; deployed code: ctas-release 5f903a93db",
+  "outcome": "fallback",
+  "phases": [],
+  "run_attempt": "1",
+  "run_id": "41174296174",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/41174296174",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [
+    "ctas.schemas",
+    "browser.tonight",
+    "worldsindex.schemas"
+  ],
+  "workflow": "worldsindex-release.yml",
+  "written_at": "2026-10-31T06:20:13Z"
+}
