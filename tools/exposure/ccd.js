@@ -36,7 +36,7 @@ export const SKY = {
 // ------------------------------------------------------------------ telescopes
 // The WIRO and Red Buttes profiles (and the spectroscopy thresholds) live in ONE file,
 // instruments.js, with each value marked measured or placeholder; every page reads them here.
-export { TELESCOPES, SPECTROSCOPY, INSTRUMENT_PROFILES_SCHEMA, isPlaceholder } from "./instruments.js?v=20261029";
+export { TELESCOPES, SPECTROSCOPY, INSTRUMENT_PROFILES_SCHEMA, isPlaceholder } from "./instruments.js?v=20261102";
 export const ADC_MAX = 65535;
 
 // ------------------------------------------------------------------ model

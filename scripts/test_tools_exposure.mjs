@@ -169,7 +169,16 @@ test("the instrument values file: every value is either measured (with a source)
     assert.equal(t.fieldOfViewDeg.length, 2);
   }
   const wiro = TELESCOPES.find((t) => t.id === "wiro");
-  assert.ok(!isPlaceholder(wiro, "gain") && !isPlaceholder(wiro, "throughput.r") && isPlaceholder(wiro, "throughput.g"), "WIRO's DoublePrime values are measured");
+  assert.ok(!isPlaceholder(wiro, "gain") && ["u", "g", "r", "i", "z"].every((b) => !isPlaceholder(wiro, `throughput.${b}`) && !isPlaceholder(wiro, `extinction.${b}`))
+    && isPlaceholder(wiro, "throughput.V"), "WIRO's DoublePrime values are measured (Findlay et al. 2016 for u g r i z), Johnson bands are not");
+  // the throughputs reproduce Findlay et al. 2016's zero points (1 ADU/s at zero airmass) with this calculator's bands
+  const zp = { u: 24.52, g: 25.31, r: 24.90, i: 24.37, z: 23.74 };
+  for (const [b, z] of Object.entries(zp)) {
+    const f = FILTERS.find((x) => x.id === b);
+    const r = rates({ ...wiro, zeroPoint: f.zeroPoint, throughput: wiro.throughput[b], extinction: wiro.extinction[b], sky: 21,
+      apertureFactor: 2, mag: 0, airmass: 0 });
+    assert.ok(Math.abs(2.5 * Math.log10(r.total / wiro.gain) - z) < 0.01, `WIRO ${b} zero point ${z}`);
+  }
   assert.equal(SPECTROSCOPY.wiro.limit_mag, 19.0);
   assert.equal(SPECTROSCOPY.rbo.limit_mag, null);
 });
