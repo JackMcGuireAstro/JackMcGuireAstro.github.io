@@ -15,6 +15,7 @@ import { acceptSourceContributions, describeSourceContributions } from './worlds
 import { buildConflictArtifacts, manifestBlock as conflictManifestBlock, INPUTS as CONFLICT_INPUTS } from './worldsindex_conflicts.mjs';
 import { buildDerivedArtifacts, manifestBlock as derivedManifestBlock } from './worldsindex_derived.mjs';
 import { buildObservingArtifacts } from './worldsindex_observing.mjs';
+import { excludeFromAtlas, manifestBlock as solarSystemManifestBlock } from './worldsindex_solar_system.mjs';
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const sourceRoot = resolve(process.env.WORLDSINDEX_SOURCE_DIR ?? '/Users/johnmcguire/Documents/Codex/CTAS and WorldsIndex/WorldsIndex Development/work/worldsindex');
@@ -24,7 +25,8 @@ const detailRoot = join(outputRoot, 'details');
 const releaseGeneratedAt = new Date().toISOString();
 
 await mkdir(detailRoot, { recursive: true });
-await copyFile(join(sourceRoot, 'public/data/sky-detections.json.gz'), join(outputRoot, 'sky-detections.json.gz'));
+// sky-detections.json.gz is written below, after the Solar System exclusion (unchanged bytes when
+// the builder's atlas has no Solar System object).
 if (process.env.WORLDSINDEX_SKIP_MONITOR_COPY !== '1') {
   // The monitor's public status, plus the latest recorded outcome of each source-specific
   // promotion gate (the monitor cannot promote; the gate runs after it in the publisher).
@@ -192,7 +194,7 @@ function bucketFor(value) {
   return createHash('sha256').update(value).digest('hex').slice(0, 2);
 }
 
-const [atlas, psRecords, compositeRecords, toiRecords, koiRecords, k2Records] = await Promise.all([
+const [builderAtlas, psRecords, compositeRecords, toiRecords, koiRecords, k2Records] = await Promise.all([
   loadGzipJson('public/data/sky-detections.json.gz'),
   loadGzipJsonRecords('data/snapshots/nasa/2026-08-23-full/ps.json.gz'),
   loadGzipJsonRecords('data/snapshots/nasa/2026-08-23-full/pscomppars.json.gz'),
@@ -200,6 +202,17 @@ const [atlas, psRecords, compositeRecords, toiRecords, koiRecords, k2Records] = 
   loadGzipJsonRecords('data/snapshots/nasa/2026-08-23-expanded/cumulative.json.gz'),
   loadGzipJsonRecords('data/snapshots/nasa/2026-08-23-expanded/k2pandc.json.gz'),
 ]);
+// Solar System bodies and interstellar objects (host "Sun") are not exoplanets: left out of the
+// atlas and of everything built from it, listed in the exceptions list with their source rows
+// (scripts/worldsindex_solar_system.mjs). Applied here, not in the builder state.
+const { atlas, excluded: solarSystemObjects } = excludeFromAtlas(builderAtlas);
+const solarSystemIds = new Set(solarSystemObjects.map((detection) => detection.objectId));
+if (solarSystemObjects.length) {
+  await writeFile(join(outputRoot, 'sky-detections.json.gz'), gzipSync(JSON.stringify(atlas), { level: 9 }));
+  console.log(`Solar System exclusion: ${solarSystemObjects.length} objects left out (${solarSystemObjects.map((d) => d.name).sort().join(', ')})`);
+} else {
+  await copyFile(join(sourceRoot, 'public/data/sky-detections.json.gz'), join(outputRoot, 'sky-detections.json.gz'));
+}
 function countBy(items) {
   const counts = {};
   for (const item of items) counts[item] = (counts[item] ?? 0) + 1;
@@ -310,6 +323,7 @@ for (const row of exoplanetEu) {
 }
 
 for (const [objectId, contribution] of Object.entries(contributions?.objects ?? {})) {
+  if (solarSystemIds.has(objectId)) continue;
   const detail = details.get(objectId);
   if (!detail) throw new Error(`source contributions name an object absent from the atlas: ${objectId}`);
   if (contribution.aliases?.length) detail.aliases = contribution.aliases;
@@ -388,7 +402,7 @@ const identityRulesVersion = await readFile(join(sourceRoot, 'data/atlas/release
 // Compare tab fetches one file; the summary, the controversial/retracted/excluded list and the
 // conflict index beside it; flat `conflicts` and `selections` export tables. Optional: a builder
 // without the product gives a release with no conflict block (manifest.conflictSets = null).
-const { artifacts: conflictArtifacts, reason: conflictReason } = await buildConflictArtifacts({ sourceRoot, outputRoot, atlas, detectionsById });
+const { artifacts: conflictArtifacts, reason: conflictReason } = await buildConflictArtifacts({ sourceRoot, outputRoot, atlas, detectionsById, excluded: solarSystemObjects });
 if (conflictArtifacts) console.log(`conflict sets: ${conflictArtifacts.counts.objects.toLocaleString()} objects, ${conflictArtifacts.counts.multiRowSets.toLocaleString()} multi-row sets, ${conflictArtifacts.counts.setsInConflict.toLocaleString()} in conflict, ${conflictArtifacts.counts.selectedValues.toLocaleString()} selected values`);
 else console.warn(`conflict sets not published: ${conflictReason}`);
 // ---- Derived quantities, population plots and the ephemeris staleness index (Track 3b) ----------
@@ -558,6 +572,8 @@ const manifest = {
   derivedQuantities: derivedArtifacts ? derivedManifestBlock(derivedArtifacts) : null,
   // Framework v2 Track 4 (additive): the precomputed 30-night transit list for WIRO and Red Buttes.
   observingWindows: { path: observingArtifacts.path, nights: 30, rows: observingArtifacts.counts.rows, eligiblePlanets: observingArtifacts.counts.eligible, perSite: observingArtifacts.counts.perSite },
+  // 2026-11-04 (additive): Solar System bodies and interstellar objects left out of the atlas.
+  solarSystemExclusion: solarSystemManifestBlock(solarSystemObjects),
   artifacts,
   scientificBoundary: 'Static public catalog projection. Source membership is not independent confirmation; source-composite values are not self-consistent publication solutions; catalog projections are not completeness-corrected populations.',
 };

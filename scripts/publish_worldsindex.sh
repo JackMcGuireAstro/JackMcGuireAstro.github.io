@@ -184,7 +184,7 @@ INPUT_STAMP="$LOG_DIR/.published-inputs.sha256"
 input_fingerprint() {
   {
     for file in "$SOURCE/public/data/lightcurves/index.json" "$SOURCE/public/data/sky-detections.json.gz" "$SOURCE/public/data/sync/latest.json" \
-                "$SOURCE/public/data/conflict-summary.json" "$SITE/scripts/worldsindex_conflicts.mjs" "$SITE/scripts/worldsindex_derived.mjs" "$SITE/scripts/worldsindex_observing.mjs" "$SITE/worldsindex/assets/observe.js" "$SITE/worldsindex/assets/derived.js" "$SITE/worldsindex/assets/photometry.js" "$SITE/worldsindex/assets/compare.js" "$SITE/worldsindex/assets/status.js" "$SITE/worldsindex/status.html" \
+                "$SOURCE/public/data/conflict-summary.json" "$SITE/scripts/worldsindex_conflicts.mjs" "$SITE/scripts/worldsindex_solar_system.mjs" "$SITE/scripts/worldsindex_derived.mjs" "$SITE/scripts/worldsindex_observing.mjs" "$SITE/worldsindex/assets/observe.js" "$SITE/worldsindex/assets/derived.js" "$SITE/worldsindex/assets/photometry.js" "$SITE/worldsindex/assets/compare.js" "$SITE/worldsindex/assets/status.js" "$SITE/worldsindex/status.html" \
                 "$SOURCE/data/snapshots/exoplanet-eu/ACTIVE.json" "$SOURCE/data/atlas/release-contract.json" \
                 "$SOURCE/outputs/promotion/exoplanet-eu/latest.json" \
                 "$SITE/scripts/build_worldsindex_static.mjs" "$SITE/scripts/worldsindex_transit_ephemerides.mjs" "$SITE/worldsindex/assets/ephemeris.js" \
@@ -378,6 +378,8 @@ check worldsindex.test_worldsindex_derived in_site node --test scripts/test_worl
   || block "static release validation failed: calculated quantities, population plots, staleness index"
 check worldsindex.test_worldsindex_observe in_site node --test scripts/test_worldsindex_observe.mjs \
   || block "static release validation failed: transit planner and the 30-night list"
+check worldsindex.test_worldsindex_solar_system in_site node scripts/test_worldsindex_solar_system.mjs \
+  || block "static release validation failed: the Solar System exclusion"
 check worldsindex.whitespace in_site git diff --check \
   || block "static release validation failed: whitespace"
 # Track 1 gates: the exports read back with Astropy and pyarrow cell for cell (values, units,

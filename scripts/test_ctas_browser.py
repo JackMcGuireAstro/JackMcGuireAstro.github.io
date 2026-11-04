@@ -669,9 +669,16 @@ class BrowserTests(unittest.TestCase):
         def rich(row):
             outcomes = row.get("photometry_outcomes") or {}
             return (outcomes.get("detections") or 0) >= 8 and (outcomes.get("forced") or 0) > 0 and (outcomes.get("limits") or 0) > 0
-        candidate = _published_dossier(rich, lambda c: bool((c.get("follow_up") or {}).get("observations")))
+        # The compact row's "forced" count includes forced-photometry non-detections, so a row can
+        # qualify with no forced *detection* to draw as a square (that made this test fail on some
+        # releases, 2026-11). The full record must hold at least one forced detection.
+        def forced_detection(c):
+            return any(re.search(r"forced", str(o.get("photometry_method") or o.get("pipeline") or ""), re.I)
+                       and str(o.get("detection")).lower() in ("1", "true", "t")
+                       for o in (c.get("follow_up") or {}).get("observations") or [])
+        candidate = _published_dossier(rich, forced_detection)
         if candidate is None:
-            self.skipTest("this release has no dossier with detections, limits and forced photometry")
+            self.skipTest("this release has no dossier with detections, limits and a forced-photometry detection")
         return candidate
 
     def _open_photometry(self, candidate, page=None):

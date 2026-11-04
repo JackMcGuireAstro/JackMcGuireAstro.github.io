@@ -18,6 +18,8 @@
  * the page. Their routes are narrow read-only queries; without the key the relay
  * answers 503 for them.
  */
+// The two local addresses serve previews of the site (python -m http.server 8000). CORS is not a
+// security boundary for this read-only relay: it stores nothing and holds no visitor data.
 export const SITE_ORIGINS = [
   "https://jackmcguireastro.github.io",
   "http://localhost:8000",
@@ -229,7 +231,11 @@ function reply(status, message, origin) {
 // fires only every few hours for this repository, so a Cloudflare cron trigger
 // (wrangler.toml, every 20 minutes) calls keep(): for each workflow below that has no
 // run queued or going and whose last real run (success or failure; skipped and
-// cancelled runs do not count) started more than `idleMinutes` ago, it starts one.
+// cancelled runs do not count) finished more than `idleMinutes` ago, it starts one.
+// "Finished" is the run's updated_at (GitHub moves it to the completion time), falling back
+// to run_started_at and then created_at; until 2026-11-04 it was created_at (the queue time),
+// so a 70-minute CTAS run that had just finished already looked 70 minutes idle and the keeper
+// queued a second run behind the cycle's own next one.
 // CTAS also starts its own next cycle; the keeper only restarts that chain if it breaks.
 // The key (secret GH_DISPATCH_TOKEN) is used only for these GitHub API calls.
 export const KEEP_REPO = "JackMcGuireAstro/JackMcGuireAstro.github.io";
@@ -239,6 +245,15 @@ export const KEEP = [
   { workflow: "freshness-watchdog.yml", idleMinutes: 55 },
 ];
 const ACTIVE = ["queued", "in_progress", "waiting", "pending", "requested"];
+
+// When a completed run finished: updated_at, else run_started_at, else created_at (epoch ms).
+export function finishedAt(run) {
+  for (const key of ["updated_at", "run_started_at", "created_at"]) {
+    const value = Date.parse(run && run[key]);
+    if (Number.isFinite(value)) return value;
+  }
+  return NaN;
+}
 
 export async function keep(env = {}, fetcher = fetch, now = Date.now()) {
   const token = env.GH_DISPATCH_TOKEN;
@@ -256,7 +271,7 @@ export async function keep(env = {}, fetcher = fetch, now = Date.now()) {
       const runs = (await listing.json()).workflow_runs || [];
       if (runs.some((r) => ACTIVE.includes(r.status))) { results.push({ workflow, action: "running" }); continue; }
       const real = runs.find((r) => r.conclusion === "success" || r.conclusion === "failure");
-      const idle = real ? (now - Date.parse(real.created_at)) / 60000 : Infinity;
+      const idle = real ? (now - finishedAt(real)) / 60000 : Infinity;
       if (idle < idleMinutes) { results.push({ workflow, action: `recent (${Math.round(idle)} min)` }); continue; }
       const started = await fetcher(`${base}/dispatches`, {
         method: "POST", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ ref: "main" }),

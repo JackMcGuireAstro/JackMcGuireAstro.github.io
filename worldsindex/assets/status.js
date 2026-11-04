@@ -160,7 +160,7 @@ function renderMachine(manifest, exportsIndex, bulk, changelog, provenance) {
 }
 
 // ---- Controversial, retracted and excluded objects (Framework v2, Track 2a) -------------------
-export const EXCEPTION_LABELS = { controversial: 'controversial', retracted: 'retracted or refuted', 'excluded-false-positive': 'excluded: false positive', 'status-conflict': 'sources disagree on status', 'unresolved-source-conflict': 'unresolved source conflict' };
+export const EXCEPTION_LABELS = { controversial: 'controversial', retracted: 'retracted or refuted', 'excluded-false-positive': 'excluded: false positive', 'status-conflict': 'sources disagree on status', 'unresolved-source-conflict': 'unresolved source conflict', 'excluded-solar-system': 'excluded: Solar System body or interstellar object' };
 export const EXCEPTION_ROW_CAP = 300;
 /** Objects of one category (or all), in the file's order. */
 export function exceptionRows(list, category = 'all') {
@@ -170,7 +170,7 @@ function exceptionTable(list, category) {
   const rows = exceptionRows(list, category);
   const shown = rows.slice(0, EXCEPTION_ROW_CAP);
   return `<p class="table-summary" aria-live="polite">${n(rows.length)} object${rows.length === 1 ? '' : 's'}${category === 'all' ? '' : ` in “${esc(EXCEPTION_LABELS[category] || category)}”`}; ${rows.length > shown.length ? `the first ${n(shown.length)} are listed (the file holds every one)` : 'all are listed'}.</p>`
-    + `<div class="table-wrap" tabindex="0" role="region" aria-label="Controversial, retracted and excluded objects"><table><thead><tr><th scope="col">Object</th><th scope="col">Release status</th><th scope="col">Categories</th><th scope="col">Reasons (source: source status)</th></tr></thead><tbody>${shown.map((item) => `<tr><td><a href="./?object=${encodeURIComponent(item.objectId)}&amp;section=object">${esc(item.name)}</a><small>${esc(item.objectId)}</small></td><td>${esc(item.atlasStatus)}</td><td>${item.categories.map((c) => esc(EXCEPTION_LABELS[c] || c)).join('; ')}</td><td>${item.reasons.map((reason) => `${esc(reason.sourceId)}: ${esc(reason.sourceStatus)} → ${esc(reason.normalized)}`).join('<br>')}</td></tr>`).join('')}</tbody></table></div>`;
+    + `<div class="table-wrap" tabindex="0" role="region" aria-label="Controversial, retracted and excluded objects"><table><thead><tr><th scope="col">Object</th><th scope="col">Release status</th><th scope="col">Categories</th><th scope="col">Reasons (source: source status)</th></tr></thead><tbody>${shown.map((item) => `<tr><td>${item.categories.includes('excluded-solar-system') ? esc(item.name) : `<a href="./?object=${encodeURIComponent(item.objectId)}&amp;section=object">${esc(item.name)}</a>`}<small>${esc(item.objectId)}</small></td><td>${esc(item.atlasStatus)}</td><td>${item.categories.map((c) => esc(EXCEPTION_LABELS[c] || c)).join('; ')}</td><td>${item.reasons.map((reason) => `${esc(reason.sourceId)}: ${esc(reason.sourceStatus)} → ${esc(reason.normalized)}`).join('<br>')}</td></tr>`).join('')}</tbody></table></div>`;
 }
 function renderExceptions(manifest, data) {
   const block = manifest?.conflictSets;

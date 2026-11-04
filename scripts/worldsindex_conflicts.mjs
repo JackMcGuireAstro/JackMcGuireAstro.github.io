@@ -24,6 +24,7 @@ import { once } from 'node:events';
 import { createInterface } from 'node:readline';
 import { createGunzip, createGzip, gzipSync } from 'node:zlib';
 import { healpixNested, materialize, sortByHealpix, COLUMN_REGISTRY } from './worldsindex_interop.mjs';
+import { adjustSummary, withExcluded } from './worldsindex_solar_system.mjs';
 
 export const CONFLICT_SETS_SCHEMA_VERSION = 'worldsindex-conflict-sets.v1';
 export const CONFLICT_SUMMARY_SCHEMA_VERSION = 'worldsindex-conflict-summary.v1';
@@ -117,7 +118,9 @@ async function readJson(path) {
  * Streams the builder product into the 256 conflict shards and collects the flat-table rows.
  * Returns null (with a reason) when the product is absent or belongs to another atlas.
  */
-export async function buildConflictArtifacts({ sourceRoot, outputRoot, atlas, detectionsById }) {
+export async function buildConflictArtifacts({ sourceRoot, outputRoot, atlas, detectionsById, excluded = [] }) {
+  // Objects the website build left out of the atlas (Solar System bodies, worldsindex_solar_system.mjs).
+  const excludedIds = new Set(excluded.map((detection) => detection.objectId));
   const productPath = join(sourceRoot, INPUTS.product);
   try { await stat(productPath); } catch (error) { if (error.code === 'ENOENT') return { artifacts: null, reason: 'no conflict-sets.ndjson.gz from the builder' }; throw error; }
   const lines = createInterface({ input: createReadStream(productPath).pipe(createGunzip()), crlfDelay: Infinity });
@@ -126,6 +129,7 @@ export async function buildConflictArtifacts({ sourceRoot, outputRoot, atlas, de
   await mkdir(shardRoot, { recursive: true });
   const shards = new Map();
   const conflicts = [], selections = [], index = [];
+  const excludedProducts = [];
   let objects = 0, assertionRows = 0, multiRowSets = 0, setsInConflict = 0, objectsInConflict = 0, selectedValues = 0;
   const open = (bucket) => {
     let shard = shards.get(bucket);
@@ -148,6 +152,7 @@ export async function buildConflictArtifacts({ sourceRoot, outputRoot, atlas, de
       continue;
     }
     const product = JSON.parse(line);
+    if (excludedIds.has(product.objectId)) { excludedProducts.push(product); continue; }
     const detection = detectionsById.get(product.objectId);
     if (!detection) throw new Error(`conflict sets name an object absent from the atlas: ${product.objectId}`);
     const shard = open(bucketFor(product.objectId));
@@ -175,10 +180,12 @@ export async function buildConflictArtifacts({ sourceRoot, outputRoot, atlas, de
     shard.gzip.end();
     await once(shard.sink, 'finish');
   }
-  const summary = await readJson(join(sourceRoot, INPUTS.summary));
-  if (summary && (summary.schemaVersion !== CONFLICT_SUMMARY_SCHEMA_VERSION || summary.atlasProjectionId !== atlas.projectionId)) throw new Error('conflict-summary.json does not belong to this conflict product');
-  const exceptions = await readJson(join(sourceRoot, INPUTS.exceptions));
-  if (exceptions && (exceptions.schemaVersion !== STATUS_EXCEPTIONS_SCHEMA_VERSION || exceptions.atlasProjectionId !== atlas.projectionId)) throw new Error('controversial-retracted-excluded.json does not belong to this conflict product');
+  const builderSummary = await readJson(join(sourceRoot, INPUTS.summary));
+  if (builderSummary && (builderSummary.schemaVersion !== CONFLICT_SUMMARY_SCHEMA_VERSION || builderSummary.atlasProjectionId !== atlas.projectionId)) throw new Error('conflict-summary.json does not belong to this conflict product');
+  const builderExceptions = await readJson(join(sourceRoot, INPUTS.exceptions));
+  if (builderExceptions && (builderExceptions.schemaVersion !== STATUS_EXCEPTIONS_SCHEMA_VERSION || builderExceptions.atlasProjectionId !== atlas.projectionId)) throw new Error('controversial-retracted-excluded.json does not belong to this conflict product');
+  const exceptions = withExcluded(builderExceptions, excluded);
+  const summary = adjustSummary(builderSummary, excludedProducts, exceptions);
   const paths = [...Array.from({ length: 256 }, (_, i) => `conflicts/${i.toString(16).padStart(2, '0')}.json.gz`)];
   if (summary) { await writeFile(join(outputRoot, 'conflict-summary.json'), `${JSON.stringify(summary, null, 2)}\n`); paths.push('conflict-summary.json'); }
   if (exceptions) { await writeFile(join(outputRoot, 'controversial-retracted-excluded.json.gz'), gzipSync(JSON.stringify(exceptions), { level: 9 })); paths.push('controversial-retracted-excluded.json.gz'); }

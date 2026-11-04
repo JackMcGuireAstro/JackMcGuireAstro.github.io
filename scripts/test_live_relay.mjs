@@ -1,6 +1,6 @@
 // Tests for relay/worker.js with a stand-in for the network.
 import assert from "node:assert/strict";
-import worker, { matchRoute, SITE_ORIGINS, keep, KEEP, fitsContentType, tapQuery } from "../relay/worker.js";
+import worker, { matchRoute, SITE_ORIGINS, keep, KEEP, finishedAt, fitsContentType, tapQuery } from "../relay/worker.js";
 
 // A minimal FITS file: one header block (SIMPLE, BITPIX -32, NAXIS 1) and one data block.
 const FITS_BYTES = (() => {
@@ -239,6 +239,20 @@ assert.equal(matchRoute(tap("select pl_name from spectra where pl_name='x'")) &&
   assert.deepEqual(await keep({}, fetcher, now), [{ workflow: "*", action: "skipped: no GH_DISPATCH_TOKEN secret" }]);
   const broken = await keep({ GH_DISPATCH_TOKEN: "x" }, async () => new Response("no", { status: 401 }), now);
   assert.ok(broken.every((r) => r.action.includes("HTTP 401")));
+  // Idle time runs from when the last real run finished, not from when it was queued: a CTAS
+  // run queued 85 min ago that finished 10 min ago is recent (it used to count as 85 min idle).
+  const long = { "ctas-cloud.yml": [{ status: "completed", conclusion: "success", created_at: ago(85), run_started_at: ago(80), updated_at: ago(10) }],
+    "worldsindex-cloud.yml": [{ status: "completed", conclusion: "failure", created_at: ago(70), updated_at: ago(60) }],
+    "freshness-watchdog.yml": [{ status: "completed", conclusion: "success", created_at: ago(90), run_started_at: ago(30) }] };
+  const longFetch = async (url, init = {}) => {
+    const wf = url.match(/workflows\/([^/]+)\//)[1];
+    if (init.method === "POST") return new Response(null, { status: 204 });
+    return new Response(JSON.stringify({ workflow_runs: long[wf] }), { status: 200 });
+  };
+  assert.deepEqual((await keep({ GH_DISPATCH_TOKEN: "k" }, longFetch, now)).map((r) => r.action), ["recent (10 min)", "started", "recent (30 min)"],
+    "completion time (updated_at), then run_started_at, then created_at");
+  assert.equal(finishedAt({ created_at: ago(5) }), now - 5 * 60000);
+  assert.ok(Number.isNaN(finishedAt({})));
 }
 // alert stamps (Track 3c part 2): images only, at most 1 MB
 {
