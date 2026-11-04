@@ -7,8 +7,10 @@
 <meta name="description" content="Make a printable finder chart for any object: a DSS2, Pan-STARRS or 2MASS image with a target reticle, north and east arrows, a scale bar and an offset-star helper.">
 <meta name="theme-color" content="#f4f1ea">
 <link rel="canonical" href="https://jackmcguireastro.github.io/tools/finder/">
-<link rel="stylesheet" href="../tools.css?v=20261003">
-<script type="module" src="finder.js?v=20261003"></script>
+<link rel="stylesheet" href="../tools.css?v=20261105">
+<script src="../../tools/lib/run-cart.js?v=20261105"></script>
+<script src="../../tools/lib/run-cart-ui.js?v=20261105" defer></script>
+<script type="module" src="finder.js?v=20261105"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
 </head>
@@ -16,7 +18,7 @@
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="top"><div class="shell top-inner">
   <a class="wordmark" href="../../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
-  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../" aria-current="true">Tools</a></nav>
+  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../index.html#research">Research</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../../tools/follow/">Follow</a><a href="../../tools/" aria-current="page">Tools</a><a data-runcart-badge href="../../tonight/runsheet.html">Run list</a></nav>
 </div></header>
 <main id="main" class="shell">
   <section class="intro">
@@ -26,13 +28,14 @@
     <p>The survey image comes from the CDS hips2fits service. The page sends it only the position, field size and survey. If you type a name, the name is sent to the CDS Sesame name resolver. Nothing else is sent, and nothing is stored.</p>
   </section>
 
+  <div id="finder-runlist" class="runcart-row no-print"></div>
   <form id="finder-form" class="controls" novalidate aria-describedby="finder-status">
     <div class="field wide"><label for="target">Object name or coordinates</label><input id="target" type="text" autocomplete="off" spellcheck="false" required aria-describedby="target-hint"><p class="hint" id="target-hint">M 51, SN 2026abc, 13 29 52.7 +47 11 43 or 202.4696 47.1952</p></div>
     <div class="field wide"><label for="label">Label on the chart <span class="hint">(optional)</span></label><input id="label" type="text" autocomplete="off" spellcheck="false"></div>
     <div class="field"><label for="fov">Field of view (arcmin)</label><input id="fov" type="number" min="2" max="60" step="any" value="10" aria-describedby="fov-hint"><p class="hint" id="fov-hint">2 to 60</p></div>
     <div class="field"><label for="survey">Survey</label><select id="survey"></select></div>
     <div class="field check"><input id="invert" type="checkbox"><label for="invert">Black stars on white</label></div>
-    <div class="actions"><button type="submit" class="button">Make chart</button><button type="button" id="print" class="button button-quiet" disabled>Print</button><a id="coords-link" class="button button-quiet" href="../coordinates/" hidden>Coordinates and altitude</a></div>
+    <div class="actions"><button type="submit" class="button">Make chart</button><button type="button" id="print" class="button button-quiet" disabled>Print</button><a id="coords-link" class="button button-quiet" href="../coordinates/" hidden>Coordinates and altitude</a><button type="button" id="finder-runcart" class="button button-quiet no-print" data-runcart-toggle hidden>Add to run list</button><span data-runcart-status role="status" aria-live="polite"></span></div>
   </form>
   <p id="finder-status" class="status" role="status" aria-live="polite"></p>
 
@@ -65,6 +68,6 @@
     <p><strong>Printing</strong> keeps just the chart and its caption on one A4 or Letter page. The image is shown in black on white (inverted), and the overlay is drawn in black.</p>
   </section>
 </main>
-<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../../index.html">Home</a> · <a href="../../worldsindex/">WorldsIndex</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../tonight/">Tonight</a> · <a href="../">Tools</a></p></div></footer>
+<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../../index.html">Home</a> · <a href="../../index.html#research">Research</a> · <a href="../../worldsindex/">WorldsIndex</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../tonight/">Tonight</a> · <a href="../../tools/follow/">Follow</a> · <a href="../../tools/">Tools</a> · <a href="../../tonight/runsheet.html">Run list</a></p></div></footer>
 </body>
 </html>

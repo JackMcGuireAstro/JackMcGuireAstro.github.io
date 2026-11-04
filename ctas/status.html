@@ -29,9 +29,13 @@
     <nav class="nav" id="primary-nav" aria-label="Primary">
       <ul class="nav__list">
         <li><a class="nav__link" href="../index.html">Home</a></li>
-        <li><a class="nav__link" href="../qualquest/">QualQuest</a></li>
+        <li><a class="nav__link" href="../index.html#research">Research</a></li>
         <li><a class="nav__link" href="../worldsindex/">WorldsIndex</a></li>
         <li><a class="nav__link" href="../ctas.html" aria-current="page">CTAS</a></li>
+        <li><a class="nav__link" href="../tonight/">Tonight</a></li>
+        <li><a class="nav__link" href="../tools/follow/">Follow</a></li>
+        <li><a class="nav__link" href="../tools/">Tools</a></li>
+        <li><a class="nav__link" data-runcart-badge href="../tonight/runsheet.html">Run list</a></li>
       </ul>
     </nav>
   </div>
@@ -109,11 +113,14 @@
         <h2>Site</h2>
         <ul class="footer-nav">
           <li><a href="../index.html">Home</a></li>
-          <li><a href="../qualquest/">QualQuest</a></li>
           <li><a href="../worldsindex/">WorldsIndex</a></li>
           <li><a href="../ctas.html">CTAS</a></li>
           <li><a href="status.html" aria-current="page">CTAS status</a></li>
           <li><a href="data/feeds/index.json">CTAS feeds</a></li>
+          <li><a href="../tonight/">Tonight</a></li>
+          <li><a href="../tools/follow/">Follow</a></li>
+          <li><a href="../tools/">Tools</a></li>
+          <li><a href="../tonight/runsheet.html">Run list</a></li>
         </ul>
       </nav>
     </div>
@@ -126,5 +133,6 @@
 <script src="changelog.js?v=20261019"></script>
 <script src="status.js?v=20261019"></script>
 
+<script>addEventListener("load",function(){["../tools/lib/run-cart.js?v=20261105","../tools/lib/run-cart-ui.js?v=20261105"].forEach(function(s){var e=document.createElement("script");e.src=s;e.async=false;document.head.appendChild(e);});});</script>
 </body>
 </html>

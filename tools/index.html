@@ -7,7 +7,7 @@
 <meta name="description" content="Small astronomy tools that run in your browser: a coordinate and time converter, a CCD exposure-time calculator, printable finder charts, following and SQL over the CTAS and WorldsIndex catalogs, a cone search, and Tonight’s sky planner.">
 <meta name="theme-color" content="#f4f1ea">
 <link rel="canonical" href="https://jackmcguireastro.github.io/tools/">
-<link rel="stylesheet" href="tools.css?v=20261003">
+<link rel="stylesheet" href="tools.css?v=20261105">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
 </head>
@@ -15,13 +15,13 @@
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="top"><div class="shell top-inner">
   <a class="wordmark" href="../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
-  <nav aria-label="Primary"><a href="../index.html">Home</a><a href="../worldsindex/">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="../tonight/">Tonight</a><a href="./" aria-current="page">Tools</a></nav>
+  <nav aria-label="Primary"><a href="../index.html">Home</a><a href="../index.html#research">Research</a><a href="../worldsindex/">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="../tonight/">Tonight</a><a href="../tools/follow/">Follow</a><a href="../tools/" aria-current="page">Tools</a><a data-runcart-badge href="../tonight/runsheet.html">Run list</a></nav>
 </div></header>
 <main id="main" class="shell">
   <section class="intro">
     <p class="eyebrow">Observing / Tools</p>
     <h1>Observing tools</h1>
-    <p>Small tools for planning and running a night at the telescope, and for following and querying the CTAS and WorldsIndex catalogs. Each one works out its answer in your browser and explains how. Only the finder chart (survey images and name look-ups at CDS in Strasbourg) and the SQL page (the DuckDB-WASM engine from jsDelivr and its Parquet reader from extensions.duckdb.org) reach out to other services; nothing you type or keep here is sent to this site.</p>
+    <p>Small tools for planning and running a night at the telescope, and for following and querying the CTAS and WorldsIndex catalogs. They share one <a href="../tonight/runsheet.html">run list</a>: anything you find in one tool can go on it, and the finder chart and exposure calculator can load from it. Each one works out its answer in your browser and explains how. Only the finder chart (survey images and name look-ups at CDS in Strasbourg) and the SQL page (the DuckDB-WASM engine from jsDelivr and its Parquet reader from extensions.duckdb.org) reach out to other services; nothing you type or keep here is sent to this site.</p>
   </section>
   <div class="tool-grid">
     <a class="tool-card" href="coordinates/"><span class="tool-mark" aria-hidden="true">α δ</span><span class="mono">Positions / Time</span><h2>Coordinate &amp; time converter</h2><p>RA and Dec in any format, Galactic and ecliptic coordinates, constellation, UTC, JD and MJD, sidereal time, and altitude and airmass from an observatory. Paste a list and download a CSV.</p><span class="tool-action">Convert coordinates <span aria-hidden="true">→</span></span></a>
@@ -31,8 +31,11 @@
     <a class="tool-card" href="sql/"><span class="tool-mark" aria-hidden="true">SQL</span><span class="mono">Catalogs / Queries</span><h2>SQL over the catalogs</h2><p>Query CTAS and WorldsIndex with SQL in your browser (DuckDB-WASM over VOParquet copies of the public exports), with example queries and CSV download.</p><span class="tool-action">Write a query <span aria-hidden="true">→</span></span></a>
     <a class="tool-card" href="cone/"><span class="tool-mark" aria-hidden="true">◎</span><span class="mono">Catalogs / Positions</span><h2>Cone search</h2><p>Every CTAS transient and WorldsIndex planet within a radius of a position, nearest first, as a table, a VOTable or a CSV.</p><span class="tool-action">Search a position <span aria-hidden="true">→</span></span></a>
     <a class="tool-card" href="../tonight/"><span class="tool-mark" aria-hidden="true">☾</span><span class="mono">Observing / Planning</span><h2>Tonight’s sky</h2><p>Pick an observatory and a night: see which CTAS transients and WorldsIndex planetary systems are up, for how long, and how far from the Moon.</p><span class="tool-action">Plan a night <span aria-hidden="true">→</span></span></a>
+    <a class="tool-card" href="../tonight/runsheet.html"><span class="tool-mark" aria-hidden="true">☑</span><span class="mono">Observing / At the telescope</span><h2>Run list and run sheet</h2><p>One list of targets for the night, filled from CTAS, WorldsIndex, Tonight, Follow, the cone search, SQL results and finder charts, printed with windows, airmass, finder charts and exposures. It stays in your browser; share it as a link.</p><span class="tool-action">Open the run sheet <span aria-hidden="true">→</span></span></a>
+    <a class="tool-card" href="notebook/"><span class="tool-mark" aria-hidden="true">{ }</span><span class="mono">Catalogs / Analysis</span><h2>Notebooks</h2><p>A Jupyter notebook for any CTAS transient or WorldsIndex planet that loads its public exports with astropy, to download or to open in JupyterLite.</p><span class="tool-action">Get a notebook <span aria-hidden="true">→</span></span></a>
   </div>
 </main>
-<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../index.html">Home</a> · <a href="../worldsindex/">WorldsIndex</a> · <a href="../ctas.html">CTAS</a> · <a href="../tonight/">Tonight</a></p></div></footer>
+<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../index.html">Home</a> · <a href="../index.html#research">Research</a> · <a href="../worldsindex/">WorldsIndex</a> · <a href="../ctas.html">CTAS</a> · <a href="../tonight/">Tonight</a> · <a href="../tools/follow/">Follow</a> · <a href="../tools/">Tools</a> · <a href="../tonight/runsheet.html">Run list</a></p></div></footer>
+<script>addEventListener("load",function(){["../tools/lib/run-cart.js?v=20261105","../tools/lib/run-cart-ui.js?v=20261105"].forEach(function(s){var e=document.createElement("script");e.src=s;e.async=false;document.head.appendChild(e);});});</script>
 </body>
 </html>

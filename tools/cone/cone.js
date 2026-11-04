@@ -4,6 +4,10 @@
 import { cellsTouchingCone, separationDeg } from "../lib/healpix.js?v=20261029";
 import { parseAngle } from "../lib/astrometry.js?v=20261003";
 import { loadProducts, loadConeCell, ctasLink, worldsLink, download, esc } from "../lib/visitor-data.js?v=20261029";
+import { cartItem, toggleButton, addManyButton } from "../lib/run-cart-items.js?v=20261104";
+
+// A cone-search row as a run-list item (a CTAS transient or a WorldsIndex planet).
+export const coneItem = (r) => cartItem(r.product, { id: r.id, name: r.name || r.id, ra: r.ra, dec: r.dec });
 
 export const CONE_ORDER = 2, MAX_RADIUS_DEG = 10;
 const PRODUCTS = { ctas: "CTAS", worldsindex: "WorldsIndex" };
@@ -96,9 +100,11 @@ function startPage() {
       url.search = `?ra=${ra.deg.toFixed(6)}&dec=${dec.deg.toFixed(6)}&r=${radiusDeg.toFixed(6)}`;
       window.history.replaceState(null, "", url);
       $("cone-meta").textContent = `${rows.length.toLocaleString("en-US")} record${rows.length === 1 ? "" : "s"} within ${(radiusDeg * 60).toFixed(radiusDeg < 1 / 60 ? 3 : 1)}′ of RA ${ra.deg.toFixed(5)}°, Dec ${dec.deg.toFixed(5)}° (${cellIds.length} index cell${cellIds.length === 1 ? "" : "s"} read; ${releases}).`;
-      $("cone-results").innerHTML = rows.length ? `<div class="table-wrap"><table><caption class="visually-hidden">Cone search results</caption><thead><tr><th scope="col">Name</th><th scope="col">Catalog</th><th scope="col" class="num">Distance (′)</th><th scope="col">Type / status</th><th scope="col">Class / method</th><th scope="col">Discovered</th><th scope="col" class="num">RA (deg)</th><th scope="col" class="num">Dec (deg)</th></tr></thead><tbody>`
-        + rows.slice(0, 1000).map((r) => `<tr><th scope="row"><a href="${esc(r.product === "ctas" ? ctasLink(r.id) : worldsLink(r.id))}">${esc(r.name || r.id)}</a></th><td>${PRODUCTS[r.product]}</td><td class="num">${(r.distDeg * 60).toFixed(3)}</td><td>${esc(r.kind)}</td><td>${esc(r.label)}</td><td>${esc(String(r.when ?? "").slice(0, 10))}</td><td class="num">${Number(r.ra).toFixed(5)}</td><td class="num">${Number(r.dec).toFixed(5)}</td></tr>`).join("")
+      $("cone-results").innerHTML = rows.length ? `<div class="table-wrap"><table><caption class="visually-hidden">Cone search results</caption><thead><tr><th scope="col">Name</th><th scope="col">Catalog</th><th scope="col" class="num">Distance (′)</th><th scope="col">Type / status</th><th scope="col">Class / method</th><th scope="col">Discovered</th><th scope="col" class="num">RA (deg)</th><th scope="col" class="num">Dec (deg)</th><th scope="col">Run list</th></tr></thead><tbody>`
+        + rows.slice(0, 1000).map((r) => `<tr><th scope="row"><a href="${esc(r.product === "ctas" ? ctasLink(r.id) : worldsLink(r.id))}">${esc(r.name || r.id)}</a></th><td>${PRODUCTS[r.product]}</td><td class="num">${(r.distDeg * 60).toFixed(3)}</td><td>${esc(r.kind)}</td><td>${esc(r.label)}</td><td>${esc(String(r.when ?? "").slice(0, 10))}</td><td class="num">${Number(r.ra).toFixed(5)}</td><td class="num">${Number(r.dec).toFixed(5)}</td><td>${toggleButton(coneItem(r))}</td></tr>`).join("")
         + `</tbody></table></div>${rows.length > 1000 ? '<p class="muted">The first 1,000 are shown; the downloads hold every row.</p>' : ""}` : "";
+      // Nearest first, so "the first 50" are the 50 closest to the centre.
+      $("cone-add").innerHTML = rows.length ? addManyButton(rows.map(coneItem), { total: rows.length, label: rows.length > 50 ? "Add the 50 nearest to my run list" : `Add ${rows.length === 1 ? "it" : `all ${rows.length}`} to my run list` }) : "";
       $("cone-votable").disabled = $("cone-csv").disabled = false;
       status("Done.", true);
     } catch (error) { status(`The index could not be read: ${error.message}`); }

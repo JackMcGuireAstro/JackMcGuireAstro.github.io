@@ -37,7 +37,7 @@ check() {
   if [ "${CHECK_SKIP_MISSING:-0}" = "1" ]; then
     for arg in "$@"; do
       case "$arg" in
-        scripts/*|ctas/*|worldsindex/*|tonight/*|tools/*|research/*|qualquest/*)
+        scripts/*|ctas/*|worldsindex/*|tonight/*|tools/*|research/*)
           if [ ! -e "$arg" ]; then
             record_check "$id" 0 "" --skip "$arg is absent from this tree"
             return $?

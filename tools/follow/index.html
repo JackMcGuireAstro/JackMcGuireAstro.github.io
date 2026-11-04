@@ -7,23 +7,26 @@
 <meta name="description" content="Follow CTAS transients and WorldsIndex planets by name, position, sky region or saved filter. Your lists stay in your own browser; nothing is sent to this site.">
 <meta name="theme-color" content="#f4f1ea">
 <link rel="canonical" href="https://jackmcguireastro.github.io/tools/follow/">
-<link rel="stylesheet" href="../tools.css?v=20261003">
+<link rel="stylesheet" href="../tools.css?v=20261105">
 <link rel="stylesheet" href="../visitor.css?v=20261029">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
-<script type="module" src="follow.js?v=20261029"></script>
+<script src="../../tools/lib/run-cart.js?v=20261105"></script>
+<script src="../../tools/lib/run-cart-ui.js?v=20261105" defer></script>
+<script type="module" src="follow.js?v=20261105"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="top"><div class="shell top-inner">
   <a class="wordmark" href="../../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
-  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../" aria-current="page">Tools</a></nav>
+  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../index.html#research">Research</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../../tools/follow/" aria-current="page">Follow</a><a href="../../tools/">Tools</a><a data-runcart-badge href="../../tonight/runsheet.html">Run list</a></nav>
 </div></header>
 <main id="main" class="shell">
   <section class="intro">
     <p class="eyebrow">Tools / Follow</p>
     <h1>Follow objects, regions and filters</h1>
     <p>Keep a list of CTAS transients and WorldsIndex planets by name or position, watch sky regions, and save filters over the public catalogs. Each visit shows what is new since you last looked.</p>
+    <p>Every match has a <strong>+ Run list</strong> button, and each list an <strong>Add all</strong> button, so a filter, a region or the watchlist goes straight onto your <a href="../../tonight/runsheet.html">run list</a> and its printable sheet. A position on the watchlist can go on as a plain target even when nothing in the catalogs matches it.</p>
     <p class="privacy-note"><strong>Your lists stay in this browser.</strong> They are kept in your browser’s local storage and compared with the public releases here; nothing about them is sent to this site or anyone else. Export them to move to another device.</p>
     <p id="storage-warning" class="status" hidden>This browser is not keeping local storage (a private window or blocked site data), so your lists last only until you close the page. Export them to keep them.</p>
     <p id="release-line" class="muted" aria-live="polite">Reading the latest releases…</p>
@@ -33,8 +36,8 @@
     <h2 id="watch-title">Watchlist</h2>
     <div class="field full">
       <label for="watch-text">Names or positions, one per line</label>
-      <textarea id="watch-text" spellcheck="false" placeholder="SN 2024ggi&#10;TRAPPIST-1 e&#10;210.9108 54.3117 10&#10;14:03:38.6 +54:18:42 5"></textarea>
-      <p class="hint">A name (CTAS designations and aliases, WorldsIndex planet or host names), or a position as RA Dec [radius in arcseconds, default 5] in degrees or as hh:mm:ss ±dd:mm:ss.</p>
+      <textarea id="watch-text" spellcheck="false" placeholder="SN 2024ggi&#10;TRAPPIST-1 e&#10;210.9108 54.3117 10&#10;M51 | 13:29:52.7 +47:11:43 V=8.4"></textarea>
+      <p class="hint">A name (CTAS designations and aliases, WorldsIndex planet or host names), or a position as RA Dec [radius in arcseconds, default 5] in degrees or as hh:mm:ss ±dd:mm:ss. To give a position a name, put the name first and a bar before the position; a magnitude can follow as band=value (U B V R I u g r i z), and the run sheet then estimates an exposure for it.</p>
     </div>
     <div class="actions"><button type="button" class="button" id="watch-save">Save and check</button><p id="watch-status" class="status" role="status"></p></div>
   </section>
@@ -93,6 +96,6 @@
     </div>
   </section>
 </main>
-<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../">Tools</a> · <a href="../sql/">SQL</a> · <a href="../cone/">Cone search</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../worldsindex/">WorldsIndex</a></p></div></footer>
+<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../../index.html">Home</a> · <a href="../../index.html#research">Research</a> · <a href="../../worldsindex/">WorldsIndex</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../tonight/">Tonight</a> · <a href="../../tools/follow/">Follow</a> · <a href="../../tools/">Tools</a> · <a href="../../tonight/runsheet.html">Run list</a></p></div></footer>
 </body>
 </html>

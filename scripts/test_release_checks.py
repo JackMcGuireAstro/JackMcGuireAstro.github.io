@@ -197,7 +197,7 @@ class WiringTests(unittest.TestCase):
                      "test_worldsindex_publisher_recovery.py", "test_worldsindex_live_mast.mjs", "test_worldsindex_live_nasa.mjs",
                      "test_worldsindex_live_sources.mjs", "test_worldsindex_ephemerides.mjs", "test_worldsindex_interop.mjs",
                      "test_worldsindex_front.mjs", "test_worldsindex_interop.py", "test_worldsindex_schemas.py",
-                     "validate_worldsindex_schemas.py", "test_qualquest_static.py", "test_tonight_planner.mjs",
+                     "validate_worldsindex_schemas.py", "test_tonight_planner.mjs",
                      "test_tools_coordinates.mjs", "test_tools_exposure.mjs", "test_tools_finder.mjs", "test_research_census.mjs",
                      "test_ctas_outcomes.py", "test_ctas_chunks.py", "test_ctas_links.py", "test_ctas_publisher_recovery.py",
                      "test_ctas_static.py", "test_ctas_positional.py", "test_ctas_source_health.py", "test_ctas_feed.py",
@@ -214,6 +214,9 @@ class WiringTests(unittest.TestCase):
                      "ctas_cloud_state", "worldsindex_cloud_state", "release_commit"):
             self.assertIn(name, deploy)
         self.assertNotIn("ctas_release_code", deploy)
+        # QualQuest left the site on 2026-11-04 (personal study, not browser-based): nothing runs it.
+        self.assertNotIn("qualquest", deploy.lower())
+        self.assertFalse((ROOT / "qualquest").exists())
         self.assertNotIn("CTAS_CODE_ROOT", (ROOT / "scripts/test_ctas_static.py").read_text())
 
     def test_the_deploy_workflow_validates_candidates_in_order(self):
@@ -222,7 +225,7 @@ class WiringTests(unittest.TestCase):
         self.assertEqual(workflow["permissions"]["deployments"], "read")
         validate = workflow["jobs"]["validate"]["steps"]
         runs = "\n".join(step.get("run", "") for step in validate)
-        for group in ("worldsindex-static", "worldsindex-interop", "qualquest", "tonight", "ctas-static", "ctas-schemas",
+        for group in ("worldsindex-static", "worldsindex-interop", "tonight", "ctas-static", "ctas-schemas",
                       "browser", "tooling", "content"):
             self.assertIn(f"bash scripts/deploy_checks.sh {group} .", runs)
         names = [step.get("name") for step in validate]

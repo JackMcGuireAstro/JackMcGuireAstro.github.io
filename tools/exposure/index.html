@@ -7,8 +7,10 @@
 <meta name="description" content="Work out the signal-to-noise ratio of a CCD exposure, the exposure time for a target S/N, or the limiting magnitude, with the CCD equation. Presets for WIRO 2.3 m and Red Buttes 0.6 m, UBVRI and ugriz, and every value editable.">
 <meta name="theme-color" content="#f4f1ea">
 <link rel="canonical" href="https://jackmcguireastro.github.io/tools/exposure/">
-<link rel="stylesheet" href="../tools.css?v=20261003">
-<script type="module" src="exposure.js?v=20261102"></script>
+<link rel="stylesheet" href="../tools.css?v=20261105">
+<script src="../../tools/lib/run-cart.js?v=20261105"></script>
+<script src="../../tools/lib/run-cart-ui.js?v=20261105" defer></script>
+<script type="module" src="exposure.js?v=20261105"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
 </head>
@@ -16,7 +18,7 @@
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="top"><div class="shell top-inner">
   <a class="wordmark" href="../../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
-  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../" aria-current="true">Tools</a></nav>
+  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../index.html#research">Research</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../../tools/follow/">Follow</a><a href="../../tools/" aria-current="page">Tools</a><a data-runcart-badge href="../../tonight/runsheet.html">Run list</a></nav>
 </div></header>
 <main id="main" class="shell">
   <section class="intro">
@@ -25,6 +27,8 @@
     <p>How long do you need to expose to measure a star well? Choose a telescope, a filter and the sky conditions. The page then works out the signal-to-noise ratio (S/N) for an exposure time, the time you need for a target S/N, or the faintest star you can measure. It uses the standard CCD equation, and you can change every number. Everything is worked out in your browser. Nothing is stored or sent anywhere.</p>
   </section>
 
+  <div id="etc-runlist" class="runcart-row"></div>
+  <p id="etc-runlist-note" class="muted" role="status" aria-live="polite"></p>
   <form id="etc-form" novalidate aria-describedby="etc-status">
     <fieldset class="controls">
       <legend>What do you want to know?</legend>
@@ -78,6 +82,6 @@
     <p><strong>How accurate is it?</strong> The equations are exact, but the answer is only as good as the inputs. Seeing, throughput and sky brightness change from night to night, so expect the S/N to be right within a few tens of percent, and the limiting magnitude within a few tenths. The instrumental zero point shown with the result is the magnitude that gives 1 e⁻/s above the atmosphere. Compare it with a zero point measured from real frames to calibrate the throughput.</p>
   </section>
 </main>
-<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../../index.html">Home</a> · <a href="../../worldsindex/">WorldsIndex</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../tonight/">Tonight</a> · <a href="../">Tools</a></p></div></footer>
+<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../../index.html">Home</a> · <a href="../../index.html#research">Research</a> · <a href="../../worldsindex/">WorldsIndex</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../tonight/">Tonight</a> · <a href="../../tools/follow/">Follow</a> · <a href="../../tools/">Tools</a> · <a href="../../tonight/runsheet.html">Run list</a></p></div></footer>
 </body>
 </html>

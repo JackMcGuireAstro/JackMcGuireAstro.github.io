@@ -237,4 +237,42 @@ await test("the planner's row buttons carry the item and a transit's window for 
   assert.doesNotMatch(many, /&quot;y&quot;/);
 });
 
+await test("plain targets: a position with an optional magnitude, kept, shared and printed", async () => {
+  Cart.clear();
+  const id = Cart.targetId(202.4696, 47.1952);
+  assert.equal(id, "pos:202.46960+47.19520");
+  assert.equal(Cart.targetId(10, -0.5), "pos:10.00000-0.50000");
+  assert.equal(Cart.clean({ kind: "target", id: "pos:x", name: "No position" }), null, "a plain target is its position");
+  const m51 = { kind: "target", id, name: "M51", ra: 202.4696, dec: 47.1952, mag: 8.4, magBand: "V" };
+  assert.equal(Cart.add(m51).reason, "added");
+  assert.deepEqual(Cart.list()[0].mag, 8.4);
+  assert.equal(Cart.clean({ ...m51, magBand: "Gaia G" }).mag, undefined, "a band the profiles do not cover is dropped");
+  assert.equal(Cart.clean({ ...m51, mag: 99 }).mag, undefined);
+  const round = Cart.decode(Cart.encode([m51, a, { ...b, note: "egress" }]));
+  assert.deepEqual(round.map((x) => [x.kind, x.id, x.mag ?? null, x.note ?? null]), [["target", id, 8.4, null], ["ctas", a.id, null, null], ["planet", b.id, null, "egress"]]);
+  // a link made before plain targets existed still reads
+  const old = Buffer.from(JSON.stringify([["c", a.id, a.name, a.ra, a.dec, "old note"]]), "binary").toString("base64").replace(/=+$/, "");
+  assert.equal(Cart.decode(old)[0].note, "old note");
+  const [t] = runsheet.resolveItems([m51]);
+  assert.equal(t.kind, "target");
+  const exp = runsheet.targetExposures(t, { airmass: 1.2, moonIllumination: 0.1 });
+  assert.equal(exp.filter, "V");
+  assert.ok(exp.rows.length >= 1 && exp.rows.every((r) => Number.isFinite(r.seconds) && r.seconds > 0));
+  assert.match(runsheet.targetExposures({ mag: null }, {}).reason, /no magnitude/);
+  assert.match(runsheet.targetExposures({ mag: 12, magBand: "Gaia G" }, {}).reason, /not one the instrument profiles cover/);
+  assert.match(runsheet.cartPanelHtml([m51]), /M51 <small>your target<\/small>/);
+  Cart.clear();
+});
+
+await test("the run sheet's back link names the page of this site the visitor came from", () => {
+  const here = "https://jackmcguireastro.github.io/tonight/runsheet.html";
+  assert.deepEqual(runsheet.backLink("https://jackmcguireastro.github.io/tools/follow/#x", here), { href: "https://jackmcguireastro.github.io/tools/follow/#x", label: "Follow" });
+  assert.equal(runsheet.backLink("https://jackmcguireastro.github.io/ctas.html?event=1", here).label, "CTAS");
+  assert.equal(runsheet.backLink("https://jackmcguireastro.github.io/", here).label, "the home page");
+  assert.equal(runsheet.backLink("https://example.org/", here), null, "another site is not linked back");
+  assert.equal(runsheet.backLink(here, here), null);
+  assert.equal(runsheet.backLink("", here), null);
+  assert.equal(runsheet.backLink("http://127.0.0.1:8123/worldsindex/?object=x", "http://127.0.0.1:8123/tonight/runsheet.html").label, "WorldsIndex");
+});
+
 console.log(`${passed} run list checks passed`);

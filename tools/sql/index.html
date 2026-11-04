@@ -7,17 +7,19 @@
 <meta name="description" content="Query the CTAS and WorldsIndex catalogs with SQL in your browser: DuckDB-WASM over VOParquet copies of the public exports.">
 <meta name="theme-color" content="#f4f1ea">
 <link rel="canonical" href="https://jackmcguireastro.github.io/tools/sql/">
-<link rel="stylesheet" href="../tools.css?v=20261003">
+<link rel="stylesheet" href="../tools.css?v=20261105">
 <link rel="stylesheet" href="../visitor.css?v=20261029">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
-<script type="module" src="sql.js?v=20261029"></script>
+<script src="../../tools/lib/run-cart.js?v=20261105"></script>
+<script src="../../tools/lib/run-cart-ui.js?v=20261105" defer></script>
+<script type="module" src="sql.js?v=20261105"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="top"><div class="shell top-inner">
   <a class="wordmark" href="../../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
-  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../" aria-current="page">Tools</a></nav>
+  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../index.html#research">Research</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../../tools/follow/">Follow</a><a href="../../tools/" aria-current="page">Tools</a><a data-runcart-badge href="../../tonight/runsheet.html">Run list</a></nav>
 </div></header>
 <main id="main" class="shell">
   <section class="intro">
@@ -45,6 +47,7 @@ LIMIT 20</textarea></div>
   <section aria-labelledby="result-title" class="results-block">
     <h2 id="result-title" class="block-title">Result</h2>
     <p id="result-meta" class="result-meta">Run a query to see rows here.</p>
+    <div id="sql-add" class="row-actions"></div>
     <div id="result"></div>
   </section>
   <section aria-labelledby="tables-title" class="results-block notes">
@@ -52,6 +55,6 @@ LIMIT 20</textarea></div>
     <div id="tables"><p class="muted">Reading…</p></div>
   </section>
 </main>
-<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../">Tools</a> · <a href="../follow/">Follow</a> · <a href="../cone/">Cone search</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../worldsindex/">WorldsIndex</a></p></div></footer>
+<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../../index.html">Home</a> · <a href="../../index.html#research">Research</a> · <a href="../../worldsindex/">WorldsIndex</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../tonight/">Tonight</a> · <a href="../../tools/follow/">Follow</a> · <a href="../../tools/">Tools</a> · <a href="../../tonight/runsheet.html">Run list</a></p></div></footer>
 </body>
 </html>

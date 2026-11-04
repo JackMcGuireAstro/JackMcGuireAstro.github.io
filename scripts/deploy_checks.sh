@@ -4,7 +4,7 @@
 #
 #   deploy_checks.sh <group> [<tree>]
 #
-# groups: worldsindex-static, worldsindex-interop, qualquest, tonight, ctas-static,
+# groups: worldsindex-static, worldsindex-interop, tonight, ctas-static,
 #         ctas-schemas, browser, tooling, content, all
 #
 # A group never fails the step: every result goes to CHECK_RESULTS and the workflow's
@@ -97,14 +97,10 @@ group_worldsindex_interop() {
   check worldsindex.schemas python3 scripts/validate_worldsindex_schemas.py
 }
 
-group_qualquest() {
-  check qualquest.static python3 scripts/test_qualquest_static.py
-}
-
 group_tonight() {
   check tonight.syntax node_check tonight/planner.js tonight/astro.js tools/lib/astrometry.js tools/coordinates/coordinates.js \
     tools/exposure/exposure.js tools/exposure/ccd.js tools/exposure/instruments.js tools/finder/finder.js research/barium-dwarfs/census.js \
-    tonight/sites.js tonight/runsheet.js tools/lib/run-cart.js tools/lib/run-cart-ui.js
+    tonight/sites.js tonight/runsheet.js tools/lib/run-cart.js tools/lib/run-cart-ui.js tools/lib/run-cart-items.js
   check tonight.planner node scripts/test_tonight_planner.mjs
   check tonight.run-cart node scripts/test_run_cart.mjs
   check tools.coordinates node scripts/test_tools_coordinates.mjs
@@ -194,12 +190,12 @@ group_content() {
   check site.whitespace git diff --check
   check site.credential-scan credential_scan
   check release.evidence python3 scripts/test_release_evidence.py
+  check site.links python3 scripts/test_site_links.py
 }
 
 case "$GROUP" in
   worldsindex-static) group_worldsindex_static ;;
   worldsindex-interop) group_worldsindex_interop ;;
-  qualquest) group_qualquest ;;
   tonight) group_tonight ;;
   ctas-static) group_ctas_static ;;
   ctas-schemas) group_ctas_schemas ;;
@@ -207,7 +203,7 @@ case "$GROUP" in
   tooling) group_tooling ;;
   content) group_content ;;
   all)
-    group_worldsindex_static; group_worldsindex_interop; group_qualquest; group_tonight
+    group_worldsindex_static; group_worldsindex_interop; group_tonight
     group_ctas_static; group_ctas_schemas; group_browser; group_tooling; group_content ;;
   *) echo "unknown group: $GROUP" >&2; exit 2 ;;
 esac

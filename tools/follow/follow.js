@@ -4,12 +4,13 @@
 import {
   FIELDS, OPS, FILTER_SCHEMA, ID_FIELD, POSITION, validateFilter, applyFilter, describeFilter, parseWatchLine,
   watchMatches, newSince, encodeFilterForUrl, decodeFilterFromUrl, exportState, importState,
-} from "../lib/visitor-filters.js?v=20261029";
+} from "../lib/visitor-filters.js?v=20261105";
 import { parseMoc, mocContains, mocAreaSqDeg, mocToAscii, coneMoc } from "../lib/healpix.js?v=20261029";
 import {
   readState, writeState, storageWorks, readCtasWatchIds, loadCtas, loadCtasAliases, loadWorlds, loadGallery, loadProducts,
   ctasLink, worldsLink, download, esc,
 } from "../lib/visitor-data.js?v=20261029";
+import { cartItem, toggleButton, addManyButton } from "../lib/run-cart-items.js?v=20261104";
 
 const $ = (id) => document.getElementById(id);
 const PRODUCT_LABEL = { ctas: "CTAS", worldsindex: "WorldsIndex" };
@@ -33,6 +34,17 @@ function compareAndRemember(key, ids) {
   return result;
 }
 
+// The run-list item of a catalog record (CTAS transient or WorldsIndex planet).
+function itemOf(name, record) {
+  const [raKey, decKey] = POSITION[name];
+  return cartItem(name, { id: idOf(name, record), name: record.name || idOf(name, record), ra: record[raKey], dec: record[decKey] });
+}
+// "Add these to my run list" for a block, in the order its table shows (new ones first).
+function addAllHtml(entries) {
+  const items = entries.map((e) => itemOf(e.name, e.record)).filter((x) => x && Number.isFinite(x.ra));
+  return items.length ? addManyButton(items, { total: items.length, label: items.length > 50 ? `Add the first 50 to my run list` : `Add ${items.length === 1 ? "it" : `all ${items.length}`} to my run list` }) : "";
+}
+
 function recordRow(name, record, isNew) {
   const id = idOf(name, record);
   const [raKey, decKey] = POSITION[name];
@@ -42,12 +54,13 @@ function recordRow(name, record, isNew) {
   const ra = Number.isFinite(record[raKey]) ? record[raKey].toFixed(5) : "—";
   const dec = Number.isFinite(record[decKey]) ? (record[decKey] >= 0 ? "+" : "") + record[decKey].toFixed(5) : "—";
   return `<tr${isNew ? ' class="is-new"' : ""}><th scope="row"><a href="${esc(linkOf(name, id))}">${esc(record.name || id)}</a>${isNew ? ' <span class="badge-new">new</span>' : ""}</th>`
-    + `<td>${esc(PRODUCT_LABEL[name])}</td>${detail.map((d) => `<td>${esc(d ?? "")}</td>`).join("")}<td class="num">${ra}</td><td class="num">${dec}</td></tr>`;
+    + `<td>${esc(PRODUCT_LABEL[name])}</td>${detail.map((d) => `<td>${esc(d ?? "")}</td>`).join("")}<td class="num">${ra}</td><td class="num">${dec}</td>`
+    + `<td>${Number.isFinite(record[raKey]) ? toggleButton(itemOf(name, record)) : ""}</td></tr>`;
 }
 function table(rows, caption) {
   if (!rows.length) return "";
   return `<div class="table-wrap"><table><caption class="visually-hidden">${esc(caption)}</caption><thead><tr><th scope="col">Name</th><th scope="col">Catalog</th>`
-    + `<th scope="col">Class / status</th><th scope="col">Type / method</th><th scope="col">Discovered</th><th scope="col" class="num">RA (deg)</th><th scope="col" class="num">Dec (deg)</th></tr></thead>`
+    + `<th scope="col">Class / status</th><th scope="col">Type / method</th><th scope="col">Discovered</th><th scope="col" class="num">RA (deg)</th><th scope="col" class="num">Dec (deg)</th><th scope="col">Run list</th></tr></thead>`
     + `<tbody>${rows.join("")}</tbody></table></div>`;
 }
 function csvOf(entries) {
@@ -79,7 +92,7 @@ async function renderWatchlist() {
   host.innerHTML = '<p class="muted">Checking…</p>';
   const [ctas, worlds] = await Promise.all([loadCtas().catch(() => null), loadWorlds().catch(() => null)]);
   const aliases = items.some((i) => i.kind === "name") ? await loadCtasAliases().catch(() => null) : null;
-  const blocks = [];
+  const blocks = [], watchEntries = [], plainTargets = [];
   for (const item of items) {
     const found = [];
     if (ctas) watchMatches(item, "ctas", ctas.records, aliases).forEach((r) => found.push({ name: "ctas", record: r }));
@@ -88,13 +101,29 @@ async function renderWatchlist() {
     const newIds = new Set(result.newIds);
     const rows = found.slice(0, MAX_ROWS).map((f) => recordRow(f.name, f.record, newIds.has(`${f.name}:${idOf(f.name, f.record)}`)));
     const what = item.kind === "name" ? `name “${esc(item.name)}”` : `within ${item.radiusArcsec}″ of RA ${item.ra.toFixed(5)}°, Dec ${item.dec.toFixed(5)}°`;
+    // A position can go on the run list as a plain target (with its name and magnitude, if the line gives them).
+    const target = item.kind === "position" ? cartItem("target", { name: item.label || item.text, ra: item.ra, dec: item.dec, mag: item.mag ?? null, magBand: item.magBand ?? null }) : null;
+    const actions = [found.length ? addAllHtml(found.slice(0, MAX_ROWS)) : "", target ? `<span class="runcart-target">This position as a plain target: ${toggleButton(target, { compact: false })}</span>` : ""].filter(Boolean).join(" ");
+    watchEntries.push(...found);
+    if (target) plainTargets.push(target);
     blocks.push(`<article class="follow-item"><h3>${esc(item.text)}</h3><p class="muted">${what}: ${found.length ? `${found.length} match${found.length === 1 ? "" : "es"}` : "no match in the current releases"}`
-      + `${result.firstLook ? "" : result.newIds.length ? `, <strong>${result.newIds.length} new since you last looked</strong>` : ", nothing new since you last looked"}.</p>${table(rows, item.text)}</article>`);
+      + `${result.firstLook ? "" : result.newIds.length ? `, <strong>${result.newIds.length} new since you last looked</strong>` : ", nothing new since you last looked"}.</p>${table(rows, item.text)}`
+      + `${actions ? `<div class="row-actions">${actions}</div>` : ""}</article>`);
   }
   if (ctasWatch.length && ctas) {
     const byId = new Map(ctas.records.map((r) => [String(r.event_id), r]));
-    const rows = ctasWatch.map((id) => byId.get(id)).filter(Boolean).map((r) => recordRow("ctas", r, false));
-    blocks.push(`<article class="follow-item"><h3>Watched on the CTAS page</h3><p class="muted">${ctasWatch.length} event${ctasWatch.length === 1 ? "" : "s"} you marked with the CTAS page’s watch button (also kept only in this browser).</p>${table(rows, "Watched on the CTAS page")}</article>`);
+    const watched = ctasWatch.map((id) => byId.get(id)).filter(Boolean);
+    const rows = watched.map((r) => recordRow("ctas", r, false));
+    watchEntries.push(...watched.map((record) => ({ name: "ctas", record })));
+    blocks.push(`<article class="follow-item"><h3>Watched on the CTAS page</h3><p class="muted">${ctasWatch.length} event${ctasWatch.length === 1 ? "" : "s"} you marked with the CTAS page’s watch button (also kept only in this browser).</p>${table(rows, "Watched on the CTAS page")}`
+      + `<div class="row-actions">${addAllHtml(watched.map((record) => ({ name: "ctas", record })))}</div></article>`);
+  }
+  // Everything the watchlist matched, in one go (each record once).
+  const seen = new Set(), all = watchEntries.filter((e) => { const k = `${e.name}:${idOf(e.name, e.record)}`; if (seen.has(k)) return false; seen.add(k); return true; });
+  if (blocks.length > 1 && (all.length || plainTargets.length)) {
+    const items = all.map((e) => itemOf(e.name, e.record)).filter((x) => x && Number.isFinite(x.ra)).concat(plainTargets);
+    const label = items.length > 50 ? "Add the first 50 from my watchlist to my run list" : `Add everything on my watchlist (${items.length}) to my run list`;
+    if (items.length > 1) blocks.unshift(`<div class="row-actions runcart-all">${addManyButton(items, { total: items.length, label })}</div>`);
   }
   host.innerHTML = blocks.join("");
   save();
@@ -121,7 +150,7 @@ async function renderRegions() {
     const rows = found.slice(0, MAX_ROWS).map((f) => recordRow(f.name, f.record, newIds.has(`${f.name}:${idOf(f.name, f.record)}`)));
     return `<article class="follow-item"><h3>${esc(region.title)}</h3><p class="muted">${mocAreaSqDeg(moc).toFixed(2)} square degrees: ${found.length} record${found.length === 1 ? "" : "s"} inside`
       + `${result.firstLook ? "" : result.newIds.length ? `, <strong>${result.newIds.length} new since you last looked</strong>` : ", nothing new since you last looked"}${found.length > MAX_ROWS ? ` (first ${MAX_ROWS} shown, new ones first)` : ""}.</p>`
-      + `${table(rows, region.title)}<div class="row-actions"><button type="button" class="button button-quiet" data-region-csv="${index}">Download CSV</button>`
+      + `${table(rows, region.title)}<div class="row-actions">${addAllHtml(found)}<button type="button" class="button button-quiet" data-region-csv="${index}">Download CSV</button>`
       + `<button type="button" class="button button-quiet" data-region-moc="${index}">Download MOC</button><button type="button" class="button button-quiet" data-region-remove="${index}">Remove</button></div></article>`;
   });
   host.innerHTML = blocks.join("");
@@ -229,7 +258,7 @@ async function renderFilters() {
     const share = new URL(`#filter=${encodeFilterForUrl(filter)}`, window.location.href.split("#")[0]).href;
     blocks.push(`<article class="follow-item"><h3>${esc(filter.title)} <small>${esc(PRODUCT_LABEL[filter.product])}</small></h3><p class="muted">${esc(describeFilter(filter))}: ${matched.length.toLocaleString("en-US")} record${matched.length === 1 ? "" : "s"}`
       + `${result.firstLook ? "" : result.newIds.length ? `, <strong>${result.newIds.length} new since you last looked</strong>` : ", nothing new since you last looked"}${matched.length > MAX_ROWS ? ` (first ${MAX_ROWS} shown, new ones first)` : ""}.</p>${table(rows, filter.title)}`
-      + `<div class="row-actions"><button type="button" class="button button-quiet" data-filter-csv="${index}">Download CSV</button>`
+      + `<div class="row-actions">${addAllHtml(sorted.map((record) => ({ name: filter.product, record })))}<button type="button" class="button button-quiet" data-filter-csv="${index}">Download CSV</button>`
       + `<button type="button" class="button button-quiet" data-filter-share="${esc(share)}">Copy share link</button><button type="button" class="button button-quiet" data-filter-remove="${index}">Remove</button></div></article>`);
   }
   host.innerHTML = blocks.join("");

@@ -145,8 +145,6 @@ jobs:
         run: bash scripts/deploy_checks.sh worldsindex-static .
       - name: WorldsIndex exports round trip and published JSON against worldsindex/schemas
         run: bash scripts/deploy_checks.sh worldsindex-interop .
-      - name: QualQuest static export and public content
-        run: bash scripts/deploy_checks.sh qualquest .
       - name: Tonight's sky planner and observing tools
         run: bash scripts/deploy_checks.sh tonight .
       # Step 12: the CTAS certificate's bound code against this tree's files (see the header:

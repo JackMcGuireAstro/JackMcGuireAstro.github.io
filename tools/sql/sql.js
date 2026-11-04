@@ -4,6 +4,7 @@
 // A page may set window.DUCKDB_MODULE / window.DUCKDB_BASE first (the browser test points them
 // at a local copy of the same release).
 import { loadProducts, siteRoot, download, esc } from "../lib/visitor-data.js?v=20261029";
+import { addManyButton, runListItems } from "../lib/run-cart-items.js?v=20261104";
 
 export const DUCKDB_VERSION = "1.32.0";
 const MODULE_URL = window.DUCKDB_MODULE || `https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@${DUCKDB_VERSION}/+esm`;
@@ -71,6 +72,15 @@ function render(result) {
   $("result").innerHTML = columns.length ? `<div class="table-wrap"><table><caption class="visually-hidden">Query result</caption><thead><tr>${columns.map((c) => `<th scope="col">${esc(c)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>` : "";
 }
 
+function renderRunList(result) {
+  const columns = result.schema.fields.map((f) => f.name);
+  const n = Math.min(result.numRows, SHOW_ROWS);
+  const out = runListItems(columns, (i) => result.get(i), n);
+  $("sql-add").innerHTML = out.items
+    ? addManyButton(out.items, { total: result.numRows, label: result.numRows > 50 ? "Add the first 50 rows to my run list" : `Add ${out.items.length === 1 ? "it" : `all ${out.items.length}`} to my run list` })
+    : `<p class="muted">${esc(out.reason)}</p>`;
+}
+
 function toCsv(result) {
   const columns = result.schema.fields.map((f) => f.name);
   const quote = (v) => { const s = cellText(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
@@ -90,6 +100,7 @@ async function run() {
     const started = performance.now();
     lastResult = await conn.query(sql);
     render(lastResult);
+    renderRunList(lastResult);
     $("sql-csv").disabled = false;
     $("sql-status").textContent = `Done in ${((performance.now() - started) / 1000).toFixed(2)} s.`;
     $("sql-status").classList.add("ok");

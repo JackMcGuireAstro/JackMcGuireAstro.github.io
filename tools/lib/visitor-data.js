@@ -2,7 +2,7 @@
 // Reads only the site's own public files; keeps the visitor's lists in this browser's
 // localStorage (never sent anywhere). Every storage call is wrapped: private windows and
 // blocked storage leave the tools working, just without memory between visits.
-import { inflateCtasRows, aliasMapFromCtas } from "./visitor-filters.js?v=20261029";
+import { inflateCtasRows, aliasMapFromCtas } from "./visitor-filters.js?v=20261105";
 
 export const STORAGE_KEY = "jm.visitor.v1";
 export const CTAS_WATCH_KEY = "ctas-browser-watchlist-v1"; // the CTAS page's own watch button

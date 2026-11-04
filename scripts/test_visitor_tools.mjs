@@ -191,4 +191,33 @@ test("the SQL examples file is well formed", () => {
   for (const e of ex.examples) { assert.ok(e.title && /^\s*SELECT/i.test(e.sql), e.title); assert.ok(!/;\s*\S/.test(e.sql), "one statement each"); }
 });
 
+if (!globalThis.RunCart) await import("../tools/lib/run-cart.js");
+const items = await import("../tools/lib/run-cart-items.js");
+const { coneItem } = await import("../tools/cone/cone.js");
+test("run list: named positions on the watchlist, row mapping for SQL and the cone search, button markup", () => {
+  // named positions and magnitudes on a watchlist line
+  const m51 = parseWatchLine("M51 | 13:29:52.7 +47:11:43 V=8.4");
+  assert.equal(m51.kind, "position"); assert.equal(m51.label, "M51"); assert.equal(m51.mag, 8.4); assert.equal(m51.magBand, "V");
+  assert.ok(Math.abs(m51.ra - 202.4695833) < 1e-6);
+  assert.equal(parseWatchLine("10 20 r=17.2").magBand, "r");
+  assert.equal(parseWatchLine("10 20 5 V=12").radiusArcsec, 5);
+  assert.equal(parseWatchLine("M 31 10").kind, "name", "a name with numbers is not a position without the bar");
+  assert.equal(parseWatchLine("a | b").kind, "name");
+  assert.deepEqual(items.cartItem("ctas", { id: "e1", name: "SN X", ra: 1, dec: 2 }), { kind: "ctas", id: "e1", name: "SN X", ra: 1, dec: 2 });
+  assert.equal(items.cartItem("worldsindex", { id: "wi-1", ra: "3", dec: "-4" }).kind, "planet");
+  const t = items.cartItem("target", { name: "M51", ra: 202.4696, dec: 47.1952, mag: 8.4, magBand: "V" });
+  assert.deepEqual([t.kind, t.id, t.mag, t.magBand], ["target", "pos:202.46960+47.19520", 8.4, "V"]);
+  assert.equal(items.cartItem("target", { name: "nowhere" }), null);
+  const rows = [{ event_id: "e1", name: "SN X", ra_deg: 10, dec_deg: 20 }, { event_id: "e2", name: "SN Y", ra_deg: null, dec_deg: null }];
+  assert.deepEqual(items.runListItems(["event_id", "name", "ra_deg", "dec_deg"], (i) => rows[i], 2).items.map((x) => [x.kind, x.id, x.ra]), [["ctas", "e1", 10], ["ctas", "e2", null]]);
+  assert.equal(items.runListItems(["object_id", "name"], () => ({ object_id: "wi-1", name: "P" }), 1).items[0].kind, "planet");
+  assert.equal(items.runListItems(["name", "ra", "dec"], () => ({ name: "Field", ra: 1, dec: 2 }), 1).items[0].kind, "target");
+  assert.match(items.runListItems(["classification", "n"], () => ({}), 1).reason, /select event_id/);
+  const many = items.addManyButton(Array.from({ length: 60 }, (_, i) => items.cartItem("ctas", { id: `e${i}`, ra: i, dec: 0 })), { total: 60 });
+  assert.match(many, /data-runcart-total="60"/);
+  assert.equal((many.match(/&quot;kind&quot;/g) || []).length, 50, "the first 50 are offered");
+  assert.match(items.toggleButton(t), /data-runcart-toggle data-runcart-compact data-kind="target" data-id="pos:202.46960\+47.19520"[^>]*data-mag="8.4" data-mag-band="V"/);
+  assert.deepEqual(coneItem({ product: "worldsindex", id: "wi-2", name: "Q b", ra: 5, dec: 6 }), { kind: "planet", id: "wi-2", name: "Q b", ra: 5, dec: 6 });
+});
+
 console.log(`${passed} visitor-tool checks passed`);

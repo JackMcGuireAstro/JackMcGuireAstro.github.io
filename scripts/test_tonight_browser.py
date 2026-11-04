@@ -249,7 +249,8 @@ class TonightBrowserTests(unittest.TestCase):
         page, errors = self.open()
         page.select_option("#list", "next30")
         page.click("button[type=submit]")
-        page.wait_for_function("document.querySelector('#results p') || document.querySelector('#status').textContent.includes('not published')", timeout=30000)
+        # Wait for the 30-night list itself, not the paragraph of the list shown on load (a race under load).
+        page.wait_for_function("(document.querySelector('#results p')?.textContent || '').includes('deepest first') || document.querySelector('#status').textContent.includes('not published')", timeout=30000)
         if (ROOT / "worldsindex" / "data" / "observing-windows.json").exists():
             self.assertGreater(page.locator("#results table").count(), 0)
             self.assertIn("deepest first", page.inner_text("#results p"))

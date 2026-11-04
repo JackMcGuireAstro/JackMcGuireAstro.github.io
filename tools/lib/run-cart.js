@@ -5,12 +5,18 @@
 //
 // A classic script: it registers globalThis.RunCart, so the CTAS page (classic scripts), the
 // ES-module pages (which import it for its side effect) and Node tests all use the same code.
-// Items: {kind: "ctas"|"planet", id, name, ra, dec, addedAt, note?, transitWindow?}.
+// Items: {kind: "ctas"|"planet"|"target", id, name, ra, dec, addedAt, note?, transitWindow?, mag?, magBand?}.
+// "target" is a plain position with no CTAS or WorldsIndex record (a Follow watchlist line, a
+// finder chart, an SQL row without an id); its id is the position (targetId below), and a
+// magnitude, when one is known, carries its band so the run sheet can estimate an exposure.
 (function (root) {
   "use strict";
   var KEY = "jm.runlist.v1";
   var MAX_ITEMS = 50;
-  var KINDS = { ctas: 1, planet: 1 };
+  var KINDS = { ctas: 1, planet: 1, target: 1 };
+  var LETTER = { ctas: "c", planet: "p", target: "t" }, FROM_LETTER = { c: "ctas", p: "planet", t: "target" };
+  // Bands the instrument profiles cover (tools/exposure/ccd.js FILTERS).
+  var BANDS = { U: 1, B: 1, V: 1, R: 1, I: 1, u: 1, g: 1, r: 1, i: 1, z: 1 };
   var EVENT = "runcart:change";
   var memory = null;      // used when storage is not available
   var listeners = [];
@@ -40,6 +46,9 @@
       addedAt: finite(item.addedAt) ? item.addedAt : Date.now() };
     var note = text(item.note, 200); if (note) out.note = note;
     var win = cleanWindow(item.transitWindow); if (win) out.transitWindow = win;
+    var mag = Number(item.mag), band = text(item.magBand, 2);
+    if (item.mag !== null && item.mag !== undefined && item.mag !== "" && finite(mag) && mag > -5 && mag < 30 && BANDS[band]) { out.mag = round(mag, 3); out.magBand = band; }
+    if (out.kind === "target" && (out.ra === null || out.dec === null)) return null;  // a plain target is its position
     return out;
   }
   function sameItem(a, b) { return a.kind === b.kind && a.id === b.id; }
@@ -76,11 +85,18 @@
     }
   }
 
+  // The id of a plain position target: "pos:" + RA and Dec in degrees to 1e-5 (about 0.04″).
+  function targetId(ra, dec) {
+    ra = Number(ra); dec = Number(dec);
+    if (!finite(ra) || !finite(dec)) return "";
+    return "pos:" + ra.toFixed(5) + (dec < 0 ? "" : "+") + dec.toFixed(5);
+  }
+
   function find(list, kind, id) { for (var i = 0; i < list.length; i++) if (list[i].kind === kind && list[i].id === String(id)) return i; return -1; }
 
   var api = {
     KEY: KEY, MAX_ITEMS: MAX_ITEMS, EVENT: EVENT,
-    clean: clean, normalise: normalise,
+    clean: clean, normalise: normalise, targetId: targetId, BANDS: BANDS,
     list: function () { return read(); },
     count: function () { return read().length; },
     has: function (kind, id) { return find(read(), kind, id) !== -1; },
@@ -92,6 +108,7 @@
       var list = read(), at = find(list, next.kind, next.id);
       if (at !== -1) {
         if (next.transitWindow) list[at].transitWindow = next.transitWindow;
+        if (next.mag !== undefined && list[at].mag === undefined) { list[at].mag = next.mag; list[at].magBand = next.magBand; }
         write(list); return { ok: true, reason: "present" };
       }
       if (list.length >= MAX_ITEMS) return { ok: false, reason: "full" };
@@ -121,11 +138,13 @@
     onChange: function (fn) { listeners.push(fn); return function () { listeners = listeners.filter(function (x) { return x !== fn; }); }; },
 
     // Share links: the list in the address, so it moves between devices without a server.
-    // A compact JSON array of [kind letter, id, name, ra, dec, note?] rows, base64url-encoded.
+    // A compact JSON array of [kind letter, id, name, ra, dec, note?, mag?, band?] rows, base64url-encoded
+    // (a row without a magnitude ends at the note, so links made before targets existed still read).
     encode: function (items) {
       var rows = normalise(items).map(function (x) {
-        var row = [x.kind === "planet" ? "p" : "c", x.id, x.name, x.ra, x.dec];
-        if (x.note) row.push(x.note);
+        var row = [LETTER[x.kind], x.id, x.name, x.ra, x.dec];
+        if (x.note || x.mag !== undefined) row.push(x.note || "");
+        if (x.mag !== undefined) row.push(x.mag, x.magBand);
         return row;
       });
       var json = JSON.stringify(rows), bytes = unescape(encodeURIComponent(json));
@@ -140,7 +159,7 @@
         var rows = JSON.parse(decodeURIComponent(escape(bytes)));
         if (!Array.isArray(rows)) return [];
         return normalise(rows.map(function (r) {
-          return Array.isArray(r) ? { kind: r[0] === "p" ? "planet" : r[0] === "c" ? "ctas" : null, id: r[1], name: r[2], ra: r[3], dec: r[4], note: r[5] } : null;
+          return Array.isArray(r) ? { kind: FROM_LETTER[r[0]] || null, id: r[1], name: r[2], ra: r[3], dec: r[4], note: r[5], mag: r[6], magBand: r[7] } : null;
         }));
       } catch (_) { return []; }
     },

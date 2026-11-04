@@ -34,7 +34,7 @@ Measured 2026-10-29 on the published releases (ctas-data defb23a8, worldsindex-d
 cf80c35d) before the delivery batch, as the deploy then compressed them: about 0.75 GB, plus
 about 23 MB of Track 5 visitor files, against GitHub Pages' 1 GB limit. CTAS dossier chunks
 were 281 MB gzip-compressed (1.92 GB as JSON); other CTAS data 223 MB; WorldsIndex data
-167 MB; the rest is site code, images and QualQuest.
+167 MB; the rest was site code, images and QualQuest (21 MB, removed from the site on 2026-11-04).
 
 Since the delivery batch (2026-10-29) the dossier chunks are not in the Pages tree: the deploy
 step (`scripts/compress_ctas_chunks.sh` with the ctas-data commit) removes them and writes
@@ -43,8 +43,8 @@ the exact `ctas-data` commit the release came from (plain JSON, CORS `*`, byte r
 by `scripts/check_chunk_origin.py` in the deploy's `ctas-static` group before the pointer is
 written). The manifest stays on the site and `ctas/chunk-loader.js` verifies every file's
 length and SHA-256 against it whatever the origin. The Pages tree is now about 0.48 GB
-(0.46 GB of site code, images, QualQuest, other CTAS data and WorldsIndex data, plus the
-visitor files); it grows only with the compact CTAS index and WorldsIndex, not with the
+(site code, images, other CTAS data and WorldsIndex data, plus the visitor files; QualQuest's
+21 MB left with it on 2026-11-04); it grows only with the compact CTAS index and WorldsIndex, not with the
 dossiers. The deploy prints the tree's size on every run. Cheaper further steps, not taken:
 move the personal images out of the repository root, exclude `tests/` fixtures from the
 Pages artifact.

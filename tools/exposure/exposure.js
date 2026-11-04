@@ -1,6 +1,7 @@
 // Exposure-time calculator page. The physics is in ccd.js; this file reads the form, checks
 // it, and draws the result and the S/N curve. Nothing is stored or sent anywhere.
 import { FILTERS, SKY, TELESCOPES, solve, snrFor, noiseBudget, peakPixel } from "./ccd.js?v=20261102";
+import { mountPicker, magnitudeFor } from "../lib/run-cart-items.js?v=20261104";
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -212,6 +213,20 @@ export function init() {
     });
   }
   $("#etc-form").addEventListener("submit", (event) => { event.preventDefault(); run(); });
+  // "Load from run list": the target's magnitude and band, when one is known.
+  mountPicker($("#etc-runlist"), {
+    label: "Use a target from your run list",
+    onPick: async (item) => {
+      const note = $("#etc-runlist-note");
+      note.textContent = `Looking up a magnitude for ${item.name}…`;
+      const m = await magnitudeFor(item, "../../");
+      if (!m) { note.textContent = `No magnitude is known for ${item.name}, so nothing was changed; type one in.`; return; }
+      $("#mag").value = String(m.mag);
+      if (FILTERS.some((f) => f.id === m.band)) { $("#filter").value = m.band; applyFilter(); }
+      note.textContent = `${item.name}: magnitude ${m.mag} in ${m.band}, from ${m.note}.`;
+      run();
+    },
+  });
   const prefill = prefillFromQuery(new URL(window.location.href).searchParams);
   if (Object.keys(prefill).length) { applyPrefill(prefill); if (prefill.telescope) lastPreset = prefill.telescope; }
   run();

@@ -7,12 +7,12 @@
 //   3. the ten CTAS follow-up targets up longest tonight.
 // Computed in the browser from the published CTAS summary and WorldsIndex ephemerides; nothing is
 // sent anywhere (the finder images are plain <img> requests to CDS hips2fits).
-import "../tools/lib/run-cart.js?v=20261104";
+import "../tools/lib/run-cart.js?v=20261105";
 import { nightGrid, visibility, localNoonUtc } from "./astro.js?v=20261004";
 import { SITES, ctasTargets, followupFor, altitudeChartSvg, darkWindow } from "./planner.js?v=20261104";
 import { savedSites } from "./sites.js?v=20261029";
 import { transitWindows } from "../worldsindex/assets/observe.js?v=20261104";
-import { SURVEYS, hips2fitsUrl, overlaySvg } from "../tools/finder/finder.js?v=20261003";
+import { SURVEYS, hips2fitsUrl, overlaySvg } from "../tools/finder/finder.js?v=20261105";
 import { formatRA, formatDec } from "../tools/lib/astrometry.js?v=20261003";
 import * as ccd from "../tools/exposure/ccd.js?v=20261029";
 
@@ -144,6 +144,11 @@ export function resolveItems(items, { ctas = new Map(), ephemerides = new Map() 
       return { kind: "ctas", id: item.id, name: item.name || item.id, ra: item.ra, dec: item.dec, detail: "not in the current CTAS summary; position as listed",
         mag: null, score: null, followup: null, href: `../ctas.html?event=${encodeURIComponent(item.id)}#dossier`, note: item.note || null };
     }
+    if (item.kind === "target") {
+      if (!Number.isFinite(item.ra) || !Number.isFinite(item.dec)) return null;
+      return { kind: "target", id: item.id, name: item.name || item.id, ra: item.ra, dec: item.dec,
+        mag: Number.isFinite(item.mag) ? item.mag : null, magBand: item.magBand || null, note: item.note || null };
+    }
     const eph = ephemerides.get(item.id) || null;
     const ra = eph ? eph.raDeg : item.ra, dec = eph ? eph.decDeg : item.dec;
     if (!Number.isFinite(ra) || !Number.isFinite(dec)) return null;
@@ -234,12 +239,46 @@ export function planetHtml(t, i, { site, grid, altLimit, noonUtcMs }) {
     `<div class="chart">${altitudeChartSvg(grid, first ? { ...t, kind: "transit", ingressMs: first.ingressMs, egressMs: first.egressMs } : { ...t, kind: "planet" }, site.lat, altLimit, site.tz, { windows })}</div></article>`;
 }
 
+// A plain target's exposure: the time to S/N 20 in the band of its magnitude at each telescope,
+// at its best airmass tonight and the Moon's sky preset. Not computed without a magnitude.
+export const TARGET_SNR = 20;
+export function targetExposures({ mag, magBand }, { airmass, moonIllumination }) {
+  if (!Number.isFinite(mag)) return { reason: "no magnitude was given for this target (add band=value to its line on the Follow page)", rows: [] };
+  const filter = ccd.FILTERS.find((f) => f.id === magBand);
+  if (!filter) return { reason: `the magnitude's band (${magBand || "unknown"}) is not one the instrument profiles cover`, rows: [] };
+  const sky = ccd.SKY[filter.id][skyPreset(moonIllumination)], x = Number.isFinite(airmass) ? Math.max(1, airmass) : 1.5;
+  const rows = ccd.TELESCOPES.filter((t) => Number.isFinite(t.throughput?.[filter.id])).map((t) => {
+    const p = { mag, airmass: x, sky, diameter: t.diameter, obstruction: t.obstruction, throughput: t.throughput[filter.id], extinction: t.extinction[filter.id],
+      plateScale: t.plateScale, seeing: t.seeing, apertureFactor: 1, gain: t.gain, readNoise: t.readNoise, dark: t.dark, fullWell: t.fullWell, zeroPoint: filter.zeroPoint };
+    const r = ccd.rates(p), seconds = r.source > 0 ? ccd.timeFor(r.source, TARGET_SNR, r) : null;
+    return { id: t.id, placeholder: ccd.isPlaceholder(t, `throughput.${filter.id}`) || ccd.isPlaceholder(t, `extinction.${filter.id}`) || t.placeholder, seconds };
+  });
+  return { reason: null, filter: filter.id, rows };
+}
+const secondsText = (s) => !Number.isFinite(s) ? "—" : s < 1 ? "< 1 s" : s < 120 ? `${s.toFixed(s < 10 ? 1 : 0)} s` : s < 7200 ? `${(s / 60).toFixed(1)} min` : `${(s / 3600).toFixed(1)} h`;
+
+export function plainTargetHtml(t, i, { site, grid, altLimit }) {
+  const exp = targetExposures(t, { airmass: t.vis.bestAirmass, moonIllumination: grid.moonIllumination });
+  return `<article class="sheet-target" data-sheet-target="${esc(t.id)}" data-sheet-kind="target">` +
+    `<h2>${i + 1}. ${esc(t.name)} <small>your target (a position, not a catalog record)</small></h2>` + noteHtml(t) +
+    `<div class="sheet-grid"><div><dl class="sheet-facts">` +
+    `<div><dt>RA, Dec (J2000)</dt><dd>${esc(formatRA(t.ra, 2))} ${esc(formatDec(t.dec, 1))}<br><small>${t.ra.toFixed(5)}°, ${t.dec.toFixed(5)}°</small></dd></div>` +
+    `<div><dt>Magnitude</dt><dd>${Number.isFinite(t.mag) ? `${Number(t.mag).toFixed(2)} ${esc(t.magBand || "")} <small>(as you gave it)</small>` : "—"}</dd></div>` +
+    upTonight(t, site, altLimit) + `</dl>` +
+    (exp.rows.length ? `<div class="table-wrap" role="region" tabindex="0" aria-label="Exposure estimates for ${esc(t.name)}"><table class="sheet-exp"><caption>S/N ${TARGET_SNR} in ${esc(exp.filter)} at the best airmass (instrument profiles; placeholders marked)</caption><thead><tr><th scope="col">Telescope</th><th scope="col">Time</th></tr></thead><tbody>` +
+      exp.rows.map((e) => `<tr><th scope="row">${esc(e.id.toUpperCase())}${e.placeholder ? " <small>(placeholder values)</small>" : ""}</th><td>${esc(secondsText(e.seconds))}</td></tr>`).join("") +
+      `</tbody></table></div>` : `<p class="muted">Exposure: not computed (${esc(exp.reason)}).</p>`) +
+    `<p class="sheet-links">${finderLink(t)} · <a href="../tools/cone/?ra=${t.ra.toFixed(6)}&amp;dec=${t.dec.toFixed(6)}&amp;r=0.0833333">CTAS and WorldsIndex records within 5′</a></p></div>` +
+    finderHtml(t) + `</div>` +
+    `<div class="chart">${altitudeChartSvg(grid, { ...t, kind: "ctas" }, site.lat, altLimit, site.tz)}</div></article>`;
+}
+
 export const STANDARDS_NOTE = "Standard stars are not listed yet: the Landolt (1992, 2009) and Smith et al. (2002) standard-star catalogues are not part of this site's release, and nothing is filled in from memory. Pick a field near the target's airmass from the catalogues: ";
 
 // ------------------------------------------------------------------ the run list panel
 export function cartPanelHtml(items, { persistent = true } = {}) {
-  const kindLabel = (k) => k === "planet" ? "planet" : "CTAS transient";
-  if (!items.length) return `<p>Your run list is empty. Add targets with <strong>Add to run list</strong> on a <a href="../ctas.html">CTAS</a> dossier, a <a href="../worldsindex/">WorldsIndex</a> planet page or a row of the <a href="./">Tonight planner</a>. Until then this sheet shows the ten CTAS follow-up targets up longest tonight.</p>`;
+  const kindLabel = (k) => k === "planet" ? "planet" : k === "target" ? "your target" : "CTAS transient";
+  if (!items.length) return `<p>Your run list is empty. Add targets with <strong>Add to run list</strong> on a <a href="../ctas.html">CTAS</a> dossier, a <a href="../worldsindex/">WorldsIndex</a> planet page or a row of the <a href="./">Tonight planner</a>, or in bulk from <a href="../tools/follow/">Follow</a> (a filter, a sky region or your watchlist), the <a href="../tools/cone/">cone search</a> and the <a href="../tools/sql/">SQL page</a>; the <a href="../tools/finder/">finder chart</a> can add any position. Until then this sheet shows the ten CTAS follow-up targets up longest tonight.</p>`;
   return `<ol class="cart-list">` + items.map((x, i) => {
     const key = `${x.kind}:${x.id}`;
     return `<li data-cart-item="${esc(key)}"><span class="cart-name">${i + 1}. ${esc(x.name)} <small>${kindLabel(x.kind)}</small></span>` +
@@ -303,11 +342,13 @@ async function run() {
       intro = source.mode === "cart" ? " from your run list" : " from the link";
     }
     if (build !== page.building) return;
-    const transients = targets.filter((t) => t.kind !== "planet").length, planets = targets.length - transients;
+    const transients = targets.filter((t) => t.kind === "ctas").length, planets = targets.filter((t) => t.kind === "planet").length, plain = targets.length - transients - planets;
     $("#sheet-head").innerHTML = `<p><strong>${esc(site.name)}</strong> · night of ${esc(date)} · dark (Sun below −12°) ${night ? `${timeFmt(night.from, site.tz)}–${timeFmt(night.to, site.tz)}` : "never"} ${esc(site.tz)} · Moon ${Math.round(grid.moonIllumination * 100)}% lit · ${targets.length} target${targets.length === 1 ? "" : "s"}` +
-      `${planets && transients ? ` (${transients} transient${transients === 1 ? "" : "s"}, ${planets} planet${planets === 1 ? "" : "s"})` : ""}${intro}.</p>`;
+      `${[transients, planets, plain].filter(Boolean).length > 1 ? ` (${[[transients, "transient"], [planets, "planet"], [plain, "position"]].filter(([n]) => n).map(([n, w]) => `${n} ${w}${n === 1 ? "" : "s"}`).join(", ")})` : ""}${intro}.</p>`;
     $("#sheet").innerHTML = targets.length
-      ? targets.map((t, i) => t.kind === "planet" ? planetHtml(t, i, { site, grid, altLimit: query.altLimit, noonUtcMs }) : targetHtml(t, i, { site, grid, altLimit: query.altLimit })).join("")
+      ? targets.map((t, i) => t.kind === "planet" ? planetHtml(t, i, { site, grid, altLimit: query.altLimit, noonUtcMs })
+        : t.kind === "target" ? plainTargetHtml(t, i, { site, grid, altLimit: query.altLimit })
+        : targetHtml(t, i, { site, grid, altLimit: query.altLimit })).join("")
       : (source.mode === "top" ? "<p>No CTAS follow-up target is up tonight at this site.</p>" : "<p>None of the listed targets has a position this sheet can use.</p>");
     status.textContent = "";
   } catch (error) {
@@ -349,7 +390,24 @@ function itemOf(el) {
   return { kind: key.slice(0, at), id: key.slice(at + 1) };
 }
 
+// "Back to …": the page of this site the visitor came from (same origin only), else the Tonight planner.
+export const BACK_LABELS = [["/ctas.html", "CTAS"], ["/ctas/status.html", "the CTAS status page"], ["/worldsindex/status.html", "the WorldsIndex status page"],
+  ["/worldsindex/", "WorldsIndex"], ["/tools/follow/", "Follow"], ["/tools/cone/", "the cone search"], ["/tools/sql/", "the SQL page"],
+  ["/tools/finder/", "the finder chart"], ["/tools/exposure/", "the exposure calculator"], ["/tools/", "the tools"], ["/tonight/", "the Tonight planner"],
+  ["/research/", "the research pages"]];
+export function backLink(referrer, here) {
+  try {
+    const from = new URL(referrer), at = new URL(here);
+    if (from.origin !== at.origin || from.pathname === at.pathname) return null;
+    const root = at.pathname.replace(/tonight\/runsheet\.html$/, ""), path = "/" + from.pathname.slice(root.length);
+    const hit = BACK_LABELS.find(([p]) => path === p || path.startsWith(p));
+    return { href: from.href, label: hit ? hit[1] : path === "/" || path === "/index.html" ? "the home page" : "the previous page" };
+  } catch (_) { return null; }
+}
+
 export function init() {
+  const back = $("#back-link"), to = backLink(document.referrer, location.href);
+  if (back) back.innerHTML = to ? `<a href="${esc(to.href)}">← Back to ${esc(to.label)}</a> · <a href="./">Tonight planner</a>` : `<a href="./">← Tonight planner</a> · <a href="../tools/follow/">Follow</a> · <a href="../tools/">Tools</a>`;
   const all = [...SITES, ...savedSites()];
   const query = parseQuery(new URL(location.href).searchParams, all);
   $("#site").innerHTML = all.map((s) => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("");

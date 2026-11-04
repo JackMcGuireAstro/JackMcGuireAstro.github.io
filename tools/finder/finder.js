@@ -2,6 +2,7 @@
 // involved) with an SVG overlay drawn on top. A typed object name is looked up with CDS
 // Sesame. Those two requests are the only ones this page makes; nothing is stored.
 import { parseCoordinates, formatRA, formatDec, tangentOffset, offsetMove } from "../lib/astrometry.js?v=20261003";
+import { mountPicker } from "../lib/run-cart-items.js?v=20261104";
 
 export const SURVEYS = [
   { id: "dss2-red", label: "DSS2 red", hips: "CDS/P/DSS2/red", decMin: -90 },
@@ -176,6 +177,13 @@ function showChart(target) {
   const q = new URLSearchParams({ ra: target.ra.toFixed(6), dec: target.dec.toFixed(6), ...(target.name ? { name: target.name } : {}) });
   $("#coords-link").href = `../coordinates/?${q}`;
   $("#coords-link").hidden = false;
+  // The chart's target on the run list: the item it came from, or a plain target at this position.
+  const toggle = $("#finder-runcart"), C = globalThis.RunCart;
+  if (toggle && C) {
+    const item = target.cartItem || { kind: "target", id: C.targetId(target.ra, target.dec), name: target.name || `${formatRA(target.ra, 1)} ${formatDec(target.dec, 0)}`, ra: target.ra, dec: target.dec };
+    Object.assign(toggle.dataset, { kind: item.kind, id: item.id, name: item.name, ra: String(item.ra), dec: String(item.dec) });
+    toggle.hidden = false;
+  }
 }
 
 async function make() {
@@ -216,6 +224,17 @@ function setOffset() {
 }
 
 export function init() {
+  // "Load from run list": chart any target already on the run list.
+  mountPicker($("#finder-runlist"), {
+    label: "Chart a target from your run list",
+    onPick: (item) => {
+      if (!Number.isFinite(item.ra) || !Number.isFinite(item.dec)) { status(`${item.name} has no position in your run list; open it from its catalog page first.`); return; }
+      $("#target").value = `${item.ra.toFixed(6)}, ${item.dec.toFixed(6)}`;
+      $("#label").value = item.name;
+      if (currentFov() === null) return;
+      showChart({ ra: item.ra, dec: item.dec, name: item.name, cartItem: item });
+    },
+  });
   $("#survey").innerHTML = SURVEYS.map((s) => `<option value="${s.id}">${esc(s.label)}</option>`).join("");
   const p = readUrlParams(location.search);
   if (p.fov) $("#fov").value = p.fov;

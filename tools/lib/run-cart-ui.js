@@ -2,8 +2,11 @@
 // Tonight and the run sheet. A classic script; pages mark their elements and this file wires them:
 //   <a data-runcart-badge href=".../tonight/runsheet.html">Run list</a>   → "Run list (3)"
 //   <button data-runcart-toggle data-kind="ctas" data-id=… data-name=… data-ra=… data-dec=…>
-//       (optional data-window='{"midMs":…}' — a planet's next transit window)
-//   <button data-runcart-add-many='[{"kind":"ctas","id":…,"name":…,"ra":…,"dec":…}, …]'>
+//       (optional data-window='{"midMs":…}' — a planet's next transit window; data-mag and
+//        data-mag-band — a magnitude and its band, for a plain "target")
+//   <button data-runcart-add-many='[{"kind":"ctas","id":…,"name":…,"ra":…,"dec":…}, …]'
+//       data-runcart-total="1234">  (optional: how many matched, when only the first are offered)
+// A status line for a button is the nearest [data-runcart-status] in the same parent.
 // Everything stays in this browser; nothing is sent anywhere.
 (function (root) {
   "use strict";
@@ -14,7 +17,8 @@
   function itemFrom(button) {
     var d = button.dataset, win = null;
     if (d.window) { try { win = JSON.parse(d.window); } catch (_) { win = null; } }
-    return { kind: d.kind, id: d.id, name: d.name, ra: d.ra === "" || d.ra === undefined ? null : Number(d.ra), dec: d.dec === "" || d.dec === undefined ? null : Number(d.dec), transitWindow: win };
+    return { kind: d.kind, id: d.id, name: d.name, ra: d.ra === "" || d.ra === undefined ? null : Number(d.ra), dec: d.dec === "" || d.dec === undefined ? null : Number(d.dec), transitWindow: win,
+      mag: d.mag === "" || d.mag === undefined ? null : Number(d.mag), magBand: d.magBand };
   }
   function label(button, inList) {
     var name = button.dataset.name || button.dataset.id || "";
@@ -57,8 +61,11 @@
       event.preventDefault(); event.stopPropagation();
       var items = [];
       try { items = JSON.parse(many.getAttribute("data-runcart-add-many")) || []; } catch (_) { items = []; }
-      var out = Cart.addMany(items);
-      say(many, out.added + " added to your run list" + (out.full ? "; " + out.full + " did not fit (the list holds " + Cart.MAX_ITEMS + ")" : "") + ".");
+      var out = Cart.addMany(items), total = Number(many.getAttribute("data-runcart-total"));
+      var present = items.length - out.added - out.full;
+      say(many, out.added + " added to your run list" + (present > 0 ? ", " + present + " already there" : "") +
+        (out.full ? "; " + out.full + " did not fit (the list holds " + Cart.MAX_ITEMS + "; remove some or narrow the selection)" : "") +
+        (total > items.length ? ". Only the first " + items.length + " of " + total.toLocaleString("en-US") + " matches, in the order shown, were offered" : "") + ".");
       refresh();
     }
   }, true);

@@ -178,3 +178,15 @@ small { color:var(--muted) }
   .overlay text.offset { fill:#000!important; stroke:#fff!important }
   .chart-figure figcaption { color:#000; font-size:10.5pt }
 }
+
+/* ------------------------------------------------------------------ the run list (shared by every tool) */
+.top nav a[data-runcart-badge] { font-weight:600 }
+.runcart-row { margin:0 0 1rem; display:flex; flex-wrap:wrap; gap:.4rem .6rem; align-items:center; font-size:.9rem }
+.runcart-row select { font:inherit; max-width:min(100%, 26rem); padding:.3rem .4rem; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--ink) }
+.runcart-toggle { font-size:.78rem; padding:.2rem .55rem; min-height:28px; white-space:nowrap }
+.runcart-toggle[aria-pressed="true"] { border-color:var(--ok); color:var(--ok) }
+.runcart-status { font-size:.85rem; color:var(--ok) }
+.runcart-status:empty { display:none }
+.runcart-target { display:inline-flex; flex-wrap:wrap; gap:.4rem; align-items:center; font-size:.88rem; color:var(--muted) }
+.back-link { font-size:.9rem; margin:0 0 .4rem }
+@media print { .runcart-toggle, .runcart-row, .runcart-status { display:none !important } }

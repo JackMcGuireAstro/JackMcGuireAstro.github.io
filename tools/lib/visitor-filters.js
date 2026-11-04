@@ -171,11 +171,22 @@ const NAME_FOLD = (s) => String(s ?? "").toLowerCase().replace(/[\s_-]+/g, "");
 
 // A watchlist line: a name ("SN 2024ggi", "TRAPPIST-1 e") or a position with an optional
 // radius in arcseconds ("210.91 54.31 5", "14:03:38.6 +54:18:42 10"). Positions accept
-// decimal degrees or sexagesimal hours/degrees.
+// decimal degrees or sexagesimal hours/degrees. A named position puts the name before a bar,
+// with an optional magnitude as band=value at the end ("M51 | 13:29:52.7 +47:11:43 V=8.4");
+// the run list keeps it as a plain target with that name (and magnitude, for exposures).
+const MAG_TOKEN = /^([UBVRIugriz])=([+-]?\d+(?:\.\d+)?)$/;
 export function parseWatchLine(line) {
   const text = String(line ?? "").trim();
   if (!text || text.startsWith("#")) return null;
-  const tokens = text.split(/[\s,]+/);
+  const bar = text.indexOf("|");
+  if (bar > 0) {
+    const label = text.slice(0, bar).trim(), rest = parseWatchLine(text.slice(bar + 1));
+    if (label && rest && rest.kind === "position") return { ...rest, label, text };
+    return { kind: "name", name: text, key: NAME_FOLD(text), text };
+  }
+  let tokens = text.split(/[\s,]+/), mag = null;
+  const last = tokens.length > 2 ? tokens[tokens.length - 1].match(MAG_TOKEN) : null;
+  if (last) { mag = { band: last[1], mag: Number(last[2]) }; tokens = tokens.slice(0, -1); }
   const angle = (t, isRa) => {
     if (/^[+-]?\d+(\.\d+)?$/.test(t)) return Number(t);
     const m = t.match(/^([+-])?(\d{1,3}):(\d{1,2})(?::(\d{1,2}(?:\.\d+)?))?$/);
@@ -187,7 +198,7 @@ export function parseWatchLine(line) {
     const ra = angle(tokens[0], tokens[0].includes(":")), dec = angle(tokens[1], false);
     const radius = tokens.length === 3 ? Number(tokens[2]) : 5;
     if (ra !== null && dec !== null && ra >= 0 && ra < 360 && dec >= -90 && dec <= 90 && radius > 0 && radius <= 3600) {
-      return { kind: "position", ra, dec, radiusArcsec: radius, text };
+      return { kind: "position", ra, dec, radiusArcsec: radius, text, ...(mag ? { mag: mag.mag, magBand: mag.band } : {}) };
     }
   }
   return { kind: "name", name: text, key: NAME_FOLD(text), text };

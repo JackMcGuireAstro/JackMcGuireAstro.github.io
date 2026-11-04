@@ -276,9 +276,86 @@ process.stdout.write(encodeFilterForUrl({schema: "jm.visitor-filter@1", title: "
         self.assertTrue(ctas.get_attribute("[data-open-notebook]", "href").endswith(f"tools/notebook/?ctas={self.sn['event_id']}"))
         ctas.close()
 
+    # ------------------------------------------------------------------ one run list across the site
+    def test_follow_cone_and_finder_fill_one_run_list_that_the_run_sheet_prints(self):
+        context = self.browser.new_context(viewport={"width": 1280, "height": 900})
+        # Follow: a gallery filter's "Add all" (the first 50 when more match), a watched planet, and a
+        # named position with a magnitude that matches nothing, as a plain target.
+        page = self.open("/tools/follow/", context=context, wait="#gallery li")
+        page.click("#gallery-ctas-retracted button")
+        page.wait_for_selector("#filter-results [data-runcart-add-many]", timeout=60000)
+        offered = len(json.loads(page.get_attribute("#filter-results [data-runcart-add-many]", "data-runcart-add-many")))
+        page.click("#filter-results [data-runcart-add-many]")
+        page.wait_for_function("document.querySelector('#filter-results [data-runcart-status]').textContent.includes('added to your run list')", timeout=30000)
+        count = page.evaluate("RunCart.count()")
+        self.assertEqual(count, min(offered, 50))
+        self.assertEqual(page.inner_text("nav[aria-label='Primary'] [data-runcart-badge]"), f"Run list ({count})")
+        page.fill("#watch-text", "HD 209458 b\nEmpty field | 12:00:00 +30:00:00 V=14.5")
+        page.click("#watch-save")
+        page.wait_for_selector("#watch-results article:nth-of-type(2) [data-runcart-toggle]", timeout=60000)
+        if count >= 50:
+            page.evaluate("RunCart.replace(RunCart.list().slice(0, 40))")
+        page.locator("#watch-results article", has_text="HD 209458 b").locator("tbody [data-runcart-toggle]").first.click()
+        page.locator("#watch-results article", has_text="Empty field").locator("[data-runcart-toggle]").last.click()
+        items = page.evaluate("RunCart.list()")
+        self.assertEqual(items[-1]["kind"], "target"); self.assertEqual(items[-1]["name"], "Empty field")
+        self.assertEqual((items[-1]["mag"], items[-1]["magBand"]), (14.5, "V"))
+        self.assertEqual(items[-2]["kind"], "planet")
+        self.assertEqual(page.errors, [])
+        before = len(items)
+        # Cone search: the nearest result's toggle.
+        cone = context.new_page(); cone.errors = []
+        cone.on("console", lambda m: cone.errors.append(m.text) if m.type == "error" and not is_third_party_load_failure(m.text) else None)
+        cone.goto(f"{self.base}/tools/cone/?ra={self.sn['ra_deg']}&dec={self.sn['dec_deg']}&r=0.05", wait_until="load")
+        cone.wait_for_selector("#cone-results tbody [data-runcart-toggle]", timeout=60000)
+        self.assertIn("Add", cone.inner_text("#cone-add"))
+        cone.locator("#cone-results tbody [data-runcart-toggle]").first.click()
+        self.assertEqual(cone.evaluate("RunCart.count()"), before + 1)
+        self.assertEqual(cone.evaluate("RunCart.list().at(-1).id"), self.sn["event_id"])
+        # The other tab follows: the Follow page's badge counts the cone's addition.
+        page.wait_for_function(f"document.querySelector(\"nav[aria-label='Primary'] [data-runcart-badge]\").textContent === 'Run list ({before + 1})'", timeout=10000)
+        self.assertEqual(cone.errors, [])
+        # Finder chart: "Load from run list" charts the plain target, and the chart's toggle shows it is listed.
+        finder = context.new_page(); finder.errors = []
+        finder.on("console", lambda m: finder.errors.append(m.text) if m.type == "error" and not is_third_party_load_failure(m.text) else None)
+        finder.goto(f"{self.base}/tools/finder/", wait_until="load")
+        finder.wait_for_selector("#finder-runlist select", timeout=30000)
+        index = next(i for i, x in enumerate(finder.evaluate("RunCart.list()")) if x["name"] == "Empty field")
+        finder.select_option("#finder-runlist select", str(index))
+        finder.click("#finder-runlist [data-runcart-load]")
+        finder.wait_for_selector("#finder-runcart:not([hidden])", timeout=30000)
+        self.assertEqual(finder.input_value("#label"), "Empty field")
+        self.assertEqual(finder.get_attribute("#finder-runcart", "aria-pressed"), "true")
+        self.assertEqual(finder.errors, [])
+        # The run sheet prints every kind, in order, the plain target with its exposure.
+        sheet = context.new_page(); sheet.errors = []
+        sheet.on("console", lambda m: sheet.errors.append(m.text) if m.type == "error" and not is_third_party_load_failure(m.text) else None)
+        sheet.goto(f"{self.base}/tonight/runsheet.html", wait_until="load", referer=f"{self.base}/tools/follow/")
+        sheet.wait_for_selector("#sheet .sheet-target", timeout=90000)
+        listed = sheet.evaluate("RunCart.list().map(x => x.kind + ':' + x.id)")
+        printed = sheet.evaluate("[...document.querySelectorAll('#sheet .sheet-target')].map(e => e.dataset.sheetKind + ':' + e.dataset.sheetTarget)")
+        self.assertEqual(printed, [k for k in listed if k in printed], "the sheet keeps the run list's order")
+        kinds = {k.split(":", 1)[0] for k in printed}
+        self.assertTrue({"ctas", "planet", "target"} <= kinds, kinds)
+        plain = sheet.locator("#sheet [data-sheet-kind='target']")
+        self.assertIn("Empty field", plain.inner_text())
+        self.assertIn("S/N 20 in V", plain.inner_text())
+        self.assertIn("Back to Follow", sheet.inner_text("#back-link"))
+        self.assertEqual(sheet.inner_text("nav[aria-label='Primary'] [data-runcart-badge]"), f"Run list ({len(listed)})")
+        self.assertEqual(sheet.errors, [])
+        # The badge is on every page of the site and reads the same list.
+        for path in ("/index.html", "/tools/", "/research/barium-dwarfs/", "/tools/sql/", "/tools/exposure/", "/ctas/status.html", "/worldsindex/status.html"):
+            with self.subTest(path=path):
+                other = context.new_page()
+                other.goto(self.base + path, wait_until="load")
+                other.wait_for_function(f"[...document.querySelectorAll('[data-runcart-badge]')].some(b => b.textContent === 'Run list ({len(listed)})')", timeout=30000)
+                other.close()
+        context.close()
+
     # ------------------------------------------------------------------ layout and accessibility
     def test_no_sideways_scroll(self):
-        for path, wait in (("/tools/follow/", "#gallery li"), ("/tools/sql/", "#tables h3"), ("/tools/cone/", "#cone-form"), ("/tools/notebook/", "#nb-target")):
+        for path, wait in (("/tools/follow/", "#gallery li"), ("/tools/sql/", "#tables h3"), ("/tools/cone/", "#cone-form"), ("/tools/notebook/", "#nb-target"),
+                           ("/index.html", "#primary-nav"), ("/tools/", ".tool-grid"), ("/tonight/runsheet.html", "#sheet-form")):
             page = self.open(path, wait=wait)
             for width in (320, 390, 768, 1280):
                 with self.subTest(path=path, width=width):
