@@ -536,3 +536,8 @@ footer nav a { display: inline-flex; align-items: center; min-height: 44px; colo
 .observe-controls .observe-check { flex-direction:row; align-items:center; gap:.4rem }
 .observe-controls select, .observe-controls input[type="number"] { min-height:40px; max-width:14rem }
 .observe-table th, .observe-table td { white-space:nowrap }
+
+/* The shared run list (tools/lib/run-cart.js): the toolbar toggle and its status line. */
+.button[data-runcart-toggle][aria-pressed="true"] { border-color: var(--cyan); color: var(--cyan); }
+.runlist-status { align-self: center; color: var(--muted); font-size: .85rem; }
+.runlist-status:empty { display: none; }

@@ -306,8 +306,8 @@ test("the 30-night list: one site's nights from the chosen date, grouped and in 
 test("run sheet: query parsing, target choice and the finder survey", () => {
   const ids = "123e4567-e89b-42d3-a456-426614174000,not-an-id,123e4567-e89b-42d3-a456-426614174000";
   const q = runsheet.parseQuery(new URLSearchParams(`events=${ids}&site=rbo&date=2026-10-03&alt=40`));
-  assert.deepEqual(q, { events: ["123e4567-e89b-42d3-a456-426614174000"], top: null, site: "rbo", date: "2026-10-03", altLimit: 40 });
-  assert.deepEqual(runsheet.parseQuery(new URLSearchParams("top=99&site=keck&alt=7")), { events: [], top: 20, altLimit: 30 });
+  assert.deepEqual(q, { events: ["123e4567-e89b-42d3-a456-426614174000"], planets: [], list: [], top: null, site: "rbo", date: "2026-10-03", altLimit: 40 });
+  assert.deepEqual(runsheet.parseQuery(new URLSearchParams("top=99&site=keck&alt=7")), { events: [], planets: [], list: [], top: 20, altLimit: 30 });
   assert.equal(runsheet.finderSurvey(10).id, "ps1-color");
   assert.equal(runsheet.finderSurvey(-45).id, "dss2-red");
   const site = SITES[0];

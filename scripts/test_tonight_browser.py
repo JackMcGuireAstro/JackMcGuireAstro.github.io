@@ -311,6 +311,117 @@ class TonightBrowserTests(unittest.TestCase):
             self.assertEqual([f"{v['id']} ({len(v['nodes'])}): {v['help']}" for v in result["violations"]], [])
         page.close()
 
+    # ---- the shared run list (tools/lib/run-cart.js): CTAS, WorldsIndex and Tonight feed the run sheet
+    def _context(self, width=1280, height=900):
+        ctx = self.browser.new_context(viewport={"width": width, "height": height}, timezone_id="America/Denver")
+        errors = []
+        ctx.on("page", lambda p: (p.on("console", lambda m: errors.append(m.text) if m.type == "error" else None),
+                                  p.on("pageerror", lambda e: errors.append(str(e)))))
+        return ctx, errors
+
+    def _cart(self, page):
+        return page.evaluate("JSON.parse(localStorage.getItem('jm.runlist.v1') || '[]')")
+
+    def test_run_list_across_pages_and_the_run_sheet(self):
+        summary = json.loads((ROOT / "ctas" / "data" / "live-summary.json").read_text())
+        at = {c: i for i, c in enumerate(summary["candidate_columns"])}
+        row = next(r for r in summary["candidate_rows"] if r[at["record_role"]] == "follow-up-target-candidate" and r[at["ra_deg"]] is not None)
+        event_id, event_name = row[at["event_id"]], row[at["name"]]
+        index = json.loads(gzip.decompress((ROOT / "worldsindex" / "data" / "catalog-index.json.gz").read_bytes()))
+        planet = next(o for o in index["objects"] if o.get("name") == "HD 209458 b")
+        ctx, errors = self._context()
+        page = ctx.new_page()
+        # 1. a CTAS dossier
+        page.goto(f"{self.base}/ctas.html?event={event_id}", wait_until="networkidle", timeout=90000)
+        button = page.locator("#dossier [data-runcart-toggle]").first
+        button.wait_for(state="visible", timeout=60000)
+        self.assertEqual(button.inner_text(), "Add to run list")
+        button.click()
+        page.wait_for_function("document.querySelector('#dossier [data-runcart-toggle]').getAttribute('aria-pressed') === 'true'", timeout=10000)
+        self.assertEqual(page.locator("#dossier [data-runcart-toggle]").first.inner_text(), "✓ In run list")
+        self.assertIn("Run list (1)", page.locator(".nav [data-runcart-badge]").inner_text())
+        # 2. a WorldsIndex planet page
+        page.goto(f"{self.base}/worldsindex/?object={planet['objectId']}&section=object", wait_until="networkidle", timeout=90000)
+        page.wait_for_function("window.RunCart && !document.getElementById('add-to-runlist').hidden", timeout=60000)
+        page.click("#add-to-runlist")
+        page.wait_for_function("document.getElementById('add-to-runlist').getAttribute('aria-pressed') === 'true'", timeout=10000)
+        self.assertIn("Run list (2)", page.locator(".site-journey [data-runcart-badge]").inner_text())
+        # 3. a transit row of the Tonight planner (the fixture ephemerides)
+        page.route("**/worldsindex/data/transit-ephemerides.json.gz", lambda route: route.fulfill(status=200, content_type="application/gzip", body=_transit_artifact()))
+        page.goto(f"{self.base}/tonight/", wait_until="networkidle", timeout=60000)
+        page.wait_for_selector("#results table, #results p", timeout=30000)
+        self.show_transits(page)
+        page.wait_for_function("window.RunCart && document.querySelector('#results [data-runcart-toggle]')", timeout=30000)
+        row_button = page.locator("#results tbody tr [data-runcart-toggle]").first
+        transit_name = row_button.get_attribute("data-name")
+        row_button.click()
+        page.wait_for_function("document.querySelector('#results tbody tr [data-runcart-toggle]').getAttribute('aria-pressed') === 'true'", timeout=10000)
+        self.assertEqual(page.locator("#chart svg").count(), 0, "the row button does not open the row's chart")
+        page.unroute("**/worldsindex/data/transit-ephemerides.json.gz")
+        cart = self._cart(page)
+        self.assertEqual([(x["kind"], x["name"]) for x in cart], [("ctas", event_name), ("planet", "HD 209458 b"), ("planet", transit_name)])
+        self.assertEqual(cart[2]["transitWindow"]["site"], "custom")
+        # 4. the run sheet prints the run list, in order
+        page.goto(f"{self.base}/tonight/runsheet.html?site=wiro&date=2026-10-03", wait_until="networkidle", timeout=60000)
+        page.wait_for_function("document.querySelectorAll('#sheet article').length === 3", timeout=60000)
+        self.assertEqual(page.locator("#cart-body li").count(), 3)
+        self.assertIn("from your run list", page.inner_text("#sheet-head"))
+        kinds = page.eval_on_selector_all("#sheet article", "els => els.map(e => e.dataset.sheetKind)")
+        self.assertEqual(kinds, ["ctas", "planet", "planet"])
+        self.assertIn("HD 209458 b", page.locator("#sheet article").nth(1).inner_text())
+        planet_text = page.locator("#sheet article").nth(1).inner_text()
+        self.assertIn("host mag", planet_text.lower())
+        self.assertIn("stands in for Cousins I", planet_text)
+        # reorder with the keyboard, add a note, remove one
+        up = page.locator("#cart-body li").nth(2).locator("[data-cart-move='-1']")
+        up.focus(); page.keyboard.press("Enter")
+        page.wait_for_function(f"document.querySelectorAll('#cart-body li')[1].textContent.includes({json.dumps(transit_name)})", timeout=10000)
+        focused = page.evaluate("document.activeElement.closest('[data-cart-item]')?.textContent || ''")
+        self.assertIn(transit_name, focused, "the keyboard stays on the item that moved")
+        page.wait_for_function(f"document.querySelectorAll('#sheet article')[1]?.textContent.includes({json.dumps(transit_name)})", timeout=30000)
+        note = page.locator("#cart-body li").first.locator("[data-cart-note]")
+        note.fill("spectrum first"); note.press("Tab")
+        page.wait_for_function("document.querySelector('#sheet .sheet-note')?.textContent.includes('spectrum first')", timeout=30000)
+        page.locator("#cart-body li").nth(2).locator("[data-cart-remove]").click()
+        page.wait_for_function("document.querySelectorAll('#sheet article').length === 2", timeout=30000)
+        self.assertEqual([x["kind"] for x in self._cart(page)], ["ctas", "planet"])
+        share = page.get_attribute("#cart-share", "href")
+        self.assertIn("list=", share)
+        # print layout: the controls disappear, the targets stay, one per page
+        page.emulate_media(media="print")
+        self.assertFalse(page.is_visible("#cart"))
+        self.assertTrue(page.is_visible("#sheet article"))
+        breaks = page.eval_on_selector_all("#sheet article", "els => els.map(e => getComputedStyle(e).breakBefore)")
+        self.assertEqual(breaks[1:], ["page"] * (len(breaks) - 1))
+        page.emulate_media(media="screen")
+        # 5. the share link in a fresh browser: the sheet shows the link's list and can load it
+        ctx2, errors2 = self._context(width=390, height=844)
+        other = ctx2.new_page()
+        other.goto(share, wait_until="networkidle", timeout=60000)
+        other.wait_for_function("document.querySelectorAll('#sheet article').length === 2", timeout=60000)
+        self.assertIn("from the link", other.inner_text("#sheet-head"))
+        self.assertFalse(other.locator("#cart-banner").is_hidden())
+        self.assertEqual(self._cart(other), [])
+        other.click("[data-cart-load]")
+        other.wait_for_function("JSON.parse(localStorage.getItem('jm.runlist.v1') || '[]').length === 2", timeout=10000)
+        self.assertEqual([x["note"] if "note" in x else None for x in self._cart(other)], ["spectrum first", None])
+        overflow = other.evaluate("document.documentElement.scrollWidth - document.documentElement.clientWidth")
+        self.assertLessEqual(overflow, 1, "390px")
+        # another tab of the first browser follows a change made in this one
+        sheet_tab = ctx.new_page()
+        sheet_tab.goto(f"{self.base}/tonight/runsheet.html?site=wiro&date=2026-10-03", wait_until="networkidle", timeout=60000)
+        sheet_tab.wait_for_function("document.querySelectorAll('#cart-body li').length === 2", timeout=30000)
+        page.evaluate("RunCart.clear()")
+        sheet_tab.wait_for_function("document.querySelectorAll('#cart-body li').length === 0 && document.querySelector('#cart-body').textContent.includes('empty')", timeout=10000)
+        axe = next((p for p in (ROOT / "node_modules" / "axe-core" / "axe.min.js",
+                                ROOT.parent / "node_modules" / "axe-core" / "axe.min.js") if p.exists()), None)
+        if axe is not None:
+            other.add_script_tag(content=axe.read_text())
+            result = other.evaluate("async () => await axe.run(document, {runOnly: {type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']}})")
+            self.assertEqual([f"{v['id']} ({len(v['nodes'])}): {v['help']}" for v in result["violations"]], [])
+        self.assertEqual(self.first_party(errors + errors2), [])
+        ctx2.close(); ctx.close()
+
     def test_homepage_links_to_the_planner(self):
         page = self.browser.new_page()
         page.goto(f"{self.base}/index.html", wait_until="domcontentloaded")

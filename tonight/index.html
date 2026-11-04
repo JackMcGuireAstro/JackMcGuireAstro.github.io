@@ -7,8 +7,10 @@
 <meta name="description" content="Plan an observing night: which CTAS transients, WorldsIndex planetary systems and exoplanet transits are up tonight from your observatory, for how long, and how far from the Moon.">
 <meta name="theme-color" content="#f4f1ea">
 <link rel="canonical" href="https://jackmcguireastro.github.io/tonight/">
-<link rel="stylesheet" href="planner.css?v=20261029">
-<script type="module" src="planner.js?v=20261029"></script>
+<link rel="stylesheet" href="planner.css?v=20261104">
+<script type="module" src="planner.js?v=20261104"></script>
+<!-- The shared run list loads after the page (it is not needed for the first screen). -->
+<script>addEventListener("load",function(){["../tools/lib/run-cart.js?v=20261104","../tools/lib/run-cart-ui.js?v=20261104"].forEach(function(s){var e=document.createElement("script");e.src=s;e.async=false;document.head.appendChild(e);});});</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
 </head>
@@ -16,7 +18,7 @@
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="top"><div class="shell top-inner">
   <a class="wordmark" href="../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
-  <nav aria-label="Primary"><a href="../index.html">Home</a><a href="../worldsindex/">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="./" aria-current="page">Tonight</a></nav>
+  <nav aria-label="Primary"><a href="../index.html">Home</a><a href="../worldsindex/">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="./" aria-current="page">Tonight</a><a data-runcart-badge href="runsheet.html">Run list</a></nav>
 </div></header>
 <main id="main" class="shell">
   <section class="intro">

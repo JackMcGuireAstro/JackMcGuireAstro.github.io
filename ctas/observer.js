@@ -503,7 +503,8 @@
     var tns = tnsName(candidate);
     var region = regionOf(candidate);
     var actions = hasCoords ? '<ul class="ctas-observer__actions">' +
-      '<li><a href="' + esc(base) + "tonight/runsheet.html?site=wiro&amp;events=" + encodeURIComponent(candidate.event_id) + '" data-observer-runsheet>Printable run sheet</a> (finder chart, airmass, exposure, standard-star note)</li>' +
+      '<li><a href="' + esc(base) + 'tonight/runsheet.html" data-runcart-badge>Run list</a>: the printable run sheet of your own list (add this event with “Add to run list” above) · ' +
+      '<a href="' + esc(base) + "tonight/runsheet.html?site=wiro&amp;events=" + encodeURIComponent(candidate.event_id) + '" data-observer-runsheet>Printable run sheet</a> of this target only (finder chart, airmass, exposure, standard-star note)</li>' +
       '<li><button type="button" class="ctas-link-button" data-observer-copy="atlas" data-event="' + id + '">copy the ATLAS forced-photometry request (curl)</button> · ' +
       '<button type="button" class="ctas-link-button" data-observer-copy="ztf" data-event="' + id + '">copy the ZTF forced-photometry request (URL)</button></li>' +
       '<li><button type="button" class="ctas-link-button" data-observer-download="swift" data-event="' + id + '">Swift ToO request (JSON)</button> · ' +

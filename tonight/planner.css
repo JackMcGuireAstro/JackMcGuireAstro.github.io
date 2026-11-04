@@ -145,3 +145,28 @@ small { color:var(--muted) }
   .chart svg, .table-wrap { border-color:#999 }
   a { text-decoration:none }
 }
+
+/* The shared run list (tools/lib/run-cart.js): the row toggles, "add these" and the run sheet's list. */
+.runlist-toggle { margin-left:.4rem; font:600 .72rem var(--sans); padding:.12rem .45rem; border:1px solid var(--line); border-radius:999px; background:transparent; color:var(--ink); cursor:pointer; vertical-align:middle; min-height:24px }
+.runlist-toggle[aria-pressed="true"] { border-color:var(--rust); color:var(--rust) }
+.runlist-actions { display:inline-flex; flex-wrap:wrap; align-items:center; gap:.5rem }
+.runlist-status { color:var(--ink); font-size:.85rem }
+.runlist-status:empty { display:none }
+.cart { border:1px solid var(--line); border-radius:8px; padding:.8rem 1rem; margin:1rem 0 }
+.cart ol { margin:.4rem 0; padding-left:1.4rem }
+.cart li { display:flex; flex-wrap:wrap; align-items:center; gap:.4rem .6rem; padding:.35rem 0; border-bottom:1px solid var(--line) }
+.cart li:last-child { border-bottom:0 }
+.cart li .cart-name { flex:1 1 12rem; font-weight:600 }
+.cart li .cart-name small { font-weight:400 }
+.cart li input { flex:1 1 12rem; min-width:0; font:inherit; padding:.2rem .4rem; border:1px solid var(--line); border-radius:4px; background:transparent; color:inherit }
+.cart-tools { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin-top:.5rem }
+.cart-small { font:600 .78rem var(--sans); padding:.2rem .5rem; border:1px solid var(--line); border-radius:4px; background:transparent; color:var(--ink); cursor:pointer; min-height:28px; min-width:28px }
+.cart-banner { border-left:3px solid var(--rust); padding:.5rem .8rem; margin:1rem 0 }
+.sheet-transits { width:100%; border-collapse:collapse; font-size:.9rem }
+.sheet-transits th, .sheet-transits td { text-align:left; padding:.2rem .4rem; border-bottom:1px solid var(--line) }
+@media print {
+  .sheet-target + .sheet-target { break-before: page; page-break-before: always }
+  .sheet-target { break-inside: avoid }
+}
+#cart-share-text { flex:1 1 14rem; min-width:0; font:inherit; padding:.2rem .4rem; border:1px solid var(--line); border-radius:4px; background:transparent; color:inherit }
+.sheet-note { margin:.2rem 0 .6rem }

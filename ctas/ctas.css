@@ -1945,3 +1945,10 @@ table.ctas-table { min-width: 900px; }
 .ctas-search-answer p { margin: 0 0 .35rem; }
 .ctas-search-answer ul { list-style: none; margin: 0 0 .35rem; padding: 0; display: flex; flex-wrap: wrap; gap: .35rem; }
 .ctas-search-answer button { font: inherit; padding: .25rem .55rem; border-radius: 6px; cursor: pointer; min-height: 24px; }
+
+/* The shared run list (tools/lib/run-cart.js and run-cart-ui.js, deferred): a toggle in each
+   dossier and card, a link to the run sheet, and a status line for "the list is full". */
+.ctas-workspace button[data-runcart-toggle][aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+.ctas-runlist-link { align-self: center; color: var(--ink-2); font-size: .8rem; text-decoration: underline; text-underline-offset: 3px; }
+.ctas-runlist-status { color: var(--ink-2); font-size: .78rem; }
+.ctas-runlist-status:empty { display: none; }

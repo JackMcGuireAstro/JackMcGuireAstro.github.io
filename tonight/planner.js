@@ -174,6 +174,29 @@ export function runSheetHref(site, date, ids) {
   return `runsheet.html?${params.toString()}`;
 }
 
+// The shared run list (tools/lib/run-cart.js, loaded after the page): a row's item, its toggle
+// button and an "add these" button. A transit carries tonight's window so the run sheet can show it.
+export function runListItem(t) {
+  if (t.kind === "transit") {
+    const win = { site: t.site ?? null, ingressMs: t.ingressMs, midMs: t.midMs, egressMs: t.egressMs, sigmaMinutes: t.sigmaMinutes, altMid: t.altMid, state: t.full ? "full" : "partial" };
+    return { kind: "planet", id: t.objectId, name: t.name, ra: t.raDeg ?? t.ra, dec: t.decDeg ?? t.dec, transitWindow: win };
+  }
+  return { kind: "ctas", id: t.id, name: t.name, ra: t.ra, dec: t.dec };
+}
+export function runListButton(t, siteId) {
+  const item = runListItem(t);
+  if (!item.id || !Number.isFinite(item.ra) || !Number.isFinite(item.dec)) return "";
+  if (item.transitWindow) item.transitWindow.site = siteId;
+  const win = item.transitWindow ? ` data-window="${esc(JSON.stringify(item.transitWindow))}"` : "";
+  return ` <button type="button" class="runlist-toggle" data-runcart-toggle data-runcart-compact data-kind="${item.kind}" data-id="${esc(item.id)}" data-name="${esc(item.name)}" data-ra="${item.ra}" data-dec="${item.dec}"${win} aria-pressed="false">+ Run list</button>`;
+}
+export function runListAddMany(rows, siteId, label) {
+  const items = rows.map((t) => { const item = runListItem(t); if (item.transitWindow) item.transitWindow.site = siteId; return item; })
+    .filter((item) => item.id && Number.isFinite(item.ra) && Number.isFinite(item.dec));
+  if (!items.length) return "";
+  return `<span class="runlist-actions"><button type="button" class="button button-quiet" data-runcart-add-many="${esc(JSON.stringify(items))}">${esc(label)}</button> <a data-runcart-badge href="runsheet.html">Run list</a> <span class="runlist-status" data-runcart-status role="status" aria-live="polite"></span></span>`;
+}
+
 // The release's precomputed 30-night transit list for WIRO and Red Buttes (Track 4): rows of
 // one site from `fromDate` on, grouped by night.
 export function next30Rows(doc, siteId, fromDate) {
@@ -322,15 +345,17 @@ function renderTop(s, top) {
   const tz = s.site.tz, moon = state.grid ? state.grid.moonIllumination : null;
   const telescopes = (t) => feasibleTelescopes(t.followup, { airmass: t.vis.bestAirmass, moonIllumination: moon }).filter((f) => f.feasible).map((f) => `${f.label}: ${f.text}`).join("; ") || "—";
   const ids = top.transients.map((t) => t.id);
-  const sheet = s.site.id !== "custom" && ids.length ? ` <a href="${esc(runSheetHref(s.site, s.date, ids))}" data-runsheet-link>Print a run sheet of these transients</a>.` : "";
-  $("#results").innerHTML = `<h3>Transients</h3><p class="muted">The ${top.transients.length} CTAS follow-up targets up longest above ${s.altLimit}° while it is dark.${sheet}</p>` +
-    (top.transients.length ? `<div class="table-wrap" role="region" aria-label="Top transients tonight" tabindex="0"><table><caption class="visually-hidden">Top CTAS transients tonight</caption><thead><tr><th scope="col">Transient</th><th scope="col">Class · survey</th><th scope="col">Mag</th><th scope="col">Objective</th><th scope="col">Feasible at</th><th scope="col">Hours up</th><th scope="col">Best time</th><th scope="col">Moon sep.</th></tr></thead><tbody>` +
-      top.transients.map((t) => `<tr><th scope="row"><a href="${esc(t.href)}">${esc(t.name)}</a></th><td>${esc(t.detail)}</td><td>${t.mag == null ? "—" : Number(t.mag).toFixed(1)}</td><td>${esc(t.followup ? t.followup.text : "—")}</td><td>${esc(telescopes(t))}</td><td>${t.vis.hours.toFixed(1)}</td><td>${timeFmt(t.vis.bestMs, tz)}</td><td>${t.vis.moonSep == null ? "—" : Math.round(t.vis.moonSep) + "°"}</td></tr>`).join("") +
+  const sheet = s.site.id !== "custom" && ids.length ? ` <a href="${esc(runSheetHref(s.site, s.date, ids))}" data-runsheet-link>Print a run sheet of just these transients</a>.` : "";
+  const addTransients = runListAddMany(top.transients, s.site.id, "Add these transients to my run list");
+  const addTransits = top.transits ? runListAddMany(top.transits.map((t) => ({ ...t, kind: "transit" })), s.site.id, "Add these transits to my run list") : "";
+  $("#results").innerHTML = `<h3>Transients</h3><p class="muted">The ${top.transients.length} CTAS follow-up targets up longest above ${s.altLimit}° while it is dark.${sheet}</p>${addTransients ? `<p>${addTransients}</p>` : ""}` +
+    (top.transients.length ? `<div class="table-wrap" role="region" aria-label="Top transients tonight" tabindex="0"><table><caption class="visually-hidden">Top CTAS transients tonight</caption><thead><tr><th scope="col">Transient</th><th scope="col">Class · survey</th><th scope="col">Mag</th><th scope="col">Objective</th><th scope="col">Feasible at</th><th scope="col">Hours up</th><th scope="col">Best time</th><th scope="col">Moon sep.</th><th scope="col"><span class="visually-hidden">Run list</span></th></tr></thead><tbody>` +
+      top.transients.map((t) => `<tr><th scope="row"><a href="${esc(t.href)}">${esc(t.name)}</a></th><td>${esc(t.detail)}</td><td>${t.mag == null ? "—" : Number(t.mag).toFixed(1)}</td><td>${esc(t.followup ? t.followup.text : "—")}</td><td>${esc(telescopes(t))}</td><td>${t.vis.hours.toFixed(1)}</td><td>${timeFmt(t.vis.bestMs, tz)}</td><td>${t.vis.moonSep == null ? "—" : Math.round(t.vis.moonSep) + "°"}</td><td>${runListButton(t, s.site.id)}</td></tr>`).join("") +
       `</tbody></table></div>` : "<p>No CTAS follow-up target is up tonight with these settings.</p>") +
     `<h3>Transits</h3>` + (top.transits === null ? "<p>The transit list is not published yet.</p>" :
-      `<p class="muted">The first ${top.transits.length} transits seen from start to end with the star above ${s.altLimit}° in the dark${Number.isFinite(s.sigmaMax) ? ` and a mid-time uncertainty of at most ${s.sigmaMax} minutes` : ""}, in time order.</p>` +
-      (top.transits.length ? `<div class="table-wrap" role="region" aria-label="Top transits tonight" tabindex="0"><table><caption class="visually-hidden">Top transits tonight</caption><thead><tr><th scope="col">Planet</th><th scope="col">Star</th><th scope="col">Ingress</th><th scope="col">Mid</th><th scope="col">Egress</th><th scope="col">Depth</th><th scope="col">Mid ±1σ</th><th scope="col">Moon sep.</th></tr></thead><tbody>` +
-        top.transits.map((t) => `<tr><th scope="row"><a href="${esc(t.href)}">${esc(t.name)}</a></th><td>${esc(t.host)}</td><td>${timeFmt(t.ingressMs, tz)}</td><td>${timeFmt(t.midMs, tz)}</td><td>${timeFmt(t.egressMs, tz)}</td><td>${t.depthPpt == null ? "—" : `${Number(t.depthPpt).toPrecision(t.depthPpt < 1 ? 2 : 3)} ppt`}</td><td>±${Math.max(1, Math.round(t.sigmaMinutes))} min</td><td>${Math.round(t.moonSep)}°</td></tr>`).join("") +
+      `<p class="muted">The first ${top.transits.length} transits seen from start to end with the star above ${s.altLimit}° in the dark${Number.isFinite(s.sigmaMax) ? ` and a mid-time uncertainty of at most ${s.sigmaMax} minutes` : ""}, in time order.</p>${addTransits ? `<p>${addTransits}</p>` : ""}` +
+      (top.transits.length ? `<div class="table-wrap" role="region" aria-label="Top transits tonight" tabindex="0"><table><caption class="visually-hidden">Top transits tonight</caption><thead><tr><th scope="col">Planet</th><th scope="col">Star</th><th scope="col">Ingress</th><th scope="col">Mid</th><th scope="col">Egress</th><th scope="col">Depth</th><th scope="col">Mid ±1σ</th><th scope="col">Moon sep.</th><th scope="col"><span class="visually-hidden">Run list</span></th></tr></thead><tbody>` +
+        top.transits.map((t) => `<tr><th scope="row"><a href="${esc(t.href)}">${esc(t.name)}</a></th><td>${esc(t.host)}</td><td>${timeFmt(t.ingressMs, tz)}</td><td>${timeFmt(t.midMs, tz)}</td><td>${timeFmt(t.egressMs, tz)}</td><td>${t.depthPpt == null ? "—" : `${Number(t.depthPpt).toPrecision(t.depthPpt < 1 ? 2 : 3)} ppt`}</td><td>±${Math.max(1, Math.round(t.sigmaMinutes))} min</td><td>${Math.round(t.moonSep)}°</td><td>${runListButton({ ...t, kind: "transit" }, s.site.id)}</td></tr>`).join("") +
         `</tbody></table></div>` : "<p>No transit fits tonight with these settings.</p>"));
   $("#chart").innerHTML = "";
 }
@@ -341,7 +366,7 @@ function renderTable(s, considered) {
   const moon = state.grid ? state.grid.moonIllumination : null;
   const telescopes = (t) => feasibleTelescopes(t.followup, { airmass: t.vis.bestAirmass, moonIllumination: moon }).filter((f) => f.feasible).map((f) => `${f.label}: ${f.text}`).join("; ") || "—";
   $("#results").innerHTML = `<p class="muted">${state.rows.length.toLocaleString()} of ${considered.toLocaleString()} ${ctas ? "CTAS transients" : "planetary systems"} are above ${s.altLimit}° while it is dark${state.rows.length > 200 ? "; showing the 200 up longest" : ""}. Select a row for its altitude curve.</p>` +
-    (ctas && s.site.id !== "custom" && state.rows.length ? `<p class="muted"><a href="${esc(runSheetHref(s.site, s.date, state.rows.slice(0, 10).map((t) => t.id)))}" data-runsheet-link>Print a run sheet of the first ten</a> (finder charts, airmass curves, exposure at WIRO and Red Buttes).</p>` : "") +
+    (ctas && s.site.id !== "custom" && state.rows.length ? `<p class="muted"><a href="${esc(runSheetHref(s.site, s.date, state.rows.slice(0, 10).map((t) => t.id)))}" data-runsheet-link>Print a run sheet of just the first ten</a> (finder charts, airmass curves, exposure at WIRO and Red Buttes), or build your own list with “+ Run list”.</p><p>${runListAddMany(state.rows.slice(0, 10), s.site.id, "Add the first ten to my run list")}</p>` : "") +
     (ctas ? `<p class="muted">“Objective” is the CTAS suggested follow-up for each record (imaging, spectroscopy, counterpart or monitoring) and “Feasible at” names which of WIRO and Red Buttes could reach S/N 20 in r within 3 × 600 s at the target’s best airmass tonight, or take a classification spectrum, using the <a href="../tools/exposure/#placeholder-note">placeholder instrument values</a> of the exposure calculator and the discovery magnitude. It is a heuristic draft, not an observing request.</p>` : "") +
     `<div class="table-wrap" role="region" aria-label="Observable targets" tabindex="0"><table><caption class="visually-hidden">Targets observable tonight</caption><thead><tr>` +
     `<th scope="col">${ctas ? "Transient" : "Host star"}</th><th scope="col">${ctas ? "Class · survey" : "Planets"}</th>${ctas ? '<th scope="col">Disc. mag</th><th scope="col">CTAS score</th><th scope="col">Objective</th><th scope="col">Feasible at</th>' : ""}` +
@@ -350,7 +375,7 @@ function renderTable(s, considered) {
       (ctas ? `<td>${t.mag == null ? "—" : Number(t.mag).toFixed(1)}</td><td>${t.score == null ? "—" : Number(t.score).toFixed(0)}</td><td>${esc(t.followup ? t.followup.text : "—")}${t.followup && t.followup.cadence !== "none" ? ` <small>${esc(t.followup.cadence)}</small>` : ""}</td><td>${esc(telescopes(t))}</td>` : "") +
       `<td>${t.vis.hours.toFixed(1)}</td><td>${Math.round(t.vis.maxAlt)}° <small>(X=${t.vis.bestAirmass ? t.vis.bestAirmass.toFixed(2) : "—"})</small></td>` +
       `<td>${timeFmt(t.vis.bestMs, s.site.tz)}</td><td>${t.vis.moonSep == null ? "—" : Math.round(t.vis.moonSep) + "°"}</td>` +
-      `<td><a href="${esc(t.href)}">${ctas ? "Dossier" : "WorldsIndex"}<span class="visually-hidden"> for ${esc(t.name)}</span></a></td></tr>`).join("") +
+      `<td><a href="${esc(t.href)}">${ctas ? "Dossier" : "WorldsIndex"}<span class="visually-hidden"> for ${esc(t.name)}</span></a>${ctas ? runListButton(t, s.site.id) : ""}</td></tr>`).join("") +
     `</tbody></table></div>`;
   $("#chart").innerHTML = "";
 }
@@ -373,7 +398,7 @@ function renderTransitTable(s, { considered, overlapping, noDuration }) {
       `<td>${clock(t.ingressMs, tz)} <small>(${Math.round(t.altIngress)}°)</small></td><td>${clock(t.midMs, tz)} <small>(${Math.round(t.altMid)}°)</small></td>` +
       `<td>${clock(t.egressMs, tz)} <small>(${Math.round(t.altEgress)}°)</small></td><td>${t.full ? "Full" : `Partial <small>(${Math.round(t.fraction * 100)}%)</small>`}</td>` +
       `<td>${t.depthPpt == null ? "—" : `${Number(t.depthPpt).toPrecision(t.depthPpt < 1 ? 2 : 3)} ppt`}</td><td>${t.sigmaMinutes === null ? "unknown" : `±${minutes(t.sigmaMinutes)}`}</td>` +
-      `<td>${Math.round(t.moonSep)}°</td><td><a href="${esc(t.href)}">WorldsIndex<span class="visually-hidden"> page for ${esc(t.name)}</span></a></td></tr>`).join("") +
+      `<td>${Math.round(t.moonSep)}°</td><td><a href="${esc(t.href)}">WorldsIndex<span class="visually-hidden"> page for ${esc(t.name)}</span></a>${runListButton(t, s.site.id)}</td></tr>`).join("") +
     `</tbody></table></div>` : `<p>No transit fits tonight with these settings. Try a lower altitude limit, a looser timing filter, or include candidates.</p>`);
   $("#chart").innerHTML = "";
 }
@@ -463,12 +488,12 @@ export function init() {
   });
   $("#form").addEventListener("submit", (event) => { event.preventDefault(); run(); });
   $("#results").addEventListener("click", (event) => {
-    if (event.target.closest("a")) return;
+    if (event.target.closest("a, button")) return;
     const row = event.target.closest("tr[data-row]"); if (row) select(Number(row.dataset.row));
   });
   $("#results").addEventListener("keydown", (event) => {
     const row = event.target.closest("tr[data-row]");
-    if (row && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); select(Number(row.dataset.row)); }
+    if (row && event.target === row && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); select(Number(row.dataset.row)); }
   });
   toggleCustom();
   run();

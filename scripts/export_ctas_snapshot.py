@@ -420,6 +420,8 @@ BOUND_CODE_PATHS = (
     "scripts/ctas_multimessenger.py", "scripts/test_ctas_multimessenger.py",
     "ctas/multimessenger.js", "scripts/test_ctas_multimessenger.js",
     "ctas/observer.js", "scripts/test_ctas_observer.js", "scripts/test_ctas_observer.py", "tools/exposure/instruments.js",
+    # The shared run list: loaded on the CTAS page as deferred modules, so bound like the exposure profiles.
+    "tools/lib/run-cart.js", "tools/lib/run-cart-ui.js",
     "tests/fixtures/ctas-brokers/alerce-ZTF26abljbah.json", "tests/fixtures/ctas-brokers/fink-ZTF26abljbah.json",
     "tests/fixtures/ctas-brokers/antares-ZTF26abljbah.json", "tests/fixtures/ctas-brokers/alerce-404-ZTF99zzzzzzz.json",
     "tests/fixtures/ctas-brokers/fink-empty-ZTF99zzzzzzz.json", "tests/fixtures/ctas-brokers/antares-empty-ZTF99zzzzzzz.json",

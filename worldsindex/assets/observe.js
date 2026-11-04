@@ -165,6 +165,23 @@ function eventsTable(events, site) {
     `</tbody></table></div>`;
 }
 
+// The run list (tools/lib/run-cart.js): the planet's next transit window at the chosen site goes on the
+// toolbar's "Add to run list" button, and refreshes the stored window when the planet is already listed.
+export function nextWindow(events, site) {
+  const next = events.find((e) => e.kind === 'transit');
+  if (!next) return null;
+  const out = { site: site.id, state: next.state };
+  for (const k of ['ingressMs', 'midMs', 'egressMs', 'windowStartMs', 'windowEndMs', 'sigmaMinutes', 'altMid']) if (Number.isFinite(next[k])) out[k] = next[k];
+  return out;
+}
+function shareNextWindow(object, site, events) {
+  const button = typeof document === 'undefined' ? null : document.getElementById('add-to-runlist');
+  const win = nextWindow(events, site);
+  if (button && button.dataset.id === object.objectId) { if (win) button.dataset.window = JSON.stringify(win); else delete button.dataset.window; }
+  const cart = globalThis.RunCart;
+  if (win && cart && cart.has('planet', object.objectId)) cart.update('planet', object.objectId, { transitWindow: win });
+}
+
 /** Mounts the "Observe this planet" section on the System & orbit tab (absent without an ephemeris). */
 export async function mountObserve(panel, object) {
   const ephemerides = await loadEphemerides().catch(() => null);
@@ -196,6 +213,7 @@ export async function mountObserve(panel, object) {
       ? `<p>${events.filter((e) => e.kind === 'transit').length} transit window(s) in ${options.nights} nights at ${esc(site.name)} (${events.filter((e) => e.state === 'full').length} full). Times in ${esc(site.tz)}.</p>${eventsTable(events, site)}` +
         `<p><button type="button" class="text-link" data-observe-download="ics">Download as iCal</button> · <button type="button" class="text-link" data-observe-download="csv">Download as CSV</button></p>`
       : `<p>No event fits at ${esc(site.name)} in ${options.nights} nights with these limits${neverHighEnough(eph, site, options.altLimit) ? ` (the star never rises above ${options.altLimit}° there)` : ''}.</p>`;
+    shareNextWindow(object, site, events);
     out.querySelectorAll('[data-observe-download]').forEach((button) => button.addEventListener('click', () => {
       const ics = button.dataset.observeDownload === 'ics';
       const body = ics ? toICS(events, site) : toCSV(events);

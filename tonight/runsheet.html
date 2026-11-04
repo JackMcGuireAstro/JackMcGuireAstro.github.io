@@ -4,12 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Run sheet | Jack McGuire</title>
-<meta name="description" content="A printable observing run sheet for CTAS transients: coordinates, tonight's window and airmass, finder charts and exposure estimates for WIRO and Red Buttes.">
+<meta name="description" content="A printable observing run sheet for your run list of CTAS transients and WorldsIndex planets: coordinates, tonight's window and airmass, transit windows, finder charts and exposure estimates for WIRO and Red Buttes.">
 <meta name="theme-color" content="#f4f1ea">
 <link rel="canonical" href="https://jackmcguireastro.github.io/tonight/runsheet.html">
-<link rel="stylesheet" href="planner.css?v=20261029">
+<link rel="stylesheet" href="planner.css?v=20261104">
 <script src="../ctas/followup.js?v=20261029"></script>
-<script type="module" src="runsheet.js?v=20261029"></script>
+<script src="../tools/lib/run-cart.js?v=20261104"></script>
+<script src="../tools/lib/run-cart-ui.js?v=20261104" defer></script>
+<script type="module" src="runsheet.js?v=20261104"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
 </head>
@@ -17,19 +19,32 @@
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="top no-print"><div class="shell top-inner">
   <a class="wordmark" href="../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
-  <nav aria-label="Primary"><a href="../index.html">Home</a><a href="../worldsindex/">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="./">Tonight</a></nav>
+  <nav aria-label="Primary"><a href="../index.html">Home</a><a href="../worldsindex/">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="./">Tonight</a><a data-runcart-badge href="runsheet.html" aria-current="page">Run list</a></nav>
 </div></header>
 <main id="main" class="shell">
   <section class="intro">
     <p class="eyebrow">Observing / Run sheet</p>
     <h1>Run sheet</h1>
-    <p class="no-print">CTAS transients for one night at one site, ready to print: coordinates, tonight’s window and airmass curve, a finder chart and the S/N-20 exposure at WIRO and Red Buttes. A CTAS dossier opens this page with its own target; without a list the sheet takes the ten follow-up targets up longest tonight. Everything is computed in your browser.</p>
+    <p class="no-print">Your run list for one night at one site, ready to print: for each CTAS transient and WorldsIndex planet its coordinates, tonight’s window and airmass curve, a finder chart and the exposure at WIRO and Red Buttes, and for a planet tonight’s transit window. Add targets with <strong>Add to run list</strong> on CTAS, WorldsIndex or the Tonight planner; with an empty list the sheet takes the ten CTAS follow-up targets up longest tonight. The list is kept in this browser only and everything is computed here; nothing is sent anywhere.</p>
   </section>
   <form id="sheet-form" class="controls no-print" aria-describedby="status">
     <div class="field wide"><label for="site">Observatory</label><select id="site"></select></div>
     <div class="field"><label for="date">Night starting</label><input id="date" type="date" required></div>
     <div class="actions"><button type="submit" class="button">Build the sheet</button><button type="button" id="print" class="button button-quiet">Print</button></div>
   </form>
+  <div id="cart-banner" class="cart-banner no-print" hidden></div>
+  <section id="cart" class="cart no-print" aria-labelledby="cart-title">
+    <h2 id="cart-title" tabindex="-1">Your run list</h2>
+    <div id="cart-body"></div>
+    <div id="cart-tools" class="cart-tools" hidden>
+      <a id="cart-share" href="#">Share this list</a>
+      <label class="visually-hidden" for="cart-share-text">Link to this run list</label>
+      <input id="cart-share-text" type="text" readonly>
+      <button type="button" id="cart-copy" class="cart-small">Copy link</button>
+      <button type="button" id="cart-clear" class="cart-small">Clear all</button>
+      <span id="cart-status" role="status" aria-live="polite"></span>
+    </div>
+  </section>
   <p id="status" class="status no-print" role="status" aria-live="polite"></p>
   <div id="sheet-head"></div>
   <div id="sheet"></div>

@@ -44,7 +44,7 @@
     "ctas/lightcurve-science.js?v=20261027",
     "ctas/host-association.js?v=20261029",
     "ctas/multimessenger.js?v=20261030",
-    "ctas/observer.js?v=20261029",
+    "ctas/observer.js?v=20261104",
     "ctas/followup.js?v=20261029",
     "ctas/workbench.js?v=20261019",
     "ctas/sky.js?v=20261030",
@@ -52,7 +52,9 @@
     "ctas/lightcurve-summary.js?v=20261004",
     "ctas/spectrum-ascii.js?v=20261011",
     "ctas/spectrum-fits.js?v=20261011",
-    "ctas/live-sources.js?v=20261017"
+    "ctas/live-sources.js?v=20261017",
+    "tools/lib/run-cart.js?v=20261104",
+    "tools/lib/run-cart-ui.js?v=20261104"
   ];
   var deferredModules = {promise: null, loaded: false, failed: []};
   function loadDeferredModules() {
@@ -1390,6 +1392,15 @@
   // the deploy workflow): the stable event id, the release checksum and the panel travel
   // in the body, so a report can be matched to the exact release. No account is needed
   // to read it; GitHub asks for one to post, and nothing is sent until the reader does.
+  // The shared run list (tools/lib/run-cart.js, a deferred module): a button carrying what the
+  // run sheet needs (name and position), wired by tools/lib/run-cart-ui.js. Events without a
+  // position cannot be observed from a run sheet, so they get no button.
+  function runlistButton(candidate, compact) {
+    var ra = Number(candidate.ra_deg), dec = Number(candidate.dec_deg);
+    if (candidate.ra_deg === null || candidate.ra_deg === undefined || candidate.dec_deg === null || candidate.dec_deg === undefined || !isFinite(ra) || !isFinite(dec)) return "";
+    return '<button type="button" data-runcart-toggle' + (compact ? " data-runcart-compact" : "") + ' data-kind="ctas" data-id="' + esc(candidate.event_id) + '" data-name="' + esc(candidate.name) +
+      '" data-ra="' + esc(String(ra)) + '" data-dec="' + esc(String(dec)) + '" aria-pressed="false">' + (compact ? "+ Run list" : "Add to run list") + "</button>";
+  }
   function reportProblemUrl(candidate, panel) {
     var status = state.status || {}, release = (status.static_snapshot_verification || {}).content_release_id || status.catalog_content_checksum_sha256 || "unknown";
     var body = ["<!-- Thank you. Keep the lines below so the report can be matched to the exact release. -->",
@@ -1419,7 +1430,7 @@
       '</h3><p>' + esc(summary.intro) +
       '</p></div><div class="ctas-detail__score"><span>CTAS follow-up score</span><strong>' + esc(num(candidate.ctas_score, 1)) +
       '</strong><small>ordering aid · not probability</small></div></div>' +
-      '<div class="ctas-workspace__actions"><button type="button" data-close-candidate>Close dossier</button><details class="ctas-more-actions"><summary>More actions</summary><div><button type="button" data-copy-link>Copy link</button><button type="button" data-download-candidate>Download JSON</button><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button><a class="ctas-more-link" data-open-notebook href="tools/notebook/?ctas=' + encodeURIComponent(candidate.event_id) + '">Open in a notebook</a><a class="ctas-more-link" href="tools/follow/">Follow lists</a></div></details>' +
+      '<div class="ctas-workspace__actions"><button type="button" data-close-candidate>Close dossier</button>' + runlistButton(candidate, false) + '<a class="ctas-runlist-link" data-runcart-badge href="tonight/runsheet.html">Run list</a><span class="ctas-runlist-status" data-runcart-status role="status" aria-live="polite"></span><details class="ctas-more-actions"><summary>More actions</summary><div><button type="button" data-copy-link>Copy link</button><button type="button" data-download-candidate>Download JSON</button><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button><a class="ctas-more-link" data-open-notebook href="tools/notebook/?ctas=' + encodeURIComponent(candidate.event_id) + '">Open in a notebook</a><a class="ctas-more-link" href="tools/follow/">Follow lists</a></div></details>' +
       '<a class="ctas-report-problem" data-report-problem href="' + esc(reportProblemUrl(candidate)) + '" target="_blank" rel="noopener">Report a problem<span class="sr-only"> (opens a prefilled GitHub issue in a new tab)</span></a></div>' + (window.CTASScreens ? window.CTASScreens.badge(candidate) : "") + renderFollowup(candidate) + renderScienceBrief(candidate) +
       '<dl class="ctas-detail__facts ctas-detail__facts--essential">' + fact("Event / messenger", humanKey(candidate.event_type || "Not recorded") + " · " + humanKey(candidate.primary_messenger || "Not recorded")) +
       fact("Physical classification", window.CTASPresentation.classInfo(candidate).physical || "Not reported") +
@@ -1567,7 +1578,7 @@
       return '<li data-candidate-id="' + esc(candidate.event_id) + '"><span class="ctas-stream__number">0' + (index + 1) + '</span><div><button type="button" data-open-event="' + esc(candidate.event_id) + '"><strong>' + window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) + "</strong></button><p>" +
         esc(window.CTASPresentation.classInfo(candidate).physical || (window.CTASPresentation.classInfo(candidate).alert ? "Alert: "+window.CTASPresentation.classInfo(candidate).alert : "Unclassified")) + " · " + esc(candidate.primary_messenger || "messenger unavailable") +
         "</p><small>" + esc(absolute(candidate.updated_at || candidate.discovery_time)) + " · " + esc(evidence) +
-        '</small><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></div><strong class="ctas-stream__score">' + esc(num(candidate.ctas_score, 1)) + "<span>CTAS score</span></strong></li>";
+        '</small><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button>' + runlistButton(candidate, true) + '</div></div><strong class="ctas-stream__score">' + esc(num(candidate.ctas_score, 1)) + "<span>CTAS score</span></strong></li>";
     }).join("") || '<li><div><strong>No matching candidates have a reported discovery time in the last 24 hours.</strong><p>Clear linked filters or use the leaderboard and complete catalog below.</p></div></li>';
   }
 
@@ -1817,7 +1828,7 @@
       var label = classInfo.physical || (classInfo.alert ? "Alert: "+classInfo.alert : "Unclassified");
       return '<tr data-candidate-id="' + esc(candidate.event_id) + '"><td><button type="button" class="ctas-candidate" data-open-event="' + esc(candidate.event_id) + '"><span>' +
         window.CTASPresentation.thumbnail(candidate) + esc(candidate.name) + '</span><small>' + esc(candidate.discovery_survey || "Survey unavailable") + " · " + esc(sexagesimal(candidate.ra_deg, candidate.dec_deg) || "position unavailable") +
-        '</small></button><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button></div></td><td class="num ctas-score-cell">' + esc(num(candidate.ctas_score, 1)) +
+        '</small></button><div class="ctas-card-actions"><button type="button" data-compare-event="' + esc(candidate.event_id) + '" aria-pressed="false">Compare</button><button type="button" data-watch-event="' + esc(candidate.event_id) + '" aria-pressed="false">Watch locally</button>' + runlistButton(candidate, true) + '</div></td><td class="num ctas-score-cell">' + esc(num(candidate.ctas_score, 1)) +
         '<small data-score-valid-until="' + esc(candidate.score_valid_until || "") + '" title="' + esc(candidate.score_as_of ? "Score computed " + absolute(candidate.score_as_of) : "Score clock not included in this release") + '">' +
         (candidate.score_valid_until && Date.now() > Date.parse(candidate.score_valid_until) ? "" : "") + '</small></td><td><div class="ctas-reasons">' + renderTriageReasons(candidate) + '</div></td><td><span class="pill">' + esc(label) +
         '</span><small class="ctas-label-kind">' + esc(humanKey(candidate.reported_label_kind || "provider-reported")) +

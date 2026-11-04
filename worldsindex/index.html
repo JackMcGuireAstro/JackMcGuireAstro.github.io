@@ -8,7 +8,7 @@
   <link rel="canonical" href="https://jackmcguireastro.github.io/worldsindex/">
   <link rel="alternate" type="application/feed+json" title="WorldsIndex release changes (JSON Feed)" href="data/feed.json">
   <link rel="alternate" type="application/atom+xml" title="WorldsIndex release changes (Atom)" href="data/feed.xml">
-  <link rel="stylesheet" href="assets/app.css?v=20261031">
+  <link rel="stylesheet" href="assets/app.css?v=20261104">
   <title>WorldsIndex · Explore worlds beyond the Solar System</title>
 <link rel="stylesheet" href="../assets/css/continuity.css?v=20260920">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
@@ -17,7 +17,7 @@
 <body data-active-page="discover">
   <a class="skip-link" href="#main">Skip to WorldsIndex</a>
 
-  <nav class="site-journey" aria-label="Astronomy website"><span>Jack McGuire /</span><a href="../index.html">Home</a><a href="../qualquest/">QualQuest</a><a href="../worldsindex/" aria-current="page">WorldsIndex</a><a href="../ctas.html">CTAS</a></nav>
+  <nav class="site-journey" aria-label="Astronomy website"><span>Jack McGuire /</span><a href="../index.html">Home</a><a href="../qualquest/">QualQuest</a><a href="../worldsindex/" aria-current="page">WorldsIndex</a><a href="../ctas.html">CTAS</a><a data-runcart-badge href="../tonight/runsheet.html">Run list</a></nav>
 <header class="topbar">
     <a class="brand" href="?section=discover" data-app-section="discover" aria-label="WorldsIndex home">
       <span class="brand-mark" aria-hidden="true"><i></i></span>
@@ -110,10 +110,12 @@
       <div id="object-dossier" hidden>
         <div class="object-toolbar">
           <button id="add-to-compare" class="button primary" type="button">Add to comparison</button>
+          <button id="add-to-runlist" class="button" type="button" data-runcart-toggle data-kind="planet" aria-pressed="false" hidden>Add to run list</button>
           <button id="copy-link" class="button" type="button">Copy link</button>
           <button id="download-object" class="button" type="button">Download JSON</button>
           <a id="open-notebook" class="button" href="../tools/notebook/" hidden>Open in a notebook</a>
           <a id="report-problem" class="button" href="#" target="_blank" rel="noopener" hidden>Report a problem ↗</a>
+          <span class="runlist-status" data-runcart-status role="status" aria-live="polite"></span>
         </div>
         <div class="tab-rail">
           <nav class="tabs object-tabs" aria-label="Object workspace views" role="tablist">
@@ -231,6 +233,8 @@
 
   <footer><p><strong>WorldsIndex</strong><span>Powered by ExoNexus</span></p><p>Versioned evidence · source-native measurements · reproducible downloads</p><nav class="footer-data-links" aria-label="WorldsIndex release data"><a href="status.html">Status</a><a href="data/changelog.md">Changelog</a><a href="data/feed.json" type="application/feed+json">Feed (JSON)</a><a href="data/feed.xml" type="application/atom+xml">Feed (Atom)</a><a href="data/exports/index.json">Exports</a><a href="openapi.yaml">OpenAPI</a><a href="status.html#schemas">Schemas</a></nav><nav aria-label="Jack McGuire website"><a href="../index.html">Home</a><a href="../qualquest/">QualQuest</a><a href="../worldsindex/" aria-current="page">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="../cv.pdf" target="_blank" rel="noopener">CV (PDF)</a></nav></footer>
   <div id="toast" role="status" aria-live="polite" aria-hidden="true"></div>
-  <script type="module" src="assets/app.js?v=20261102"></script>
+  <script type="module" src="assets/app.js?v=20261104"></script>
+  <!-- The shared run list loads after the page (it is not needed for the first screen). -->
+  <script>addEventListener("load",function(){["../tools/lib/run-cart.js?v=20261104","../tools/lib/run-cart-ui.js?v=20261104"].forEach(function(s){var e=document.createElement("script");e.src=s;e.async=false;document.head.appendChild(e);});});</script>
 </body>
 </html>

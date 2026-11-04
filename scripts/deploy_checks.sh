@@ -103,8 +103,9 @@ group_qualquest() {
 group_tonight() {
   check tonight.syntax node_check tonight/planner.js tonight/astro.js tools/lib/astrometry.js tools/coordinates/coordinates.js \
     tools/exposure/exposure.js tools/exposure/ccd.js tools/exposure/instruments.js tools/finder/finder.js research/barium-dwarfs/census.js \
-    tonight/sites.js tonight/runsheet.js
+    tonight/sites.js tonight/runsheet.js tools/lib/run-cart.js tools/lib/run-cart-ui.js
   check tonight.planner node scripts/test_tonight_planner.mjs
+  check tonight.run-cart node scripts/test_run_cart.mjs
   check tools.coordinates node scripts/test_tools_coordinates.mjs
   check tools.exposure node scripts/test_tools_exposure.mjs
   check tools.finder node scripts/test_tools_finder.mjs
