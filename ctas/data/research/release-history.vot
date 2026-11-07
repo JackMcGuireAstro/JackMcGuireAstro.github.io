@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Produced with astropy.io.votable version 7.2.2
+     http://www.astropy.org/ -->
+<VOTABLE version="1.5" xmlns="http://www.ivoa.net/xml/VOTable/v1.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.ivoa.net/xml/VOTable/v1.3 http://www.ivoa.net/xml/VOTable/VOTable-1.5.xsd">
+ <DESCRIPTION>
+  Formats and metadata follow the IVOA documents named in each file;
+  the content is the same retained public evidence as the JSON
+  release, not an independent measurement.
+ </DESCRIPTION>
+ <RESOURCE type="results">
+  <COOSYS ID="ICRS" system="ICRS"/>
+  <TABLE ID="ctas_release_history" name="ctas_release_history">
+   <DESCRIPTION>
+    Checksum-addressed public catalog changes, newest first. Counts
+    describe public CTAS catalog changes, not independent discoveries
+    or scientific validation.
+   </DESCRIPTION>
+   <FIELD ID="published_at" arraysize="*" datatype="unicodeChar" name="published_at" ucd="time.epoch;meta.main">
+    <DESCRIPTION>
+     Release clock of the catalog change. ISO 8601 UTC text; empty
+     when the public record does not retain it.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="change_kind" arraysize="*" datatype="unicodeChar" name="change_kind" ucd="meta.code">
+    <DESCRIPTION>
+     candidate-intake or record-update.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="previous_candidate_count" datatype="long" name="previous_candidate_count" ucd="meta.number">
+    <DESCRIPTION>
+     Public candidates in the previous release.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="candidate_count" datatype="long" name="candidate_count" ucd="meta.number">
+    <DESCRIPTION>
+     Public candidates in this release.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="added_count" datatype="long" name="added_count" ucd="meta.number">
+    <DESCRIPTION>
+     Records added since the previous release.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="removed_count" datatype="long" name="removed_count" ucd="meta.number">
+    <DESCRIPTION>
+     Records removed since the previous release.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="changed_count" datatype="long" name="changed_count" ucd="meta.number">
+    <DESCRIPTION>
+     Existing records whose public content changed.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="summary" arraysize="*" datatype="unicodeChar" name="summary" ucd="meta.note">
+    <DESCRIPTION>
+     Plain-words summary of the change.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="added_source_summary" arraysize="*" datatype="unicodeChar" name="added_source_summary" ucd="meta.number">
+    <DESCRIPTION>
+     JSON object counting added records by discovery survey.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="sample_added" arraysize="*" datatype="unicodeChar" name="sample_added" ucd="meta.id">
+    <DESCRIPTION>
+     JSON list of up to twelve added designations.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="sample_removed" arraysize="*" datatype="unicodeChar" name="sample_removed" ucd="meta.id">
+    <DESCRIPTION>
+     JSON list of up to twelve removed designations.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="catalog_content_checksum_sha256" arraysize="*" datatype="unicodeChar" name="catalog_content_checksum_sha256" ucd="meta.id;meta.cryptographic">
+    <DESCRIPTION>
+     Semantic catalog checksum of this release.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="previous_catalog_content_checksum_sha256" arraysize="*" datatype="unicodeChar" name="previous_catalog_content_checksum_sha256" ucd="meta.id;meta.cryptographic">
+    <DESCRIPTION>
+     Semantic catalog checksum of the previous release.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="base_commit" arraysize="*" datatype="unicodeChar" name="base_commit" ucd="meta.id">
+    <DESCRIPTION>
+     Git commit of the published release the diff was taken against.
+    </DESCRIPTION>
+   </FIELD>
+   <FIELD ID="history_basis" arraysize="*" datatype="unicodeChar" name="history_basis" ucd="meta.code">
+    <DESCRIPTION>
+     How the entry was derived.
+    </DESCRIPTION>
+   </FIELD>
+   <PARAM ID="catalog_content_checksum_sha256" arraysize="*" datatype="char" name="catalog_content_checksum_sha256" value="67e53f947d6b8dee1ac6ed361cf1cea587eaebb3ba3d3341b68c0e847258c07a"/>
+   <DATA>
+    <TABLEDATA><TR><TD>2026-11-07T13:50:24Z</TD><TD>record-update</TD><TD>18634</TD><TD>18634</TD><TD>0</TD><TD>0</TD><TD>2540</TD><TD>Public metadata or evidence changed for 2540 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>67e53f947d6b8dee1ac6ed361cf1cea587eaebb3ba3d3341b68c0e847258c07a</TD><TD>b7bddec44c29bdfcad9467399f4414e92aaa19050e2230215ce8aae6c5efef80</TD><TD>8b2637b4fb4841306e4c1b4d09910425356070dd</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T13:01:11Z</TD><TD>record-update</TD><TD>18634</TD><TD>18634</TD><TD>0</TD><TD>0</TD><TD>612</TD><TD>Public metadata or evidence changed for 612 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>b7bddec44c29bdfcad9467399f4414e92aaa19050e2230215ce8aae6c5efef80</TD><TD>feeede859334b2672e327501717dcea66edd2ab8f047f87303cba9680279dd13</TD><TD>234e7b40611b731bc42998285bf9a9af951ecb94</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T12:11:34Z</TD><TD>record-update</TD><TD>18634</TD><TD>18634</TD><TD>0</TD><TD>0</TD><TD>564</TD><TD>Public metadata or evidence changed for 564 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>feeede859334b2672e327501717dcea66edd2ab8f047f87303cba9680279dd13</TD><TD>a00210cb83807e4ae7a1830c9b429a41390668f7537ab43badd4a9de547bd5df</TD><TD>94b483471c1cdba3696ac6d6037e6ec7d27f4efe</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T11:15:29Z</TD><TD>candidate-intake</TD><TD>18631</TD><TD>18634</TD><TD>3</TD><TD>0</TD><TD>978</TD><TD>+3 public candidate records and 0 removals; source-reported records are not necessarily newly discovered events.</TD><TD>{"GOTO":1,"ZTF":2}</TD><TD>["AT2026aimb","AT2026aimc","AT2026aimd"]</TD><TD>[]</TD><TD>a00210cb83807e4ae7a1830c9b429a41390668f7537ab43badd4a9de547bd5df</TD><TD>f1a446018bcef9ee38fd7384d93bbb3d2a6375d0b6eae996504f13ad5afbafec</TD><TD>7433cfebe99d85b91637486187d2971e37450edc</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T10:18:33Z</TD><TD>candidate-intake</TD><TD>18630</TD><TD>18631</TD><TD>1</TD><TD>0</TD><TD>965</TD><TD>+1 public candidate records and 0 removals; source-reported records are not necessarily newly discovered events.</TD><TD>{"Fermi":1}</TD><TD>["Fermi-GBM-815736973"]</TD><TD>[]</TD><TD>f1a446018bcef9ee38fd7384d93bbb3d2a6375d0b6eae996504f13ad5afbafec</TD><TD>47b4a479a81193a81c2772e8ea24ee16337a1f607c5e6099d35daf37d87dd60b</TD><TD>3013abc4740b675264bb7634e72d2d7b5cc5e74a</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T09:30:04Z</TD><TD>candidate-intake</TD><TD>18593</TD><TD>18630</TD><TD>38</TD><TD>1</TD><TD>3034</TD><TD>+38 public candidate records and 1 removals; source-reported records are not necessarily newly discovered events.</TD><TD>{"GOTO":1,"Vera C. Rubin Observatory":37}</TD><TD>["LSST diaObject 170028488631779362","LSST diaObject 170028488905982030","LSST diaObject 170028492920455240","LSST diaObject 170028493982662710","LSST diaObject 170028498179063870","LSST diaObject 170587115527602465","LSST diaObject 170587117311229983","LSST diaObject 170591523156525128","LSST diaObject 170591523948199959","LSST diaObject 170591539017810284","LSST diaObject 170591539918536830","LSST diaObject 170595929005490219"]</TD><TD>["SN2026afjj"]</TD><TD>47b4a479a81193a81c2772e8ea24ee16337a1f607c5e6099d35daf37d87dd60b</TD><TD>aac2d54db76f8dc5175415ab0c307c768d48c89f40fa352830d2d2177f54aeb9</TD><TD>e9bff55441a9ce44c3a438df3c0eff14ca60455c</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T08:25:27Z</TD><TD>candidate-intake</TD><TD>18592</TD><TD>18593</TD><TD>1</TD><TD>0</TD><TD>1090</TD><TD>+1 public candidate records and 0 removals; source-reported records are not necessarily newly discovered events.</TD><TD>{"Fermi":1}</TD><TD>["Fermi-GBM-815731965"]</TD><TD>[]</TD><TD>aac2d54db76f8dc5175415ab0c307c768d48c89f40fa352830d2d2177f54aeb9</TD><TD>095410b1318693e98b006f07de9c9162b139ea5c1cafac0448c166ce5bd9aad8</TD><TD>7e8975169be8ea5b38fb3a5f8e23143c83a12762</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T07:24:59Z</TD><TD>record-update</TD><TD>18592</TD><TD>18592</TD><TD>0</TD><TD>0</TD><TD>575</TD><TD>Public metadata or evidence changed for 575 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>095410b1318693e98b006f07de9c9162b139ea5c1cafac0448c166ce5bd9aad8</TD><TD>81abdda50dda57e6bcefa6e0ddbb29347d499426bde06e27c11e28ba13d57edd</TD><TD>169273002239283c1911479ea365a798f9130b1b</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T06:24:48Z</TD><TD>record-update</TD><TD>18592</TD><TD>18592</TD><TD>0</TD><TD>0</TD><TD>586</TD><TD>Public metadata or evidence changed for 586 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>81abdda50dda57e6bcefa6e0ddbb29347d499426bde06e27c11e28ba13d57edd</TD><TD>f750cbb61be2e4b9c79d57838a723e44457b30b5069d67e13da84eb56bf6b7e4</TD><TD>307bf3cc0855b138f42968764462f228a1a51e41</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T05:18:58Z</TD><TD>candidate-intake</TD><TD>18590</TD><TD>18592</TD><TD>2</TD><TD>0</TD><TD>2960</TD><TD>+2 public candidate records and 0 removals; source-reported records are not necessarily newly discovered events.</TD><TD>{"GOTO":1,"ZTF":1}</TD><TD>["AT2026afve","AT2026agxu"]</TD><TD>[]</TD><TD>f750cbb61be2e4b9c79d57838a723e44457b30b5069d67e13da84eb56bf6b7e4</TD><TD>cd52dfa6d79359301d0972bb799030f9d976e2fc839c2242388ed572c5618b08</TD><TD>79e37136c1b2545cdfc3c5a9a29b8d8e32e4b9eb</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T04:14:39Z</TD><TD>record-update</TD><TD>18590</TD><TD>18590</TD><TD>0</TD><TD>0</TD><TD>2501</TD><TD>Public metadata or evidence changed for 2501 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>cd52dfa6d79359301d0972bb799030f9d976e2fc839c2242388ed572c5618b08</TD><TD>ea7df3e40d0179f6a61d17092ccfa89f5d9c12920d7aedc8bba3eccbe0ac1a75</TD><TD>c577e6037f29cff0e2ab94ab8ddaa98700329696</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T03:11:13Z</TD><TD>record-update</TD><TD>18590</TD><TD>18590</TD><TD>0</TD><TD>0</TD><TD>2485</TD><TD>Public metadata or evidence changed for 2485 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>ea7df3e40d0179f6a61d17092ccfa89f5d9c12920d7aedc8bba3eccbe0ac1a75</TD><TD>dead9b2668e35a154887f8359da498321429dfce9f328e2c4d13e0d8a4b2dfa7</TD><TD>c2b0cb38474d6238d5ccd7361dd664b6fb9ac7d6</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T02:22:31Z</TD><TD>record-update</TD><TD>18590</TD><TD>18590</TD><TD>0</TD><TD>0</TD><TD>2486</TD><TD>Public metadata or evidence changed for 2486 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>dead9b2668e35a154887f8359da498321429dfce9f328e2c4d13e0d8a4b2dfa7</TD><TD>84cde6460b3609249317594ceac68f3beefec2b44088df24feea3c4b6d901156</TD><TD>07f2b807ee014b57237c8c229c1e0da053c34099</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T01:20:48Z</TD><TD>record-update</TD><TD>18590</TD><TD>18590</TD><TD>0</TD><TD>0</TD><TD>2457</TD><TD>Public metadata or evidence changed for 2457 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>84cde6460b3609249317594ceac68f3beefec2b44088df24feea3c4b6d901156</TD><TD>55267ad0aaa54ac6d903bd3484deb03f0d6c4ca0d789499531efb7cc36967554</TD><TD>1adc1d31d958d97e7b25fafad5e68e8896214975</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-07T00:31:50Z</TD><TD>record-update</TD><TD>18590</TD><TD>18590</TD><TD>0</TD><TD>0</TD><TD>544</TD><TD>Public metadata or evidence changed for 544 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>55267ad0aaa54ac6d903bd3484deb03f0d6c4ca0d789499531efb7cc36967554</TD><TD>e2bcc170bd23ae71afbc51235e987f1d4ce0d4c9e6645ac55f22f6192004fd4a</TD><TD>8675bed666571fec769546cc8e67f2df0b3342ed</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-06T23:33:24Z</TD><TD>record-update</TD><TD>18590</TD><TD>18590</TD><TD>0</TD><TD>0</TD><TD>2508</TD><TD>Public metadata or evidence changed for 2508 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>e2bcc170bd23ae71afbc51235e987f1d4ce0d4c9e6645ac55f22f6192004fd4a</TD><TD>48383017491c7b2f5c5c4ad8a0448fcecfa4cc0757852b3e9e3d87faecd2e1fb</TD><TD>14408065dca982b9523d79a1b9e91e1cc0f8b787</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-06T22:30:37Z</TD><TD>candidate-intake</TD><TD>18589</TD><TD>18590</TD><TD>1</TD><TD>0</TD><TD>2930</TD><TD>+1 public candidate records and 0 removals; source-reported records are not necessarily newly discovered events.</TD><TD>{"Einstein Probe":1}</TD><TD>["Einstein Probe-01709322274"]</TD><TD>[]</TD><TD>48383017491c7b2f5c5c4ad8a0448fcecfa4cc0757852b3e9e3d87faecd2e1fb</TD><TD>65d5d55ce3f74cf5fc43c0ca2468a19cd52c716db6049e0b602046dfa10480af</TD><TD>9f24222d03cc0b634fc650410a8429f1f9dd86ca</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-06T21:42:28Z</TD><TD>record-update</TD><TD>18589</TD><TD>18589</TD><TD>0</TD><TD>0</TD><TD>591</TD><TD>Public metadata or evidence changed for 591 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>65d5d55ce3f74cf5fc43c0ca2468a19cd52c716db6049e0b602046dfa10480af</TD><TD>cb4fda3b30caf7b65386cc0aeeebd51d1c9205831c7d4da21fc2c82f15525e68</TD><TD>7fc1cd56a1be620c0cc6a8bbd581289027627a52</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-06T20:51:55Z</TD><TD>record-update</TD><TD>18589</TD><TD>18589</TD><TD>0</TD><TD>0</TD><TD>480</TD><TD>Public metadata or evidence changed for 480 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>cb4fda3b30caf7b65386cc0aeeebd51d1c9205831c7d4da21fc2c82f15525e68</TD><TD>4b95266d0f3d85547984f953efdae49efb806ed97ec730bc0084c3a14378d10b</TD><TD>0c90e07346b4261add56fdf8d86e0fd9bc5cedae</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-06T20:04:35Z</TD><TD>candidate-intake</TD><TD>18587</TD><TD>18589</TD><TD>2</TD><TD>0</TD><TD>928</TD><TD>+2 public candidate records and 0 removals; source-reported records are not necessarily newly discovered events.</TD><TD>{"GOTO":1,"ZTF":1}</TD><TD>["SN2026agpt","SN2026ahmz"]</TD><TD>[]</TD><TD>4b95266d0f3d85547984f953efdae49efb806ed97ec730bc0084c3a14378d10b</TD><TD>8cf3d67058db1e5102272b8dea92e616972cfb07e5c6d2c0708ce4f328065974</TD><TD>59fd99a4617ddea84650073f7a861e7ef80efeed</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-06T19:10:58Z</TD><TD>candidate-intake</TD><TD>18586</TD><TD>18587</TD><TD>2</TD><TD>1</TD><TD>922</TD><TD>+2 public candidate records and 1 removals; source-reported records are not necessarily newly discovered events.</TD><TD>{"Einstein Probe":1,"GOTO":1}</TD><TD>["Einstein Probe-01709322272","SN2026ahmx"]</TD><TD>["AT2026ahmx"]</TD><TD>8cf3d67058db1e5102272b8dea92e616972cfb07e5c6d2c0708ce4f328065974</TD><TD>2ac9c3c6eefe5bfed352853df566348bf5107a910559c52bc4b34c371ee83ded</TD><TD>72c60571acdef63f60251d9200e653c7dc0a009e</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-06T18:17:43Z</TD><TD>candidate-intake</TD><TD>18558</TD><TD>18586</TD><TD>28</TD><TD>0</TD><TD>2901</TD><TD>+28 public candidate records and 0 removals; source-reported records are not necessarily newly discovered events.</TD><TD>{"ALeRCE":2,"GOTO":19,"Pan-STARRS":1,"Shadow":2,"XOSS":1,"ZTF":3}</TD><TD>["AT2026aebd","AT2026afbo","AT2026ahch","AT2026ahhi","AT2026ahho","AT2026ahng","AT2026ahqj","AT2026ahsa","AT2026ahsj","AT2026ahsm","AT2026ahsp","AT2026ahsr"]</TD><TD>[]</TD><TD>2ac9c3c6eefe5bfed352853df566348bf5107a910559c52bc4b34c371ee83ded</TD><TD>1ec86a1cd99ee7687e69eaf5706a670cf6942d5b6a949609e6fabf55ca6e1f22</TD><TD>c2878663392a7e669370d822a20854f22efe691a</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-06T17:18:32Z</TD><TD>record-update</TD><TD>18558</TD><TD>18558</TD><TD>0</TD><TD>0</TD><TD>2370</TD><TD>Public metadata or evidence changed for 2370 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>1ec86a1cd99ee7687e69eaf5706a670cf6942d5b6a949609e6fabf55ca6e1f22</TD><TD>0489a400ae721a1093bc624c91d4eeb7a36ffd0bafefcdfd6bc0061aeb4f9ff1</TD><TD>ef8a80d1ffa04673f96a16e51720ee61b3374a28</TD><TD>semantic-diff-from-public-git-base</TD></TR><TR><TD>2026-11-06T16:21:13Z</TD><TD>record-update</TD><TD>18558</TD><TD>18558</TD><TD>0</TD><TD>0</TD><TD>2350</TD><TD>Public metadata or evidence changed for 2350 existing candidate records.</TD><TD>{}</TD><TD>[]</TD><TD>[]</TD><TD>0489a400ae721a1093bc624c91d4eeb7a36ffd0bafefcdfd6bc0061aeb4f9ff1</TD><TD>d9aa83b05aca85c1f66ce615067debbfcc857bfd31e12b24714dc2154020bff0</TD><TD>5c9c54ada8495498034408e51325dc41fc4808ac</TD><TD>semantic-diff-from-public-git-base</TD></TR>
+    </TABLEDATA>
+   </DATA>
+  </TABLE>
+ </RESOURCE>
+</VOTABLE>
