@@ -1,0 +1,168 @@
+{
+  "check_counts": {
+    "block": 1,
+    "pass": 5,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [
+    {
+      "class": "integrity",
+      "id": "ctas.test_ctas_static",
+      "mode": "block",
+      "outcome": "block",
+      "parts": [
+        "CertificateAndArtifactTests.test_interoperability_products_are_certified",
+        "CertificateAndArtifactTests.test_research_artifacts_are_parseable_complete_and_checksum_bound"
+      ],
+      "scope": "ctas-publish"
+    }
+  ],
+  "commit": "c23f8f98c759dfe2301d3d1189ee1afd718c7e75",
+  "decision": {
+    "action": "block",
+    "blocking": [
+      "ctas.test_ctas_static"
+    ],
+    "blocking_detail": "CertificateAndArtifactTests.test_interoperability_products_are_certified; CertificateAndArtifactTests.test_research_artifacts_are_parseable_complete_and_checksum_bound",
+    "code_fallback": null,
+    "decided_at": "2026-10-24T13:12:01Z",
+    "explanation": "ctas.test_ctas_static failed with the same code that produced the published release: the data or the environment changed",
+    "fallback": false,
+    "main_commit": "c23f8f98c759dfe2301d3d1189ee1afd718c7e75",
+    "reason": "release-commit-is-current",
+    "release_commit": "c23f8f98c759dfe2301d3d1189ee1afd718c7e75",
+    "schema": "release-decision@1",
+    "scope": "ctas-publish",
+    "warnings": []
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "integrity",
+    "id": "ctas.test_ctas_static",
+    "mode": "block",
+    "outcome": "block",
+    "output_tail": [
+      "test_the_score_is_published_with_the_clock_it_was_computed_for (__main__.ScoreModelTests.test_the_score_is_published_with_the_clock_it_was_computed_for) ... ok",
+      "test_two_incompatible_active_assertions_are_a_conflict (__main__.ScoreModelTests.test_two_incompatible_active_assertions_are_a_conflict) ... ok",
+      "test_two_independently_retained_channels_do_earn_the_bonus (__main__.ScoreModelTests.test_two_independently_retained_channels_do_earn_the_bonus) ... ok",
+      "test_unconfirmed_or_inactive_signals_do_not_earn_a_bonus (__main__.ScoreModelTests.test_unconfirmed_or_inactive_signals_do_not_earn_a_bonus) ... ok",
+      "test_wavelengths_are_not_distinct_physical_messengers (__main__.ScoreModelTests.test_wavelengths_are_not_distinct_physical_messengers) ... ok",
+      "test_browser_fallback_derivation_agrees_with_the_exporter (__main__.SuggestedFollowUpTests.test_browser_fallback_derivation_agrees_with_the_exporter)",
+      "ctas/followup.js re-derives the block for releases that predate it. ... ok",
+      "test_classified_target_with_a_spectrum_is_monitored_weekly (__main__.SuggestedFollowUpTests.test_classified_target_with_a_spectrum_is_monitored_weekly) ... ok",
+      "test_disagreeing_classifications_ask_for_a_spectrum_even_when_one_exists (__main__.SuggestedFollowUpTests.test_disagreeing_classifications_ask_for_a_spectrum_even_when_one_exists) ... ok",
+      "test_evidence_types_come_from_the_science_brief_vocabulary (__main__.SuggestedFollowUpTests.test_evidence_types_come_from_the_science_brief_vocabulary) ... ok",
+      "test_latest_magnitude_prefers_the_newest_retained_detection (__main__.SuggestedFollowUpTests.test_latest_magnitude_prefers_the_newest_retained_detection) ... ok",
+      "test_multimessenger_alert_gets_a_rapid_counterpart_search (__main__.SuggestedFollowUpTests.test_multimessenger_alert_gets_a_rapid_counterpart_search) ... ok",
+      "test_retracted_terrestrial_and_coordinate_free_records_get_no_objectives (__main__.SuggestedFollowUpTests.test_retracted_terrestrial_and_coordinate_free_records_get_no_objectives) ... ok",
+      "test_the_draft_is_deterministic_and_clock_free (__main__.SuggestedFollowUpTests.test_the_draft_is_deterministic_and_clock_free) ... ok",
+      "test_unclassified_optical_target_gets_imaging_then_spectroscopy_nightly (__main__.SuggestedFollowUpTests.test_unclassified_optical_target_gets_imaging_then_spectroscopy_nightly) ... ok",
+      "test_conflict_and_retraction_are_retained (__main__.TimelineTests.test_conflict_and_retraction_are_retained) ... ok",
+      "test_three_clocks_remain_separate_and_ordered (__main__.TimelineTests.test_three_clocks_remain_separate_and_ordered) ... ok",
+      "",
+      "======================================================================",
+      "FAIL: test_interoperability_products_are_certified (__main__.CertificateAndArtifactTests.test_interoperability_products_are_certified)",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/test_ctas_static.py\", line 2114, in test_interoperability_products_are_certified",
+      "    self.assertTrue(gates[EXPORTER.INTEROP_GATE_ID][\"passed\"], gates[EXPORTER.INTEROP_GATE_ID][\"evidence\"])",
+      "    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "AssertionError: False is not true : 6 research tables as ECSV 1.0 and VOTable 1.5 with UCDs and VOUnits read back by Astropy cell for cell; 2 VOParquet release assets read back by pyarrow and Astropy with their VOTable metadata and HEALPix order; 4045 DataLink 1.1 documents covering 17929 records; PROV-JSON provenance names 138 sources; problems: tom-targets: ECSV does not parse ([Errno 36] File name too long: '# %ECSV 1.0\\n# ---\\n# datatype:\\n# - name: name\\n#   datatype: string\\n#   descriptio",
+      "",
+      "======================================================================",
+      "FAIL: test_research_artifacts_are_parseable_complete_and_checksum_bound (__main__.CertificateAndArtifactTests.test_research_artifacts_are_parseable_complete_and_checksum_bound)",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/test_ctas_static.py\", line 1723, in test_research_artifacts_are_parseable_complete_and_checksum_bound",
+      "    self.assertEqual(self.research_manifest[\"interoperability\"][\"round_trip_problem_count\"], 0)",
+      "    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "AssertionError: 1 != 0",
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 106 tests in 116.127s",
+      "",
+      "FAILED (failures=2)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 40 checksum-bound files",
+      "snapshot verification: verified-static-snapshot (4/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)"
+    ],
+    "parts": [
+      "CertificateAndArtifactTests.test_interoperability_products_are_certified",
+      "CertificateAndArtifactTests.test_research_artifacts_are_parseable_complete_and_checksum_bound"
+    ],
+    "reason": "promoted 2026-10-24T01:59:11Z",
+    "scope": "ctas-publish"
+  },
+  "failing_checks": [
+    "ctas.test_ctas_static"
+  ],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: FAIL  check ctas.test_ctas_static failed (CertificateAndArtifactTests.test_interoperability_products_are_certified; CertificateAndArtifactTests.test_research_artifacts_are_parseable_complete_and_checksum_bound): integrity, blocking [promoted 2026-10-24T01:59:11Z]",
+    "runner.log: FAIL  scripts/test_ctas_static.py failed against the generated release; nothing committed",
+    "publish.log: 2026-10-24 12:55:54 UTC  phase  freeze-database took 14s",
+    "publish.log: 2026-10-24 13:07:58 UTC  phase  export took 724s",
+    "publish.log: 2026-10-24 13:09:36 UTC  phase  link-check took 98s",
+    "publish.log: 2026-10-24 13:09:42 UTC  phase  bind-link-health took 6s",
+    "publish.log: 2026-10-24 13:09:54 UTC  phase  validate-detail-pages-and-retirement took 12s",
+    "publish.log: FAIL: test_interoperability_products_are_certified (__main__.CertificateAndArtifactTests.test_interoperability_products_are_certified)",
+    "publish.log: FAIL: test_research_artifacts_are_parseable_complete_and_checksum_bound (__main__.CertificateAndArtifactTests.test_research_artifacts_are_parseable_complete_and_checksum_bound)",
+    "publish.log: FAIL  check ctas.test_ctas_static failed (CertificateAndArtifactTests.test_interoperability_products_are_certified; CertificateAndArtifactTests.test_research_artifacts_are_parseable_complete_and_checksum_bound): integrity, blocking [promoted 2026-10-24T01:59:11Z]",
+    "publish.log: 2026-10-24 13:12:01 UTC  FAIL  scripts/test_ctas_static.py failed against the generated release; nothing committed"
+  ],
+  "note": null,
+  "outcome": "blocked",
+  "phases": [
+    {
+      "log": "publish.log",
+      "phase": "freeze-database",
+      "seconds": 14
+    },
+    {
+      "log": "publish.log",
+      "phase": "export",
+      "seconds": 724
+    },
+    {
+      "log": "publish.log",
+      "phase": "link-check",
+      "seconds": 98
+    },
+    {
+      "log": "publish.log",
+      "phase": "bind-link-health",
+      "seconds": 6
+    },
+    {
+      "log": "publish.log",
+      "phase": "validate-detail-pages-and-retirement",
+      "seconds": 12
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "40094766650",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/40094766650",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-10-24T13:15:22Z"
+}

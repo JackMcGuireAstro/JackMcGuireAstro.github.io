@@ -1,0 +1,121 @@
+{
+  "check_counts": {
+    "block": 1,
+    "pass": 0,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [
+    {
+      "class": "integrity",
+      "id": "ctas.export",
+      "mode": "block",
+      "outcome": "block",
+      "parts": [],
+      "scope": "ctas-publish"
+    }
+  ],
+  "commit": "6c003f0c1814d250b7d47b8626bdb2289a9bf58a",
+  "decision": {
+    "action": "block",
+    "blocking": [
+      "ctas.export"
+    ],
+    "blocking_detail": "/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/publish_ctas.sh: line 209:  3994 Segmentation fault      (core dumped) GIT_ALTERNATE_OBJECT_DIRECTORIES=\"$DATA_STORE/objects\" \"$@\"",
+    "code_fallback": null,
+    "decided_at": "2026-11-04T05:36:06Z",
+    "explanation": "ctas.export failed with the same code that produced the published release: the data or the environment changed",
+    "fallback": false,
+    "main_commit": "6c003f0c1814d250b7d47b8626bdb2289a9bf58a",
+    "reason": "release-commit-is-current",
+    "release_commit": "6c003f0c1814d250b7d47b8626bdb2289a9bf58a",
+    "schema": "release-decision@1",
+    "scope": "ctas-publish",
+    "warnings": []
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "integrity",
+    "id": "ctas.export",
+    "mode": "block",
+    "outcome": "block",
+    "output_tail": [
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/export_ctas_snapshot.py\", line 7065, in <module>",
+      "    raise SystemExit(main())",
+      "                     ~~~~^^",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/export_ctas_snapshot.py\", line 6082, in main",
+      "    research_files, research_manifest, research_manifest_raw = research_table_artifacts(",
+      "                                                               ~~~~~~~~~~~~~~~~~~~~~~~~^",
+      "        candidates, source_universe, payload[\"catalog_content_checksum_sha256\"],",
+      "        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "        candidate_rows, release_history,",
+      "        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "    )",
+      "    ^",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/export_ctas_snapshot.py\", line 3835, in research_table_artifacts",
+      "    round_trip_problems.extend(io_module.round_trip_problems(",
+      "                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^",
+      "        table_id, table[\"specs\"], table[\"rows\"], ecsv=ecsv_raw, votable=votable_raw,",
+      "        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "    ))",
+      "    ^",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/ctas_interop.py\", line 709, in round_trip_problems",
+      "    problems.extend(_table_problems(label + \" ECSV\", specs, rows, read))",
+      "                    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/ctas_interop.py\", line 682, in _table_problems",
+      "    values = _column_values(column)",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/ctas_interop.py\", line 614, in _column_values",
+      "    data = np.asarray(np.ma.getdata(column)).tolist()",
+      "                      ~~~~~~~~~~~~~^^^^^^^^",
+      "  File \"/opt/hostedtoolcache/Python/3.13.18/x64/lib/python3.13/site-packages/numpy/ma/core.py\", line 764, in getdata",
+      "    data = a._data",
+      "           ^^^^^^^",
+      "  File \"/opt/hostedtoolcache/Python/3.13.18/x64/lib/python3.13/site-packages/numpy/ma/core.py\", line 3777, in _get_data",
+      "    return ndarray.view(self, self._baseclass)",
+      "           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^",
+      "  File \"/opt/hostedtoolcache/Python/3.13.18/x64/lib/python3.13/site-packages/astropy/table/column.py\", line 713, in __array_finalize__",
+      "    self.info = obj.info",
+      "    ^^^^^^^^^",
+      "  File \"/opt/hostedtoolcache/Python/3.13.18/x64/lib/python3.13/site-packages/astropy/utils/data_info.py\", line 586, in __set__",
+      "    super().__set__(instance, value)",
+      "    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^",
+      "  File \"/opt/hostedtoolcache/Python/3.13.18/x64/lib/python3.13/site-packages/astropy/utils/data_info.py\", line 373, in __set__",
+      "    info._attrs[attr] = deepcopy(getattr(value, attr))",
+      "                                 ~~~~~~~^^^^^^^^^^^^^",
+      "MemoryError",
+      "/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/publish_ctas.sh: line 209:  3994 Segmentation fault      (core dumped) GIT_ALTERNATE_OBJECT_DIRECTORIES=\"$DATA_STORE/objects\" \"$@\""
+    ],
+    "parts": [],
+    "reason": "promoted 2026-10-24T01:59:11Z",
+    "scope": "ctas-publish"
+  },
+  "failing_checks": [
+    "ctas.export"
+  ],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: FAIL  check ctas.export failed: integrity, blocking [promoted 2026-10-24T01:59:11Z]",
+    "runner.log: FAIL  export failed; nothing committed",
+    "publish.log: 2026-11-04 05:21:26 UTC  phase  freeze-database took 17s",
+    "publish.log: FAIL  check ctas.export failed: integrity, blocking [promoted 2026-10-24T01:59:11Z]",
+    "publish.log: 2026-11-04 05:36:06 UTC  FAIL  export failed; nothing committed"
+  ],
+  "note": null,
+  "outcome": "blocked",
+  "phases": [
+    {
+      "log": "publish.log",
+      "phase": "freeze-database",
+      "seconds": 17
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "41776817578",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/41776817578",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-11-04T05:40:18Z"
+}

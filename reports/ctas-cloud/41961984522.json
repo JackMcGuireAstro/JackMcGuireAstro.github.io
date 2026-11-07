@@ -1,0 +1,52 @@
+{
+  "check_counts": {
+    "block": 0,
+    "pass": 0,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [],
+  "commit": "01cd04d923f3e27b210ee389d3f4ab660d22c40d",
+  "decision": {
+    "action": "proceed",
+    "blocking": [],
+    "blocking_detail": null,
+    "code_fallback": null,
+    "decided_at": "2026-11-05T03:59:19Z",
+    "explanation": "every check passed",
+    "fallback": false,
+    "main_commit": "01cd04d923f3e27b210ee389d3f4ab660d22c40d",
+    "reason": "no-blocking-failure",
+    "release_commit": "01cd04d923f3e27b210ee389d3f4ab660d22c40d",
+    "schema": "release-decision@1",
+    "scope": "ctas-publish",
+    "warnings": []
+  },
+  "event": "workflow_dispatch",
+  "failing_check": null,
+  "failing_checks": [],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: FAIL  check ctas.export could not be classified (release_checks.py exit 1); treated as blocking",
+    "runner.log: FAIL  export failed; nothing committed",
+    "publish.log: 2026-11-05 03:48:31 UTC  phase  freeze-database took 29s",
+    "publish.log: 2026-11-05 03:59:18 UTC  FAIL  export failed; nothing committed"
+  ],
+  "note": null,
+  "outcome": "failed",
+  "phases": [
+    {
+      "log": "publish.log",
+      "phase": "freeze-database",
+      "seconds": 29
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "41961984522",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/41961984522",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-11-05T04:02:19Z"
+}

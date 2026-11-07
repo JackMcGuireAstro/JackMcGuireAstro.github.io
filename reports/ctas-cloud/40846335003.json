@@ -1,0 +1,77 @@
+{
+  "check_counts": {
+    "block": 1,
+    "pass": 0,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [
+    {
+      "class": "integrity",
+      "id": "ctas.export",
+      "mode": "block",
+      "outcome": "block",
+      "parts": [],
+      "scope": "ctas-publish"
+    }
+  ],
+  "commit": "5f903a93db9fc59ceed8c6bbe4a7b542c83b4fcc",
+  "decision": {
+    "action": "block",
+    "blocking": [
+      "ctas.export"
+    ],
+    "blocking_detail": "/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/publish_ctas.sh: line 208:  3395 Segmentation fault      (core dumped) GIT_ALTERNATE_OBJECT_DIRECTORIES=\"$DATA_STORE/objects\" \"$@\"",
+    "code_fallback": null,
+    "decided_at": "2026-10-29T09:32:59Z",
+    "explanation": "ctas.export failed with the same code that produced the published release: the data or the environment changed",
+    "fallback": false,
+    "main_commit": "5f903a93db9fc59ceed8c6bbe4a7b542c83b4fcc",
+    "reason": "release-commit-is-current",
+    "release_commit": "5f903a93db9fc59ceed8c6bbe4a7b542c83b4fcc",
+    "schema": "release-decision@1",
+    "scope": "ctas-publish",
+    "warnings": []
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "integrity",
+    "id": "ctas.export",
+    "mode": "block",
+    "outcome": "block",
+    "output_tail": [
+      "/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/publish_ctas.sh: line 208:  3395 Segmentation fault      (core dumped) GIT_ALTERNATE_OBJECT_DIRECTORIES=\"$DATA_STORE/objects\" \"$@\""
+    ],
+    "parts": [],
+    "reason": "promoted 2026-10-24T01:59:11Z",
+    "scope": "ctas-publish"
+  },
+  "failing_checks": [
+    "ctas.export"
+  ],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: FAIL  check ctas.export failed: integrity, blocking [promoted 2026-10-24T01:59:11Z]",
+    "runner.log: FAIL  export failed; nothing committed",
+    "publish.log: 2026-10-29 09:19:08 UTC  phase  freeze-database took 16s",
+    "publish.log: FAIL  check ctas.export failed: integrity, blocking [promoted 2026-10-24T01:59:11Z]",
+    "publish.log: 2026-10-29 09:32:58 UTC  FAIL  export failed; nothing committed"
+  ],
+  "note": null,
+  "outcome": "blocked",
+  "phases": [
+    {
+      "log": "publish.log",
+      "phase": "freeze-database",
+      "seconds": 16
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "40846335003",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/40846335003",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-10-29T09:37:34Z"
+}

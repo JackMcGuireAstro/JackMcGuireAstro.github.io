@@ -1,0 +1,180 @@
+{
+  "check_counts": {
+    "block": 1,
+    "pass": 118,
+    "skip": 66,
+    "warn": 1
+  },
+  "checks": [
+    {
+      "class": "integrity",
+      "id": "ctas.test_ctas_static",
+      "mode": "block",
+      "outcome": "block",
+      "parts": [
+        "CertificateAndArtifactTests.test_changelog_source_accounting_and_feeds_are_certified_and_reconcile",
+        "CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound"
+      ],
+      "scope": "deploy"
+    },
+    {
+      "class": "advisory",
+      "id": "worldsindex.schemas",
+      "mode": "block",
+      "outcome": "warn",
+      "parts": [
+        "status-exceptions.schema.json:   /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7219].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']"
+      ],
+      "scope": "deploy"
+    }
+  ],
+  "commit": "79aef6e4b76bb481732d9aed87b301fb609b67c3",
+  "decision": {
+    "action": "use-fallback",
+    "blocking": [
+      "ctas.test_ctas_static"
+    ],
+    "candidates": [
+      {
+        "blocking": [
+          "ctas.test_ctas_static"
+        ],
+        "commit": "79aef6e4b76bb481732d9aed87b301fb609b67c3",
+        "label": "main",
+        "status": "blocked",
+        "warnings": []
+      },
+      {
+        "blocking": [],
+        "commit": "6c003f0c1814d250b7d47b8626bdb2289a9bf58a",
+        "label": "ctas-release",
+        "status": "passed",
+        "warnings": [
+          "worldsindex.schemas"
+        ]
+      }
+    ],
+    "decided_at": "2026-11-04T07:05:52Z",
+    "explanation": "main's code failed ctas.test_ctas_static; deployed ctas-release 6c003f0c18 with the same data (landing window: expected until the next CTAS release)",
+    "fallback": true,
+    "fallback_label": "ctas-release",
+    "landing_window": true,
+    "main_commit": "79aef6e4b76bb481732d9aed87b301fb609b67c3",
+    "reason": "fallback-candidate-passed",
+    "release_commit": "6c003f0c1814d250b7d47b8626bdb2289a9bf58a",
+    "schema": "release-decision@1",
+    "scope": "deploy"
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "integrity",
+    "id": "ctas.test_ctas_static",
+    "mode": "block",
+    "outcome": "block",
+    "output_tail": [
+      "test_browser_fallback_derivation_agrees_with_the_exporter (__main__.SuggestedFollowUpTests.test_browser_fallback_derivation_agrees_with_the_exporter)",
+      "ctas/followup.js re-derives the block for releases that predate it. ... ok",
+      "test_classified_target_with_a_spectrum_is_monitored_weekly (__main__.SuggestedFollowUpTests.test_classified_target_with_a_spectrum_is_monitored_weekly) ... ok",
+      "test_disagreeing_classifications_ask_for_a_spectrum_even_when_one_exists (__main__.SuggestedFollowUpTests.test_disagreeing_classifications_ask_for_a_spectrum_even_when_one_exists) ... ok",
+      "test_evidence_types_come_from_the_science_brief_vocabulary (__main__.SuggestedFollowUpTests.test_evidence_types_come_from_the_science_brief_vocabulary) ... ok",
+      "test_latest_magnitude_prefers_the_newest_retained_detection (__main__.SuggestedFollowUpTests.test_latest_magnitude_prefers_the_newest_retained_detection) ... ok",
+      "test_multimessenger_alert_gets_a_rapid_counterpart_search (__main__.SuggestedFollowUpTests.test_multimessenger_alert_gets_a_rapid_counterpart_search) ... ok",
+      "test_retracted_terrestrial_and_coordinate_free_records_get_no_objectives (__main__.SuggestedFollowUpTests.test_retracted_terrestrial_and_coordinate_free_records_get_no_objectives) ... ok",
+      "test_the_draft_is_deterministic_and_clock_free (__main__.SuggestedFollowUpTests.test_the_draft_is_deterministic_and_clock_free) ... ok",
+      "test_unclassified_optical_target_gets_imaging_then_spectroscopy_nightly (__main__.SuggestedFollowUpTests.test_unclassified_optical_target_gets_imaging_then_spectroscopy_nightly) ... ok",
+      "test_conflict_and_retraction_are_retained (__main__.TimelineTests.test_conflict_and_retraction_are_retained) ... ok",
+      "test_three_clocks_remain_separate_and_ordered (__main__.TimelineTests.test_three_clocks_remain_separate_and_ordered) ... ok",
+      "",
+      "======================================================================",
+      "FAIL: test_changelog_source_accounting_and_feeds_are_certified_and_reconcile (__main__.CertificateAndArtifactTests.test_changelog_source_accounting_and_feeds_are_certified_and_reconcile)",
+      "Track 1, part C: the plain-words changelog, the per-source denominators and the",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_ctas_static.py\", line 2169, in test_changelog_source_accounting_and_feeds_are_certified_and_reconcile",
+      "    self.assertEqual(files[path], {\"sha256\": hashlib.sha256(raw).hexdigest(), \"bytes\": len(raw)}, path)",
+      "AssertionError: {'bytes': 8343, 'sha256': '5e47ec05bb7ddc61[45 chars]215'} != {'sha256': '2c8d1678a62763ad58975ca63d3c296[45 chars]8343}",
+      "  {'bytes': 8343,",
+      "-  'sha256': '5e47ec05bb7ddc61116e705f306c9d41e8187c07a86546a01c17f92e5366e215'}",
+      "+  'sha256': '2c8d1678a62763ad58975ca63d3c2968718d703e4b36adcd1255cfc433314ba3'} : ctas/status.html",
+      "",
+      "======================================================================",
+      "FAIL: test_schema_projector_and_contract_tests_are_checksum_bound (__main__.CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound)",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_ctas_static.py\", line 1383, in test_schema_projector_and_contract_tests_are_checksum_bound",
+      "    self.assertEqual(",
+      "AssertionError: 'a545104e76abc8eed22d821e434596f582bebebc217924c091baf8eac6f984fe' != '3a1876ca833b29555f72a42a0f3c669d2d100af488669c519db9f4ec5724e3d0'",
+      "- a545104e76abc8eed22d821e434596f582bebebc217924c091baf8eac6f984fe",
+      "+ 3a1876ca833b29555f72a42a0f3c669d2d100af488669c519db9f4ec5724e3d0",
+      "",
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 106 tests in 133.455s",
+      "",
+      "FAILED (failures=2)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 41 checksum-bound files",
+      "snapshot verification: verified-static-snapshot (4/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)"
+    ],
+    "parts": [
+      "CertificateAndArtifactTests.test_changelog_source_accounting_and_feeds_are_certified_and_reconcile",
+      "CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound"
+    ],
+    "reason": "promoted 2026-10-24T01:59:11Z",
+    "scope": "deploy"
+  },
+  "failing_checks": [
+    "ctas.test_ctas_static"
+  ],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "choose.log: FAIL  published JSON does not match worldsindex/schemas:",
+    "choose.log: status-exceptions.schema.json:   /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7219].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[6962].categories[1]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7207].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7208].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7209].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7210].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7211].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7212].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7213].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7214].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7215].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7216].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7217].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7218].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7219].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']",
+    "choose.log: WARN  check worldsindex.schemas failed (status-exceptions.schema.json:   /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7219].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']): advisory, not blocking [no failure blocks (advisory parts, or schema files i",
+    "choose.log: WARN  check worldsindex.schemas:status-exceptions.schema.json failed (status-exceptions.schema.json:   /tmp/worldsindex-schemas-5q6kb8jc/controversial-retracted-excluded.json::$.objects[7219].categories[0]: 'excluded-solar-system' is not one of ['controversial', 'retracted', 'excluded-false-positive', 'status-conflict', 'unresolved-source-conflict']): advisory, not blocking [advisory: never blocks"
+  ],
+  "note": "jobs: validate=success deploy=success verify-live=success; deployed code: ctas-release 6c003f0c18",
+  "outcome": "fallback",
+  "phases": [],
+  "run_attempt": "1",
+  "run_id": "41786096714",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/41786096714",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [
+    "worldsindex.schemas"
+  ],
+  "workflow": "worldsindex-release.yml",
+  "written_at": "2026-11-04T07:07:15Z"
+}

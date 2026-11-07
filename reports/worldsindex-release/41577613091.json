@@ -1,0 +1,157 @@
+{
+  "check_counts": {
+    "block": 1,
+    "pass": 116,
+    "skip": 64,
+    "warn": 1
+  },
+  "checks": [
+    {
+      "class": "integrity",
+      "id": "ctas.test_ctas_static",
+      "mode": "block",
+      "outcome": "block",
+      "parts": [
+        "CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound"
+      ],
+      "scope": "deploy"
+    },
+    {
+      "class": "advisory",
+      "id": "browser.tonight",
+      "mode": "warn",
+      "outcome": "warn",
+      "parts": [],
+      "scope": "deploy"
+    }
+  ],
+  "commit": "6c003f0c1814d250b7d47b8626bdb2289a9bf58a",
+  "decision": {
+    "action": "use-fallback",
+    "blocking": [
+      "ctas.test_ctas_static"
+    ],
+    "candidates": [
+      {
+        "blocking": [
+          "ctas.test_ctas_static"
+        ],
+        "commit": "6c003f0c1814d250b7d47b8626bdb2289a9bf58a",
+        "label": "main",
+        "status": "blocked",
+        "warnings": [
+          "browser.tonight"
+        ]
+      },
+      {
+        "blocking": [],
+        "commit": "c206295ba01b2635c64fa0a0a5421460f2cacd3e",
+        "label": "ctas-release",
+        "status": "passed",
+        "warnings": []
+      }
+    ],
+    "decided_at": "2026-11-03T05:16:17Z",
+    "explanation": "main's code failed ctas.test_ctas_static; deployed ctas-release c206295ba0 with the same data (landing window: expected until the next CTAS release)",
+    "fallback": true,
+    "fallback_label": "ctas-release",
+    "landing_window": true,
+    "main_commit": "6c003f0c1814d250b7d47b8626bdb2289a9bf58a",
+    "reason": "fallback-candidate-passed",
+    "release_commit": "c206295ba01b2635c64fa0a0a5421460f2cacd3e",
+    "schema": "release-decision@1",
+    "scope": "deploy"
+  },
+  "event": "push",
+  "failing_check": {
+    "class": "integrity",
+    "id": "ctas.test_ctas_static",
+    "mode": "block",
+    "outcome": "block",
+    "output_tail": [
+      "test_missing_spectrum_is_not_applicable_off_the_optical_channel (__main__.ScoreModelTests.test_missing_spectrum_is_not_applicable_off_the_optical_channel) ... ok",
+      "test_missing_spectrum_still_applies_to_an_optical_target (__main__.ScoreModelTests.test_missing_spectrum_still_applies_to_an_optical_target) ... ok",
+      "test_notice_revision_pipeline_removes_retracted_messenger_from_score (__main__.ScoreModelTests.test_notice_revision_pipeline_removes_retracted_messenger_from_score) ... ok",
+      "test_recency_decays_with_wall_clock_alone (__main__.ScoreModelTests.test_recency_decays_with_wall_clock_alone)",
+      "No candidate mutation, a later release, less recency. ... ok",
+      "test_single_channel_records_receive_no_messenger_diversity_bonus (__main__.ScoreModelTests.test_single_channel_records_receive_no_messenger_diversity_bonus) ... ok",
+      "test_terminal_records_are_zero_and_never_leaderboard_targets (__main__.ScoreModelTests.test_terminal_records_are_zero_and_never_leaderboard_targets) ... ok",
+      "test_the_score_is_published_with_the_clock_it_was_computed_for (__main__.ScoreModelTests.test_the_score_is_published_with_the_clock_it_was_computed_for) ... ok",
+      "test_two_incompatible_active_assertions_are_a_conflict (__main__.ScoreModelTests.test_two_incompatible_active_assertions_are_a_conflict) ... ok",
+      "test_two_independently_retained_channels_do_earn_the_bonus (__main__.ScoreModelTests.test_two_independently_retained_channels_do_earn_the_bonus) ... ok",
+      "test_unconfirmed_or_inactive_signals_do_not_earn_a_bonus (__main__.ScoreModelTests.test_unconfirmed_or_inactive_signals_do_not_earn_a_bonus) ... ok",
+      "test_wavelengths_are_not_distinct_physical_messengers (__main__.ScoreModelTests.test_wavelengths_are_not_distinct_physical_messengers) ... ok",
+      "test_browser_fallback_derivation_agrees_with_the_exporter (__main__.SuggestedFollowUpTests.test_browser_fallback_derivation_agrees_with_the_exporter)",
+      "ctas/followup.js re-derives the block for releases that predate it. ... ok",
+      "test_classified_target_with_a_spectrum_is_monitored_weekly (__main__.SuggestedFollowUpTests.test_classified_target_with_a_spectrum_is_monitored_weekly) ... ok",
+      "test_disagreeing_classifications_ask_for_a_spectrum_even_when_one_exists (__main__.SuggestedFollowUpTests.test_disagreeing_classifications_ask_for_a_spectrum_even_when_one_exists) ... ok",
+      "test_evidence_types_come_from_the_science_brief_vocabulary (__main__.SuggestedFollowUpTests.test_evidence_types_come_from_the_science_brief_vocabulary) ... ok",
+      "test_latest_magnitude_prefers_the_newest_retained_detection (__main__.SuggestedFollowUpTests.test_latest_magnitude_prefers_the_newest_retained_detection) ... ok",
+      "test_multimessenger_alert_gets_a_rapid_counterpart_search (__main__.SuggestedFollowUpTests.test_multimessenger_alert_gets_a_rapid_counterpart_search) ... ok",
+      "test_retracted_terrestrial_and_coordinate_free_records_get_no_objectives (__main__.SuggestedFollowUpTests.test_retracted_terrestrial_and_coordinate_free_records_get_no_objectives) ... ok",
+      "test_the_draft_is_deterministic_and_clock_free (__main__.SuggestedFollowUpTests.test_the_draft_is_deterministic_and_clock_free) ... ok",
+      "test_unclassified_optical_target_gets_imaging_then_spectroscopy_nightly (__main__.SuggestedFollowUpTests.test_unclassified_optical_target_gets_imaging_then_spectroscopy_nightly) ... ok",
+      "test_conflict_and_retraction_are_retained (__main__.TimelineTests.test_conflict_and_retraction_are_retained) ... ok",
+      "test_three_clocks_remain_separate_and_ordered (__main__.TimelineTests.test_three_clocks_remain_separate_and_ordered) ... ok",
+      "",
+      "======================================================================",
+      "FAIL: test_schema_projector_and_contract_tests_are_checksum_bound (__main__.CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound)",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_ctas_static.py\", line 1383, in test_schema_projector_and_contract_tests_are_checksum_bound",
+      "    self.assertEqual(",
+      "AssertionError: '401f7aaf3544a53641a06d61dff15ed05ac47d5ba4e014a4edb0a930066f59c0' != 'a545104e76abc8eed22d821e434596f582bebebc217924c091baf8eac6f984fe'",
+      "- 401f7aaf3544a53641a06d61dff15ed05ac47d5ba4e014a4edb0a930066f59c0",
+      "+ a545104e76abc8eed22d821e434596f582bebebc217924c091baf8eac6f984fe",
+      "",
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 106 tests in 144.274s",
+      "",
+      "FAILED (failures=1)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 41 checksum-bound files",
+      "snapshot verification: verified-static-snapshot (4/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)"
+    ],
+    "parts": [
+      "CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound"
+    ],
+    "reason": "promoted 2026-10-24T01:59:11Z",
+    "scope": "deploy"
+  },
+  "failing_checks": [
+    "ctas.test_ctas_static"
+  ],
+  "failing_phase": null,
+  "lines": [],
+  "note": "jobs: validate=success deploy=success verify-live=success; deployed code: ctas-release c206295ba0",
+  "outcome": "fallback",
+  "phases": [],
+  "run_attempt": "1",
+  "run_id": "41577613091",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/41577613091",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [
+    "browser.tonight"
+  ],
+  "workflow": "worldsindex-release.yml",
+  "written_at": "2026-11-03T05:18:09Z"
+}
