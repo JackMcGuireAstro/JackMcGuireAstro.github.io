@@ -204,7 +204,6 @@ if [ "$FALLBACK_USED" -eq 1 ]; then
   printf '%s\n' "$FALLBACK_OUT" | grep -q '^published ' && PUBLISHED=1
 fi
 rm -f -- "$FROZEN"
-sync_issues
 
 # ------------------------------------------------------------------ 4. save
 stop_collector
@@ -212,18 +211,43 @@ stop_collector
 # fails on every request (e.g. a rejected key) shows up on the run page. Report only.
 python3 "$SITE/scripts/ctas_source_health.py" --db "$DATA/soc.db" >"$LOGS/source-health.md" 2>&1 \
   && grep -m1 '^\*\*Needs attention' "$LOGS/source-health.md" | sed 's/^/source health: /' || true
-# Keep derived bookkeeping bounded (the Mac ran this daily; without it the database
-# grew ~165 MB a day): newest analysis run per candidate and type, last 3 days, and
-# anything a reference file cites. Source data is never touched.
+# Keep derived bookkeeping bounded (scripts/ctas_db_retention.py; 2026-11-08 policy): of
+# every analysis type except the published histories (light-curve inference, the GW
+# localization/galaxy/counterpart/tiling revisions), keep the newest run and the newest
+# complete run per candidate and type, everything younger than a day, and anything a
+# reference file cites. Source data is never touched. The sizes go to the run log so the
+# trend is visible run by run.
+RAW_BEFORE=$(stat -c %s "$DATA/soc.db" 2>/dev/null || echo 0)
 python3 "$SITE/scripts/ctas_db_retention.py" daily --db "$DATA/soc.db" >"$LOGS/retention.log" 2>&1 \
   && say "trimmed superseded derived records" || say "database retention skipped this cycle (see retention.log)"
+grep -E '^.*(prune|deleted|database [0-9])' "$LOGS/retention.log" | sed 's/^/retention: /' || true
+say "database size $(awk -v b="$RAW_BEFORE" 'BEGIN{printf "%.2f", b/1073741824}') GiB -> $(stat -c %s "$DATA/soc.db" 2>/dev/null | awk '{printf "%.2f", $1/1073741824}') GiB raw after retention"
+SAVE_STATUS=0
 if [ "$DRY_RUN" = "1" ]; then
   say "dry run: the database is not saved and nothing was pushed"
 else
   say "saving the database to the state repository"
-  GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/ctas_cloud_state.py" save "$DATA" \
-    || { say "FAIL  could not save the database; the previous state is kept"; exit 1; }
+  STATE_SIZE_REPORT="$WORK/state-size.json" GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/ctas_cloud_state.py" save "$DATA" \
+    >"$LOGS/save.log" 2>&1 || SAVE_STATUS=$?
+  cat "$LOGS/save.log"
+  # The compressed size against GitHub's 2 GiB asset limit, as the advisory check
+  # ctas.state-size: a check-warning issue above 1.4 GiB that closes itself once the size is
+  # back under it; above 1.9 GiB the copy is not uploaded (the previous state is kept).
+  if [ -s "$WORK/state-size.json" ]; then
+    SIZE_VERDICT=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["verdict"])' "$WORK/state-size.json" 2>/dev/null || echo ok)
+    CHECK_SECRET_ENV="$SECRET_ENV" CHECK_SECRET_FILE="$BACKEND/.env" python3 "$SITE/scripts/release_checks.py" record --scope ctas-publish \
+      --id ctas.state-size --exit-code "$([ "$SIZE_VERDICT" = ok ] && echo 0 || echo 1)" --output "$LOGS/save.log" \
+      --results "$CHECKS_MAIN" || true
+  fi
 fi
+sync_issues
+if [ "$SAVE_STATUS" -eq 4 ]; then
+  say "FAIL  STATE TOO LARGE: the database was not saved (over 1.9 GiB compressed); the previous state is kept and CTAS keeps publishing from it. Trim it: see save.log and scripts/ctas_db_retention.py"
+  echo "::error title=CTAS state too large::the collector database was not saved (over 1.9 GiB compressed); the previous state is kept. See the run log."
+  [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '\n## STATE TOO LARGE\n\nThe collector database was not saved: its compressed copy is over 1.9 GiB (GitHub refuses release assets of 2 GiB). The previous state is kept and CTAS keeps publishing from it, but each cycle'"'"'s new data is lost until the database is trimmed.\n' >>"$GITHUB_STEP_SUMMARY"
+  exit 1
+fi
+[ "$SAVE_STATUS" -eq 0 ] || { say "FAIL  could not save the database; the previous state is kept"; exit 1; }
 
 # ------------------------------------------------------------------ 5. deploy
 if [ "$PUBLISHED" -eq 1 ] && [ "$DRY_RUN" != "1" ]; then

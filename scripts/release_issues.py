@@ -42,10 +42,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from run_report import collect_secrets, leaks, read_jsonl, sanitize  # noqa: E402
 
 LABELS = {
-    "check-warning": ("FBCA04", "A release check failed without blocking (advisory, or a new check in watch mode); closes itself when the check passes again"),
+    "check-warning": ("FBCA04", "A release check failed without blocking (advisory or watch mode); closes when it passes again"),
     "fallback-active": ("D93F0B", "A publisher or the deploy is running older code because the current code failed a blocking check"),
     "release-blocked": ("B60205", "Nothing was published or deployed: a blocking failure that the fallback code could not get past"),
 }
+# GitHub refuses a label whose description is longer than 100 characters (HTTP 422), and then
+# every "gh issue create --label" for it fails with "could not add label: ... not found".
+LABEL_DESCRIPTION_MAX = 100
 SCOPE_TITLES = {"ctas-publish": "CTAS publisher", "worldsindex-publish": "WorldsIndex publisher", "deploy": "site deploy"}
 FALLBACK_TITLES = {"ctas-publish": "CTAS published with fallback code", "worldsindex-publish": "WorldsIndex published with fallback code",
                    "deploy": "Site deployed with fallback code"}
@@ -243,24 +246,34 @@ def public_title(title: str, secrets: list[str]) -> str:
 
 
 def apply(actions: list[dict], repo: str, secrets: list[str], runner: Callable = subprocess.run) -> None:
+    """Ensure the labels exist (create or update, --force), then run every action. A label or
+    action that fails is reported and the rest still run; the failures are raised together at
+    the end so the caller prints one WARN naming each of them."""
+    failures = []
     for label, (color, description) in LABELS.items():
         try:
-            gh(["label", "create", label, "--repo", repo, "--color", color, "--description", description, "--force"], runner)
-        except RuntimeError:
-            pass
+            gh(["label", "create", label, "--repo", repo, "--color", color,
+                "--description", description[:LABEL_DESCRIPTION_MAX], "--force"], runner)
+        except RuntimeError as error:
+            failures.append(f"label {label}: {error}")
     for action in actions:
         body = public_body(action["body"], secrets)
         if action.get("title") is not None:
             action = {**action, "title": public_title(action["title"], secrets)}
-        if action["op"] == "create":
-            url = gh(["issue", "create", "--repo", repo, "--label", action["label"], "--title", action["title"], "--body", body], runner)
-            print(f"opened {url.strip()} ({action['label']})")
-        elif action["op"] == "comment":
-            gh(["issue", "comment", str(action["number"]), "--repo", repo, "--body", body], runner)
-            print(f"updated #{action['number']} ({action['label']})")
-        elif action["op"] == "close":
-            gh(["issue", "close", str(action["number"]), "--repo", repo, "--comment", body], runner)
-            print(f"closed #{action['number']} ({action['label']})")
+        try:
+            if action["op"] == "create":
+                url = gh(["issue", "create", "--repo", repo, "--label", action["label"], "--title", action["title"], "--body", body], runner)
+                print(f"opened {url.strip()} ({action['label']})")
+            elif action["op"] == "comment":
+                gh(["issue", "comment", str(action["number"]), "--repo", repo, "--body", body], runner)
+                print(f"updated #{action['number']} ({action['label']})")
+            elif action["op"] == "close":
+                gh(["issue", "close", str(action["number"]), "--repo", repo, "--comment", body], runner)
+                print(f"closed #{action['number']} ({action['label']})")
+        except RuntimeError as error:
+            failures.append(f"{action['op']} {action.get('number') or action['label']}: {error}")
+    if failures:
+        raise RuntimeError("; ".join(failures))
 
 
 def main(argv: list[str] | None = None) -> int:

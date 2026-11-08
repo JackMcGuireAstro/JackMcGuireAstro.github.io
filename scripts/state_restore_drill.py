@@ -2,7 +2,7 @@
 """Backup-and-restore drill for the two saved state archives (Track 7, gate 9).
 
 Both systems keep their working state as one GitHub Release asset that every cloud run
-restores and saves: CTAS `soc-<time>.db.gz` (the collector's SQLite database) in
+restores and saves: CTAS `soc-<time>.db.zst` or `.db.gz` (the collector's SQLite database) in
 JackMcGuireAstro/ctas-state, WorldsIndex `wi-state-<time>.tar.gz` (the builder's snapshots,
 outputs and database) in JackMcGuireAstro/worldsindex-state. The drill restores an archive
 into a fresh, empty directory the way the cloud runner does and checks that what comes back
@@ -31,6 +31,7 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
 import sqlite3
 import tarfile
 import tempfile
@@ -67,6 +68,10 @@ def drill_ctas(archive: Path, status_path: Path | None, work: Path) -> dict:
         with gzip.open(archive, "rb") as source, target.open("wb") as sink:
             shutil.copyfileobj(source, sink, 1 << 20)
         uri, mode = f"file:{target}?mode=ro", "restored into an empty directory"
+    elif archive.suffix == ".zst":   # ctas_cloud_state.py saves zstd copies since 2026-11-08
+        target = work / "soc.db"
+        subprocess.run(["zstd", "-q", "-d", "-f", "--long=27", str(archive), "-o", str(target)], check=True)
+        uri, mode = f"file:{target}?mode=ro", "restored into an empty directory"
     else:
         target = archive
         uri, mode = f"file:{target}?mode=ro&immutable=1", "already decompressed copy, opened read-only and immutable"
@@ -101,7 +106,7 @@ def drill_ctas(archive: Path, status_path: Path | None, work: Path) -> dict:
               {"database_events": events, "published_candidate_count": published, "release": released,
                "archive_latest_alert": archive_latest, "archive_older_than_release": older})
     connection.close()
-    return {"archive": archive.name, "bytes": archive.stat().st_size, "sha256": sha256(archive) if archive.suffix == ".gz" else None,
+    return {"archive": archive.name, "bytes": archive.stat().st_size, "sha256": sha256(archive) if archive.suffix in {".gz", ".zst"} else None,
             "mode": mode, "restore_seconds": restore_seconds, "checks": results, "ok": all(r["ok"] for r in results)}
 
 

@@ -40,6 +40,9 @@ elif args[:2] == ["release", "upload"]:
     if os.environ.get("FAKE_UPLOAD_FAILS"):
         print("upload refused", file=sys.stderr); sys.exit(1)
     shutil.copy(args[3], store / Path(args[3]).name)
+    if os.environ.get("FAKE_UPLOAD_CORRUPTS"):
+        with open(store / Path(args[3]).name, "ab") as handle:
+            handle.write(b"x")
 else:
     print("unexpected gh call: %r" % args, file=sys.stderr); sys.exit(2)
 '''
@@ -131,8 +134,8 @@ class CloudStateTests(unittest.TestCase):
         # newest 3 (the new copy and two from Sep 30) plus the newest of the 2 earlier days
         self.assertEqual(set(names), {new[0], "soc-20260930T100000Z.db.gz", "soc-20260930T090000Z.db.gz",
                                       "soc-20260929T100000Z.db.gz", "soc-20260928T100000Z.db.gz"})
-        with gzip.open(self.release / new[0]) as handle:
-            (self.tmp / "check.db").write_bytes(handle.read())
+        self.assertTrue(new[0].endswith(".db.zst" if state.compressor() == "zstd" else ".db.gz"), new[0])
+        state.decompress(self.release / new[0], self.tmp / "check.db")
         self.assertEqual(sqlite3.connect(self.tmp / "check.db").execute("SELECT COUNT(*) FROM events").fetchone()[0], 3)
         self.assertFalse((self.data.parent / new[0]).exists(), "the staged copy is removed")
 
@@ -155,6 +158,88 @@ class CloudStateTests(unittest.TestCase):
         result = self.cli("save", str(self.data), FAKE_UPLOAD_FAILS="1")
         self.assertEqual(result.returncode, 1)
         self.assertEqual([p.name for p in self.release.iterdir()], ["soc-20260930T100000Z.db.gz"])
+
+    def test_a_copy_over_the_refusal_line_is_not_uploaded_and_the_previous_state_stays(self):
+        # Thresholds in GiB, scaled down so a tiny test database crosses them.
+        self.data.mkdir(parents=True)
+        make_db(self.data / "soc.db", 20)
+        (self.release / "soc-20260930T100000Z.db.gz").write_bytes(b"good")
+        report = self.tmp / "state-size.json"
+        result = self.cli("save", str(self.data), CTAS_STATE_WARN_GIB="0.0000001", CTAS_STATE_REFUSE_GIB="0.0000002",
+                          STATE_SIZE_REPORT=str(report))
+        self.assertEqual(result.returncode, 4, result.stderr)
+        self.assertIn("STATE TOO LARGE", result.stderr)
+        self.assertEqual([p.name for p in self.release.iterdir()], ["soc-20260930T100000Z.db.gz"])
+        self.assertEqual([p.name for p in self.data.parent.iterdir()], ["data"], "the staged copy is removed")
+        import json
+        document = json.loads(report.read_text())
+        self.assertEqual(document["verdict"], "refuse")
+        self.assertGreater(document["compressed_bytes"], document["refuse_bytes"])
+        self.assertGreater(document["raw_bytes"], 0)
+
+    def test_a_copy_over_the_warning_line_is_uploaded_with_a_warning(self):
+        self.data.mkdir(parents=True)
+        make_db(self.data / "soc.db", 20)
+        report = self.tmp / "state-size.json"
+        result = self.cli("save", str(self.data), CTAS_STATE_WARN_GIB="0.0000001", STATE_SIZE_REPORT=str(report))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("WARN  the database is", result.stdout)
+        self.assertEqual(len([p for p in self.release.iterdir() if p.name.startswith("soc-")]), 1)
+        import json
+        self.assertEqual(json.loads(report.read_text())["verdict"], "warn")
+
+    def test_gzip_is_used_without_zstd_and_restore_reads_both_the_newest_first(self):
+        import shutil
+        if not shutil.which("zstd"):
+            self.skipTest("the zstd tool is not installed here (GitHub's runners have it)")
+        self.put_static()
+        self.data.mkdir(parents=True)
+        make_db(self.data / "soc.db", 4)
+        result = self.cli("save", str(self.data), CTAS_STATE_COMPRESSOR="gzip")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        gz_copy = [p.name for p in self.release.iterdir() if p.name.startswith("soc-")]
+        self.assertEqual(len(gz_copy), 1)
+        self.assertTrue(gz_copy[0].endswith(".db.gz"))
+        # An older gzip copy and a newer zstd copy: restore takes the newer one.
+        make_db(self.tmp / "y.db", 7)
+        newer = "soc-29991231T000000Z.db.zst"
+        state.compress(self.tmp / "y.db", self.release / newer)
+        receipt = self.tmp / "receipt.json"
+        restored = self.tmp / "restored"
+        result = self.cli("restore", str(restored), STATE_RECEIPT=str(receipt))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(sqlite3.connect(restored / "soc.db").execute("SELECT COUNT(*) FROM events").fetchone()[0], 7)
+        import json
+        self.assertEqual(json.loads(receipt.read_text())["asset"], newer)
+        self.assertEqual(state.stamp_to_iso(newer, "soc-"), "2999-12-31T00:00:00Z")
+
+    def test_the_first_copy_in_a_new_format_is_downloaded_and_checked_before_older_copies_go(self):
+        self.data.mkdir(parents=True)
+        make_db(self.data / "soc.db", 6)
+        other = ".db.gz" if state.compressor() == "zstd" else ".db.zst"   # a format this save does not write
+        old = [f"soc-20260929T100000Z{other}", f"soc-20260930T090000Z{other}", f"soc-20260930T100000Z{other}",
+               f"soc-20260930T110000Z{other}"]
+        for name in old:
+            (self.release / name).write_bytes(b"old")
+        broken = self.cli("save", str(self.data), FAKE_UPLOAD_CORRUPTS="1", CTAS_STATE_KEEP_RECENT="1", CTAS_STATE_KEEP_DAYS="0")
+        self.assertEqual(broken.returncode, 1, broken.stdout)
+        self.assertIn("round trip", broken.stderr)
+        self.assertEqual(sorted(p.name for p in self.release.iterdir()), old, "nothing removed, the bad copy deleted")
+        good = self.cli("save", str(self.data), CTAS_STATE_KEEP_RECENT="1", CTAS_STATE_KEEP_DAYS="0")
+        self.assertEqual(good.returncode, 0, good.stderr)
+        self.assertIn("round trip verified", good.stdout)
+        self.assertEqual(len(list(self.release.iterdir())), 1)
+        # Once the release holds a copy in this format, the download check is not repeated.
+        again = self.cli("save", str(self.data))
+        self.assertEqual(again.returncode, 0, again.stderr)
+        self.assertNotIn("round trip verified", again.stdout)
+
+    def test_size_verdict_lines(self):
+        gib = 1 << 30
+        self.assertEqual(state.size_verdict(int(1.0 * gib)), "ok")
+        self.assertEqual(state.size_verdict(int(1.5 * gib)), "warn")
+        self.assertEqual(state.size_verdict(int(1.95 * gib)), "refuse")
+        self.assertLess(state.REFUSE_BYTES, 2 * gib)
 
     def test_retention_rule(self):
         listing = [{"id": i, "name": n, "created_at": ""} for i, n in enumerate([

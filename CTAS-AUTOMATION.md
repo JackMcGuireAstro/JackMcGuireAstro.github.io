@@ -17,7 +17,7 @@ and the last real run started more than 75 minutes ago. Each cycle:
 
 1. `scripts/ctas_cloud_state.py restore` downloads the collector's database and
    fixed input files from the private repository `JackMcGuireAstro/ctas-state`
-   (release `state`: `static-inputs.tar.gz` and `soc-<UTC stamp>.db.gz`).
+   (release `state`: `static-inputs.tar.gz` and `soc-<UTC stamp>.db.zst`, zstd since 2026-11-08; older `.db.gz` copies still restore).
 2. The collector (`supernova-ops api`, code from the same private repository,
    settings from the `CTAS_BACKEND_ENV` secret) gathers alerts for 15 minutes.
 3. `scripts/publish_ctas.sh` builds, verifies and publishes a release to

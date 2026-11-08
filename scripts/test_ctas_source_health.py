@@ -25,6 +25,7 @@ def _db(path: Path) -> None:
         + [("atlas", "failed", "ATLAS_QUERY_FAILED", "2026-10-03 11:00:00")] * 7
         + [("mast", "failed", "MAST_ARCHIVE_QUERY_FAILED", "2026-10-03 11:30:00")] * 10
         + [("ads", "no-match", None, "2026-10-03 09:00:00")] * 20
+        + [("tns-public-reports", "unavailable", "TNS_PUBLIC_RATE_LIMITED", "2026-10-03 11:00:00")] * 12
         + [("ads", "failed", "ADS_QUERY_FAILED", "2026-10-01 09:00:00")] * 50  # outside the window
     )
     con.executemany("INSERT INTO source_query_attempts VALUES (?, ?, ?, ?)", rows)
@@ -53,7 +54,10 @@ class SourceHealthTests(unittest.TestCase):
 
     def test_markdown_has_one_row_per_source_and_no_details(self):
         text = markdown(health(str(self.db), now=NOW))
-        self.assertIn("| atlas | 12 | 5 | 0 | 7 | 0 | ATLAS_QUERY_FAILED (7) |", text)
+        self.assertIn("| atlas | 12 | 5 | 0 | 7 | 0 | 0 | ATLAS_QUERY_FAILED (7) |", text)
+        # A provider throttle is a deferral: neither a failure nor a skip, and not a problem.
+        self.assertIn("| tns-public-reports | 12 | 0 | 0 | 0 | 12 | 0 |  |", text)
+        self.assertNotIn("tns-public-reports", " ".join(health(str(self.db), now=NOW)["problems"]))
         self.assertIn("Alerts received: gcn 3", text)
         self.assertNotIn("http", text)
 

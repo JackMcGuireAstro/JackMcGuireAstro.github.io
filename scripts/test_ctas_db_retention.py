@@ -81,14 +81,17 @@ class RetentionTests(unittest.TestCase):
         con.close()
         self.young = young
 
-    def insert_run(self, con, run, event, kind, completed):
+    def insert_run(self, con, run, event, kind, completed, status="completed", rights="public"):
         con.execute(
             "INSERT INTO analysis_runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (run, event, kind, "method", "1", uuid.uuid4().hex, "completed", "{}", "c" * 64, "{}", "{}",
-             json.dumps({"score": 1, "pad": "y" * 3000}), "d" * 64, "{}", "[]", "{}", "public", "machine",
+            (run, event, kind, "method", "1", uuid.uuid4().hex, status, "{}", "c" * 64, "{}", "{}",
+             json.dumps({"score": 1, "pad": "y" * 3000}), "d" * 64, "{}", "[]", "{}", rights, "machine",
              completed, completed))
 
     def run_tool(self, *args):
+        # The 2026-09-26 fixture was written for a 3-day window; the cloud default is now 1 day.
+        if "--keep-days" not in args:
+            args = (*args, "--keep-days", "3")
         result = subprocess.run([sys.executable, str(SCRIPT), *args, "--db", str(self.db), "--now", NOW],
                                 text=True, capture_output=True)
         return result
@@ -150,6 +153,54 @@ class RetentionTests(unittest.TestCase):
         self.assertEqual(len(anomaly), 20 * 5 + 1)
         self.assertTrue(anomaly <= remaining)
 
+    def test_every_superseded_type_is_pruned_but_published_history_and_latest_complete_stay(self):
+        # 2026-11-08: event-classification, photometry-qc, ... kept every superseded run (8.5 GB).
+        with sqlite3.connect(self.db) as con:
+            ec = [str(uuid.uuid4()) for _ in range(4)]
+            for index, run in enumerate(ec):
+                self.insert_run(con, run, "event-07", "event-classification", f"2026-09-{10 + index:02d} 01:00:00.000000")
+            # newest screen run is insufficient-data; the newest complete one is older and must stay
+            older_complete, middle_complete = str(uuid.uuid4()), str(uuid.uuid4())
+            newest_partial = str(uuid.uuid4())
+            self.insert_run(con, older_complete, "event-08", "multiband-light-curve", "2026-09-05 01:00:00.000000", "complete")
+            self.insert_run(con, middle_complete, "event-08", "multiband-light-curve", "2026-09-10 01:00:00.000000", "complete")
+            self.insert_run(con, newest_partial, "event-08", "multiband-light-curve", "2026-09-20 01:00:00.000000", "insufficient-data")
+            history = [str(uuid.uuid4()) for _ in range(3)]
+            for index, run in enumerate(history):
+                self.insert_run(con, run, "event-09", "gw-counterpart-ranking", f"2026-09-{1 + index:02d} 01:00:00.000000", "complete")
+        result = self.run_tool("daily")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        kept = self.ids("analysis_runs")
+        self.assertIn(ec[-1], kept)
+        self.assertTrue(set(ec[:-1]).isdisjoint(kept))
+        self.assertIn(newest_partial, kept)
+        self.assertIn(middle_complete, kept)
+        self.assertNotIn(older_complete, kept)
+        self.assertTrue(set(history) <= kept)
+        # every light-curve-inference run is published: both per event remain
+        with sqlite3.connect(self.db) as con:
+            self.assertEqual(con.execute(
+                "SELECT COUNT(*) FROM analysis_runs WHERE analysis_type = 'light-curve-inference'").fetchone()[0], 40)
+
+    def test_the_published_complete_run_stays_when_a_newer_complete_one_is_not_rights_cleared(self):
+        with sqlite3.connect(self.db) as con:
+            public_old, restricted_new, newest = str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())
+            self.insert_run(con, public_old, "event-06", "spectrum-template-screen", "2026-09-05 01:00:00.000000", "complete")
+            self.insert_run(con, restricted_new, "event-06", "spectrum-template-screen", "2026-09-10 01:00:00.000000",
+                            "complete", rights="restricted")
+            self.insert_run(con, newest, "event-06", "spectrum-template-screen", "2026-09-20 01:00:00.000000", "insufficient-data")
+        result = self.run_tool("daily")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        kept = self.ids("analysis_runs")
+        self.assertIn(public_old, kept)        # what the exporter publishes
+        self.assertIn(newest, kept)
+        self.assertNotIn(restricted_new, kept)
+
+    def test_history_types_are_never_pruned_even_when_named(self):
+        result = self.run_tool("preview", "--churn-types", "light-curve-inference")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("analysis_runs: prune 0 of", result.stdout)
+
     def protect_certifications(self):
         # the live backend's own rule (found on soc.db 2026-09-26)
         with sqlite3.connect(self.db) as con:
@@ -194,6 +245,21 @@ class RetentionTests(unittest.TestCase):
             self.assertEqual(con.execute("PRAGMA auto_vacuum").fetchone()[0], 2)
             self.assertEqual(con.execute("PRAGMA freelist_count").fetchone()[0], 0)
 
+
+    def test_daily_releases_the_freed_pages_so_the_file_shrinks(self):
+        # 2026-11-08: "PRAGMA incremental_vacuum" ran only its first step, so nothing shrank.
+        con = sqlite3.connect(self.db)
+        con.execute("PRAGMA auto_vacuum = INCREMENTAL")
+        con.execute("VACUUM")
+        self.assertEqual(con.execute("PRAGMA auto_vacuum").fetchone()[0], 2)
+        con.close()
+        before = self.db.stat().st_size
+        result = self.run_tool("daily")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("released", result.stdout)
+        with sqlite3.connect(self.db) as con:
+            self.assertEqual(con.execute("PRAGMA freelist_count").fetchone()[0], 0)
+        self.assertLess(self.db.stat().st_size, before)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

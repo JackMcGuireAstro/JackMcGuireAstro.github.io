@@ -1056,6 +1056,57 @@ def implementation_state(source: dict[str, Any]) -> str:
     return "documented-not-implemented"
 
 
+# Attempts the collector records WITHOUT asking the provider: the event lacked what the
+# query needs (a retained ZTF alias, coordinates, a name ...) or the account is not set up.
+# They say nothing about the provider, so a source's operational state comes from its
+# latest real request (mirrors supernova_watch.evidence_monitor NO_REQUEST_ERROR_CODES).
+# Found 2026-11-08: ALeRCE, Fink, ANTARES and Lasair showed "temporarily unavailable"
+# because their newest attempt was a LACKS_RETAINED_ZTF_ALIAS precondition.
+NO_REQUEST_ERROR_CODES = frozenset({
+    "TARGET_DISCOVERY_TIME_UNAVAILABLE", "WISEREP_TARGET_DISCOVERY_TIME_UNAVAILABLE",
+    "TARGET_COORDINATES_UNAVAILABLE", "WISEREP_TARGET_COORDINATES_UNAVAILABLE", "TARGET_NAME_UNAVAILABLE",
+    "TNS_IDENTITY_UNAVAILABLE", "WISEREP_TARGET_IDENTIFIER_UNAVAILABLE", "LACKS_RETAINED_ZTF_ALIAS",
+    "AAVSO_AID_AUTH_PAUSED", "AAVSO_AID_TOKEN_INVALID", "AAVSO_AID_TOKEN_NOT_CONFIGURED", "ADS_TOKEN_INVALID",
+    "ADS_TOKEN_NOT_CONFIGURED", "ASAS_SN_SECURE_AUTOMATION_WITHHELD", "ATLAS_API_TOKEN_NOT_CONFIGURED",
+    "HOST_NAME_UNAVAILABLE_OR_AMBIGUOUS", "LASAIR_TOKEN_NOT_CONFIGURED", "MULTIPLE_RETAINED_ZTF_ALIASES",
+    "RUBIN_RSP_TOKEN_MISSING", "TARGET_TIME_WINDOW_INVALID", "TNS_CREDENTIALS_NOT_CONFIGURED",
+})
+# A provider's throttle, recorded by the collector as a deferral with its reset time.
+RATE_LIMIT_ERROR_CODES = frozenset({
+    "ATLAS_RATE_LIMITED", "ALERCE_RATE_LIMITED", "ALERCE_CLASSIFIERS_RATE_LIMITED", "FINK_SCORES_RATE_LIMITED",
+    "ANTARES_LOCUS_RATE_LIMITED", "TNS_PUBLIC_RATE_LIMITED",
+})
+
+
+def latest_source_attempts_of(cur: Any) -> dict[str, dict[str, Any]]:
+    """The latest attempt per source that actually asked the provider; a source with only
+    no-request attempts (NO_REQUEST_ERROR_CODES) keeps its latest attempt of any kind."""
+
+    no_request_codes = sorted(NO_REQUEST_ERROR_CODES)
+    no_request_marks = ",".join("?" * len(no_request_codes))
+    return {
+        str(row["source_id"]): {
+            "terminal_state": clean(row["terminal_state"]),
+            "error_code": clean(row["error_code"]),
+            "checked_at": iso(row["checked_at"]),
+        }
+        for row in cur.execute(
+            f"""
+            WITH ranked AS (
+              SELECT source_id, terminal_state, error_code, checked_at,
+                     ROW_NUMBER() OVER (
+                       PARTITION BY source_id
+                       ORDER BY CASE WHEN COALESCE(error_code, '') IN ({no_request_marks}) THEN 1 ELSE 0 END,
+                                checked_at DESC, id DESC) AS rank
+              FROM source_query_attempts
+            )
+            SELECT source_id, terminal_state, error_code, checked_at FROM ranked WHERE rank = 1
+            """,
+            no_request_codes,
+        )
+    }
+
+
 def public_source_state(
     source: dict[str, Any], represented: bool, latest_attempt: dict[str, Any] | None,
 ) -> str:
@@ -1068,7 +1119,7 @@ def public_source_state(
     terminal = str((latest_attempt or {}).get("terminal_state") or "").lower()
     if runtime in {"degraded", "unavailable", "error"}:
         return "temporarily-unavailable"
-    if terminal in {"rate-limited", "rate_limit"}:
+    if terminal in {"rate-limited", "rate_limit"} or (latest_attempt or {}).get("error_code") in RATE_LIMIT_ERROR_CODES:
         return "rate-limited"
     if terminal == "unavailable":
         return "temporarily-unavailable"
@@ -2585,22 +2636,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
     # kept response bytes; scripts/ctas_broker_classes.py re-reads them.
     broker_rows = rows_by_event(cur, ids, broker_classes.broker_rows_sql())
 
-    latest_source_attempts = {
-        str(row["source_id"]): {
-            "terminal_state": clean(row["terminal_state"]),
-            "checked_at": iso(row["checked_at"]),
-        }
-        for row in cur.execute(
-            """
-            WITH ranked AS (
-              SELECT source_id, terminal_state, checked_at,
-                     ROW_NUMBER() OVER (PARTITION BY source_id ORDER BY checked_at DESC, id DESC) AS rank
-              FROM source_query_attempts
-            )
-            SELECT source_id, terminal_state, checked_at FROM ranked WHERE rank = 1
-            """
-        )
-    }
+    latest_source_attempts = latest_source_attempts_of(cur)
     source_success_times = {
         str(row["source_id"]): iso(row["last_successful_at"])
         for row in cur.execute(

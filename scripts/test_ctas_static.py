@@ -187,6 +187,24 @@ class DispositionAndLinkTests(unittest.TestCase):
             "Provider TLS certificate validation failed; CTAS retained the last rights-cleared data and scheduled a retry.",
         )
 
+    def test_a_precondition_attempt_does_not_hide_the_latest_real_request(self):
+        import sqlite3
+        con = sqlite3.connect(":memory:")
+        con.row_factory = sqlite3.Row
+        con.execute("CREATE TABLE source_query_attempts (id TEXT, source_id TEXT, terminal_state TEXT, "
+                    "error_code TEXT, checked_at TEXT)")
+        con.executemany("INSERT INTO source_query_attempts VALUES (?, ?, ?, ?, ?)", [
+            ("1", "alerce-classifiers", "data", None, "2026-11-08 20:00:00"),
+            ("2", "alerce-classifiers", "unavailable", "LACKS_RETAINED_ZTF_ALIAS", "2026-11-08 21:00:00"),
+            ("3", "rubin-lasair", "unavailable", "LACKS_RETAINED_ZTF_ALIAS", "2026-11-08 21:00:00"),
+            ("4", "tns-public-reports", "unavailable", "TNS_PUBLIC_RATE_LIMITED", "2026-11-08 21:00:00"),
+        ])
+        latest = EXPORTER.latest_source_attempts_of(con.cursor())
+        self.assertEqual(latest["alerce-classifiers"]["terminal_state"], "data")
+        self.assertEqual(latest["rubin-lasair"]["error_code"], "LACKS_RETAINED_ZTF_ALIAS")  # nothing else to show
+        source = {"state": "connected", "enabled": True, "adapter_status": "implemented", "mode": "on-demand query"}
+        self.assertEqual(EXPORTER.public_source_state(source, True, latest["tns-public-reports"]), "rate-limited")
+
     def test_reported_label_kind_separates_operational_alerts(self):
         self.assertEqual(
             EXPORTER.reported_label_kind(event(classification="high-importance")),

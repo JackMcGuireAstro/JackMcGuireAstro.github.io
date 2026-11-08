@@ -17,6 +17,13 @@ import sys
 from datetime import UTC, datetime, timedelta
 
 AUTH_HINTS = ("AUTH", "TOKEN", "CREDENTIAL", "NOT_CONFIGURED")
+# A provider's throttle: the collector records the attempt with the provider's reset time
+# and asks again after it. Counted as Deferred, not as a failure or a skip.
+DEFERRED_SUFFIX = "_RATE_LIMITED"
+
+
+def is_deferred(code: str) -> bool:
+    return bool(code) and code.endswith(DEFERRED_SUFFIX)
 
 
 def _stamp(value: datetime) -> str:
@@ -35,8 +42,11 @@ def health(db: str, *, hours: float = 24, now: datetime | None = None) -> dict:
             "FROM source_query_attempts WHERE checked_at >= ? GROUP BY 1, 2, 3",
             (since,),
         ):
-            row = sources.setdefault(source_id, {"attempts": 0, "states": {}, "codes": {}, "last_data": None})
+            row = sources.setdefault(source_id, {"attempts": 0, "states": {}, "codes": {}, "last_data": None, "deferred": 0})
             row["attempts"] += count
+            if is_deferred(code):
+                row["deferred"] += count
+                continue
             row["states"][state] = row["states"].get(state, 0) + count
             if code and state in {"failed", "unavailable", "not-configured"}:
                 row["codes"][code] = row["codes"].get(code, 0) + count
@@ -51,13 +61,14 @@ def health(db: str, *, hours: float = 24, now: datetime | None = None) -> dict:
     problems = []
     for source_id, row in sorted(sources.items()):
         failed = row["states"].get("failed", 0)
+        asked = row["attempts"] - row["deferred"]
         auth = sum(n for code, n in row["codes"].items() if any(h in code for h in AUTH_HINTS))
         if auth:
             problems.append(f"{source_id}: {auth} attempt(s) refused for credentials")
-        elif row["attempts"] >= 10 and failed == row["attempts"]:
+        elif asked >= 10 and failed == asked:
             problems.append(f"{source_id}: every attempt failed ({failed})")
-        elif row["attempts"] >= 10 and failed / row["attempts"] >= 0.5:
-            problems.append(f"{source_id}: {failed} of {row['attempts']} attempts failed")
+        elif asked >= 10 and failed / asked >= 0.5:
+            problems.append(f"{source_id}: {failed} of {asked} attempts failed")
     return {"hours": hours, "sources": sources, "intake": intake, "problems": problems}
 
 
@@ -67,14 +78,14 @@ def markdown(report: dict) -> str:
         lines += ["**Needs attention:** " + "; ".join(report["problems"]), ""]
     else:
         lines += ["No source is failing on most of its requests.", ""]
-    lines += ["| Source | Attempts | Data | No match | Failed | Skipped | Most common problem |",
-              "|---|---:|---:|---:|---:|---:|---|"]
+    lines += ["| Source | Attempts | Data | No match | Failed | Deferred | Skipped | Most common problem |",
+              "|---|---:|---:|---:|---:|---:|---:|---|"]
     for source_id, row in sorted(report["sources"].items()):
         s = row["states"]
         skipped = s.get("unavailable", 0) + s.get("not-configured", 0) + s.get("ambiguous", 0)
         top = max(row["codes"].items(), key=lambda kv: kv[1], default=("", 0))
         lines.append(f"| {source_id} | {row['attempts']} | {s.get('data', 0)} | {s.get('no-match', 0)} | "
-                     f"{s.get('failed', 0)} | {skipped} | {f'{top[0]} ({top[1]})' if top[1] else ''} |")
+                     f"{s.get('failed', 0)} | {row.get('deferred', 0)} | {skipped} | {f'{top[0]} ({top[1]})' if top[1] else ''} |")
     if report["intake"]:
         lines += ["", "Alerts received: " + ", ".join(f"{k} {v}" for k, v in sorted(report["intake"].items()))]
     return "\n".join(lines) + "\n"

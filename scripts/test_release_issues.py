@@ -119,6 +119,33 @@ class PlanTests(unittest.TestCase):
         self.assertIn(["issue", "comment"], ops)
         self.assertIn(["issue", "close"], ops)
 
+    def test_every_label_description_fits_githubs_100_character_limit(self):
+        # 2026-11-08: check-warning's 123-character description made "gh label create" fail
+        # (silently), so every check-warning issue failed with "could not add label".
+        for label, (color, description) in ri.LABELS.items():
+            self.assertLessEqual(len(description), 100, label)
+            self.assertRegex(color, r"^[0-9A-F]{6}$")
+
+    def test_a_label_or_issue_failure_is_reported_and_the_other_actions_still_run(self):
+        calls = []
+
+        def runner(argv, **kwargs):
+            calls.append(argv[1:3])
+            if argv[1:3] == ["label", "create"] and argv[3] == "check-warning":
+                return SimpleNamespace(returncode=1, stdout="", stderr="HTTP 422: description is too long")
+            if argv[1:3] == ["issue", "create"]:
+                return SimpleNamespace(returncode=1, stdout="", stderr="could not add label: 'check-warning' not found")
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+        with self.assertRaises(RuntimeError) as caught:
+            ri.apply([{"op": "create", "label": "check-warning", "title": "Check warning: a", "body": "x"},
+                      {"op": "close", "label": "fallback-active", "number": 3, "body": "c"}], "o/r", [], runner=runner)
+        message = str(caught.exception)
+        self.assertIn("label check-warning", message)
+        self.assertIn("description is too long", message)
+        self.assertIn("could not add label", message)
+        self.assertIn(["issue", "close"], calls)   # the later action still ran
+
     def test_a_body_in_which_a_credential_shape_survives_is_withheld_but_keeps_its_marker(self):
         calls = []
 

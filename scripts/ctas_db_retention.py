@@ -13,13 +13,26 @@ rest was derived bookkeeping kept forever:
 * ``certification_runs`` (1.8 GB, 113 rows of ~16 MB evidence each), no longer
   written since 2026-08-23.
 
+Measured 2026-11-08: soc.db was 8.53 GB (1.44 GB compressed, against GitHub's 2 GiB
+limit per release file) and growing ~0.2 GB a day. ``analysis_runs`` held 4.19 GB in
+603k rows for 162k (event, type) pairs: since the Track 3 analyses every collector
+cycle re-computes most types for the events it touches, and only
+``science-interest``/``population-anomaly`` history was pruned. The other types
+(``event-classification`` 1.3 GB, ``multiband-light-curve``, ``photometry-qc``,
+``spectrum-template-screen``, ``host-association``, ``spectrum-analysis``) kept every
+superseded run.
+
 Policy (all thresholds are arguments):
 
-* ``analysis_runs`` of the churning types: keep the newest run per (event, type),
-  every run completed in the last ``--keep-days`` days, and every run whose id is
-  cited by a file under the reference folders (benchmark packets, publication
-  bundles, certification reports, reference sets). Prune the rest. Other analysis
-  types are never touched.
+* ``analysis_runs`` of every type except the HISTORY_TYPES (whose every run is
+  published: the site exporter lists every ``light-curve-inference`` run in the
+  dossier's evidence and every revision of the gravitational-wave localisation
+  products): keep the newest run per (event, type), the newest *complete* run per
+  (event, type) (the exporter's analysis screens read the latest complete run), every
+  run completed in the last ``--keep-days`` days, and every run whose id is cited by a
+  file under the reference folders (benchmark packets, publication bundles,
+  certification reports, reference sets). Prune the rest. ``--churn-types`` limits
+  the pruning to named types (the 2026-09-26 behaviour).
 * ``certification_runs``: keep the newest ``--cert-keep`` per scope and every run
   whose id is cited by a reference file.
 
@@ -58,6 +71,11 @@ import time
 
 UUID = re.compile(rb"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 DEFAULT_CHURN_TYPES = ("science-interest", "population-anomaly")
+# Analysis types whose every run reaches the public release (scripts/export_ctas_snapshot.py
+# and scripts/ctas_multimessenger.py read them without a "latest" filter): never pruned.
+HISTORY_TYPES = ("light-curve-inference", "gw-localization-moc", "gw-galaxy-ranking",
+                 "gw-counterpart-ranking", "gw-tiling-plan")
+ALL_TYPES = "all"
 DEFAULT_REFERENCE_DIRS = ("benchmarks", "publication-bundles", "certification", "reference")
 BATCH = 2000
 
@@ -96,22 +114,42 @@ def cutoff_text(keep_days: float, now: dt.datetime | None = None) -> str:
 
 
 def analysis_prune_ids(con: sqlite3.Connection, churn_types: list[str], cutoff: str, keep: set[str]) -> list[str]:
-    marks = ",".join("?" * len(churn_types))
+    """Superseded runs: neither the newest run nor the newest complete, rights-cleared run of
+    their (event, type) (the run the exporter's screens publish: status complete, data_rights
+    public or open, latest by COALESCE(completed_at, created_at) then id).
+
+    ``churn_types == ["all"]`` means every type outside HISTORY_TYPES.
+    """
+    if churn_types == [ALL_TYPES]:
+        marks = ",".join("?" * len(HISTORY_TYPES))
+        type_filter, params = f"analysis_type NOT IN ({marks})", tuple(HISTORY_TYPES)
+    else:
+        types = [name for name in churn_types if name not in HISTORY_TYPES]
+        if not types:
+            return []
+        marks = ",".join("?" * len(types))
+        type_filter, params = f"analysis_type IN ({marks})", tuple(types)
     rows = con.execute(
         f"""
         WITH ranked AS (
-          SELECT id,
+          SELECT id, status = 'complete' AND COALESCE(data_rights, '') IN ('public', 'open') AS published,
                  replace(substr(COALESCE(completed_at, created_at), 1, 19), 'T', ' ') AS at,
                  ROW_NUMBER() OVER (
                    PARTITION BY event_id, analysis_type
                    ORDER BY COALESCE(completed_at, created_at) DESC, id DESC
-                 ) AS rank
+                 ) AS rank,
+                 ROW_NUMBER() OVER (
+                   PARTITION BY event_id, analysis_type,
+                                status = 'complete' AND COALESCE(data_rights, '') IN ('public', 'open')
+                   ORDER BY COALESCE(completed_at, created_at) DESC, id DESC
+                 ) AS status_rank
           FROM analysis_runs
-          WHERE analysis_type IN ({marks})
+          WHERE {type_filter}
         )
-        SELECT id FROM ranked WHERE rank > 1 AND at < ?
+        SELECT id FROM ranked
+        WHERE rank > 1 AND NOT (published AND status_rank = 1) AND at < ?
         """,
-        (*churn_types, cutoff),
+        (*params, cutoff),
     ).fetchall()
     return [row[0] for row in rows if row[0] not in keep]
 
@@ -193,9 +231,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("mode", choices=("preview", "prune", "daily"))
     parser.add_argument("--db", required=True, type=Path)
-    parser.add_argument("--keep-days", type=float, default=3.0)
+    parser.add_argument("--keep-days", type=float, default=1.0)
     parser.add_argument("--cert-keep", type=int, default=10)
-    parser.add_argument("--churn-types", default=",".join(DEFAULT_CHURN_TYPES))
+    parser.add_argument("--churn-types", default=ALL_TYPES,
+                        help='comma-separated analysis types to prune, or "all" (every type outside HISTORY_TYPES)')
     parser.add_argument("--reference-dir", action="append", type=Path,
                         help="folder whose files may cite run ids (default: benchmarks, publication-bundles, "
                              "certification and reference beside the database)")
@@ -281,7 +320,13 @@ def main(argv: list[str] | None = None) -> int:
             return 3
     elif args.mode == "daily":
         if con.execute("PRAGMA auto_vacuum").fetchone()[0] == 2:
-            con.execute("PRAGMA incremental_vacuum")
+            # fetchall(): the pragma frees one page per step, and sqlite3's execute() runs only
+            # the first step (found 2026-11-08: the daily run never shrank the file, so the
+            # deleted rows' pages stayed in every saved copy).
+            freed = con.execute("PRAGMA freelist_count").fetchone()[0]
+            con.execute("PRAGMA incremental_vacuum").fetchall()
+            con.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchall()
+            log(f"released {freed:,} free pages ({freed * con.execute('PRAGMA page_size').fetchone()[0] / 1e9:.2f} GB)")
     con.close()
     log(f"database {before / 1e9:.2f} GB -> {file_bytes(db) / 1e9:.2f} GB ({time.monotonic() - started:.0f}s)")
     return 0
