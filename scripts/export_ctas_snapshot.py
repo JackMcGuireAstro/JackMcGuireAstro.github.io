@@ -454,6 +454,9 @@ BOUND_CODE_PATHS = (
 # re-certification). Each with the reason; scripts/test_release_checks.py keeps this list
 # and BOUND_CODE_PATHS disjoint and complete for the batch.
 UNBOUND_RESILIENCE_PATHS = {
+    "scripts/verify_live.sh": "the deploy's live check (2026-11-08); reads the live site after deployment, never builds or reads release inputs",
+    "scripts/test_verify_live.py": "tests of the deploy's live check; run by the deploy, not by the publisher",
+    "scripts/test_ctas_required_keys.py": "deploy-time scan of every published dossier for the schema's required keys; the exporter's candidate-public-contract gate is the publish-time check",
     "scripts/release_issues.py": "GitHub issue upkeep after a run; never reads or writes release bytes",
     "scripts/code_fallback.sh": "the cloud runner's one fallback attempt; the retried release is certified by the code it checks out",
     "scripts/release_commit.py": "reads which commit produced a published release; used by the cloud runners and the deploy",
@@ -2756,17 +2759,20 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             linked_rows = [item for item in links if item.get("url")]
             if linked_rows:
                 rec["links"] = linked_rows
-            rec["designations"] = [
-                {
-                    "alias_id": item["alias_id"],
-                    "source_key": item["source_key"],
-                    "source": item["label"],
-                    "designation": item["designation"],
-                    "is_preferred": item["is_preferred"],
-                    "asserted_at": item.get("asserted_at"),
-                }
-                for item in links
-            ]
+        # Always present (the dossier schema requires it): a record whose only aliases come
+        # from providers outside PUBLIC_LINKS (for example Rubin/LSST diaObject identifiers)
+        # has no public designation, which is an empty list, not a missing field.
+        rec["designations"] = [
+            {
+                "alias_id": item["alias_id"],
+                "source_key": item["source_key"],
+                "source": item["label"],
+                "designation": item["designation"],
+                "is_preferred": item["is_preferred"],
+                "asserted_at": item.get("asserted_at"),
+            }
+            for item in links
+        ]
 
         follow_up = {
             "classifications": classifications.get(r["id"], []),
@@ -4744,6 +4750,12 @@ def verification_summary(certificate: dict[str, Any]) -> dict[str, Any]:
     return summary
 
 
+def dossier_required_keys(site_root: Path) -> set[str]:
+    """The keys ctas/schemas/candidate-chunk.schema.json requires of every candidate dossier."""
+    schema = json.loads((site_root / "ctas" / "schemas" / "candidate-chunk.schema.json").read_text())
+    return set(schema["$defs"]["candidate"]["required"])
+
+
 def rebind_link_health(output_dir: Path, site_root: Path) -> int:
     """Bind link-health.json into the verification report of the export in ``output_dir``.
 
@@ -6350,7 +6362,14 @@ def main() -> int:
     host_problems = host_association.host_problems(candidates)
     population_problems = population_anomaly.problems(json.loads(population_anomaly_raw), candidates)
     multimessenger_problems = multimessenger.multimessenger_problems(candidates)
-    required_contract = all(
+    # Every key the dossier schema requires of a candidate, checked on every dossier (the
+    # deploy-time schema check validates a one-in-sixteen sample of chunks).
+    schema_required = dossier_required_keys(site_root)
+    missing_required = [
+        (str(candidate.get("name") or candidate.get("event_id")), sorted(schema_required - set(candidate)))
+        for candidate in candidates if not schema_required <= set(candidate)
+    ]
+    required_contract = not missing_required and all(
         candidate.get("name") and "ctas_score" in candidate and
         isinstance(candidate.get("follow_up_counts"), dict) and
         isinstance(candidate.get("record_completeness"), dict)
@@ -6823,7 +6842,11 @@ def main() -> int:
     gates = [
         gate(REQUIRED_ARTIFACTS_GATE_ID, all(path in bound_files for path in REQUIRED_PUBLIC_ARTIFACTS), "HTML, JavaScript, CSS, observatory definitions, research quickstart, frozen AstroEvidence schema, compact index, astronomy research exports, complete-catalog reconstruction manifest and chunks, source universe, history, and link-health artifact"),
         gate("catalog-population", bool(candidates) and not counts["catalog_truncated"] and len(candidates) == counts["eligible_public_events"] and len(names) == len(set(names)), f"{len(candidates)} complete eligible records; truncated={counts['catalog_truncated']}"),
-        gate("candidate-public-contract", required_contract, f"{sum(bool(c.get('name')) and 'ctas_score' in c for c in candidates)}/{len(candidates)} identity and score records"),
+        gate("candidate-public-contract", required_contract, (
+            f"{sum(bool(c.get('name')) and 'ctas_score' in c for c in candidates)}/{len(candidates)} identity and score records; "
+            f"{len(candidates) - len(missing_required)}/{len(candidates)} dossiers carry all {len(schema_required)} schema-required keys"
+            + ("" if not missing_required else "; missing: " + "; ".join(f"{name}: {', '.join(keys)}" for name, keys in missing_required[:5]))
+        )),
         gate("complete-catalog-reconstruction-integrity", shard_integrity, f"{len(candidates)} complete records exactly once across {len(chunk_raw)} checksum-bound chunks in catalog-index UUID order"),
         gate("bootstrap-performance-budget", bootstrap_size_integrity, f"first-screen live summary is {len(live_summary_raw)} bytes; budget={LIVE_SUMMARY_MAX_BYTES}; the complete {len(catalog_index_raw)}-byte index is not loaded to draw a first screen"),
         gate("catalog-page-budget", catalog_page_budget, f"largest of {len(page_raw)} complete-catalog pages is {max(map(len, page_raw.values()), default=0)} bytes; budget={CATALOG_PAGE_MAX_BYTES}"),

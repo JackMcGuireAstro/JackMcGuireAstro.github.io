@@ -94,6 +94,7 @@ PHASE_LINE = re.compile(r"phase\s+(\S+) took (\d+)s")
 VALIDATOR_LINE = re.compile(r"^\s{2,}(?:\S.*::|.*\.schema\.json:|.*published but not declared|Traceback|\w+Error\b|AssertionError)")
 MAX_LINES = 200
 TAIL = 60
+CHECK_TAIL = 15  # per problem check, beside the first problem's full TAIL
 KEEP = 50
 README = """# run-reports
 
@@ -305,9 +306,12 @@ def build_report(*, workflow: str, outcome: str, logs: Iterable[str] = (), resul
             "class": first.get("class"), "mode": first.get("mode"), "reason": first.get("reason"),
             "parts": [part.get("part") for part in first.get("parts", [])[:20]], "output_tail": tail,
         } if first else None,
+        # Each warning keeps its own last lines too (2026-11-08: browser.visitor warned on every
+        # deploy for days with nothing in the report to say why; only the first problem had a tail).
         "checks": [{"id": row.get("id"), "scope": row.get("scope"), "outcome": row.get("outcome"),
                     "class": row.get("class"), "mode": row.get("mode"),
-                    "parts": [part.get("part") for part in row.get("parts", [])[:10]]} for row in problems][:80],
+                    "parts": [part.get("part") for part in row.get("parts", [])[:10]],
+                    "output_tail": (row.get("output_tail") or [])[-CHECK_TAIL:]} for row in problems][:80],
         "check_counts": {key: sum(1 for row in rows if row.get("outcome") == key) for key in ("pass", "warn", "block", "skip")},
         "decision": decision,
         "sanitized": True,

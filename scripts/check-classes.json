@@ -768,6 +768,13 @@
    ],
    "notes": "Four tests are advisory: one pins real regression events by name (renames and retirements are legitimate), three read page copy. The test that compares the certificate's bound code with this tree (step 12 in the deploy) stays integrity."
   },
+  "ctas.test_ctas_required_keys": {
+   "class": "integrity",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_ctas_required_keys.py: every published dossier carries every key ctas/schemas/candidate-chunk.schema.json requires (2026-11-08: 285 Rubin/LSST records lacked designations)"
+  },
   "ops.cloud_run_marker": {
    "class": "advisory",
    "scopes": [
@@ -822,6 +829,13 @@
     "deploy"
    ],
    "what": "scripts/test_release_commit.py: tooling tests that cannot change the published bytes"
+  },
+  "ops.verify_live": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_verify_live.py: the deploy's live check (scripts/verify_live.sh) against a local stand-in for Pages and the data origin (2026-11-08: mismatches named with HTTP status; a rate-limited data origin alone is a warning)"
   },
   "ops.release_issues": {
    "class": "advisory",

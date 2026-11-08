@@ -189,6 +189,16 @@ class ReportTests(unittest.TestCase):
             report = rr.build_report(workflow="ctas-cloud.yml", outcome="failed", logs=[str(log)], results=rows, environ={})
         self.assertEqual(len(report["lines"]) + len(report["failing_check"]["output_tail"]), 200)
 
+    def test_every_warning_keeps_its_own_last_lines(self):
+        rows = [{"id": "ctas.schemas", "outcome": "warn", "output_tail": [f"schema {i}" for i in range(40)]},
+                {"id": "browser.visitor", "outcome": "warn", "output_tail": ["FAIL: test_sql_page", "AssertionError: 0 != 4"]},
+                {"id": "ctas.test_ctas_feed", "outcome": "pass", "output_tail": ["ok"]}]
+        report = rr.build_report(workflow="worldsindex-release.yml", outcome="failed", results=rows, environ={})
+        checks = {row["id"]: row for row in report["checks"]}
+        self.assertEqual(set(checks), {"ctas.schemas", "browser.visitor"})
+        self.assertEqual(checks["browser.visitor"]["output_tail"], ["FAIL: test_sql_page", "AssertionError: 0 != 4"])
+        self.assertEqual(len(checks["ctas.schemas"]["output_tail"]), rr.CHECK_TAIL)
+
     def test_prune_keeps_the_newest_50_per_workflow(self):
         paths = [f"reports/ctas-cloud/{i}.json" for i in range(1, 61)] + \
                 [f"reports/worldsindex-release/{100 + i}.json" for i in range(5)] + \

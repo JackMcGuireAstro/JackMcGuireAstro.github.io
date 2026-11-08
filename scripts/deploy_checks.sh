@@ -124,6 +124,8 @@ group_ctas_static() {
   check ctas.test_ctas_links python3 scripts/test_ctas_links.py
   check ctas.test_ctas_publisher_recovery python3 scripts/test_ctas_publisher_recovery.py
   check ctas.test_ctas_static python3 scripts/test_ctas_static.py
+  # 2026-11-08: every dossier (not the schema check's one-in-sixteen sample) has every required key.
+  check ctas.test_ctas_required_keys python3 scripts/test_ctas_required_keys.py
   check ctas.test_ctas_positional python3 scripts/test_ctas_positional.py
   check ctas.test_ctas_source_health python3 scripts/test_ctas_source_health.py
   check ctas.test_ctas_feed python3 scripts/test_ctas_feed.py
@@ -179,11 +181,11 @@ group_browser() {
 group_tooling() {
   local name
   for name in watchdog_freshness cloud_run_marker publisher_housekeeping ctas_db_retention data_branch \
-              ctas_cloud_state worldsindex_cloud_state release_checks run_report release_issues release_commit; do
+              ctas_cloud_state worldsindex_cloud_state release_checks run_report release_issues release_commit verify_live; do
     check "ops.$name" python3 "scripts/test_$name.py"
   done
   check ops.shell-syntax shell_check scripts/worldsindex_cloud_run.sh scripts/ctas_cloud_run.sh scripts/deploy_checks.sh \
-    scripts/release_checks.sh scripts/code_fallback.sh scripts/deploy_candidates.sh
+    scripts/release_checks.sh scripts/code_fallback.sh scripts/deploy_candidates.sh scripts/verify_live.sh
 }
 
 group_content() {
