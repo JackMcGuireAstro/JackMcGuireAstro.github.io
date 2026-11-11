@@ -1,0 +1,98 @@
+{
+  "check_counts": {
+    "block": 0,
+    "pass": 92,
+    "skip": 0,
+    "warn": 1
+  },
+  "checks": [
+    {
+      "class": "advisory",
+      "id": "browser.tonight",
+      "mode": "warn",
+      "outcome": "warn",
+      "parts": [],
+      "scope": "deploy"
+    }
+  ],
+  "commit": "79aef6e4b76bb481732d9aed87b301fb609b67c3",
+  "decision": {
+    "action": "block",
+    "blocking": [],
+    "candidates": [
+      {
+        "blocking": [],
+        "commit": "79aef6e4b76bb481732d9aed87b301fb609b67c3",
+        "label": "main",
+        "status": "passed",
+        "warnings": [
+          "browser.tonight"
+        ]
+      }
+    ],
+    "decided_at": "2026-11-04T21:59:24Z",
+    "explanation": "validated, but the Pages deploy ended success and the live check failure",
+    "fallback": false,
+    "fallback_label": null,
+    "landing_window": false,
+    "main_commit": "79aef6e4b76bb481732d9aed87b301fb609b67c3",
+    "reason": "deploy-failed",
+    "release_commit": null,
+    "schema": "release-decision@1",
+    "scope": "deploy"
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "advisory",
+    "id": "browser.tonight",
+    "mode": "warn",
+    "outcome": "warn",
+    "output_tail": [
+      "test_a_kept_site_appears_in_the_list (__main__.TonightBrowserTests.test_a_kept_site_appears_in_the_list) ... ok",
+      "test_axe_reports_no_wcag_violation (__main__.TonightBrowserTests.test_axe_reports_no_wcag_violation) ... ok",
+      "test_ctas_night_table_and_chart (__main__.TonightBrowserTests.test_ctas_night_table_and_chart) ... ok",
+      "test_custom_site_and_blank_magnitude (__main__.TonightBrowserTests.test_custom_site_and_blank_magnitude) ... ok",
+      "test_homepage_links_to_the_planner (__main__.TonightBrowserTests.test_homepage_links_to_the_planner) ... ok",
+      "test_next_thirty_nights_list (__main__.TonightBrowserTests.test_next_thirty_nights_list) ... FAIL",
+      "test_no_viewport_scrolls_sideways (__main__.TonightBrowserTests.test_no_viewport_scrolls_sideways) ... ok",
+      "test_run_list_across_pages_and_the_run_sheet (__main__.TonightBrowserTests.test_run_list_across_pages_and_the_run_sheet) ... ok",
+      "test_run_sheet (__main__.TonightBrowserTests.test_run_sheet) ... ok",
+      "test_top_tonight_and_run_sheet_link (__main__.TonightBrowserTests.test_top_tonight_and_run_sheet_link) ... ok",
+      "test_transit_list_not_published_yet (__main__.TonightBrowserTests.test_transit_list_not_published_yet) ... ok",
+      "test_transits_tonight (__main__.TonightBrowserTests.test_transits_tonight) ... ok",
+      "test_worldsindex_systems (__main__.TonightBrowserTests.test_worldsindex_systems) ... ok",
+      "",
+      "======================================================================",
+      "FAIL: test_next_thirty_nights_list (__main__.TonightBrowserTests.test_next_thirty_nights_list)",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_tonight_browser.py\", line 255, in test_next_thirty_nights_list",
+      "    self.assertIn(\"deepest first\", page.inner_text(\"#results p\"))",
+      "AssertionError: 'deepest first' not found in '74 of 113 CTAS transients are above 30\u00b0 while it is dark. Select a row for its altitude curve.'",
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 13 tests in 28.163s",
+      "",
+      "FAILED (failures=1)"
+    ],
+    "parts": [],
+    "reason": "advisory: never blocks",
+    "scope": "deploy"
+  },
+  "failing_checks": [],
+  "failing_phase": null,
+  "lines": [],
+  "note": "jobs: validate=success deploy=success verify-live=failure; deployed code: main 79aef6e4b7",
+  "outcome": "failed",
+  "phases": [],
+  "run_attempt": "1",
+  "run_id": "41917414210",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/41917414210",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [
+    "browser.tonight"
+  ],
+  "workflow": "worldsindex-release.yml",
+  "written_at": "2026-11-04T22:07:16Z"
+}

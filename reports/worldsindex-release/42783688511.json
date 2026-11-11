@@ -1,0 +1,49 @@
+{
+  "check_counts": {
+    "block": 0,
+    "pass": 95,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [],
+  "commit": "a70385b3d5928b94d1f156f89899729f58bb5c65",
+  "decision": {
+    "action": "block",
+    "blocking": [],
+    "candidates": [
+      {
+        "blocking": [],
+        "commit": "a70385b3d5928b94d1f156f89899729f58bb5c65",
+        "label": "main",
+        "status": "passed",
+        "warnings": []
+      }
+    ],
+    "decided_at": "2026-11-10T09:01:28Z",
+    "explanation": "validated, but the Pages deploy ended success and the live check failure",
+    "fallback": false,
+    "fallback_label": null,
+    "landing_window": false,
+    "main_commit": "a70385b3d5928b94d1f156f89899729f58bb5c65",
+    "reason": "deploy-failed",
+    "release_commit": null,
+    "schema": "release-decision@1",
+    "scope": "deploy"
+  },
+  "event": "workflow_dispatch",
+  "failing_check": null,
+  "failing_checks": [],
+  "failing_phase": null,
+  "lines": [],
+  "note": "jobs: validate=success deploy=success verify-live=failure (never matched after 20 attempts: WorldsIndex-manifest(HTTP 200) CTAS-status(HTTP 200)); deployed code: main a70385b3d5",
+  "outcome": "failed",
+  "phases": [],
+  "run_attempt": "1",
+  "run_id": "42783688511",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/42783688511",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "worldsindex-release.yml",
+  "written_at": "2026-11-10T09:08:55Z"
+}

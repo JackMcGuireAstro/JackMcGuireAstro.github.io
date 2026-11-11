@@ -1,0 +1,256 @@
+{
+  "check_counts": {
+    "block": 1,
+    "pass": 120,
+    "skip": 66,
+    "warn": 3
+  },
+  "checks": [
+    {
+      "class": "integrity",
+      "id": "ctas.test_ctas_static",
+      "mode": "block",
+      "outcome": "block",
+      "output_tail": [
+        "snapshot verification: verification-failed (3/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+        "snapshot verification: verification-failed (3/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+        "snapshot verification: verification-failed (3/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 41 checksum-bound files",
+        "snapshot verification: verified-static-snapshot (4/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+        "snapshot verification: verification-failed (2/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+        "snapshot verification: verification-failed (2/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+        "snapshot verification: verification-failed (2/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+        "snapshot verification: verification-failed (2/4 checks)"
+      ],
+      "parts": [
+        "CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound"
+      ],
+      "scope": "deploy"
+    },
+    {
+      "class": "integrity",
+      "id": "ctas.test_ctas_required_keys",
+      "mode": "watch",
+      "outcome": "warn",
+      "output_tail": [
+        "test_the_exporter_reads_the_required_keys_from_the_schema (__main__.RequiredKeysTests.test_the_exporter_reads_the_required_keys_from_the_schema) ... ok",
+        "",
+        "======================================================================",
+        "FAIL: test_every_published_dossier_has_every_required_key (__main__.RequiredKeysTests.test_every_published_dossier_has_every_required_key)",
+        "----------------------------------------------------------------------",
+        "Traceback (most recent call last):",
+        "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_ctas_required_keys.py\", line 54, in test_every_published_dossier_has_every_required_key",
+        "    self.assertEqual(missing, {}, f\"{len(missing)} of {total} dossiers in {files} chunk files lack required keys, e.g. \"",
+        "AssertionError: {'LSST diaObject 171171973252513964': ['de[15628 chars]ns']} != {}",
+        "Diff is 16535 characters long. Set self.maxDiff to None to see it. : 285 of 18702 dossiers in 4153 chunk files lack required keys, e.g. LSST diaObject 171171973252513964: ['designations']; LSST diaObject 171171984795238405: ['designations']; LSST diaObject 171176371159564371: ['designations']; LSST diaObject 171171973118296094: ['designations']; LSST diaObject 171176371153797257: ['designations']",
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 3 tests in 14.746s",
+        "",
+        "FAILED (failures=1)"
+      ],
+      "parts": [],
+      "scope": "deploy"
+    },
+    {
+      "class": "advisory",
+      "id": "ctas.schemas",
+      "mode": "block",
+      "outcome": "warn",
+      "output_tail": [
+        "        Underlying errors caused this.",
+        "      ",
+        "        Best Match:",
+        "          $: 'parts' is a required property",
+        "        Best Deep Match:",
+        "          $.candidates[3]: 'designations' is a required property",
+        "      ",
+        "        3 other errors were produced. Use '--verbose' to see all errors.",
+        "        /home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/ctas/data/candidate-chunks/1a0.json::$: {'bucket': '1a0', 'candidate_count': 4, 'candidates': [{'astro_evidence': {'analysisRuns': [{'analysisRunId': '2207c674-5e51-43e7-8f11-82be00bfb60c', 'analysisType': 'light-curve-inference', 'createdAt': '2026-09-28T16:36:44.618740Z', 'inputChecksumSha256': 'd255cab33d3d1ae752d7771f781",
+        "        Underlying errors caused this.",
+        "      ... 7 more line(s)",
+        "ok    candidate-chunk.schema.json              7 file(s)",
+        "ok    candidate-json-part.schema.json         57 file(s)",
+        "ok    delivery.schema.json                     1 file(s)",
+        "ok    feeds (Atom and JSON Feed 1.1)         428 file(s)"
+      ],
+      "parts": [
+        "candidate-chunk.schema.json 53 file(s)"
+      ],
+      "scope": "deploy"
+    },
+    {
+      "class": "advisory",
+      "id": "ctas.schemas",
+      "mode": "block",
+      "outcome": "warn",
+      "output_tail": [
+        "        Underlying errors caused this.",
+        "      ",
+        "        Best Match:",
+        "          $: 'parts' is a required property",
+        "        Best Deep Match:",
+        "          $.candidates[3]: 'designations' is a required property",
+        "      ",
+        "        3 other errors were produced. Use '--verbose' to see all errors.",
+        "        /home/runner/work/JackMcGuireAstro.github.io/candidate-ctas-release/ctas/data/candidate-chunks/1a0.json::$: {'bucket': '1a0', 'candidate_count': 4, 'candidates': [{'astro_evidence': {'analysisRuns': [{'analysisRunId': '2207c674-5e51-43e7-8f11-82be00bfb60c', 'analysisType': 'light-curve-inference', 'createdAt': '2026-09-28T16:36:44.618740Z', 'inputChecksumSha256': 'd255cab33d3d1ae752d7771f7815e9b",
+        "        Underlying errors caused this.",
+        "      ... 7 more line(s)",
+        "ok    candidate-chunk.schema.json              7 file(s)",
+        "ok    candidate-json-part.schema.json         57 file(s)",
+        "ok    delivery.schema.json                     1 file(s)",
+        "ok    feeds (Atom and JSON Feed 1.1)         428 file(s)"
+      ],
+      "parts": [
+        "candidate-chunk.schema.json 53 file(s)"
+      ],
+      "scope": "deploy"
+    }
+  ],
+  "commit": "2d02f37a552694dc18bdf66fcbb89a51f0ae2d35",
+  "decision": {
+    "action": "use-fallback",
+    "blocking": [
+      "ctas.test_ctas_static"
+    ],
+    "candidates": [
+      {
+        "blocking": [
+          "ctas.test_ctas_static"
+        ],
+        "commit": "2d02f37a552694dc18bdf66fcbb89a51f0ae2d35",
+        "label": "main",
+        "status": "blocked",
+        "warnings": [
+          "ctas.test_ctas_required_keys",
+          "ctas.schemas"
+        ]
+      },
+      {
+        "blocking": [],
+        "commit": "01cd04d923f3e27b210ee389d3f4ab660d22c40d",
+        "label": "ctas-release",
+        "status": "passed",
+        "warnings": [
+          "ctas.schemas"
+        ]
+      }
+    ],
+    "decided_at": "2026-11-08T23:06:53Z",
+    "explanation": "main's code failed ctas.test_ctas_static; deployed ctas-release 01cd04d923 with the same data (landing window: expected until the next CTAS release)",
+    "fallback": true,
+    "fallback_label": "ctas-release",
+    "landing_window": true,
+    "main_commit": "2d02f37a552694dc18bdf66fcbb89a51f0ae2d35",
+    "reason": "fallback-candidate-passed",
+    "release_commit": "01cd04d923f3e27b210ee389d3f4ab660d22c40d",
+    "schema": "release-decision@1",
+    "scope": "deploy"
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "integrity",
+    "id": "ctas.test_ctas_static",
+    "mode": "block",
+    "outcome": "block",
+    "output_tail": [
+      "test_missing_spectrum_is_not_applicable_off_the_optical_channel (__main__.ScoreModelTests.test_missing_spectrum_is_not_applicable_off_the_optical_channel) ... ok",
+      "test_missing_spectrum_still_applies_to_an_optical_target (__main__.ScoreModelTests.test_missing_spectrum_still_applies_to_an_optical_target) ... ok",
+      "test_notice_revision_pipeline_removes_retracted_messenger_from_score (__main__.ScoreModelTests.test_notice_revision_pipeline_removes_retracted_messenger_from_score) ... ok",
+      "test_recency_decays_with_wall_clock_alone (__main__.ScoreModelTests.test_recency_decays_with_wall_clock_alone)",
+      "No candidate mutation, a later release, less recency. ... ok",
+      "test_single_channel_records_receive_no_messenger_diversity_bonus (__main__.ScoreModelTests.test_single_channel_records_receive_no_messenger_diversity_bonus) ... ok",
+      "test_terminal_records_are_zero_and_never_leaderboard_targets (__main__.ScoreModelTests.test_terminal_records_are_zero_and_never_leaderboard_targets) ... ok",
+      "test_the_score_is_published_with_the_clock_it_was_computed_for (__main__.ScoreModelTests.test_the_score_is_published_with_the_clock_it_was_computed_for) ... ok",
+      "test_two_incompatible_active_assertions_are_a_conflict (__main__.ScoreModelTests.test_two_incompatible_active_assertions_are_a_conflict) ... ok",
+      "test_two_independently_retained_channels_do_earn_the_bonus (__main__.ScoreModelTests.test_two_independently_retained_channels_do_earn_the_bonus) ... ok",
+      "test_unconfirmed_or_inactive_signals_do_not_earn_a_bonus (__main__.ScoreModelTests.test_unconfirmed_or_inactive_signals_do_not_earn_a_bonus) ... ok",
+      "test_wavelengths_are_not_distinct_physical_messengers (__main__.ScoreModelTests.test_wavelengths_are_not_distinct_physical_messengers) ... ok",
+      "test_browser_fallback_derivation_agrees_with_the_exporter (__main__.SuggestedFollowUpTests.test_browser_fallback_derivation_agrees_with_the_exporter)",
+      "ctas/followup.js re-derives the block for releases that predate it. ... ok",
+      "test_classified_target_with_a_spectrum_is_monitored_weekly (__main__.SuggestedFollowUpTests.test_classified_target_with_a_spectrum_is_monitored_weekly) ... ok",
+      "test_disagreeing_classifications_ask_for_a_spectrum_even_when_one_exists (__main__.SuggestedFollowUpTests.test_disagreeing_classifications_ask_for_a_spectrum_even_when_one_exists) ... ok",
+      "test_evidence_types_come_from_the_science_brief_vocabulary (__main__.SuggestedFollowUpTests.test_evidence_types_come_from_the_science_brief_vocabulary) ... ok",
+      "test_latest_magnitude_prefers_the_newest_retained_detection (__main__.SuggestedFollowUpTests.test_latest_magnitude_prefers_the_newest_retained_detection) ... ok",
+      "test_multimessenger_alert_gets_a_rapid_counterpart_search (__main__.SuggestedFollowUpTests.test_multimessenger_alert_gets_a_rapid_counterpart_search) ... ok",
+      "test_retracted_terrestrial_and_coordinate_free_records_get_no_objectives (__main__.SuggestedFollowUpTests.test_retracted_terrestrial_and_coordinate_free_records_get_no_objectives) ... ok",
+      "test_the_draft_is_deterministic_and_clock_free (__main__.SuggestedFollowUpTests.test_the_draft_is_deterministic_and_clock_free) ... ok",
+      "test_unclassified_optical_target_gets_imaging_then_spectroscopy_nightly (__main__.SuggestedFollowUpTests.test_unclassified_optical_target_gets_imaging_then_spectroscopy_nightly) ... ok",
+      "test_conflict_and_retraction_are_retained (__main__.TimelineTests.test_conflict_and_retraction_are_retained) ... ok",
+      "test_three_clocks_remain_separate_and_ordered (__main__.TimelineTests.test_three_clocks_remain_separate_and_ordered) ... ok",
+      "",
+      "======================================================================",
+      "FAIL: test_schema_projector_and_contract_tests_are_checksum_bound (__main__.CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound)",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_ctas_static.py\", line 1383, in test_schema_projector_and_contract_tests_are_checksum_bound",
+      "    self.assertEqual(",
+      "AssertionError: '55e231d7048ed78f283396106642180fca266262373227f83e804c8169afe9b7' != '6242f22c0659c6efac10df9770b9d7863db504c7e6588a891c9144b04c89dc9f'",
+      "- 55e231d7048ed78f283396106642180fca266262373227f83e804c8169afe9b7",
+      "+ 6242f22c0659c6efac10df9770b9d7863db504c7e6588a891c9144b04c89dc9f",
+      "",
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 106 tests in 174.054s",
+      "",
+      "FAILED (failures=1)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (3/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 41 checksum-bound files",
+      "snapshot verification: verified-static-snapshot (4/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)",
+      "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+      "snapshot verification: verification-failed (2/4 checks)"
+    ],
+    "parts": [
+      "CertificateAndArtifactTests.test_schema_projector_and_contract_tests_are_checksum_bound"
+    ],
+    "reason": "promoted 2026-10-24T01:59:11Z",
+    "scope": "deploy"
+  },
+  "failing_checks": [
+    "ctas.test_ctas_static"
+  ],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "choose.log: FAIL  candidate-chunk.schema.json             53 file(s)",
+    "choose.log: /home/runner/work/JackMcGuireAstro.github.io/candidate-ctas-release/ctas/data/candidate-chunks/140.json::$: {'bucket': '140', 'candidate_count': 5, 'candidates': [{'astro_evidence': {'analysisRuns': [{'analysisRunId': 'de7cdd30-b438-4316-a7bf-13832948bca1', 'analysisType': 'light-curve-inference', 'createdAt': '2026-09-07T01:45:48.328531Z', 'inputChecksumSha256': 'a0ad21980599dca194edc0559c2a659",
+    "choose.log: /home/runner/work/JackMcGuireAstro.github.io/candidate-ctas-release/ctas/data/candidate-chunks/1a0.json::$: {'bucket': '1a0', 'candidate_count': 4, 'candidates': [{'astro_evidence': {'analysisRuns': [{'analysisRunId': '2207c674-5e51-43e7-8f11-82be00bfb60c', 'analysisType': 'light-curve-inference', 'createdAt': '2026-09-28T16:36:44.618740Z', 'inputChecksumSha256': 'd255cab33d3d1ae752d7771f7815e9b",
+    "choose.log: WARN  check ctas.schemas failed (candidate-chunk.schema.json 53 file(s)): advisory, not blocking [no failure blocks (advisory parts, or schema files in watch mode)]",
+    "choose.log: WARN  check ctas.schemas:candidate-chunk.schema.json failed (candidate-chunk.schema.json 53 file(s)): advisory, not blocking [advisory: never blocks]"
+  ],
+  "note": "jobs: validate=success deploy=success verify-live=success (verified on attempt 1); deployed code: ctas-release 01cd04d923",
+  "outcome": "fallback",
+  "phases": [],
+  "run_attempt": "1",
+  "run_id": "42529399323",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/42529399323",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [
+    "ctas.test_ctas_required_keys",
+    "ctas.schemas",
+    "ctas.schemas"
+  ],
+  "workflow": "worldsindex-release.yml",
+  "written_at": "2026-11-08T23:07:51Z"
+}
