@@ -4,9 +4,11 @@
 #   1. restore the collector's database and fixed inputs from the private state repo
 #   2. start the collector (`supernova-ops api`, the same program the Mac ran) and let it
 #      gather new alerts for COLLECT_MINUTES
-#   3. publish a release with scripts/publish_ctas.sh while the collector keeps running
-#      (the publisher freezes its own consistent snapshot of the database)
-#   4. stop the collector cleanly and save the database back to the state repo
+#   3. stop the collector cleanly, then publish a release with scripts/publish_ctas.sh
+#      (since 2026-11-12: the collector and the exporter together exceeded the runner's
+#      16 GB and the kernel killed the job, with no report, for 10 hours; the publisher
+#      still freezes its own snapshot, so nothing about the release changes)
+#   4. save the database back to the state repo
 #   5. start the site deployment when a release was published
 #
 # Resilience (RESILIENCE.md): every release check is classified (scripts/check-classes.json).
@@ -160,6 +162,8 @@ done
 say "collected for $COLLECT_MINUTES minutes"
 
 # ------------------------------------------------------------------ 3. publish
+# The collector stops first: its memory plus the exporter's peak no longer fits the runner.
+stop_collector
 PUBLISH_ARGS=()
 [ "$DRY_RUN" = "1" ] && PUBLISH_ARGS=(--dry-run)
 say "building the release${PUBLISH_ARGS:+ (dry run)}"
