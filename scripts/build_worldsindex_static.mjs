@@ -18,7 +18,12 @@ import { buildObservingArtifacts } from './worldsindex_observing.mjs';
 import { excludeFromAtlas, manifestBlock as solarSystemManifestBlock } from './worldsindex_solar_system.mjs';
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const sourceRoot = resolve(process.env.WORLDSINDEX_SOURCE_DIR ?? '/Users/johnmcguire/Documents/Codex/CTAS and WorldsIndex/WorldsIndex Development/work/worldsindex');
+// The builder's output directory; scripts/publish_worldsindex.sh sets it (no machine-specific default).
+if (!process.env.WORLDSINDEX_SOURCE_DIR) {
+  console.error('WORLDSINDEX_SOURCE_DIR is not set: point it at the WorldsIndex builder output (scripts/publish_worldsindex.sh does this).');
+  process.exit(2);
+}
+const sourceRoot = resolve(process.env.WORLDSINDEX_SOURCE_DIR);
 const outputRoot = join(siteRoot, 'worldsindex', 'data');
 const detailRoot = join(outputRoot, 'details');
 // One release clock for the manifest, the changelog, the feeds and the provenance document.
