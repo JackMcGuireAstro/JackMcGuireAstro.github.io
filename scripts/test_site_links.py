@@ -109,7 +109,8 @@ def target_of(page: str, href: str) -> tuple[Path | None, str]:
     else:
         path = unquote(parts.path)
         base = (ROOT / page).parent if not path.startswith("/") else ROOT
-        path = path.lstrip("/") if path.startswith("/") else path
+        if path.startswith("/"):   # root-absolute (the shared header and footer): "/" is the homepage
+            path = path.lstrip("/") or "index.html"
     target = (base / path).resolve() if path else (ROOT / page).resolve()
     if target.is_dir() or path.endswith("/"):
         target = target / "index.html"

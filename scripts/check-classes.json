@@ -909,6 +909,13 @@
    ],
    "what": "every internal link and #fragment on every page resolves in the tree; every real page has the same primary navigation ending in the run-list badge and loads the run-list scripts; no page links QualQuest"
   },
+  "site.chrome": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "every page that carries the shared header and footer (scripts/sync_chrome.py PAGES) has exactly one of each, byte-identical to assets/partials/header.html and footer.html, and loads chrome.css and chrome.js"
+  },
   "site.whitespace": {
    "class": "advisory",
    "scopes": [

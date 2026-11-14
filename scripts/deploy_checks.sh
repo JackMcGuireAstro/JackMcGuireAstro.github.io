@@ -193,6 +193,7 @@ group_content() {
   check site.credential-scan credential_scan
   check release.evidence python3 scripts/test_release_evidence.py
   check site.links python3 scripts/test_site_links.py
+  check site.chrome python3 scripts/sync_chrome.py --check
 }
 
 case "$GROUP" in
