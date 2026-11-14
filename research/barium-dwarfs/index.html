@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="auto">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,6 +7,9 @@
 <meta name="description" content="An interactive look at Jack McGuire's barium dwarf census: 71 confirmed barium dwarfs compared with nearby stars that have white-dwarf companions, and the candidate systems under study.">
 <meta name="theme-color" content="#f4f1ea">
 <link rel="canonical" href="https://jackmcguireastro.github.io/research/barium-dwarfs/">
+<link rel="stylesheet" href="/assets/css/base.css?v=20261114">
+<link rel="stylesheet" href="/assets/css/chrome.css?v=20261114">
+<script defer src="/assets/js/chrome.js?v=20261114"></script>
 <link rel="stylesheet" href="../../tools/tools.css?v=20261105">
 <link rel="stylesheet" href="census.css?v=20261004">
 <script type="module" src="census.js?v=20261004"></script>
@@ -15,14 +18,28 @@
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="top"><div class="shell top-inner">
-  <a class="wordmark" href="../../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
-  <nav aria-label="Primary"><a href="../../index.html">Home</a><a href="../../index.html#research" aria-current="page">Research</a><a href="../../worldsindex/">WorldsIndex</a><a href="../../ctas.html">CTAS</a><a href="../../tonight/">Tonight</a><a href="../../tools/follow/">Follow</a><a href="../../tools/">Tools</a><a data-runcart-badge href="../../tonight/runsheet.html">Run list</a></nav>
-</div></header>
+<!-- chrome:header -->
+<header class="jm-header">
+  <div class="jm-shell jm-header__inner">
+    <a class="jm-wordmark" href="/" aria-label="Jack McGuire, home"><span class="jm-monogram" aria-hidden="true">jm<span>.</span></span><span>Jack McGuire</span></a>
+    <button class="jm-menu-toggle" type="button" aria-controls="primary-nav" aria-expanded="false"><span data-menu-label>Menu</span><span class="jm-menu-glyph" aria-hidden="true">+</span></button>
+    <nav id="primary-nav" class="jm-nav" aria-label="Primary">
+      <a href="/">Home</a>
+      <a href="/#research">Research</a>
+      <a href="/#publications">Publications</a>
+      <a href="/worldsindex/">WorldsIndex</a>
+      <a href="/ctas.html">CTAS</a>
+      <a href="/tools/">Tools</a>
+      <a href="/cv.pdf">CV</a>
+      <a class="jm-runlist" data-runcart-badge href="/tonight/runsheet.html">Run list</a>
+    </nav>
+  </div>
+</header>
+<!-- /chrome:header -->
 <main id="main" class="shell">
   <section class="intro">
     <p class="eyebrow">Research / Stellar chemistry &amp; binary mass transfer</p>
-    <h1>Barium dwarf census</h1>
+    <h1>Barium dwarf <em>census</em></h1>
     <p>Barium dwarfs are main-sequence stars carrying heavy elements (barium, strontium, lanthanum) that they could not have made themselves. They received them from a companion that was once a giant star and is now a faint white dwarf. Almost every known barium dwarf is an F or G star; this census asks which systems we find, which we miss, and why no barium M dwarf has been confirmed.</p>
     <p class="status-note"><strong>Preliminary.</strong> These values come from my 2025 summer research report and April 2026 poster. The manuscript is in preparation, with Dr. Russel J. White at Georgia State University. Nothing on this page is a submitted or accepted result.</p>
   </section>
@@ -78,7 +95,27 @@
     <p>The 71 barium dwarfs are the confirmed list of Roriz et al. (2024); the comparison sample is the nearby (within 40 pc) main-sequence stars with known white-dwarf companions, mostly from O'Brien et al., plus Sirius A as a benchmark. Colours, magnitudes and distances are Gaia DR3 (DR2 where needed); Sirius A and Regulus A are too bright for Gaia and have no colour here. Separations are from the Escorza et al. (2019) orbital catalog. Values were transcribed from the report's tables without change, including any typos in star names. Read the <a href="../../assets/presentations/2025-barium-summer-report.pdf">2025 summer research report (PDF)</a> and the <a href="../../assets/presentations/2026-gsurc-finding-barium-dwarfs.pdf">April 2026 poster (PDF)</a> for methods and references. Data file: <a href="census-data.json">census-data.json</a>.</p>
   </section>
 </main>
-<footer class="foot"><div class="shell"><p>© 2026 Jack McGuire · <a href="../../index.html">Home</a> · <a href="../../index.html#research">Research</a> · <a href="../../worldsindex/">WorldsIndex</a> · <a href="../../ctas.html">CTAS</a> · <a href="../../tonight/">Tonight</a> · <a href="../../tools/follow/">Follow</a> · <a href="../../tools/">Tools</a> · <a href="../../tonight/runsheet.html">Run list</a></p></div></footer>
+<!-- chrome:footer -->
+<footer class="jm-footer">
+  <div class="jm-shell jm-footer__inner">
+    <p>© 2026 Jack McGuire<br><span>Department of Physics &amp; Astronomy · University of Wyoming</span></p>
+    <nav aria-label="Footer">
+      <a href="/">Home</a>
+      <a href="/#research">Research</a>
+      <a href="/#publications">Publications</a>
+      <a href="/worldsindex/">WorldsIndex</a>
+      <a href="/ctas.html">CTAS</a>
+      <a href="/tonight/">Tonight’s sky</a>
+      <a href="/tools/follow/">Follow</a>
+      <a href="/tools/">Tools</a>
+      <a href="/tonight/runsheet.html">Run list</a>
+      <a href="/research/barium-dwarfs/">Barium dwarf census</a>
+      <a href="/cv.pdf">CV (PDF)</a>
+      <a href="mailto:jackmcg7@live.com">jackmcg7@live.com</a>
+    </nav>
+  </div>
+</footer>
+<!-- /chrome:footer -->
 <script>addEventListener("load",function(){["../../tools/lib/run-cart.js?v=20261105","../../tools/lib/run-cart-ui.js?v=20261105"].forEach(function(s){var e=document.createElement("script");e.src=s;e.async=false;document.head.appendChild(e);});});</script>
 </body>
 </html>

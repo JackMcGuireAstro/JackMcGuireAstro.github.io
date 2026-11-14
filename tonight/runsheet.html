@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="auto">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,6 +7,9 @@
 <meta name="description" content="A printable observing run sheet for your run list of CTAS transients and WorldsIndex planets: coordinates, tonight's window and airmass, transit windows, finder charts and exposure estimates for WIRO and Red Buttes.">
 <meta name="theme-color" content="#f4f1ea">
 <link rel="canonical" href="https://jackmcguireastro.github.io/tonight/runsheet.html">
+<link rel="stylesheet" href="/assets/css/base.css?v=20261114">
+<link rel="stylesheet" href="/assets/css/chrome.css?v=20261114">
+<script defer src="/assets/js/chrome.js?v=20261114"></script>
 <link rel="stylesheet" href="planner.css?v=20261105">
 <script src="../ctas/followup.js?v=20261029"></script>
 <script src="../tools/lib/run-cart.js?v=20261105"></script>
@@ -17,15 +20,29 @@
 </head>
 <body class="runsheet">
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="top no-print"><div class="shell top-inner">
-  <a class="wordmark" href="../index.html"><span aria-hidden="true">jm.</span> Jack McGuire</a>
-  <nav aria-label="Primary"><a href="../index.html">Home</a><a href="../index.html#research">Research</a><a href="../worldsindex/">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="../tonight/">Tonight</a><a href="../tools/follow/">Follow</a><a href="../tools/">Tools</a><a data-runcart-badge href="../tonight/runsheet.html" aria-current="page">Run list</a></nav>
-</div></header>
+<!-- chrome:header -->
+<header class="jm-header">
+  <div class="jm-shell jm-header__inner">
+    <a class="jm-wordmark" href="/" aria-label="Jack McGuire, home"><span class="jm-monogram" aria-hidden="true">jm<span>.</span></span><span>Jack McGuire</span></a>
+    <button class="jm-menu-toggle" type="button" aria-controls="primary-nav" aria-expanded="false"><span data-menu-label>Menu</span><span class="jm-menu-glyph" aria-hidden="true">+</span></button>
+    <nav id="primary-nav" class="jm-nav" aria-label="Primary">
+      <a href="/">Home</a>
+      <a href="/#research">Research</a>
+      <a href="/#publications">Publications</a>
+      <a href="/worldsindex/">WorldsIndex</a>
+      <a href="/ctas.html">CTAS</a>
+      <a href="/tools/">Tools</a>
+      <a href="/cv.pdf">CV</a>
+      <a class="jm-runlist" data-runcart-badge href="/tonight/runsheet.html">Run list</a>
+    </nav>
+  </div>
+</header>
+<!-- /chrome:header -->
 <main id="main" class="shell">
   <section class="intro">
     <p class="eyebrow">Observing / Run sheet</p>
     <p id="back-link" class="back-link no-print"></p>
-    <h1>Run sheet</h1>
+    <h1>Run <em>sheet</em></h1>
     <p class="no-print">Your run list for one night at one site, ready to print: for each CTAS transient and WorldsIndex planet its coordinates, tonight’s window and airmass curve, a finder chart and the exposure at WIRO and Red Buttes, and for a planet tonight’s transit window. Add targets with <strong>Add to run list</strong> on CTAS, WorldsIndex or the Tonight planner, in bulk from Follow, the cone search or the SQL page, or any position from the finder chart; with an empty list the sheet takes the ten CTAS follow-up targets up longest tonight. The list is kept in this browser only and everything is computed here; nothing is sent anywhere.</p>
   </section>
   <form id="sheet-form" class="controls no-print" aria-describedby="status">
@@ -56,6 +73,26 @@
     <p>The window and airmass come from the same almanac formulae as the <a href="./">Tonight planner</a> (dark means the Sun below −12°). The exposure is the CTAS suggested follow-up’s S/N-20 estimate in r at the target’s best airmass tonight, from the <a href="../tools/exposure/">exposure calculator</a>’s instrument profiles; values still marked placeholder there are marked here too. The brightness is the latest magnitude the CTAS release retained, not a forecast. The finder chart is a plain image from CDS hips2fits; if it does not load, the coordinates and the full finder chart link still work.</p>
   </section>
 </main>
-<footer class="foot no-print"><div class="shell"><p>© 2026 Jack McGuire · <a href="../index.html">Home</a> · <a href="../index.html#research">Research</a> · <a href="../worldsindex/">WorldsIndex</a> · <a href="../ctas.html">CTAS</a> · <a href="../tonight/">Tonight</a> · <a href="../tools/follow/">Follow</a> · <a href="../tools/">Tools</a> · <a href="../tonight/runsheet.html">Run list</a></p></div></footer>
+<!-- chrome:footer -->
+<footer class="jm-footer">
+  <div class="jm-shell jm-footer__inner">
+    <p>© 2026 Jack McGuire<br><span>Department of Physics &amp; Astronomy · University of Wyoming</span></p>
+    <nav aria-label="Footer">
+      <a href="/">Home</a>
+      <a href="/#research">Research</a>
+      <a href="/#publications">Publications</a>
+      <a href="/worldsindex/">WorldsIndex</a>
+      <a href="/ctas.html">CTAS</a>
+      <a href="/tonight/">Tonight’s sky</a>
+      <a href="/tools/follow/">Follow</a>
+      <a href="/tools/">Tools</a>
+      <a href="/tonight/runsheet.html">Run list</a>
+      <a href="/research/barium-dwarfs/">Barium dwarf census</a>
+      <a href="/cv.pdf">CV (PDF)</a>
+      <a href="mailto:jackmcg7@live.com">jackmcg7@live.com</a>
+    </nav>
+  </div>
+</footer>
+<!-- /chrome:footer -->
 </body>
 </html>

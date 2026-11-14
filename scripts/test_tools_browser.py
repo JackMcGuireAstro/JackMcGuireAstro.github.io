@@ -154,7 +154,7 @@ class ToolsBrowserTests(unittest.TestCase):
     def test_index_lists_the_tools(self):
         page = self.open("tools/")
         hrefs = page.eval_on_selector_all(".tool-card", "els => els.map(e => e.getAttribute('href'))")
-        self.assertEqual(hrefs, ["coordinates/", "exposure/", "finder/", "follow/", "sql/", "cone/", "../tonight/", "../tonight/runsheet.html", "notebook/"])
+        self.assertEqual(hrefs, ["../tonight/", "follow/", "finder/", "exposure/", "coordinates/", "cone/", "sql/", "notebook/", "../tonight/runsheet.html"])
         self.assertEqual(page.title(), "Observing tools | Jack McGuire")
         self.assertEqual(page.errors, [])
         page.close()
@@ -288,7 +288,7 @@ class ToolsBrowserTests(unittest.TestCase):
     def test_finder_print_layout(self):
         page = self.open_finder()
         page.emulate_media(media="print")
-        self.assertTrue(page.is_hidden("header.top"))
+        self.assertTrue(page.is_hidden(".jm-header"))
         self.assertTrue(page.is_hidden("#finder-form"))
         self.assertTrue(page.is_hidden(".notes"))
         self.assertTrue(page.is_visible("#chart-figure"))
@@ -371,7 +371,7 @@ class ToolsBrowserTests(unittest.TestCase):
                 self.assertEqual(page.get_attribute("link[rel=canonical]", "href"), canonical)
                 self.assertTrue(page.get_attribute("meta[name=description]", "content"))
                 self.assertEqual(page.eval_on_selector_all("nav[aria-label=Primary] a", "els => els.map(e => e.textContent)"),
-                                 ["Home", "Research", "WorldsIndex", "CTAS", "Tonight", "Follow", "Tools", "Run list (0)"])
+                                 ["Home", "Research", "Publications", "WorldsIndex", "CTAS", "Tools", "CV", "Run list (0)"])
                 self.assertEqual(page.get_attribute(".skip-link", "href"), "#main")
                 self.assertIn("How this is worked out", page.inner_text("main") if path != "tools/" else "How this is worked out")
                 for href in page.eval_on_selector_all("a[href]", "els => els.map(e => e.href)"):

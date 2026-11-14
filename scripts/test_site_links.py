@@ -23,12 +23,13 @@ from urllib.parse import urlsplit, unquote
 ROOT = Path(__file__).resolve().parents[1]
 SITE = "https://jackmcguireastro.github.io"
 DEPLOY_BUILT = ("ctas/data/", "worldsindex/data/", "tools/data/", "release/manifest.json")
-NAV = ["Home", "Research", "WorldsIndex", "CTAS", "Tonight", "Follow", "Tools", "Run list"]
+# The shared header (assets/partials/header.html, copied into every page by scripts/sync_chrome.py).
+NAV = ["Home", "Research", "Publications", "WorldsIndex", "CTAS", "Tools", "CV", "Run list"]
 REAL_PAGES = [
     "index.html", "research/barium-dwarfs/index.html", "tools/index.html", "tools/follow/index.html", "tools/sql/index.html",
     "tools/cone/index.html", "tools/notebook/index.html", "tools/finder/index.html", "tools/exposure/index.html",
     "tools/coordinates/index.html", "tonight/index.html", "tonight/runsheet.html", "ctas.html", "ctas/status.html",
-    "worldsindex/index.html", "worldsindex/status.html",
+    "worldsindex/index.html", "worldsindex/status.html", "404.html",
 ]
 
 

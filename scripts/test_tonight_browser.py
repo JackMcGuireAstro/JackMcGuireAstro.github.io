@@ -340,7 +340,7 @@ class TonightBrowserTests(unittest.TestCase):
         button.click()
         page.wait_for_function("document.querySelector('#dossier [data-runcart-toggle]').getAttribute('aria-pressed') === 'true'", timeout=10000)
         self.assertEqual(page.locator("#dossier [data-runcart-toggle]").first.inner_text(), "✓ In run list")
-        self.assertIn("Run list (1)", page.locator(".nav [data-runcart-badge]").inner_text())
+        self.assertIn("Run list (1)", page.locator(".jm-header [data-runcart-badge]").inner_text())
         # 2. a WorldsIndex planet page
         page.goto(f"{self.base}/worldsindex/?object={planet['objectId']}&section=object", wait_until="networkidle", timeout=90000)
         page.wait_for_function("window.RunCart && !document.getElementById('add-to-runlist').hidden", timeout=60000)
@@ -426,7 +426,7 @@ class TonightBrowserTests(unittest.TestCase):
     def test_homepage_links_to_the_planner(self):
         page = self.browser.new_page()
         page.goto(f"{self.base}/index.html", wait_until="domcontentloaded")
-        self.assertGreaterEqual(page.locator('a[href="tonight/"]').count(), 3)  # nav, tool card, footer
+        self.assertGreaterEqual(page.locator('a[href="tonight/"], a[href="/tonight/"]').count(), 2)  # tool card, shared footer
         page.close()
 
 
