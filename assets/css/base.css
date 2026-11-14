@@ -1,0 +1,43 @@
+/* Light pages (homepage, Tonight, the observing tools, research pages, 404): one set of tokens,
+   the reset and the homepage's typography. The header and footer are in chrome.css; each page
+   family keeps only its own components (home.css, tools/tools.css, tonight/planner.css). */
+:root {
+  --paper:#f4f1ea; --paper-deep:#eae6dc; --card:#fffdf8; --ink:#202d30; --muted:#5b635d; --line:#d1d0c7;
+  --rust:#a3432e; --night:#142e32; --mint:#c7d8cd; --moon:#7a8a99; --target:#a3432e; --twilight:#e3ddcf;
+  --ok:#2f6b4f; --overlay:#ffd36b; --overlay-2:#7fe0ff; --on-rust:#fff;
+  --serif:Georgia,"Times New Roman",serif; --sans:"Avenir Next","Segoe UI",system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+  color-scheme:light
+}
+*,*::before,*::after { box-sizing:border-box }
+[hidden] { display:none!important }
+body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.65 var(--sans); -webkit-font-smoothing:antialiased }
+a { color:inherit; text-underline-offset:4px; text-decoration-thickness:1px }
+a:hover { color:var(--rust) }
+a,button,summary { touch-action:manipulation; -webkit-tap-highlight-color:transparent }
+:focus-visible { outline:3px solid var(--rust); outline-offset:3px }
+.sr-only,.visually-hidden { position:absolute!important; width:1px; height:1px; margin:-1px; padding:0; border:0;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap }
+.skip-link { position:fixed; left:1rem; top:-5rem; padding:.8rem 1rem; background:var(--ink); color:var(--paper); z-index:100 }
+.skip-link:focus { top:1rem; color:var(--paper) }
+.shell { width:min(1200px,calc(100% - 96px)); margin-inline:auto }
+
+/* Homepage type: sans 550 headings; the accent is a serif italic <em>. */
+h1,h2,h3,h4 { margin:0; font-family:var(--sans); font-weight:550; line-height:1.12; letter-spacing:-.035em; text-wrap:balance }
+h1 em,h2 em { font-family:var(--serif); font-style:italic; font-weight:400; letter-spacing:-.04em }
+h1 em { color:var(--rust) }
+strong { font-weight:650 }
+.eyebrow { font:500 .72rem/1.6 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--rust) }
+
+/* Page intro: eyebrow, h1, one lede, then a status or provenance line. */
+.intro { padding:3rem 0 1.6rem; max-width:70ch }
+.intro .eyebrow { margin:0 0 .9rem }
+.intro h1 { font-size:clamp(2.6rem,6.4vw,4.4rem); line-height:1; letter-spacing:-.055em }
+.intro h1 + p { margin-top:1.1rem; max-width:62ch; font-size:1.05rem; line-height:1.6 }
+.intro p:last-child { color:var(--muted) }
+
+@media (max-width:1000px) { .shell { width:calc(100% - 56px) } }
+@media (max-width:720px) { .shell { width:calc(100% - 40px) } }
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important }
+}
