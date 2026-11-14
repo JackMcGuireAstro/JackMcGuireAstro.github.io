@@ -1,0 +1,2186 @@
+{
+  "claim_boundary": "Entries describe changes between two public CTAS releases, read from the retained provider rows. A new event is a new public record, not a new discovery; a new classification is a provider's assertion, not CTAS's; a source-state change describes CTAS's own ability to query a provider, not the provider's service.",
+  "entries": [
+    {
+      "base_commit": "6cb7941932648330d85196dcd167bd25f2cf2e3a",
+      "candidate_count": 19578,
+      "catalog_content_checksum_sha256": "12bcfd689a2b2d03a4555e41436bdc06e18d2eaf5882d04dc3e276cade65d403",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "ae91257fa287bb403de56f15479a579830073bf533c44429c2effd859ff34d41",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 19578,
+      "previous_catalog_content_checksum_sha256": "9781ab738a8a9c38c6e2166ed3367f68294d3f11f54bab9e278dae1b69890432",
+      "published_at": "2026-11-14T17:53:33Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 5,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "NOIRLab Astro Data Archive",
+          "previous_state": "provider-failure",
+          "source_key": "noirlab-archive",
+          "state": "scheduled"
+        },
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "ZTF Public Data-Release Light Curves at IRSA",
+          "previous_state": "scheduled",
+          "source_key": "ztf-irsa",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "4 sources went degraded: IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure); WISeREP Public Spectra (scheduled to provider-failure); ZTF Public Data-Release Light Curves at IRSA (scheduled to provider-failure).",
+        "1 source recovered: NOIRLab Astro Data Archive (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "d4411e4c95272051d9cd6cb8346eaf25396fe7c0",
+      "candidate_count": 19578,
+      "catalog_content_checksum_sha256": "9781ab738a8a9c38c6e2166ed3367f68294d3f11f54bab9e278dae1b69890432",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "5e444dcb38c176a9c38c169530ae6ec65d8f2539e5dd932387023a5d39d7f5e6",
+      "new_event_count": 1,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "Shadow",
+          "event_id": "0432e661-ebc0-48b0-9b63-ffe07f109b99",
+          "event_type": "optical-transient",
+          "name": "AT2026ajqx",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 19577,
+      "previous_catalog_content_checksum_sha256": "5e452b19056c6796e75ba372355d5b7ce6606c3aa9ebf80b9dc911294df8914e",
+      "published_at": "2026-11-14T15:31:34Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 3,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "IAU Transient Name Server",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "tns",
+          "state": "active-returning-data"
+        },
+        {
+          "direction": "recovered",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "tns-public-reports",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "wiserep",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "1 new public record (1 from Shadow): AT2026ajqx.",
+        "3 sources recovered: IAU Transient Name Server (temporarily-unavailable to active-returning-data); TNS Public Object Details and Spectra (provider-failure to scheduled); WISeREP Public Spectra (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "f9904f1779f95f012d0dda6a4211f31608521944",
+      "candidate_count": 19577,
+      "catalog_content_checksum_sha256": "5e452b19056c6796e75ba372355d5b7ce6606c3aa9ebf80b9dc911294df8914e",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "64050e25a94391d1829e6939bffa84b7beeb705b612830b71dc072d71ec3b14f",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 19577,
+      "previous_catalog_content_checksum_sha256": "38844b03b64910c75cbf0ea5b5afef8cd9985a9bb4833107ee811275be0071e5",
+      "published_at": "2026-11-14T14:35:48Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 3,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "3 sources went degraded: IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure); WISeREP Public Spectra (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "bb8961617fe0f1aeae430d075cb54edaec27f4e1",
+      "candidate_count": 19577,
+      "catalog_content_checksum_sha256": "38844b03b64910c75cbf0ea5b5afef8cd9985a9bb4833107ee811275be0071e5",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "4b2feb3c28baaa1bed30b227a5b2eba6a0e1af3373058351b88250de5e0e1190",
+      "new_event_count": 1,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": null,
+          "event_id": "c2c82fcf-7e1b-4615-90e6-006f7fe1ffd7",
+          "event_type": "gamma-ray-transient",
+          "name": "GRB 261114A",
+          "primary_messenger": "gamma-ray"
+        }
+      ],
+      "previous_candidate_count": 19576,
+      "previous_catalog_content_checksum_sha256": "fec547e4bef94e7ebc2dca89a9a15878de95d96a4e970a66e8e0afca5b4505c4",
+      "published_at": "2026-11-14T13:41:01Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 4,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "NOIRLab Astro Data Archive",
+          "previous_state": "scheduled",
+          "source_key": "noirlab-archive",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "recovered",
+          "name": "IAU Transient Name Server",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "tns",
+          "state": "active-returning-data"
+        },
+        {
+          "direction": "recovered",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "tns-public-reports",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "wiserep",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "1 new public record (1 from survey not recorded): GRB 261114A.",
+        "1 source went degraded: NOIRLab Astro Data Archive (scheduled to provider-failure).",
+        "3 sources recovered: IAU Transient Name Server (temporarily-unavailable to active-returning-data); TNS Public Object Details and Spectra (provider-failure to scheduled); WISeREP Public Spectra (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "83e58ed89c6638a543ee1e3121abe44fd8e0db3e",
+      "candidate_count": 19576,
+      "catalog_content_checksum_sha256": "fec547e4bef94e7ebc2dca89a9a15878de95d96a4e970a66e8e0afca5b4505c4",
+      "classification_change_count": 1,
+      "classification_changes": [
+        {
+          "classification": "periodic-like",
+          "event_id": "0518d3f9-f2ba-4ae2-a9e5-427b5caaeadf",
+          "kind": "revised",
+          "name": "LSST diaObject 313637935723315254",
+          "previous_classification": "non-periodic-variable-like"
+        }
+      ],
+      "coverage_milestones": [],
+      "entry_id": "d1ded1862a177026978ad68bb9192d6e3220c5bee2ded79d5d58a1b160af08a6",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 19576,
+      "previous_catalog_content_checksum_sha256": "f5e88a5005aec5e3fc178ea4d5233b781fd6a9d860a6f44516523222b5985c65",
+      "published_at": "2026-11-14T07:40:14Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 1,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "NOIRLab Astro Data Archive",
+          "previous_state": "provider-failure",
+          "source_key": "noirlab-archive",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "1 revised classification: LSST diaObject 313637935723315254 from non-periodic-variable-like to periodic-like.",
+        "1 source recovered: NOIRLab Astro Data Archive (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "eb70a3b2e0eebe39188bae8dfdd6300d944ce66e",
+      "candidate_count": 19576,
+      "catalog_content_checksum_sha256": "9c1755476e1d0f1e23fd4a02fb3fbb6f1b0d32ebe6e4660d094ac9e1177bf951",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "3ad9202d3c37e2b503ccd556b4dbe1ac7ec7eaa00871898aaa794466a9590487",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 19576,
+      "previous_catalog_content_checksum_sha256": "b78f646a6cde342aed9190210a8869235339f003026f9d33e765dd135d73fe42",
+      "published_at": "2026-11-14T03:30:51Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 2,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "Lasair",
+          "previous_state": "scheduled",
+          "source_key": "rubin-lasair",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "recovered",
+          "name": "ZTF Public Data-Release Light Curves at IRSA",
+          "previous_state": "provider-failure",
+          "source_key": "ztf-irsa",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "1 source went degraded: Lasair (scheduled to provider-failure).",
+        "1 source recovered: ZTF Public Data-Release Light Curves at IRSA (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "ad92424b30eec5cb4a29630ce24719f59779efa8",
+      "candidate_count": 19576,
+      "catalog_content_checksum_sha256": "b78f646a6cde342aed9190210a8869235339f003026f9d33e765dd135d73fe42",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "e6a9b5e6e8e9f8428081195fffa278809dca92c083824d0a795dffed1086e20a",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 19576,
+      "previous_catalog_content_checksum_sha256": "b5748c7d5d2fe38e3db638567aad6d34806346e6aa819d6a8b93b2076a90116f",
+      "published_at": "2026-11-14T00:47:37Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 4,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "ZTF Public Data-Release Light Curves at IRSA",
+          "previous_state": "scheduled",
+          "source_key": "ztf-irsa",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "4 sources went degraded: IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure); WISeREP Public Spectra (scheduled to provider-failure); ZTF Public Data-Release Light Curves at IRSA (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "d63d55512834fb894b919f457ff244c9da424a3e",
+      "candidate_count": 19576,
+      "catalog_content_checksum_sha256": "b5748c7d5d2fe38e3db638567aad6d34806346e6aa819d6a8b93b2076a90116f",
+      "classification_change_count": 1,
+      "classification_changes": [
+        {
+          "classification": "SN IIn",
+          "event_id": "79029857-10f5-46be-8546-6e052ceaf519",
+          "kind": "new",
+          "name": "SN2026afgl",
+          "previous_classification": null
+        }
+      ],
+      "coverage_milestones": [],
+      "entry_id": "be1822cbaf19ae109f5829bf619a6081a53d4f42c876f80d3bc68d75ca828fa6",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 19576,
+      "previous_catalog_content_checksum_sha256": "438d2828133bfc0aa04de4bebe09cab7cd1da38a98fe750fe4517ebb1b3f5ea0",
+      "published_at": "2026-11-13T23:54:58Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 1,
+      "renames": [
+        {
+          "event_id": "79029857-10f5-46be-8546-6e052ceaf519",
+          "name": "SN2026afgl",
+          "previous_name": "AT2026afgl"
+        }
+      ],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 3,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "IAU Transient Name Server",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "tns",
+          "state": "active-returning-data"
+        },
+        {
+          "direction": "recovered",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "tns-public-reports",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "wiserep",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "1 new classification: SN2026afgl is now reported as SN IIn.",
+        "1 rename (same event id): AT2026afgl is now SN2026afgl.",
+        "3 sources recovered: IAU Transient Name Server (temporarily-unavailable to active-returning-data); TNS Public Object Details and Spectra (provider-failure to scheduled); WISeREP Public Spectra (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "4ef8092415e86515f7590b782f317bfce2101554",
+      "candidate_count": 19576,
+      "catalog_content_checksum_sha256": "438d2828133bfc0aa04de4bebe09cab7cd1da38a98fe750fe4517ebb1b3f5ea0",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "70c43947b750230f8640c5279ce41b6fb3a87128f9908b47fa6016aef4150c5d",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 19576,
+      "previous_catalog_content_checksum_sha256": "2f51d0a5a185d11cd24820a2a4dfc7ad4c592daa42beb6f1593282c8377c9ee8",
+      "published_at": "2026-11-13T22:54:50Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 4,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "NOIRLab Astro Data Archive",
+          "previous_state": "scheduled",
+          "source_key": "noirlab-archive",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "4 sources went degraded: NOIRLab Astro Data Archive (scheduled to provider-failure); IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure); WISeREP Public Spectra (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "fba6e2ee6aac214094173430dbc0c596f035b97b",
+      "candidate_count": 19576,
+      "catalog_content_checksum_sha256": "2f51d0a5a185d11cd24820a2a4dfc7ad4c592daa42beb6f1593282c8377c9ee8",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [
+        {
+          "kind": "dataBearingSourceEvaluations",
+          "text": "CTAS passed 52,000 source evaluations that returned retained data (51,981 to 52,018).",
+          "value": 52000
+        }
+      ],
+      "entry_id": "a94210dbe2d86dc2c9cb2006a4a4ce7974e3193763a16935311a7782229939f0",
+      "new_event_count": 3,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "Shadow",
+          "event_id": "a94f7b2c-f1a2-4a85-b528-9da7ba54093b",
+          "event_type": "optical-transient",
+          "name": "AT2026ajor",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "Shadow",
+          "event_id": "86a4922f-781b-4969-8352-3affb59dea71",
+          "event_type": "optical-transient",
+          "name": "AT2026ajos",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Distant Particles",
+          "discovery_survey": "Fermi",
+          "event_id": "0a3ce111-a939-461b-96fd-7e160dd6edde",
+          "event_type": "gamma-ray-burst-candidate",
+          "name": "Fermi-GBM-816291960",
+          "primary_messenger": "gamma-ray"
+        }
+      ],
+      "previous_candidate_count": 19573,
+      "previous_catalog_content_checksum_sha256": "53005451ceb943ad8371b1c3294dfa399bea0d58ae0b3fad4d53c38d4994d28d",
+      "published_at": "2026-11-13T20:17:30Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 4,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "Lasair",
+          "previous_state": "provider-failure",
+          "source_key": "rubin-lasair",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "IAU Transient Name Server",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "tns",
+          "state": "active-returning-data"
+        },
+        {
+          "direction": "recovered",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "tns-public-reports",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "wiserep",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "3 new public records (2 from Shadow, 1 from Fermi): AT2026ajor, AT2026ajos, Fermi-GBM-816291960.",
+        "4 sources recovered: Lasair (provider-failure to scheduled); IAU Transient Name Server (temporarily-unavailable to active-returning-data); TNS Public Object Details and Spectra (provider-failure to scheduled); WISeREP Public Spectra (provider-failure to scheduled).",
+        "CTAS passed 52,000 source evaluations that returned retained data (51,981 to 52,018)."
+      ]
+    },
+    {
+      "base_commit": "de34b32c92fe4466ca5d9cd1d1d18dfcd70846fb",
+      "candidate_count": 19573,
+      "catalog_content_checksum_sha256": "53005451ceb943ad8371b1c3294dfa399bea0d58ae0b3fad4d53c38d4994d28d",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "54f47e59e477a9a0cecb3925becbf933bc144af13da09bb3cfe25f4142102dd6",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 19573,
+      "previous_catalog_content_checksum_sha256": "1bbf05271d930492505ed5186ee22a48834433087a72e48612d9560106eefb06",
+      "published_at": "2026-11-13T19:14:13Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 1,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "NOIRLab Astro Data Archive",
+          "previous_state": "provider-failure",
+          "source_key": "noirlab-archive",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "1 source recovered: NOIRLab Astro Data Archive (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "38a19f9c424c2a35ca14d01dfe84d6709d23de1d",
+      "candidate_count": 19573,
+      "catalog_content_checksum_sha256": "1bbf05271d930492505ed5186ee22a48834433087a72e48612d9560106eefb06",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "c46fe4d1a0003c04bc95ff682781e9b40d6527a8d0d53f756af0ff1821bfc721",
+      "new_event_count": 1,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "Konus-Wind",
+          "event_id": "503f1dd4-02fc-4316-a1a9-9e904e141958",
+          "event_type": "high-energy-count-rate-trigger",
+          "name": "KONUS-WIND-20261113T143103794",
+          "primary_messenger": "gamma-ray"
+        }
+      ],
+      "previous_candidate_count": 19572,
+      "previous_catalog_content_checksum_sha256": "c9cfd83d812aebff0d8d6fd1574160d348715861a394b48e0ca8ca20f8ddda82",
+      "published_at": "2026-11-13T18:14:22Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 1,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "NOIRLab Astro Data Archive",
+          "previous_state": "scheduled",
+          "source_key": "noirlab-archive",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "1 new public record (1 from Konus-Wind): KONUS-WIND-20261113T143103794.",
+        "1 source went degraded: NOIRLab Astro Data Archive (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "5e67bf00df2edee0bee3e178752c5b029e33b321",
+      "candidate_count": 19572,
+      "catalog_content_checksum_sha256": "c9cfd83d812aebff0d8d6fd1574160d348715861a394b48e0ca8ca20f8ddda82",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "b4e51bc4b7f6b9323e5ba243c29b12f33cc28be2827831eda68ba9c23b63937c",
+      "new_event_count": 1,
+      "new_events": [
+        {
+          "classification": "Astrophysical neutrino",
+          "discovery_survey": "Gold Track Alert",
+          "event_id": "9231630c-3599-4dbf-97b8-12d398f0cfb2",
+          "event_type": "high-energy-neutrino-track",
+          "name": "IceCube-261113A",
+          "primary_messenger": "neutrino"
+        }
+      ],
+      "previous_candidate_count": 19571,
+      "previous_catalog_content_checksum_sha256": "d5225324157764c48d92ddbd7c0e69e7e2694305e8f686cecf177633a228302a",
+      "published_at": "2026-11-13T17:05:10Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 0,
+      "source_state_changes": [],
+      "summary": [
+        "1 new public record (1 from Gold Track Alert): IceCube-261113A."
+      ]
+    },
+    {
+      "base_commit": "b2684664d3dfc1cc0bb54a17760024c4e9c0ec24",
+      "candidate_count": 19571,
+      "catalog_content_checksum_sha256": "d5225324157764c48d92ddbd7c0e69e7e2694305e8f686cecf177633a228302a",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "f801a83857343efe4db237830148d6d062a0ad3969ed5ec755c70a03ea9bb9d7",
+      "new_event_count": 1,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": null,
+          "event_id": "5a8f01a0-9fcc-466a-a310-74086127e183",
+          "event_type": "gamma-ray-transient",
+          "name": "GRB 261113.60",
+          "primary_messenger": "gamma-ray"
+        }
+      ],
+      "previous_candidate_count": 19570,
+      "previous_catalog_content_checksum_sha256": "28ee7fd675f23ff242399db5dde76b3d4a117dde512c8afe469f632ca26785a7",
+      "published_at": "2026-11-13T16:00:34Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 1,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "Lasair",
+          "previous_state": "scheduled",
+          "source_key": "rubin-lasair",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "1 new public record (1 from survey not recorded): GRB 261113.60.",
+        "1 source went degraded: Lasair (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "85af8b906ab717406c429433bc7b6de2566a7b76",
+      "candidate_count": 19570,
+      "catalog_content_checksum_sha256": "28ee7fd675f23ff242399db5dde76b3d4a117dde512c8afe469f632ca26785a7",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "4a232c7c61676d6f04133ee7e9a6be9e3d7f56fa2de540736d2957d0106563e1",
+      "new_event_count": 1,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": null,
+          "event_id": "ae059224-e09d-4c13-b164-6a6165ad5ef7",
+          "event_type": "gamma-ray-transient",
+          "name": "GRB 261113A",
+          "primary_messenger": "gamma-ray"
+        }
+      ],
+      "previous_candidate_count": 19569,
+      "previous_catalog_content_checksum_sha256": "045b8b344310f19899d28d5b48c666947009ea7a0ef6f141a20e78465e74c909",
+      "published_at": "2026-11-13T15:03:20Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 0,
+      "source_state_changes": [],
+      "summary": [
+        "1 new public record (1 from survey not recorded): GRB 261113A."
+      ]
+    },
+    {
+      "base_commit": "45d2fd3b02733539eab64be764aaef559ff7d7ed",
+      "candidate_count": 19569,
+      "catalog_content_checksum_sha256": "045b8b344310f19899d28d5b48c666947009ea7a0ef6f141a20e78465e74c909",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "6b0a75f32662d6b2e00ad376e91c0a3963229dd0f7e2aaf6e07cc61674acb64d",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 19569,
+      "previous_catalog_content_checksum_sha256": "40c3f56491e5b053067a2ac7a435b014b01138b48f3b33597bc2c45b037fa48f",
+      "published_at": "2026-11-13T14:05:46Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 3,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "3 sources went degraded: IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure); WISeREP Public Spectra (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "6af8620a7ffd49db15bba6c01b8711f2eb5c12a3",
+      "candidate_count": 19569,
+      "catalog_content_checksum_sha256": "40c3f56491e5b053067a2ac7a435b014b01138b48f3b33597bc2c45b037fa48f",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "97ccaf04edcc248bac7af07fdcb857641bdf94421ada1161731e9df00bf69cbd",
+      "new_event_count": 103,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "a395b119-3881-485d-80c0-0076fa13dc84",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkg",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "2ead92c2-9fe9-49bb-8cc2-a28b1d023c42",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkh",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "4cdd74dd-9dbf-4e95-94e9-bcca0cc23e3f",
+          "event_type": "optical-transient",
+          "name": "AT2026ajki",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "9844c2c9-5e39-4d49-b016-561fddbd6759",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkj",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "95bfb810-753e-4fa4-8215-952e842227a5",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkk",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "7b87f5db-5f84-49e0-9f9f-d32047dd8e72",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkl",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "4e2faf38-a8f7-4435-ac98-310367a08334",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkm",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "a85acd41-c132-4a57-9aae-88b0fff8e7ad",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkn",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "5fba82a9-f355-491f-8a26-bdbfbfb623de",
+          "event_type": "optical-transient",
+          "name": "AT2026ajko",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "20d54016-5fa0-4873-9e16-4cdad402724f",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkp",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "cc91c9ea-8ce1-4852-b345-7353c29dffab",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkq",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "d3f58952-5730-4b85-bf03-80ad4bdee5c3",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkr",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "6e8dbb1e-a559-4cc5-8d8e-3f7ab46a0c95",
+          "event_type": "optical-transient",
+          "name": "AT2026ajks",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "bed518b6-1445-48c7-a271-6e77195e4056",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkt",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "cc9c06f8-4d5b-4ec2-ade0-806bdfd91612",
+          "event_type": "optical-transient",
+          "name": "AT2026ajku",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "e7ded536-3244-48c8-9e4c-283381c7b42d",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkv",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "e3c8225b-3a8a-4449-964d-e26104f8b07d",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkw",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "09b5a1b5-9c69-4b39-afc9-fb79d24888e0",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkx",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "7968b196-a316-4ce4-91ff-9f8851fd874a",
+          "event_type": "optical-transient",
+          "name": "AT2026ajky",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "93d8120a-24c9-42d7-bb0c-cad8b7c3e448",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkz",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "7c3936b6-8b35-450b-9b9a-897c7b4211cf",
+          "event_type": "optical-transient",
+          "name": "AT2026ajla",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "5de65e9f-cf6b-4d19-98d2-e42ae1c8362f",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlb",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "9d61deb6-4b92-4ec0-a41c-7720dd06fdda",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlc",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "c2946493-1171-4288-8c05-ae2d5cee9da4",
+          "event_type": "optical-transient",
+          "name": "AT2026ajld",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "bb047783-77c8-42a2-860a-b6b69a518de7",
+          "event_type": "optical-transient",
+          "name": "AT2026ajle",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "216222e9-fe91-430a-9b9f-d38e0abe5164",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlf",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "f09c243b-4b40-421c-a7d9-01d69e0060fb",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlg",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "d68e3517-4858-4757-aa54-11aeda3e1c3c",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlh",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "4740b234-b5ea-4bc4-95a4-6633bbf2fa8d",
+          "event_type": "optical-transient",
+          "name": "AT2026ajli",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "4ee8e9a0-1345-46e8-99d3-6d5151e775d1",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlj",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "965476db-2eec-4e80-8fa4-6f459edab922",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlk",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "999a13de-d80d-4483-be16-87e3dd4f3ffa",
+          "event_type": "optical-transient",
+          "name": "AT2026ajll",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "c9cc8002-3822-4725-a822-c4b9f1673901",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlm",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "cfa5cc9d-04e0-4550-bf0a-b2d638d7b7ea",
+          "event_type": "optical-transient",
+          "name": "AT2026ajln",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "907a6324-d6a2-4e32-b976-812ddab03049",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlo",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "47d6c5ea-3a3f-4783-9e17-42d3a5acaa5b",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlp",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "18c388d8-3d14-43de-a5a7-704305924e00",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlq",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "c846cc83-3567-458b-b0e3-16f5d2752269",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlr",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "b785ed3d-200e-46f2-8615-b00288483398",
+          "event_type": "optical-transient",
+          "name": "AT2026ajls",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "7b1111ef-ddb3-431c-879e-9b14cb1bee38",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlt",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "43861761-12bf-4932-a7c6-750487cbacf2",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlu",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "5d9444d3-1f8c-49fc-9f7a-ef1386b8b3d0",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlv",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "9bab0dcd-e6f4-446e-a81d-fe0bbf88af3a",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlw",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "9c3c95d1-bb46-4cd9-a166-c471be68f0da",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlx",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "b9cbf679-1497-4c3e-857f-f9a335454067",
+          "event_type": "optical-transient",
+          "name": "AT2026ajly",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "29be8abd-08a6-4012-82bf-2bf5678bedba",
+          "event_type": "optical-transient",
+          "name": "AT2026ajlz",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "81449c48-3c53-4f9c-b195-8a996c3de8c0",
+          "event_type": "optical-transient",
+          "name": "AT2026ajma",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "fb23090a-58e1-4263-b403-4cb3ca6f9da7",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmb",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "48e43e32-cd95-448e-9d6d-8e40d81c588a",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmc",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "68bcdba6-d079-4096-b148-d19a1231e08f",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmd",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "472156f6-cf58-47be-9225-079b012b3a64",
+          "event_type": "optical-transient",
+          "name": "AT2026ajme",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "e05fddfd-b1f1-4410-b691-5f9760971bcb",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmf",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "d06ba2bf-6659-402e-bdfd-6be74f85f415",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmg",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "4142ff60-4dd9-40b4-9531-48e2bdf67d13",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmh",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "17d91822-3690-4c15-9d70-233c05efe2fe",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmi",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "e05d7195-8e73-4c53-b82c-049ad0692ee4",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmj",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "dc6841f6-ef4f-4e01-9abf-de45d070490e",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmk",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "37e9ce64-f0e1-423e-a02a-a61f6e61a855",
+          "event_type": "optical-transient",
+          "name": "AT2026ajml",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "3cc90a85-0118-4ff7-b607-e64a4190dbce",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmm",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "e6c2fdcd-7bd2-4e83-b9b3-4916ee84a0ca",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmn",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "8a5f2a0e-89ca-47cf-8b5a-3d9cbbd0b194",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmo",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "60b6f5b8-5ab8-429a-98df-f7e8edc7f972",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmp",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "9d1cb1d8-7845-46ee-8985-d3fd3fd98067",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmq",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "3bb32615-26c2-4382-beae-697ae10a48f9",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmr",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "b31ac2a7-6e4a-418a-8c66-d7ed87804169",
+          "event_type": "optical-transient",
+          "name": "AT2026ajms",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "9f679c41-48d2-4096-a1b9-c42a8b71d3f4",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmt",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "4d090dec-d373-4bf9-9679-282aa68eb324",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmu",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "12bbd20e-ba44-40af-b8ee-230d3069a735",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmv",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "c2f06baa-849c-4cc2-bf33-2028e596e40f",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmw",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "d4f55bb8-bc25-4833-bc2d-776685e047b9",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmx",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "94474ed5-5936-4038-9cc8-5f9876952c0e",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmy",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "7122b5e9-9602-4adf-b4a2-3715dd216b8c",
+          "event_type": "optical-transient",
+          "name": "AT2026ajmz",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "a2ee2fc1-4ee3-4f9d-9860-c5acfa359aff",
+          "event_type": "optical-transient",
+          "name": "AT2026ajna",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "4f9a5993-17e1-4e7b-b1d6-b62cb88a1ef9",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnb",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "8e848ce5-4330-4d99-a688-024ab7f60228",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnc",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "c48bd4dc-fe25-460b-b3c1-fcba8a59bcaf",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnd",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "2d860ae0-6b85-4c62-a76e-1682cd2e7de3",
+          "event_type": "optical-transient",
+          "name": "AT2026ajne",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "2dea6953-33be-43e5-b7d9-6b2f093a7dd1",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnf",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "00a3dcf9-3a01-4d9a-a2a1-81536e71c2fc",
+          "event_type": "optical-transient",
+          "name": "AT2026ajng",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "735f9811-6dee-418a-9ae0-53e2ca36c942",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnh",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "529924e0-4660-40a8-aae9-cd18231560eb",
+          "event_type": "optical-transient",
+          "name": "AT2026ajni",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "a580c353-25fd-411a-bc48-8f84715b62e9",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnj",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "fb884b66-0522-4afc-b1c4-ee130c0017a9",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnk",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "f20e4b12-e53a-4d75-be19-c854e4634960",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnl",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "c42edc6d-b7e7-48d5-9413-562cb1f16ec4",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnm",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "26d9724e-fc8d-44cc-8f91-08b090bf0ed2",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnn",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "c5a60197-0ad8-4310-ad37-a883607360d1",
+          "event_type": "optical-transient",
+          "name": "AT2026ajno",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "694ea18d-9767-47d1-a3a9-94e3785da882",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnp",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "3a279082-318c-441e-8a81-ac57f928a151",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnq",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "9a623182-3ed9-4e2a-af08-161e05898dd2",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnr",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "8e3c013e-84b0-4a59-8952-0943d1fadfd7",
+          "event_type": "optical-transient",
+          "name": "AT2026ajns",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "d871a6ea-e159-47b1-a967-6abac2292ffe",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnt",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "171e259f-26b6-42c6-9241-ca3cf27a3cd8",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnu",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "6cc8d67a-5145-4d90-a502-85d50ad75a3b",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnv",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "WFST",
+          "event_id": "544f4526-6294-4fc4-9e50-d68067588233",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnw",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ALeRCE",
+          "event_id": "7d0a9aed-2ff9-46f9-ae6d-955ad8c0d0c6",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnx",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ALeRCE",
+          "event_id": "c110534a-d8aa-497d-b079-9249cf65c87a",
+          "event_type": "optical-transient",
+          "name": "AT2026ajny",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ALeRCE",
+          "event_id": "832dd3ad-93d4-482d-bdd9-3763282c2d62",
+          "event_type": "optical-transient",
+          "name": "AT2026ajnz",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ALeRCE",
+          "event_id": "e86b5195-ef2c-42f7-85ed-17a6704ef5e7",
+          "event_type": "optical-transient",
+          "name": "AT2026ajoa",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ALeRCE",
+          "event_id": "49b8a9c1-5693-48c8-bc0b-a157b1888d1a",
+          "event_type": "optical-transient",
+          "name": "AT2026ajob",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ALeRCE",
+          "event_id": "fc4a080d-0646-4a67-bb4a-dc7039fa43d8",
+          "event_type": "optical-transient",
+          "name": "AT2026ajoc",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ALeRCE",
+          "event_id": "4dfdc7e7-3759-47b2-95fa-3fb2c15f16d7",
+          "event_type": "optical-transient",
+          "name": "AT2026ajod",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "GOTO",
+          "event_id": "50800c51-dbe9-40d5-876c-f03af7ec0e0c",
+          "event_type": "optical-transient",
+          "name": "AT2026ajoe",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 19466,
+      "previous_catalog_content_checksum_sha256": "b23d8ffdd381ddd58d10f0fd8df94984b8832a1bb80e385857c78cebe388148e",
+      "published_at": "2026-11-13T13:12:00Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 0,
+      "source_state_changes": [],
+      "summary": [
+        "103 new public records (95 from WFST, 7 from ALeRCE, 1 from GOTO): AT2026ajkg, AT2026ajkh, AT2026ajki, AT2026ajkj, AT2026ajkk and 98 more."
+      ]
+    },
+    {
+      "base_commit": "0e7680bf058a8a350312179b8d9baa95611b936e",
+      "candidate_count": 19466,
+      "catalog_content_checksum_sha256": "b23d8ffdd381ddd58d10f0fd8df94984b8832a1bb80e385857c78cebe388148e",
+      "classification_change_count": 1,
+      "classification_changes": [
+        {
+          "classification": "SN Ia",
+          "event_id": "a59542af-ce94-4153-8826-f8215fe407c8",
+          "kind": "new",
+          "name": "SN2026ahby",
+          "previous_classification": null
+        }
+      ],
+      "coverage_milestones": [],
+      "entry_id": "83adc31df658c79f35fabea8a79187b719709989c6fff386e3d2078ab1c1c945",
+      "new_event_count": 6,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ZTF",
+          "event_id": "e8c0fc82-f02d-494b-83df-224a285ac084",
+          "event_type": "optical-transient",
+          "name": "AT2026ajby",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "GOTO",
+          "event_id": "7b4d28f3-dda5-4f8b-9cae-52ed82efaa94",
+          "event_type": "optical-transient",
+          "name": "AT2026ajiz",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "GOTO",
+          "event_id": "0313c212-5a1d-4d11-99ba-47b601b5d8d9",
+          "event_type": "optical-transient",
+          "name": "AT2026ajjg",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": null,
+          "event_id": "add42fb3-046b-49ff-8a8b-459bcf9e819c",
+          "event_type": "optical-transient",
+          "name": "AT2026ajjv",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ATLAS",
+          "event_id": "00cc224c-c82c-41ed-91f7-5b7d3fa5705d",
+          "event_type": "optical-transient",
+          "name": "AT2026ajke",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ATLAS",
+          "event_id": "61ce6cb3-c7a8-4564-adb3-6d87c163ae86",
+          "event_type": "optical-transient",
+          "name": "AT2026ajkf",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 19460,
+      "previous_catalog_content_checksum_sha256": "46acb6742536ad86a57b3ce5f941005736720a415f6a7f92db7abd3c7f5d8a21",
+      "published_at": "2026-11-13T12:11:49Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 1,
+      "renames": [
+        {
+          "event_id": "a59542af-ce94-4153-8826-f8215fe407c8",
+          "name": "SN2026ahby",
+          "previous_name": "AT2026ahby"
+        }
+      ],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 5,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "Fink ZTF Science-Module Scores",
+          "previous_state": "provider-failure",
+          "source_key": "fink-science-scores",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "NOIRLab Astro Data Archive",
+          "previous_state": "provider-failure",
+          "source_key": "noirlab-archive",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "IAU Transient Name Server",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "tns",
+          "state": "active-returning-data"
+        },
+        {
+          "direction": "recovered",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "tns-public-reports",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "wiserep",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "6 new public records (2 from ATLAS, 2 from GOTO, 1 from ZTF, 1 from survey not recorded): AT2026ajby, AT2026ajiz, AT2026ajjg, AT2026ajjv, AT2026ajke and 1 more.",
+        "1 new classification: SN2026ahby is now reported as SN Ia.",
+        "1 rename (same event id): AT2026ahby is now SN2026ahby.",
+        "5 sources recovered: Fink ZTF Science-Module Scores (provider-failure to scheduled); NOIRLab Astro Data Archive (provider-failure to scheduled); IAU Transient Name Server (temporarily-unavailable to active-returning-data); TNS Public Object Details and Spectra (provider-failure to scheduled); WISeREP Public Spectra (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "64d5146ccf28309885c8bd5e0ef0d2813aab23f6",
+      "candidate_count": 19460,
+      "catalog_content_checksum_sha256": "46acb6742536ad86a57b3ce5f941005736720a415f6a7f92db7abd3c7f5d8a21",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "75abd3824280c05f6ec11788939fa48438ab205e5d3bec897886a484f6b58244",
+      "new_event_count": 1,
+      "new_events": [
+        {
+          "classification": "TGF",
+          "discovery_survey": "Fermi",
+          "event_id": "3976bbbe-e573-42db-88b2-24fbb2535ba1",
+          "event_type": "terrestrial-gamma-ray-flash",
+          "name": "Fermi-GBM-816257127",
+          "primary_messenger": "gamma-ray"
+        }
+      ],
+      "previous_candidate_count": 19459,
+      "previous_catalog_content_checksum_sha256": "5c5f64b40ded9fbe5ae8d584f83f05998a4d16daa8fafc2ef7675d0c35ca5354",
+      "published_at": "2026-11-13T11:08:33Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 1,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "NOIRLab Astro Data Archive",
+          "previous_state": "scheduled",
+          "source_key": "noirlab-archive",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "1 new public record (1 from Fermi): Fermi-GBM-816257127.",
+        "1 source went degraded: NOIRLab Astro Data Archive (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "3203067ddd02d8d05972b4272785a520ac8b8b5e",
+      "candidate_count": 19459,
+      "catalog_content_checksum_sha256": "a6974c0f4d856eb32810f7904700c74c2b3a1b8145a0ea501022e089557ae7a4",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "c6ecdad5aa906779e56681bf4200314ddf47b564e0381d36b66ce4015d8df275",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 19459,
+      "previous_catalog_content_checksum_sha256": "d9541ada9053d1574a246d4d2483a22bfb3567ddf4ac929bc4a1f6a0dead4719",
+      "published_at": "2026-11-13T09:02:50Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 1,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        }
+      ],
+      "summary": [
+        "1 source went degraded: IAU Transient Name Server (active-returning-data to temporarily-unavailable)."
+      ]
+    },
+    {
+      "base_commit": "e7059b71eafe725453eaae2fc00f45450c0a6381",
+      "candidate_count": 19459,
+      "catalog_content_checksum_sha256": "d9541ada9053d1574a246d4d2483a22bfb3567ddf4ac929bc4a1f6a0dead4719",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "c3bff9671d9e8abad1c2b466da796bd9351bcd77988912ca2fbde1394beca4d7",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 19459,
+      "previous_catalog_content_checksum_sha256": "578ba5c385c9af81bd4a1b8ab44ba4cab2593593fdae4a6f98f32ed8067fc180",
+      "published_at": "2026-11-13T08:03:19Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 2,
+      "source_state_changes": [
+        {
+          "direction": "changed",
+          "name": "Fink",
+          "previous_state": "provider-failure",
+          "source_key": "rubin-fink",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "recovered",
+          "name": "IAU Transient Name Server",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "tns",
+          "state": "active-returning-data"
+        }
+      ],
+      "summary": [
+        "1 source recovered: IAU Transient Name Server (temporarily-unavailable to active-returning-data).",
+        "1 source changed state: Fink (provider-failure to temporarily-unavailable)."
+      ]
+    },
+    {
+      "base_commit": "67b18c1c5f03c5b916e6861771d84f7764255765",
+      "candidate_count": 19459,
+      "catalog_content_checksum_sha256": "578ba5c385c9af81bd4a1b8ab44ba4cab2593593fdae4a6f98f32ed8067fc180",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "679dd19c95bdef54d36cd1f49f1cd58acc0efc3c36603b32fdaa55ea16b651c6",
+      "new_event_count": 14,
+      "new_events": [
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "5e1e7b50-8ea9-46ce-b64e-39d04f86b7d7",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171185213433446503",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "224622b8-ddde-4fcf-9a81-627c3923556f",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171185232181462207",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "2a829903-d587-4017-951f-fb5f2aeb283a",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171194008027529299",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "93d810ca-d5af-4f99-9aaa-99fc3da4203e",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171194008182718512",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "5a89fbf5-8097-4a67-8fd6-58c2111dc8d6",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171198427693580390",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "1328b6b1-e9f6-4658-adc9-5768aa3a12db",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171198427694629426",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "e7ab61ac-be9f-4ddf-9d38-9b82a6fd412d",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171198427759641589",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "b4dc632d-4181-4bce-9549-674a540e341a",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171198427840381669",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "11b11c0b-c778-439f-8407-e2a72aa5a546",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171202773202239825",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "2f9014de-40aa-4ee9-aab7-7001964b3b7b",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171202773509996669",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "9fe5db97-3874-4b6a-91d9-2773d9a1983b",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171202774946021442",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "da9737ab-d351-4c18-85a1-eb6e3376aa00",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171202774946021483",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "2b3b979e-0cbc-4d89-bf1f-5b297a227014",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 313695088972137209",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "f3509b56-55f7-46e6-bab1-9160e468f965",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 313695088972137362",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 19445,
+      "previous_catalog_content_checksum_sha256": "f6146111f84d60c518e485bcf81db41695f8f3d19f1c6b1254b531efa7a787b5",
+      "published_at": "2026-11-13T07:14:22Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 0,
+      "source_state_changes": [],
+      "summary": [
+        "14 new public records (14 from Vera C. Rubin Observatory): LSST diaObject 171185213433446503, LSST diaObject 171185232181462207, LSST diaObject 171194008027529299, LSST diaObject 171194008182718512, LSST diaObject 171198427693580390 and 9 more."
+      ]
+    },
+    {
+      "base_commit": "53f24b6dd6c9e5aeed1448e23d620146665ec1fc",
+      "candidate_count": 19445,
+      "catalog_content_checksum_sha256": "f6146111f84d60c518e485bcf81db41695f8f3d19f1c6b1254b531efa7a787b5",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "6e561f75f0be730d9482fcad41ee3df9845aacf7ea4162d06e74d29576f3c235",
+      "new_event_count": 4,
+      "new_events": [
+        {
+          "classification": "long-transient-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "c52f4818-90cd-46c8-9340-98b72e414508",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 170059273359851523",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "0644b915-a18d-4759-a450-d3cfdfdc97ae",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171194008101454033",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "5e73ab89-1ca9-46b7-83e0-b72f183b0f61",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171194009868304498",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "non-periodic-variable-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "0518d3f9-f2ba-4ae2-a9e5-427b5caaeadf",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 313637935723315254",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 19441,
+      "previous_catalog_content_checksum_sha256": "75aec862cc0ef7fe4d025f471d5a25c3ee30ba3b67b1afb0e8151769f40a49c9",
+      "published_at": "2026-11-13T06:12:58Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 0,
+      "source_state_changes": [],
+      "summary": [
+        "4 new public records (4 from Vera C. Rubin Observatory): LSST diaObject 170059273359851523, LSST diaObject 171194008101454033, LSST diaObject 171194009868304498, LSST diaObject 313637935723315254."
+      ]
+    },
+    {
+      "base_commit": "9f4eda323a54d6337c790900443173408ee54840",
+      "candidate_count": 19441,
+      "catalog_content_checksum_sha256": "2b0e0c7418e9fe5ead4f994805341c18a0aaaf3ec87b03e1540fa8d313180358",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "fd989d27bacc5ad06211df93a5a7e6218df0df816bd655889e2eef9fb0c71d0d",
+      "new_event_count": 3,
+      "new_events": [
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "d7ecd794-4c0a-466b-a41e-bb03a0c76c6a",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171193991373520951",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "5d33748a-a037-4485-8f13-1172366686cc",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171198395146305583",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "4070c311-d3f9-43c6-9d49-fd11d0cabf3e",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 171198395165704232",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 19438,
+      "previous_catalog_content_checksum_sha256": "4951e16020e55ae069e98cf3c5ac8b2dea99219a774827d137cf06f7daa1476c",
+      "published_at": "2026-11-13T04:09:30Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 4,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "NOIRLab Astro Data Archive",
+          "previous_state": "provider-failure",
+          "source_key": "noirlab-archive",
+          "state": "scheduled"
+        },
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "3 new public records (3 from Vera C. Rubin Observatory): LSST diaObject 171193991373520951, LSST diaObject 171198395146305583, LSST diaObject 171198395165704232.",
+        "3 sources went degraded: IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure); WISeREP Public Spectra (scheduled to provider-failure).",
+        "1 source recovered: NOIRLab Astro Data Archive (provider-failure to scheduled)."
+      ]
+    }
+  ],
+  "entry_count": 24,
+  "generated_at": "2026-11-14T17:53:33Z",
+  "schema": "ctas.public-release-changelog@1.0.0",
+  "statement": "What changed between consecutive public CTAS releases, in plain words, derived from the previous release's published files (the exporter's --release-base-ref). Newest first, at most 24 entries; each list is capped at 200 rows and carries its full count."
+}
