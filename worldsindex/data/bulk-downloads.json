@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "worldsindex-bulk-downloads.v1",
+  "generatedAt": "2026-11-13T14:04:33.615Z",
+  "atlasProjectionId": "sky-881e31018b1c23c72c77",
+  "releaseTag": "worldsindex-data-latest",
+  "releaseUrl": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/releases/tag/worldsindex-data-latest",
+  "repository": "JackMcGuireAstro/JackMcGuireAstro.github.io",
+  "statement": "Bulk tables are published as assets of one rolling GitHub Release, not in the GitHub Pages tree. The publisher replaces each asset after the release is built; verify the SHA-256 below against the downloaded file, because an asset can lag the Pages release by one cycle while an upload is in flight or has failed.",
+  "claimBoundary": "Formats and metadata follow the IVOA documents named in each file; the content is the same retained public catalog projection as the JSON release, not an independent measurement. Source membership is not independent confirmation; nothing is averaged across sources.",
+  "unavailableReason": null,
+  "assets": [
+    {
+      "name": "worldsindex-objects.parquet",
+      "table": "objects",
+      "rows": 31505,
+      "columns": 52,
+      "bytes": 4332746,
+      "sha256": "59c7f52fe1edae9a1ee741dbc489dbae96216b17af9eb11b7a4b6c702a4ad2e1",
+      "format": "VOParquet 1.0 (Apache Parquet, zstd, IVOA.VOTable-Parquet.version/content metadata), rows sorted by healpix_8_nested",
+      "downloadUrl": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/releases/download/worldsindex-data-latest/worldsindex-objects.parquet",
+      "sourceEcsvSha256": "d6c7d97cafef28febfb8e1e9d43ffe83d8495c492fe5d4c26a351a1c7cc2c253"
+    },
+    {
+      "name": "worldsindex-measurements.parquet",
+      "table": "measurements",
+      "rows": 439320,
+      "columns": 23,
+      "bytes": 7641399,
+      "sha256": "560bfbbebb822c0518e92adce68040bdd46d479ad98124ddd3e8058654e01782",
+      "format": "VOParquet 1.0 (Apache Parquet, zstd, IVOA.VOTable-Parquet.version/content metadata), rows sorted by healpix_8_nested",
+      "downloadUrl": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/releases/download/worldsindex-data-latest/worldsindex-measurements.parquet",
+      "sourceEcsvSha256": "1648e34d471fff69f0feee088e0fe0bdb383bb0c7d7014efc1c6c06ed3564333"
+    }
+  ]
+}

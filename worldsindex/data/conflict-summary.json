@@ -1,0 +1,704 @@
+{
+  "schemaName": "WorldsIndex conflict-set summary",
+  "schemaVersion": "worldsindex-conflict-summary.v1",
+  "generatedAt": "2026-11-13T14:04:33.615Z",
+  "atlasProjectionId": "sky-881e31018b1c23c72c77",
+  "policy": {
+    "version": "worldsindex-conflict-policy.v1",
+    "sigmaThreshold": 3,
+    "relationVocabulary": [
+      "statistically-inconsistent",
+      "method-incompatible",
+      "definition-incompatible",
+      "epoch-dependent",
+      "identity-ambiguity",
+      "status-conflict",
+      "revision-or-retraction",
+      "not-yet-assessed"
+    ],
+    "selectionRule": "nasa-pscomppars-like.v1",
+    "periodMismatchFraction": 0.1,
+    "definitions": {
+      "orbital-period": "Orbital period",
+      "planet-radius": "Planet radius",
+      "mass": "True mass (reported mass, or M sin i corrected by a known inclination)",
+      "minimum-mass": "Minimum mass M sin i",
+      "mass-or-minimum-mass": "Mass as the source states it, not distinguishing mass from M sin i (OEC)",
+      "mass-radius-estimate": "Mass estimated from a mass-radius relation (a model, not a measurement)",
+      "mass-unspecified": "Mass with no stated provenance",
+      "semimajor-axis": "Orbital semi-major axis",
+      "microlensing-separation": "Star-planet separation from a microlensing solution (projected or deprojected as the paper states)",
+      "eccentricity": "Orbital eccentricity",
+      "inclination": "Orbital inclination",
+      "transit-midpoint": "Mid-transit time of one transit event",
+      "transit-duration": "Transit duration (first to fourth contact unless the source states otherwise)",
+      "transit-depth": "Transit depth",
+      "radius-ratio": "Planet-to-star radius ratio Rp/R*",
+      "impact-parameter": "Transit impact parameter",
+      "equilibrium-temperature": "Equilibrium or planet temperature as the source states it",
+      "insolation": "Insolation relative to Earth"
+    }
+  },
+  "objects": 31505,
+  "objectsWithRows": 31463,
+  "assertionRows": 673793,
+  "conflictSets": 242239,
+  "multiRowSets": 75510,
+  "setsInConflict": 4731,
+  "objectsInConflict": 3010,
+  "pairs": 2592232,
+  "pairsByRelation": {
+    "none": 1929789,
+    "not-yet-assessed": 436649,
+    "epoch-dependent": 119659,
+    "statistically-inconsistent": 77146,
+    "definition-incompatible": 18601,
+    "method-incompatible": 6699,
+    "identity-ambiguity": 3689
+  },
+  "pairsByVerdict": {
+    "consistent": 1929789,
+    "inconsistent": 77146,
+    "not-comparable": 585297
+  },
+  "setRelations": {
+    "none": 33778,
+    "not-yet-assessed": 25285,
+    "epoch-dependent": 6924,
+    "statistically-inconsistent": 4731,
+    "definition-incompatible": 2924,
+    "method-incompatible": 1682,
+    "identity-ambiguity": 186
+  },
+  "byProperty": {
+    "orbital_period": {
+      "sets": 28977,
+      "multiRowSets": 9003,
+      "inConflict": 1528,
+      "rows": 119538,
+      "byRelation": {
+        "none": 5782,
+        "not-yet-assessed": 1671,
+        "statistically-inconsistent": 1528,
+        "identity-ambiguity": 22
+      }
+    },
+    "transit_midpoint": {
+      "sets": 25905,
+      "multiRowSets": 7228,
+      "inConflict": 0,
+      "rows": 65397,
+      "byRelation": {
+        "epoch-dependent": 6924,
+        "none": 282,
+        "identity-ambiguity": 22
+      }
+    },
+    "transit_duration": {
+      "sets": 24654,
+      "multiRowSets": 5041,
+      "inConflict": 494,
+      "rows": 48484,
+      "byRelation": {
+        "statistically-inconsistent": 494,
+        "not-yet-assessed": 2839,
+        "none": 1689,
+        "identity-ambiguity": 19
+      }
+    },
+    "transit_depth": {
+      "sets": 23970,
+      "multiRowSets": 4335,
+      "inConflict": 157,
+      "rows": 42364,
+      "byRelation": {
+        "not-yet-assessed": 4132,
+        "statistically-inconsistent": 157,
+        "none": 30,
+        "identity-ambiguity": 16
+      }
+    },
+    "planet_star_radius_ratio": {
+      "sets": 5374,
+      "multiRowSets": 3902,
+      "inConflict": 614,
+      "rows": 22984,
+      "byRelation": {
+        "statistically-inconsistent": 614,
+        "none": 3020,
+        "not-yet-assessed": 251,
+        "identity-ambiguity": 17
+      }
+    },
+    "impact_parameter": {
+      "sets": 15401,
+      "multiRowSets": 5627,
+      "inConflict": 345,
+      "rows": 35124,
+      "byRelation": {
+        "none": 5065,
+        "statistically-inconsistent": 345,
+        "not-yet-assessed": 197,
+        "identity-ambiguity": 20
+      }
+    },
+    "planet_radius": {
+      "sets": 26459,
+      "multiRowSets": 7763,
+      "inConflict": 765,
+      "rows": 98874,
+      "byRelation": {
+        "none": 5673,
+        "statistically-inconsistent": 765,
+        "not-yet-assessed": 1244,
+        "method-incompatible": 59,
+        "identity-ambiguity": 22
+      }
+    },
+    "semimajor_axis": {
+      "sets": 18574,
+      "multiRowSets": 7535,
+      "inConflict": 221,
+      "rows": 52117,
+      "byRelation": {
+        "not-yet-assessed": 3754,
+        "none": 3293,
+        "statistically-inconsistent": 221,
+        "definition-incompatible": 267
+      }
+    },
+    "equilibrium_temperature": {
+      "sets": 24554,
+      "multiRowSets": 6637,
+      "inConflict": 0,
+      "rows": 49815,
+      "byRelation": {
+        "not-yet-assessed": 3821,
+        "none": 1202,
+        "method-incompatible": 1612,
+        "identity-ambiguity": 2
+      }
+    },
+    "insolation": {
+      "sets": 22961,
+      "multiRowSets": 4448,
+      "inConflict": 0,
+      "rows": 43068,
+      "byRelation": {
+        "none": 1137,
+        "not-yet-assessed": 3311
+      }
+    },
+    "inclination": {
+      "sets": 7743,
+      "multiRowSets": 4412,
+      "inConflict": 123,
+      "rows": 24146,
+      "byRelation": {
+        "not-yet-assessed": 2819,
+        "none": 1449,
+        "statistically-inconsistent": 123,
+        "identity-ambiguity": 21
+      }
+    },
+    "planet_mass": {
+      "sets": 10322,
+      "multiRowSets": 4111,
+      "inConflict": 275,
+      "rows": 24281,
+      "byRelation": {
+        "definition-incompatible": 2657,
+        "none": 1013,
+        "not-yet-assessed": 150,
+        "statistically-inconsistent": 275,
+        "identity-ambiguity": 5,
+        "method-incompatible": 11
+      }
+    },
+    "eccentricity": {
+      "sets": 7345,
+      "multiRowSets": 5468,
+      "inConflict": 209,
+      "rows": 47601,
+      "byRelation": {
+        "not-yet-assessed": 1096,
+        "none": 4143,
+        "statistically-inconsistent": 209,
+        "identity-ambiguity": 20
+      }
+    }
+  },
+  "bySource": {
+    "corot-transit-catalog": 3516,
+    "nasa-koi": 108207,
+    "exoplanet-eu": 54617,
+    "nasa-transiting-planets": 211463,
+    "gaia-planetary-transit": 428,
+    "nasa-k2": 25187,
+    "nasa-microlensing": 1653,
+    "nasa-toi": 55808,
+    "nasa-ps": 148508,
+    "nasa-pscomppars": 41448,
+    "open-exoplanet-catalogue": 22958
+  },
+  "sourcePairs": [
+    {
+      "sources": [
+        "nasa-ps",
+        "nasa-transiting-planets"
+      ],
+      "pairs": 599110,
+      "inconsistent": 21209,
+      "consistent": 536306,
+      "notComparable": 41595,
+      "byRelation": {
+        "none": 536306,
+        "not-yet-assessed": 41595,
+        "statistically-inconsistent": 21209
+      }
+    },
+    {
+      "sources": [
+        "nasa-ps",
+        "nasa-pscomppars"
+      ],
+      "pairs": 148508,
+      "inconsistent": 3370,
+      "consistent": 99826,
+      "notComparable": 45312,
+      "byRelation": {
+        "none": 99826,
+        "statistically-inconsistent": 3370,
+        "not-yet-assessed": 44586,
+        "definition-incompatible": 726
+      }
+    },
+    {
+      "sources": [
+        "exoplanet-eu",
+        "nasa-ps"
+      ],
+      "pairs": 84771,
+      "inconsistent": 2736,
+      "consistent": 63236,
+      "notComparable": 18799,
+      "byRelation": {
+        "none": 63236,
+        "not-yet-assessed": 17642,
+        "statistically-inconsistent": 2736,
+        "definition-incompatible": 1019,
+        "method-incompatible": 138
+      }
+    },
+    {
+      "sources": [
+        "nasa-pscomppars",
+        "nasa-transiting-planets"
+      ],
+      "pairs": 77973,
+      "inconsistent": 2605,
+      "consistent": 66663,
+      "notComparable": 8705,
+      "byRelation": {
+        "none": 66663,
+        "not-yet-assessed": 8705,
+        "statistically-inconsistent": 2605
+      }
+    },
+    {
+      "sources": [
+        "nasa-ps",
+        "open-exoplanet-catalogue"
+      ],
+      "pairs": 81224,
+      "inconsistent": 2488,
+      "consistent": 57122,
+      "notComparable": 21614,
+      "byRelation": {
+        "statistically-inconsistent": 2488,
+        "none": 57122,
+        "not-yet-assessed": 12843,
+        "definition-incompatible": 5061,
+        "method-incompatible": 3710
+      }
+    },
+    {
+      "sources": [
+        "exoplanet-eu",
+        "nasa-transiting-planets"
+      ],
+      "pairs": 80492,
+      "inconsistent": 2437,
+      "consistent": 59120,
+      "notComparable": 18935,
+      "byRelation": {
+        "none": 59120,
+        "statistically-inconsistent": 2437,
+        "not-yet-assessed": 9967,
+        "epoch-dependent": 8475,
+        "method-incompatible": 24,
+        "identity-ambiguity": 469
+      }
+    },
+    {
+      "sources": [
+        "nasa-transiting-planets",
+        "open-exoplanet-catalogue"
+      ],
+      "pairs": 80694,
+      "inconsistent": 2209,
+      "consistent": 53338,
+      "notComparable": 25147,
+      "byRelation": {
+        "none": 53338,
+        "not-yet-assessed": 10497,
+        "statistically-inconsistent": 2209,
+        "epoch-dependent": 14650
+      }
+    },
+    {
+      "sources": [
+        "nasa-koi",
+        "nasa-transiting-planets"
+      ],
+      "pairs": 118180,
+      "inconsistent": 2028,
+      "consistent": 71826,
+      "notComparable": 44326,
+      "byRelation": {
+        "statistically-inconsistent": 2028,
+        "none": 71826,
+        "epoch-dependent": 23304,
+        "not-yet-assessed": 21022
+      }
+    },
+    {
+      "sources": [
+        "nasa-k2",
+        "nasa-transiting-planets"
+      ],
+      "pairs": 52701,
+      "inconsistent": 1944,
+      "consistent": 31250,
+      "notComparable": 19507,
+      "byRelation": {
+        "none": 31250,
+        "not-yet-assessed": 8748,
+        "epoch-dependent": 10759,
+        "statistically-inconsistent": 1944
+      }
+    },
+    {
+      "sources": [
+        "nasa-k2",
+        "nasa-ps"
+      ],
+      "pairs": 25408,
+      "inconsistent": 1374,
+      "consistent": 19461,
+      "notComparable": 4573,
+      "byRelation": {
+        "none": 19461,
+        "not-yet-assessed": 4573,
+        "statistically-inconsistent": 1374
+      }
+    },
+    {
+      "sources": [
+        "nasa-koi",
+        "nasa-ps"
+      ],
+      "pairs": 90752,
+      "inconsistent": 1202,
+      "consistent": 58283,
+      "notComparable": 31267,
+      "byRelation": {
+        "none": 58283,
+        "not-yet-assessed": 31267,
+        "statistically-inconsistent": 1202
+      }
+    },
+    {
+      "sources": [
+        "exoplanet-eu",
+        "nasa-pscomppars"
+      ],
+      "pairs": 19193,
+      "inconsistent": 332,
+      "consistent": 16538,
+      "notComparable": 2323,
+      "byRelation": {
+        "none": 16538,
+        "definition-incompatible": 486,
+        "not-yet-assessed": 1724,
+        "method-incompatible": 113,
+        "statistically-inconsistent": 332
+      }
+    },
+    {
+      "sources": [
+        "exoplanet-eu",
+        "nasa-koi"
+      ],
+      "pairs": 17040,
+      "inconsistent": 268,
+      "consistent": 11832,
+      "notComparable": 4940,
+      "byRelation": {
+        "none": 11832,
+        "not-yet-assessed": 3025,
+        "epoch-dependent": 1911,
+        "statistically-inconsistent": 268,
+        "method-incompatible": 4
+      }
+    },
+    {
+      "sources": [
+        "exoplanet-eu",
+        "open-exoplanet-catalogue"
+      ],
+      "pairs": 16067,
+      "inconsistent": 263,
+      "consistent": 11261,
+      "notComparable": 4543,
+      "byRelation": {
+        "none": 11261,
+        "not-yet-assessed": 886,
+        "definition-incompatible": 1868,
+        "method-incompatible": 834,
+        "statistically-inconsistent": 263,
+        "epoch-dependent": 955
+      }
+    },
+    {
+      "sources": [
+        "nasa-pscomppars",
+        "open-exoplanet-catalogue"
+      ],
+      "pairs": 17580,
+      "inconsistent": 227,
+      "consistent": 11576,
+      "notComparable": 5777,
+      "byRelation": {
+        "statistically-inconsistent": 227,
+        "none": 11576,
+        "not-yet-assessed": 1862,
+        "definition-incompatible": 2371,
+        "method-incompatible": 1544
+      }
+    },
+    {
+      "sources": [
+        "exoplanet-eu",
+        "nasa-k2"
+      ],
+      "pairs": 5600,
+      "inconsistent": 214,
+      "consistent": 3510,
+      "notComparable": 1876,
+      "byRelation": {
+        "none": 3510,
+        "statistically-inconsistent": 214,
+        "epoch-dependent": 1414,
+        "not-yet-assessed": 462
+      }
+    },
+    {
+      "sources": [
+        "nasa-k2",
+        "nasa-pscomppars"
+      ],
+      "pairs": 4368,
+      "inconsistent": 198,
+      "consistent": 3723,
+      "notComparable": 447,
+      "byRelation": {
+        "none": 3723,
+        "not-yet-assessed": 447,
+        "statistically-inconsistent": 198
+      }
+    },
+    {
+      "sources": [
+        "nasa-microlensing",
+        "nasa-ps"
+      ],
+      "pairs": 6774,
+      "inconsistent": 158,
+      "consistent": 3319,
+      "notComparable": 3297,
+      "byRelation": {
+        "none": 3319,
+        "definition-incompatible": 3291,
+        "statistically-inconsistent": 158,
+        "not-yet-assessed": 6
+      }
+    },
+    {
+      "sources": [
+        "nasa-k2",
+        "open-exoplanet-catalogue"
+      ],
+      "pairs": 6295,
+      "inconsistent": 156,
+      "consistent": 4131,
+      "notComparable": 2008,
+      "byRelation": {
+        "none": 4131,
+        "epoch-dependent": 1527,
+        "statistically-inconsistent": 156,
+        "not-yet-assessed": 481
+      }
+    },
+    {
+      "sources": [
+        "nasa-koi",
+        "nasa-pscomppars"
+      ],
+      "pairs": 13481,
+      "inconsistent": 149,
+      "consistent": 8549,
+      "notComparable": 4783,
+      "byRelation": {
+        "none": 8549,
+        "not-yet-assessed": 4783,
+        "statistically-inconsistent": 149
+      }
+    },
+    {
+      "sources": [
+        "nasa-koi",
+        "open-exoplanet-catalogue"
+      ],
+      "pairs": 6853,
+      "inconsistent": 137,
+      "consistent": 4479,
+      "notComparable": 2237,
+      "byRelation": {
+        "none": 4479,
+        "not-yet-assessed": 793,
+        "epoch-dependent": 1161,
+        "method-incompatible": 283,
+        "statistically-inconsistent": 137
+      }
+    },
+    {
+      "sources": [
+        "exoplanet-eu",
+        "nasa-toi"
+      ],
+      "pairs": 891,
+      "inconsistent": 47,
+      "consistent": 450,
+      "notComparable": 394,
+      "byRelation": {
+        "statistically-inconsistent": 47,
+        "none": 450,
+        "epoch-dependent": 174,
+        "not-yet-assessed": 218,
+        "method-incompatible": 2
+      }
+    },
+    {
+      "sources": [
+        "nasa-microlensing",
+        "nasa-pscomppars"
+      ],
+      "pairs": 1526,
+      "inconsistent": 24,
+      "consistent": 749,
+      "notComparable": 753,
+      "byRelation": {
+        "none": 749,
+        "definition-incompatible": 751,
+        "statistically-inconsistent": 24,
+        "not-yet-assessed": 2
+      }
+    },
+    {
+      "sources": [
+        "exoplanet-eu",
+        "nasa-microlensing"
+      ],
+      "pairs": 732,
+      "inconsistent": 23,
+      "consistent": 348,
+      "notComparable": 361,
+      "byRelation": {
+        "statistically-inconsistent": 23,
+        "definition-incompatible": 356,
+        "none": 348,
+        "not-yet-assessed": 5
+      }
+    },
+    {
+      "sources": [
+        "nasa-toi",
+        "nasa-transiting-planets"
+      ],
+      "pairs": 482,
+      "inconsistent": 10,
+      "consistent": 299,
+      "notComparable": 173,
+      "byRelation": {
+        "not-yet-assessed": 91,
+        "none": 299,
+        "epoch-dependent": 82,
+        "statistically-inconsistent": 10
+      }
+    },
+    {
+      "sources": [
+        "nasa-microlensing",
+        "open-exoplanet-catalogue"
+      ],
+      "pairs": 732,
+      "inconsistent": 0,
+      "consistent": 0,
+      "notComparable": 732,
+      "byRelation": {
+        "definition-incompatible": 732
+      }
+    }
+  ],
+  "selections": {
+    "objects": 6354,
+    "values": 32844,
+    "byBasis": {
+      "default-solution": 22763,
+      "calculated": 6138,
+      "filled-from-publication": 3943
+    },
+    "calculatedByFormula": {
+      "teq-zero-albedo-full-redistribution.v1": 2845,
+      "insolation-stefan-boltzmann.v1": 1698,
+      "kepler-third-law.v1": 1595
+    },
+    "archiveCompositeComparisons": 31920,
+    "archiveCompositeMatches": 25744
+  },
+  "flags": {
+    "status_conflict": 240,
+    "period_mismatch": 270,
+    "fallback_merge": 327,
+    "controversial": 167
+  },
+  "statusConflicts": 240,
+  "evolution": {
+    "properties": 48510,
+    "points": 247687
+  },
+  "exceptions": {
+    "excluded-false-positive": 6825,
+    "status-conflict": 240,
+    "retracted": 112,
+    "controversial": 195,
+    "excluded-solar-system": 14
+  },
+  "identityWithheldRows": 0,
+  "solarSystemExclusion": {
+    "ruleVersion": "worldsindex-solar-system-exclusion.v1",
+    "objects": 14,
+    "note": "Counts exclude the Solar System objects left out of the atlas by the website build; the builder's own summary includes them."
+  }
+}
