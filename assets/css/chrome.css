@@ -37,7 +37,7 @@
 /* The run-list badge shows once something is on the list (chrome.js counts it). */
 .jm-nav [data-runcart-badge][data-count="0"]:not([aria-current]) { display:none }
 .jm-menu-toggle { display:none }
-.jm-menu-glyph { display:inline-block; font-size:1.05rem; line-height:1; transition:transform .18s }
+.jm-menu-glyph { display:inline-block; line-height:1; transition:transform .18s }
 .jm-menu-toggle[aria-expanded="true"] .jm-menu-glyph { transform:rotate(45deg) }
 
 /* ------------------------------------------------------------------ footer */
@@ -60,7 +60,7 @@
   /* With JavaScript the links fold into the menu; without it they wrap under the name. */
   .jm-js .jm-menu-toggle { display:flex; align-items:center; gap:1rem; min-height:44px; padding:.45rem .8rem;
     border:1px solid var(--jm-line); border-radius:0; background:transparent; color:var(--jm-ink);
-    font:600 .75rem/1 var(--jm-sans); cursor:pointer }
+    font:400 .75rem/1 var(--jm-sans); cursor:pointer }
   .jm-js .jm-nav { display:none; position:absolute; top:68px; left:0; right:0; flex-direction:column; align-items:stretch;
     gap:.4rem; padding:1rem 20px 1.4rem; background:var(--jm-bg); border-bottom:1px solid var(--jm-line);
     box-shadow:0 15px 20px #142e320a }

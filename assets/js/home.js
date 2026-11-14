@@ -1,26 +1,6 @@
 (() => {
   "use strict";
-  document.documentElement.classList.remove("no-js");
-  const toggle = document.querySelector(".menu-toggle");
-  const nav = document.getElementById("primary-nav");
-  function closeMenu(returnFocus = false) {
-    nav.dataset.open = "false";
-    toggle.setAttribute("aria-expanded", "false");
-    toggle.querySelector("[data-menu-label]").textContent = "Menu";
-    if (returnFocus) toggle.focus();
-  }
-  toggle.addEventListener("click", () => {
-    const open = toggle.getAttribute("aria-expanded") !== "true";
-    toggle.setAttribute("aria-expanded", String(open));
-    nav.dataset.open = String(open);
-    toggle.querySelector("[data-menu-label]").textContent = open ? "Close" : "Menu";
-  });
-  nav.addEventListener("click", event => { if (event.target.closest("a")) closeMenu(); });
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && toggle.getAttribute("aria-expanded") === "true") closeMenu(true);
-  });
-  document.addEventListener("click", event => { if (!event.target.closest(".home-header")) closeMenu(); });
-  matchMedia("(min-width: 721px)").addEventListener("change", event => { if (event.matches) closeMenu(); });
+  // The header menu is in assets/js/chrome.js; this file keeps the homepage's own behaviour.
   const legacy = { science: "research", transients: "tools", worlds: "tools", "personal-title": "about", "selected-title": "publications", "research-map": "research", "directions-title": "research", "updates-title": "about", "qualquest": "tools" };
   function revealDestination(smooth = false) {
     let hash;
