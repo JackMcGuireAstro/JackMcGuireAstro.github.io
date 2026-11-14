@@ -4,12 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="WorldsIndex is a provenance-aware atlas of confirmed exoplanets, candidates, disputed claims, measurements, methods, and source evidence.">
-  <meta name="theme-color" content="#050a12">
+  <meta name="theme-color" content="#f4f1ea">
   <link rel="canonical" href="https://jackmcguireastro.github.io/worldsindex/">
   <link rel="alternate" type="application/feed+json" title="WorldsIndex release changes (JSON Feed)" href="data/feed.json">
   <link rel="alternate" type="application/atom+xml" title="WorldsIndex release changes (Atom)" href="data/feed.xml">
   <link rel="stylesheet" href="assets/app.css?v=20261104">
-  <title>WorldsIndex · Explore worlds beyond the Solar System</title>
+  <link rel="stylesheet" href="/assets/css/chrome.css?v=20261114">
+  <script defer src="/assets/js/chrome.js?v=20261114"></script>
+  <title>WorldsIndex · Explore worlds beyond the Solar System | Jack McGuire</title>
 <link rel="stylesheet" href="../assets/css/continuity.css?v=20260920">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XN307TT07G"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-XN307TT07G');</script>
@@ -17,9 +19,26 @@
 <body data-active-page="discover">
   <a class="skip-link" href="#main">Skip to WorldsIndex</a>
 
-  <nav class="site-journey" aria-label="Astronomy website"><span>Jack McGuire /</span><a href="../index.html">Home</a><a href="../index.html#research">Research</a><a href="../worldsindex/" aria-current="page">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="../tonight/">Tonight</a><a href="../tools/follow/">Follow</a><a href="../tools/">Tools</a><a data-runcart-badge href="../tonight/runsheet.html">Run list</a></nav>
+<!-- chrome:header -->
+<header class="jm-header">
+  <div class="jm-shell jm-header__inner">
+    <a class="jm-wordmark" href="/"><span class="jm-monogram" aria-hidden="true">jm<span>.</span></span><span>Jack McGuire</span></a>
+    <button class="jm-menu-toggle" type="button" aria-controls="primary-nav" aria-expanded="false"><span data-menu-label>Menu</span><span class="jm-menu-glyph" aria-hidden="true">+</span></button>
+    <nav id="primary-nav" class="jm-nav" aria-label="Primary">
+      <a href="/">Home</a>
+      <a href="/#research">Research</a>
+      <a href="/#publications">Publications</a>
+      <a href="/worldsindex/">WorldsIndex</a>
+      <a href="/ctas.html">CTAS</a>
+      <a href="/tools/">Tools</a>
+      <a href="/cv.pdf">CV</a>
+      <a class="jm-runlist" data-runcart-badge href="/tonight/runsheet.html">Run list</a>
+    </nav>
+  </div>
+</header>
+<!-- /chrome:header -->
 <header class="topbar">
-    <a class="brand" href="?section=discover" data-app-section="discover" aria-label="WorldsIndex home">
+    <a class="brand" href="?section=discover" data-app-section="discover">
       <span class="brand-mark" aria-hidden="true"><i></i></span>
       <span>WorldsIndex<small>Powered by ExoNexus</small></span>
     </a>
@@ -31,7 +50,6 @@
       <a href="?section=sources" data-app-section="sources">Data</a>
     </nav>
     <button class="nav-search" type="button" data-focus-search disabled aria-label="Find a world"><span aria-hidden="true">⌕</span><span class="nav-search-label">Find a world</span></button>
-    <a class="portfolio-link" href="../index.html" aria-label="Jack McGuire home">JM ↗</a>
   </header>
 
   <main id="main" tabindex="-1">
@@ -231,7 +249,28 @@
     </section>
   </main>
 
-  <footer><p><strong>WorldsIndex</strong><span>Powered by ExoNexus</span></p><p>Versioned evidence · source-native measurements · reproducible downloads</p><nav class="footer-data-links" aria-label="WorldsIndex release data"><a href="status.html">Status</a><a href="data/changelog.md">Changelog</a><a href="data/feed.json" type="application/feed+json">Feed (JSON)</a><a href="data/feed.xml" type="application/atom+xml">Feed (Atom)</a><a href="data/exports/index.json">Exports</a><a href="openapi.yaml">OpenAPI</a><a href="status.html#schemas">Schemas</a></nav><nav aria-label="Jack McGuire website"><a href="../index.html">Home</a><a href="../worldsindex/" aria-current="page">WorldsIndex</a><a href="../ctas.html">CTAS</a><a href="../tonight/">Tonight</a><a href="../tools/follow/">Follow</a><a href="../tools/">Tools</a><a href="../tonight/runsheet.html">Run list</a><a href="../cv.pdf" target="_blank" rel="noopener">CV (PDF)</a></nav></footer>
+  <section class="app-footer" aria-label="About WorldsIndex"><p><strong>WorldsIndex</strong><span>Powered by ExoNexus</span></p><p>Versioned evidence · source-native measurements · reproducible downloads</p><nav class="footer-data-links" aria-label="WorldsIndex release data"><a href="status.html">Status</a><a href="data/changelog.md">Changelog</a><a href="data/feed.json" type="application/feed+json">Feed (JSON)</a><a href="data/feed.xml" type="application/atom+xml">Feed (Atom)</a><a href="data/exports/index.json">Exports</a><a href="openapi.yaml">OpenAPI</a><a href="status.html#schemas">Schemas</a></nav></section>
+<!-- chrome:footer -->
+<footer class="jm-footer">
+  <div class="jm-shell jm-footer__inner">
+    <p>© 2026 Jack McGuire<br><span>Department of Physics &amp; Astronomy · University of Wyoming</span></p>
+    <nav aria-label="Footer">
+      <a href="/">Home</a>
+      <a href="/#research">Research</a>
+      <a href="/#publications">Publications</a>
+      <a href="/worldsindex/">WorldsIndex</a>
+      <a href="/ctas.html">CTAS</a>
+      <a href="/tonight/">Tonight’s sky</a>
+      <a href="/tools/follow/">Follow</a>
+      <a href="/tools/">Tools</a>
+      <a href="/tonight/runsheet.html">Run list</a>
+      <a href="/research/barium-dwarfs/">Barium dwarf census</a>
+      <a href="/cv.pdf">CV (PDF)</a>
+      <a href="mailto:jackmcg7@live.com">jackmcg7@live.com</a>
+    </nav>
+  </div>
+</footer>
+<!-- /chrome:footer -->
   <div id="toast" role="status" aria-live="polite" aria-hidden="true"></div>
   <script type="module" src="assets/app.js?v=20261104"></script>
   <!-- The shared run list loads after the page (it is not needed for the first screen). -->

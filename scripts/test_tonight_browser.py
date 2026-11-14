@@ -346,7 +346,7 @@ class TonightBrowserTests(unittest.TestCase):
         page.wait_for_function("window.RunCart && !document.getElementById('add-to-runlist').hidden", timeout=60000)
         page.click("#add-to-runlist")
         page.wait_for_function("document.getElementById('add-to-runlist').getAttribute('aria-pressed') === 'true'", timeout=10000)
-        self.assertIn("Run list (2)", page.locator(".site-journey [data-runcart-badge]").inner_text())
+        self.assertIn("Run list (2)", page.locator(".jm-header [data-runcart-badge]").inner_text())
         # 3. a transit row of the Tonight planner (the fixture ephemerides)
         page.route("**/worldsindex/data/transit-ephemerides.json.gz", lambda route: route.fulfill(status=200, content_type="application/gzip", body=_transit_artifact()))
         page.goto(f"{self.base}/tonight/", wait_until="networkidle", timeout=60000)

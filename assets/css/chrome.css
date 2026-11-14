@@ -18,6 +18,11 @@
 }
 .jm-header *,.jm-header *::before,.jm-header *::after,
 .jm-footer *,.jm-footer *::before,.jm-footer *::after { box-sizing:border-box }
+/* The app stylesheets style bare elements (footer, nav, a, span, button); none of that reaches
+   the chrome. */
+.jm-header,.jm-footer { display:block; margin:0; border:0; box-shadow:none; backdrop-filter:none }
+.jm-header *,.jm-footer * { margin:0; padding:0; border:0; border-radius:0; background:none; box-shadow:none;
+  font:inherit; letter-spacing:inherit; text-transform:none; text-shadow:none; color:inherit; min-height:0 }
 .jm-shell { width:min(1200px,calc(100% - 96px)); margin-inline:auto }
 .jm-header a,.jm-footer a { color:inherit; text-decoration:none; transition:color .18s }
 .jm-header a:hover,.jm-footer a:hover { color:var(--jm-accent) }
@@ -25,6 +30,7 @@
 
 /* ------------------------------------------------------------------ header */
 .jm-header { position:relative; z-index:30; border-bottom:1px solid var(--jm-line) }
+.jm-header:has(.jm-nav[data-open="true"]) { z-index:300 }  /* the open menu sits over the app bars */
 .jm-header__inner { display:flex; justify-content:space-between; align-items:center; min-height:80px; gap:2rem }
 .jm-wordmark { display:flex; align-items:center; gap:1rem; font-size:.95rem; font-weight:600; white-space:nowrap }
 .jm-monogram { font:700 2rem/1 var(--jm-serif); letter-spacing:-.1em }

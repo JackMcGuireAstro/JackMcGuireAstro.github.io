@@ -378,12 +378,12 @@ function spectrumSvg(points, label) {
   const xs = points.map(p => p.x), lo = Math.min(...points.map(p => p.y - (Number.isFinite(p.e) ? p.e : 0))), hi = Math.max(...points.map(p => p.y + (Number.isFinite(p.e) ? p.e : 0)));
   const x0 = Math.min(...xs), x1 = Math.max(...xs) === x0 ? x0 + 1 : Math.max(...xs), y0 = lo, y1 = hi === lo ? lo + 1 : hi;
   const X = x => L + (x - x0) / (x1 - x0) * (w - L - R), Y = y => h - B - (y - y0) / (y1 - y0) * (h - T - B);
-  const marks = points.map(p => (Number.isFinite(p.e) ? `<line x1="${X(p.x).toFixed(1)}" x2="${X(p.x).toFixed(1)}" y1="${Y(p.y - p.e).toFixed(1)}" y2="${Y(p.y + p.e).toFixed(1)}" stroke="#69cbed66"/>` : '') +
-    `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="2.6" fill="#69cbed"><title>${p.x} µm · ${p.y}${Number.isFinite(p.e) ? ' ± ' + p.e : ''}</title></circle>`).join('');
-  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)}" style="width:100%;max-width:760px;background:#091322;border-radius:8px">` +
-    `<line x1="${L}" y1="${h - B}" x2="${w - R}" y2="${h - B}" stroke="#35506a"/><line x1="${L}" y1="${T}" x2="${L}" y2="${h - B}" stroke="#35506a"/>` +
-    `<text x="${L}" y="${h - 12}" fill="#b6c9d9" font-size="12">${x0.toFixed(2)} µm</text><text x="${w - R}" y="${h - 12}" fill="#b6c9d9" font-size="12" text-anchor="end">${x1.toFixed(2)} µm</text>` +
-    `<text x="${L - 6}" y="${T + 10}" fill="#b6c9d9" font-size="11" text-anchor="end">${esc(y1.toPrecision(3))}</text><text x="${L - 6}" y="${h - B}" fill="#b6c9d9" font-size="11" text-anchor="end">${esc(y0.toPrecision(3))}</text>${marks}</svg>`;
+  const marks = points.map(p => (Number.isFinite(p.e) ? `<line x1="${X(p.x).toFixed(1)}" x2="${X(p.x).toFixed(1)}" y1="${Y(p.y - p.e).toFixed(1)}" y2="${Y(p.y + p.e).toFixed(1)}" stroke="#1d6a8566"/>` : '') +
+    `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="2.6" fill="#1d6a85"><title>${p.x} µm · ${p.y}${Number.isFinite(p.e) ? ' ± ' + p.e : ''}</title></circle>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)}" style="width:100%;max-width:760px;background:#fffdf8;border:1px solid #d1d0c7;border-radius:0">` +
+    `<line x1="${L}" y1="${h - B}" x2="${w - R}" y2="${h - B}" stroke="#b9b6aa"/><line x1="${L}" y1="${T}" x2="${L}" y2="${h - B}" stroke="#b9b6aa"/>` +
+    `<text x="${L}" y="${h - 12}" fill="#4c5650" font-size="12">${x0.toFixed(2)} µm</text><text x="${w - R}" y="${h - 12}" fill="#4c5650" font-size="12" text-anchor="end">${x1.toFixed(2)} µm</text>` +
+    `<text x="${L - 6}" y="${T + 10}" fill="#4c5650" font-size="11" text-anchor="end">${esc(y1.toPrecision(3))}</text><text x="${L - 6}" y="${h - B}" fill="#4c5650" font-size="11" text-anchor="end">${esc(y0.toPrecision(3))}</text>${marks}</svg>`;
 }
 // The detail tables under the rows, drawn once everything has answered.
 export function extrasHtml(result) {

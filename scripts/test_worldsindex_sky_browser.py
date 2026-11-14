@@ -288,7 +288,7 @@ class SkyBrowserTests(unittest.TestCase):
         page.click("#catalog-sky [data-samp-objects]")
         page.wait_for_function("document.querySelector('#catalog-sky [data-samp-status]').textContent.startsWith('Sent')", timeout=20000)
         self.assertIn("data/exports/objects.vot.gz", self.samp_calls[-1])
-        hrefs = page.eval_on_selector_all("footer .footer-data-links a", "els => els.map(e => e.getAttribute('href'))")
+        hrefs = page.eval_on_selector_all(".app-footer .footer-data-links a", "els => els.map(e => e.getAttribute('href'))")
         for expected in ("status.html", "data/changelog.md", "data/feed.json", "data/feed.xml", "data/exports/index.json", "openapi.yaml"):
             self.assertIn(expected, hrefs)
         self.assertEqual(page.locator("h1:visible").count(), 1)

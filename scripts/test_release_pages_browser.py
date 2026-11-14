@@ -281,7 +281,7 @@ class ReleasePagesTests(unittest.TestCase):
         context, page = self.page()
         page.goto(f"{self.base}/worldsindex/?object={target['objectId']}&section=object", wait_until="networkidle", timeout=120_000)
         page.wait_for_function("document.title.indexOf(' · WorldsIndex') > 0", timeout=60_000)
-        self.assertEqual(page.title(), f"{target['name']} · WorldsIndex")
+        self.assertEqual(page.title(), f"{target['name']} · WorldsIndex | Jack McGuire")
         context.close()
 
     def test_audit_5_ctas_sections_are_in_reading_order(self):
