@@ -175,6 +175,7 @@ def restore(data_dir: Path) -> None:
                 archive.extractall(data_dir, filter="data")
             else:
                 archive.extractall(data_dir)
+        (work / STATIC).unlink(missing_ok=True)  # disk is tight on the runner: drop each archive once unpacked
         print(f"restored {STATIC}")
     else:
         print(f"no {STATIC} in {STATE_REPO}; continuing without static inputs")
@@ -186,6 +187,7 @@ def restore(data_dir: Path) -> None:
             members = [m for m in archive.getmembers() if m.isfile() and "/" not in m.name and m.name.endswith(".fits")]
             for member in members:
                 archive.extract(member, maps, **({"filter": "data"} if hasattr(tarfile, "data_filter") else {}))
+        (work / SKYMAPS).unlink(missing_ok=True)
         print(f"restored {SKYMAPS} ({len(members)} sky maps)")
     databases = database_assets(listing)
     if not databases:
@@ -196,6 +198,7 @@ def restore(data_dir: Path) -> None:
     for suffix in ("", "-wal", "-shm", "-journal"):
         Path(str(target) + suffix).unlink(missing_ok=True)
     decompress(work / chosen, target)
+    (work / chosen).unlink(missing_ok=True)  # the compressed copy goes as soon as the database is out
     shutil.rmtree(work, ignore_errors=True)
     write_receipt(chosen, DB_PREFIX)
     print(f"restored {chosen} ({target.stat().st_size / 1e9:.2f} GB)")

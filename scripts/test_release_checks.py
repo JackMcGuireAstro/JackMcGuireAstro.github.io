@@ -340,7 +340,17 @@ class WiringTests(unittest.TestCase):
             self.assertNotIn("last_good", text)
             # the state is saved after the fallback attempt, exactly as before
             self.assertLess(text.index("code_fallback_run "), text.index("_cloud_state.py\" save"))
-        self.assertIn('CTAS_FROZEN_DB="$FROZEN"', (ROOT / "scripts/ctas_cloud_run.sh").read_text())
+        ctas_run = (ROOT / "scripts/ctas_cloud_run.sh").read_text()
+        # The fallback reads the snapshot the main attempt used: the stopped collector's database
+        # itself (2026-11-14), or the copy a blocked run kept; FROZEN is deleted, never the database.
+        self.assertIn('CTAS_FROZEN_DB="$SNAPSHOT_DB"', ctas_run)
+        self.assertIn('[ -n "$SNAPSHOT_DB" ] || SNAPSHOT_DB="$FROZEN"', ctas_run)
+        self.assertIn('FROZEN="$WORK/frozen-main.db"', ctas_run)
+        self.assertNotRegex(ctas_run, r'FROZEN="\$DATA')
+        # the runner guard: the publisher and the fallback run under the ceiling
+        self.assertIn("run_guarded publisher", ctas_run)
+        self.assertIn("run_guarded fallback", ctas_run)
+        self.assertLess(ctas_run.index("run_guarded publisher"), ctas_run.index("code_fallback_run "))
         self.assertIn("local args=(--fast --force)", (ROOT / "scripts/worldsindex_cloud_run.sh").read_text())
         for script in ("publish_ctas.sh", "publish_worldsindex.sh", "ctas_cloud_run.sh", "worldsindex_cloud_run.sh",
                        "deploy_checks.sh", "deploy_candidates.sh", "release_checks.sh", "code_fallback.sh"):
@@ -1068,6 +1078,92 @@ echo "RESULT action=$ACTION used=$FALLBACK_USED status=${{FALLBACK_STATUS:-none}
         self.assertIn("action=block used=0 status=3", line, done.stdout + done.stderr)
         self.assertEqual(decision["reason"], "data-integrity")
         self.assertEqual(len(record), 2)
+
+
+@unittest.skipUnless(sys.platform.startswith("linux") and shutil.which("setsid") and Path("/proc/meminfo").exists(),
+                     "the runner guard reads /proc and uses setsid: Linux only (the deploy and the runners)")
+class RunnerGuardTests(unittest.TestCase):
+    """scripts/ctas_cloud_run.sh's runner guard (2026-11-14: every other CTAS cycle ended with
+    "The hosted runner lost communication with the server"): the guard block is run on its own
+    with stand-ins, so no collector, publisher or network is needed."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="ctas-runner-guard-"))
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        text = (ROOT / "scripts/ctas_cloud_run.sh").read_text()
+        start = text.index("# ------------------------------------------------------------------ runner guard")
+        block = text[start:text.index("on_exit() {", start)]
+        (self.tmp / "guard.sh").write_text(block)
+        for name in ("work/logs", "site/.git"):
+            (self.tmp / name).mkdir(parents=True)
+
+    def run_guard(self, body, **env):
+        script = ("set -uo pipefail\nWORK=$T/work; LOGS=$WORK/logs; SITE=$T/site; BACKEND=$T; DRY_RUN=1; SECRET_ENV=''\n"
+                  "say() { printf '%s  %s\\n' \"$(date -u '+%H:%M:%S')\" \"$*\" | tee -a \"$LOGS/runner.log\"; }\n"
+                  ". \"$T/guard.sh\"\n" + body)
+        return subprocess.run(["/bin/bash", "-c", script], env={**os.environ, "T": str(self.tmp), **env},
+                              capture_output=True, text=True, timeout=240)
+
+    def test_a_command_that_ends_by_itself_keeps_its_status_and_output(self):
+        result = self.run_guard('run_guarded publisher "$WORK/out.txt" bash -c "echo hello; exit 3"; echo "status=$?"; cat "$WORK/out.txt"; '
+                                '[ -e "$GUARD_HIT" ] && echo hit || echo nohit')
+        self.assertIn("status=3", result.stdout)
+        self.assertIn("hello", result.stdout)
+        self.assertIn("nohit", result.stdout)
+
+    def test_the_memory_ceiling_stops_the_whole_process_group_and_says_why(self):
+        # A floor above any real headroom: the first sample trips it.
+        result = self.run_guard(
+            'run_guarded publisher "$WORK/out.txt" bash -c "sleep 301 & sleep 301; echo never"; echo "status=$?"; '
+            'cat "$GUARD_HIT"; pgrep -fx "sleep 301" >/dev/null && echo leftover || echo clean',
+            CTAS_MEM_FLOOR_MB="99999999")
+        self.assertRegex(result.stdout, r"status=(143|137)")
+        self.assertIn("memory ceiling:", result.stdout)
+        self.assertIn("(publisher)", result.stdout)
+        self.assertIn("clean", result.stdout)
+        self.assertIn("FAIL  memory ceiling", (self.tmp / "work/logs/runner.log").read_text())
+        self.assertNotIn("never", (self.tmp / "work/out.txt").read_text())
+
+    def test_the_disk_ceiling_stops_the_publisher_too(self):
+        result = self.run_guard('run_guarded fallback "$WORK/out.txt" sleep 300; echo "status=$?"; cat "$GUARD_HIT"',
+                                CTAS_DISK_FLOOR_MB="99999999")
+        self.assertIn("disk ceiling:", result.stdout)
+        self.assertIn("(fallback)", result.stdout)
+
+    def test_phase_lines_carry_the_peaks_and_the_run_report_reads_them(self):
+        result = self.run_guard(
+            'set_phase restore; start_sampler; sleep 3; set_phase publish; sleep 3; stop_sampler; resource_summary',
+            CTAS_SAMPLE_SECONDS="1")
+        log = (self.tmp / "work/logs/runner.log").read_text()
+        self.assertRegex(log, r"phase  restore took \d+s \(peak memory used [\d.]+ of [\d.]+ GiB, min available [\d.]+ GiB, "
+                              r"peak swap [\d.]+ GiB, min headroom [\d.]+ GiB, min free disk / [\d.]+ GiB, work [\d.]+ GiB; \d+ samples\)")
+        self.assertIn("phase  publish took", log)
+        samples = (self.tmp / "work/logs/resources.log").read_text()
+        self.assertRegex(samples, r"res  restore +mem used [\d.]+G avail [\d.]+G swap [\d.]+G headroom [\d.]+G \| free / [\d.]+G work [\d.]+G")
+        self.assertIn("| top ", samples)
+        import run_report
+        phases, lines, _ = run_report.evidence_lines([str(self.tmp / "work/logs/runner.log")])
+        self.assertEqual([row["phase"] for row in phases], ["restore", "publish"])
+        self.assertTrue(any("peak memory used" in line for line in lines))
+
+
+class RunnerGuardWiringTests(unittest.TestCase):
+    def test_the_runner_wires_the_guard_around_the_publisher(self):
+        run = (ROOT / "scripts/ctas_cloud_run.sh").read_text()
+        self.assertIn('export CTAS_LIGHTCURVE_WORKERS="${CTAS_LIGHTCURVE_WORKERS:-2}"', run)
+        self.assertIn("PRAGMA wal_checkpoint(TRUNCATE)", run)
+        self.assertIn("pgrep -f 'supernova-ops api'", run)
+        self.assertLess(run.index("stop_collector\nset_phase publish"), run.index("SNAPSHOT_DB=\"\""))
+        self.assertLess(run.index('if [ "${SITE_FREE:-0}" -lt "$NEED_MB" ]'), run.index("run_guarded publisher"))
+        self.assertIn('if [ -z "$GUARD_REASON" ]; then\n  code_fallback_run ctas', run)
+        self.assertIn("memory-ceiling", run)
+        self.assertIn("previous run died: lost runner", run)
+        self.assertIn("reports/ctas-cloud/telemetry-latest.txt", run)
+        self.assertLess(run.index("report_lost_runs\n"), run.index("# ------------------------------------------------------------------ 1. restore"))
+        # the guard never stops a run by itself: no exit and no fail inside it
+        start = run.index("# ------------------------------------------------------------------ runner guard")
+        block = run[start:run.index("on_exit() {", start)]
+        self.assertEqual(re.findall(r"(?m)(?:^\s*|[;&|{(]\s*)(?:exit|fail)\b", block), [])
 
 
 if __name__ == "__main__":

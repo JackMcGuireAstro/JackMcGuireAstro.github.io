@@ -725,6 +725,28 @@ class IssueHelperTests(unittest.TestCase):
         self.assertIn("Title: Publisher watchdog: recovered (ok)", (self.tmp / "curl-args.txt").read_text())
         self.assertIn("https://github.com/owner/repo/issues/77", (self.tmp / "curl-body.txt").read_text())
 
+    def test_the_early_issue_has_its_own_label_title_and_recovery_text(self):
+        now = at("2026-11-14T12:30:00Z")
+        report = watchdog.evaluate(ctas_status("2026-11-14T10:00:00Z"), None, worlds_manifest("2026-11-14T09:50:00Z"), None,
+                                   deploy(created="2026-11-14T10:05:00Z"), now=now)
+        early_env = {"WATCHDOG_LABEL": "freshness-early", "WATCHDOG_TITLE_PREFIX": "Early warning",
+                     "WATCHDOG_RECOVERED_TEXT": "CTAS is publishing on time again"}
+        (self.tmp / "report.json").write_text(json.dumps(watchdog.early_report(report)))
+        (self.tmp / "report.md").write_text(watchdog.render_early_markdown(report, "https://example.test", "@owner"))
+        result = subprocess.run(["/bin/bash", str(ROOT / "scripts/watchdog_issue.sh"), "report.json", "report.md"],
+                                cwd=self.tmp, env={**self.env, **early_env}, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.tmp / "created-title.txt").read_text(), "Early warning: CTAS")
+        self.assertIn("<!-- watchdog-fingerprint: ctas-early -->", (self.tmp / "created-body.md").read_text())
+        fresh = watchdog.evaluate(ctas_status("2026-11-14T12:20:00Z"), None, worlds_manifest("2026-11-14T12:00:00Z"), None,
+                                  deploy(created="2026-11-14T12:05:00Z"), now=now)
+        (self.tmp / "report.json").write_text(json.dumps(watchdog.early_report(fresh)))
+        (self.tmp / "report.md").write_text(watchdog.render_early_markdown(fresh, "https://example.test"))
+        result = subprocess.run(["/bin/bash", str(ROOT / "scripts/watchdog_issue.sh"), "report.json", "report.md"],
+                                cwd=self.tmp, env={**self.env, **early_env, "FAKE_OPEN_ISSUE": "78"}, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.tmp / "closed.md").read_text().startswith("Recovered: CTAS is publishing on time again."))
+
     def test_open_issue_is_updated_only_when_the_picture_changes_or_a_reminder_is_due(self):
         # The helper measures the last update's age against the real clock.
         recent = watchdog.iso(dt.datetime.now(UTC) - dt.timedelta(hours=1))
@@ -746,6 +768,90 @@ class IssueHelperTests(unittest.TestCase):
                               WATCHDOG_NOTIFY_WEBHOOK="https://ntfy.sh/topic")
         self.assertIn("updated issue #77", out)  # a reminder: a comment, but no new notification
         self.assertFalse((self.tmp / "curl-args.txt").exists())
+
+
+class EarlyWarningTests(unittest.TestCase):
+    """Item 8 (2026-11-14): CTAS late by 2 h, and runs that died with a lost runner."""
+
+    def lost_jobs(self):
+        doc = jobs("Collect, publish and save")
+        doc["jobs"][0]["steps"][1]["conclusion"] = None  # the step never finished
+        doc["annotations"] = ["The hosted runner lost communication with the server. Anything in your workflow that "
+                              "terminates the runner process, starves it for CPU/Memory, or blocks its network access "
+                              "can cause this error."]
+        return doc
+
+    def test_ctas_two_and_a_half_hours_late_is_early_not_an_alert(self):
+        now = at("2026-11-14T12:30:00Z")
+        report = watchdog.evaluate(ctas_status("2026-11-14T10:00:00Z"), None, worlds_manifest("2026-11-14T09:50:00Z"), None,
+                                   deploy(created="2026-11-14T10:05:00Z"), now=now, cross_check_stale_hours=3)
+        self.assertTrue(report["ok"], report["alerts"])
+        self.assertEqual([row["code"] for row in report["early"]], ["ctas-early"])
+        self.assertIn("CTAS has not published for 2.5 h", report["early"][0]["message"])
+        early = watchdog.early_report(report)
+        self.assertFalse(early["ok"])
+        self.assertEqual(early["fingerprint"], "ctas-early")
+        self.assertEqual(early["alerts"][0]["code"], "ctas-early")
+        markdown = watchdog.render_early_markdown(report, "https://example.test", "@owner")
+        self.assertTrue(markdown.startswith("**Early warning**"))
+        self.assertIn("closes itself when CTAS publishes again", markdown)
+        # on time: nothing early, and the early report closes its issue
+        fresh = watchdog.evaluate(ctas_status("2026-11-14T11:20:00Z"), None, worlds_manifest("2026-11-14T11:50:00Z"), None,
+                                  deploy(created="2026-11-14T11:30:00Z"), now=now)
+        self.assertEqual(fresh["early"], [])
+        self.assertTrue(watchdog.early_report(fresh)["ok"])
+        # the limit is configurable
+        later = watchdog.evaluate(ctas_status("2026-11-14T10:00:00Z"), None, worlds_manifest("2026-11-14T09:50:00Z"), None,
+                                  deploy(created="2026-11-14T10:05:00Z"), now=now, ctas_early_age_hours=3)
+        self.assertEqual(later["early"], [])
+
+    def test_a_lost_runner_is_counted_from_the_annotations_and_shown_in_both_issues(self):
+        now = at("2026-11-14T12:30:00Z")
+        ctas_runs = runs("success", "failure", "success", "failure", start="2026-11-14T12:00:00Z")
+        report = watchdog.evaluate(ctas_status("2026-11-14T12:10:00Z"), None, worlds_manifest("2026-11-14T11:50:00Z"), None,
+                                   deploy(created="2026-11-14T12:15:00Z"), now=now, ctas_runs=ctas_runs,
+                                   run_jobs={"1001": self.lost_jobs(), "1003": jobs()})
+        lost = report["runs"]["ctas"]["lost_runner_runs"]
+        self.assertEqual([row["id"] for row in lost], [1001])
+        self.assertEqual([row["code"] for row in report["early"]], ["ctas-runner-lost"])
+        self.assertIn("1 run of ctas-cloud.yml", report["early"][0]["message"])
+        self.assertIn("previous run died: lost runner", report["early"][0]["message"])
+        self.assertIn("telemetry-latest.txt", report["early"][0]["action"])
+        self.assertIn("1 died with a lost runner (no report)", watchdog.render_markdown(report, "https://example.test"))
+        # an ordinary failure (no annotation) is not a lost runner
+        self.assertFalse(watchdog.lost_runner(jobs()))
+        self.assertFalse(watchdog.lost_runner(None))
+
+    def test_cli_writes_the_early_report_and_markdown(self):
+        with tempfile.TemporaryDirectory(prefix="watchdog-early-") as folder:
+            folder = Path(folder)
+            (folder / "ctas.json").write_text(json.dumps(ctas_status("2026-11-14T10:00:00Z")))
+            (folder / "worlds.json").write_text(json.dumps(worlds_manifest("2026-11-14T12:00:00Z")))
+            (folder / "marker.json").write_text(json.dumps(marker("ctas-cloud.yml", "2026-11-14T10:00:00Z", "2026-11-14T09:30:00Z")))
+            result = subprocess.run([sys.executable, str(ROOT / "scripts/watchdog_freshness.py"),
+                                     "--ctas-file", str(folder / "ctas.json"), "--worldsindex-file", str(folder / "worlds.json"),
+                                     "--ctas-marker-file", str(folder / "marker.json"),
+                                     "--worldsindex-marker-file", str(folder / "marker.json"), "--raw-base", "",
+                                     "--now", "2026-11-14T12:30:00Z", "--ctas-early-age-hours", "2",
+                                     "--report", str(folder / "r.json"), "--markdown", str(folder / "r.md"),
+                                     "--early-report", str(folder / "e.json"), "--early-markdown", str(folder / "e.md")],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            early = json.loads((folder / "e.json").read_text())
+            self.assertEqual(early["fingerprint"], "ctas-early")
+            self.assertFalse(early["ok"])
+            self.assertIn("summary", early)
+            self.assertTrue((folder / "e.md").read_text().startswith("**Early warning**"))
+
+    def test_the_workflow_keeps_the_early_issue_and_reads_the_annotations(self):
+        workflow = (ROOT / ".github/workflows/freshness-watchdog.yml").read_text()
+        for needed in ('CTAS_EARLY_AGE_HOURS: "2"', 'CTAS_MAX_AGE_HOURS: "4"', '--ctas-early-age-hours "$CTAS_EARLY_AGE_HOURS"',
+                       "--early-report early.json --early-markdown early.md", "WATCHDOG_LABEL: freshness-early",
+                       "check-runs/$job/annotations", ".annotations = $notes[0]", "checks: read",
+                       "bash ../scripts/watchdog_issue.sh ../early.json ../early.md"):
+            self.assertIn(needed, workflow)
+        ctas = (ROOT / ".github/workflows/ctas-cloud.yml").read_text()
+        self.assertIn("checks: read", ctas)
 
 
 if __name__ == "__main__":

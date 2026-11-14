@@ -19,12 +19,19 @@
 # Title header for ntfy.sh, JSON {"text", "content"} for Slack and Discord incoming
 # webhooks. WATCHDOG_NOTIFY_FORMAT=text|json overrides the guess made from the URL.
 # The issue remains the record; a failed notification is reported, never fatal.
+#
+# The early-warning issue (2026-11-14) is the same helper on the report written by
+# watchdog_freshness.py --early-report: WATCHDOG_LABEL=freshness-early,
+# WATCHDOG_TITLE_PREFIX="Early warning", WATCHDOG_RECOVERED_TEXT="CTAS is publishing on time again".
 set -euo pipefail
 
 REPORT=${1:?report.json}
 MARKDOWN=${2:?report.md}
 LABEL=${WATCHDOG_LABEL:-freshness-watchdog}
 REMIND_HOURS=${WATCHDOG_REMIND_HOURS:-12}
+TITLE_PREFIX=${WATCHDOG_TITLE_PREFIX:-Publisher alert}
+RECOVERED_TEXT=${WATCHDOG_RECOVERED_TEXT:-both publishers are current again}
+LABEL_TEXT=${WATCHDOG_LABEL_TEXT:-Opened automatically when a publisher stops updating the live site}
 REPO=${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}
 
 OK=$(python3 -c 'import json,sys; print("1" if json.load(open(sys.argv[1]))["ok"] else "0")' "$REPORT")
@@ -50,8 +57,8 @@ others = sys.argv[2].replace("public site", "").replace(", ,", ",").strip(" ,")
 if "deploy-stale" in codes:
     print("Public site is not deploying" + (f" (also: {others})" if others else ""))
 else:
-    print(f"Publisher alert: {sys.argv[2]}")
-' "$REPORT" "$SUMMARY")
+    print(f"{sys.argv[3]}: {sys.argv[2]}")
+' "$REPORT" "$SUMMARY" "$TITLE_PREFIX")
 TEXT=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("summary", ""))' "$REPORT")
 
 # notify <event> <issue url>: POST the summary to WATCHDOG_NOTIFY_WEBHOOK, if set.
@@ -68,14 +75,14 @@ notify() {
 }
 
 gh label create "$LABEL" --repo "$REPO" --color D93F0B \
-  --description "Opened automatically when a publisher stops updating the live site" >/dev/null 2>&1 || true
+  --description "$LABEL_TEXT" >/dev/null 2>&1 || true
 
 OPEN=$(gh issue list --repo "$REPO" --label "$LABEL" --state open --limit 1 --json number --jq '.[0].number // empty')
 
 if [ "$OK" = "1" ]; then
   if [ -n "$OPEN" ]; then
     {
-      printf 'Recovered: both publishers are current again.\n\n'
+      printf 'Recovered: %s.\n\n' "$RECOVERED_TEXT"
       cat "$MARKDOWN"
       printf '\n<!-- watchdog-fingerprint: ok -->\n'
     } > recovery.md

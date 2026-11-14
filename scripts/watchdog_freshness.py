@@ -42,6 +42,13 @@ Three signals, in order of certainty:
    froze for 41 hours while both branches kept updating, and nothing alerted, because
    every other check read the data branches). The alert names the last successful
    deploy run and the step the newest failed deploy run failed in.
+8. Early warning (2026-11-14). CTAS normally publishes every hour or so; when it has not
+   published for ctas_early_age_hours (2 h) the report's `early` list says so, and so it
+   does for any cloud run in the last day that GitHub ended with "The hosted runner lost
+   communication with the server" (the run dies without a report or a log artifact; read
+   from the failed jobs' annotations). The workflow keeps a separate, self-closing
+   `freshness-early` issue for these (--early-report/--early-markdown); the hard alerts
+   above, and their issue, are unchanged.
 
 The script never fails the workflow on a stale release; it writes a JSON report
 and a Markdown summary, and the workflow turns those into one GitHub issue that is
@@ -95,7 +102,11 @@ DEFAULT_THRESHOLDS = {
     "token_warn_days": 10.0,
     # The public site: an alert when it lags a fresh data branch by more than this.
     "site_lag_minutes": 60.0,
+    # Early warning (item 8): CTAS older than this, below the hard limits above.
+    "ctas_early_age_hours": 2.0,
 }
+# GitHub's annotation on a job whose runner went away (2026-11-14: every other CTAS cycle).
+LOST_RUNNER_PATTERNS = ("lost communication with the server", "runner has received a shutdown signal")
 
 # The cloud workflows whose runs are read, keyed by the alert-code prefix.
 CLOUD_WORKFLOWS = {
@@ -276,6 +287,14 @@ def failed_step(run_jobs):
     return None
 
 
+def lost_runner(run_jobs):
+    """True when a run's failed jobs carry GitHub's lost-runner annotation. The workflow adds
+    the annotation messages to the `gh run view --json jobs` document as "annotations"."""
+    messages = run_jobs.get("annotations") if isinstance(run_jobs, dict) else None
+    return any(isinstance(text, str) and any(pattern in text.lower() for pattern in LOST_RUNNER_PATTERNS)
+               for text in messages or [])
+
+
 def describe_runs(runs, run_jobs, now, window_hours):
     """Reduce `gh run list --json conclusion,status,createdAt,url,databaseId` output for one
     cloud workflow (newest first) to the facts the run-result check uses.
@@ -301,6 +320,8 @@ def describe_runs(runs, run_jobs, now, window_hours):
     newest_failed = next((row for row in completed if row.get("conclusion") != "success"), None)
     streak_started = completed[streak - 1].get("createdAt") if streak else None
     jobs = (run_jobs or {}).get(str(newest_failed.get("databaseId"))) if newest_failed else None
+    lost = [{"id": row.get("databaseId"), "url": row.get("url"), "created_at": row.get("createdAt")}
+            for row in failed_in_window if lost_runner((run_jobs or {}).get(str(row.get("databaseId"))))]
     return {
         "known": True,
         "newest_conclusion": completed[0].get("conclusion"),
@@ -314,6 +335,7 @@ def describe_runs(runs, run_jobs, now, window_hours):
         "newest_failed_url": newest_failed.get("url") if newest_failed else None,
         "newest_failed_at": newest_failed.get("createdAt") if newest_failed else None,
         "failed_step": failed_step(jobs) if jobs else None,
+        "lost_runner_runs": lost,
     }
 
 
@@ -367,6 +389,43 @@ def describe_action(code, report):
         url = f" ({report['deploy']['url']})" if report["deploy"].get("url") else ""
         return f"Open the failed '{DEPLOY_WORKFLOW_NAME}' run{url}; fix or revert the commit, or re-run the last green one."
     return "See the runbook (CTAS-AUTOMATION.md, \"When an alert fires\")."
+
+
+def describe_early_action(code):
+    """What to do about an early warning (nothing urgent: it says where to look)."""
+    if code.endswith("-runner-lost"):
+        return ("Read reports/ctas-cloud/<run id>.json and reports/ctas-cloud/telemetry-latest.txt on the run-reports "
+                "branch (the dead run's last memory and disk samples, when it was under pressure), and the "
+                "\"phase ... took\" lines of the newest runs: they show which phase ran out of memory or disk.")
+    return ("Open the newest run of ctas-cloud.yml (Actions -> \"CTAS cloud collector and publisher\") and its "
+            "\"Runner resources\" summary; if it is still running, wait for it. This closes by itself when CTAS publishes.")
+
+
+def early_report(report):
+    """The early-warning view of a report, in the shape scripts/watchdog_issue.sh reads."""
+    early = report.get("early") or []
+    summary = ("\n".join(f"- {row['code']}: {row['message']}" for row in early) if early
+               else f"CTAS is publishing on time as of {report['checked_at']}.")
+    return {"checked_at": report["checked_at"], "ok": not early, "alerts": early,
+            "fingerprint": report.get("early_fingerprint", "ok"), "summary": summary}
+
+
+def render_early_markdown(report, site_url, mention=""):
+    """Markdown for the early-warning issue."""
+    early = report.get("early") or []
+    ctas = report["ctas"]
+    if not early:
+        return f"**CTAS is publishing on time** as of {report['checked_at']}.\n"
+    lines = [f"**Early warning** as of {report['checked_at']}" + (f" — {mention}" if mention else ""), ""]
+    for row in early:
+        lines.append(f"- `{row['code']}`: {row['message']}")
+        lines.append(f"  - To do: {row['action']}")
+    lines += ["", f"CTAS last published {ctas.get('last_update') or '—'} ([status]({site_url}/ctas/status.html)).", "",
+              "This issue is kept by the freshness watchdog beside the hard alert (label `freshness-watchdog`, opened at "
+              f"{report['thresholds']['cross_check_stale_hours']:g} h beside WorldsIndex or "
+              f"{report['thresholds']['ctas_max_age_hours']:g} h); it closes itself when CTAS publishes again and no "
+              "lost runner is in the last day."]
+    return "\n".join(lines) + "\n"
 
 
 def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, deploy, now=None,
@@ -530,6 +589,26 @@ def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, d
         notes.append(f"CTAS reports pipeline_status=degraded ({ctas.get('degraded_source_count')} upstream "
                      "sources); that concerns providers, not publication.")
 
+    # 8. early warning: CTAS late but within the hard limits, and runs whose runner was lost.
+    early = []
+    if ctas_age is not None and ctas_age > limits["ctas_early_age_hours"]:
+        early.append({"code": "ctas-early", "message":
+                      f"CTAS has not published for {ctas_age:g} h (last {ctas['last_update']}; early-warning limit "
+                      f"{limits['ctas_early_age_hours']:g} h, alert at {limits['cross_check_stale_hours']:g} h beside "
+                      f"WorldsIndex or {limits['ctas_max_age_hours']:g} h)."})
+    for name, workflow in CLOUD_WORKFLOWS.items():
+        lost = (runs.get(name) or {}).get("lost_runner_runs") or []
+        if lost:
+            newest = lost[0]
+            early.append({"code": f"{name}-runner-lost", "message":
+                          f"{len(lost)} run{'s' if len(lost) != 1 else ''} of {workflow['file']} in the last "
+                          f"{limits['failure_window_hours']:g} h died with a lost runner (\"The hosted runner lost "
+                          f"communication with the server\": no report, no log artifact); newest {newest.get('created_at')} "
+                          f"({newest.get('url')}). The next run reports each one on the run-reports branch as "
+                          "\"previous run died: lost runner\"."})
+    for row in early:
+        row["action"] = describe_early_action(row["code"])
+
     codes = sorted(row["code"] for row in alerts)
     report = {
         "checked_at": iso(now),
@@ -545,6 +624,8 @@ def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, d
         "markers": markers,
         "token": key or {"token_status": "not-checked"},
         "site": site,
+        "early": early,
+        "early_fingerprint": "|".join(sorted(row["code"] for row in early)) or "ok",
     }
     for row in report["alerts"]:
         row["action"] = describe_action(row["code"], report)
@@ -626,6 +707,8 @@ def render_markdown(report, site_url, mention=""):
                   f"{report['thresholds']['failure_window_hours']:g} h")
         if runs.get("failed_step"):
             detail += f"; failed step: {runs['failed_step']}"
+        if runs.get("lost_runner_runs"):
+            detail += f"; {len(runs['lost_runner_runs'])} died with a lost runner (no report)"
         lines.append(f"| Runs of {workflow['file']} | {runs.get('newest_created_at') or '—'} | — | "
                      f"{report['thresholds']['consecutive_failures']:g} in a row | {detail} |")
     if report["notes"]:
@@ -699,6 +782,8 @@ def main(argv=None):
     parser.add_argument("--mention", default="", help="GitHub @mention to put in alert text")
     parser.add_argument("--report", help="write the JSON report here")
     parser.add_argument("--markdown", help="write the Markdown summary here")
+    parser.add_argument("--early-report", help="write the early-warning report (item 8) here")
+    parser.add_argument("--early-markdown", help="write the early-warning Markdown here")
     for key, value in DEFAULT_THRESHOLDS.items():
         parser.add_argument("--" + key.replace("_", "-"), type=float, default=None,
                             help=f"default {value:g}")
@@ -762,6 +847,13 @@ def main(argv=None):
     if args.markdown:
         with open(args.markdown, "w", encoding="utf-8") as handle:
             handle.write(markdown)
+    if args.early_report:
+        with open(args.early_report, "w", encoding="utf-8") as handle:
+            json.dump(early_report(report), handle, indent=2, sort_keys=True)
+            handle.write("\n")
+    if args.early_markdown:
+        with open(args.early_markdown, "w", encoding="utf-8") as handle:
+            handle.write(render_early_markdown(report, base, args.mention))
     sys.stdout.write(markdown)
     return 0
 
