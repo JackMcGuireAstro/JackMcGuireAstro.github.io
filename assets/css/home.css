@@ -710,7 +710,7 @@ button,summary,a {
   font-size:clamp(2rem,4vw,3rem);
   margin-top:.8rem
 }
-.contact-section p:last-child {
+.contact-section h2 + p,.contact-links {
   color:#b8c9c6;
   font-size:.9rem;
   margin-top:.8rem
@@ -839,7 +839,9 @@ section[id],article[id],details[id],h4[id],a[id] {
   .section-nav-inner {
     gap:1rem;
     justify-content:space-between;
-    min-height:54px
+    min-height:54px;
+    overflow-x:auto;
+    scrollbar-width:none
   }
   .section-nav-label,.section-nav .section-contact {
     display:none
@@ -986,6 +988,14 @@ section[id],article[id],details[id],h4[id],a[id] {
     font-size:1rem
   }
 
+}
+@media(max-width:420px) {
+  .section-nav-inner {
+    gap:.55rem
+  }
+  .section-nav a {
+    gap:.25rem
+  }
 }
 @media(prefers-reduced-motion:reduce) {
   html {

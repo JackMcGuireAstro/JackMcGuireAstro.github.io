@@ -29,6 +29,6 @@
         });
       });
     }, { rootMargin: "-25% 0px -55% 0px", threshold: 0 });
-    ["research", "publications", "about", "contact"].forEach(id => observer.observe(document.getElementById(id)));
+    ["research", "publications", "about", "tools", "contact"].forEach(id => observer.observe(document.getElementById(id)));
   }
 })();
