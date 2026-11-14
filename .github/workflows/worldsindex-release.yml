@@ -248,6 +248,15 @@ jobs:
           python3 scripts/build_release_manifest.py --tree "$TREE" \
             --ctas-commit "${{ steps.overlay.outputs.ctas_commit }}" --worldsindex-commit "${{ steps.overlay.outputs.worldsindex_commit }}" \
             | tee -a "$GITHUB_STEP_SUMMARY" || echo "::warning title=Release manifest::release/manifest.json was not written"
+      # Site review B2 (2026-11-14): the build scripts and their tests are not served by any page
+      # (the release manifest lists repro/ and benchmarks/, which stay). Removed only from the
+      # copy being uploaded, after every step above that runs them.
+      - name: Leave the build scripts and tests out of the published copy
+        env:
+          TREE: ${{ steps.choose.outputs.tree }}
+        run: |
+          rm -rf "$TREE/scripts" "$TREE/tests"
+          echo "published site size without scripts/ and tests/: $(du -sh --exclude=.git "$TREE" | cut -f1)" | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
