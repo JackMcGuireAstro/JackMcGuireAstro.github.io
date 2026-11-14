@@ -632,8 +632,9 @@
   // triangles, forced photometry as squares; arithmetic lives in ctas/lightcurve-summary.js.
   // Band colours keep the usual astronomical associations (g green, r red, ATLAS o amber and
   // c blue); identity never rests on colour alone (legend, direct labels, table, band menu).
-  var BAND_COLOURS = {g: "#199e70", r: "#e66767", o: "#b38600", c: "#3987e5", i: "#9085e9", z: "#d55181", y: "#d95926", u: "#8ad5df", G: "#c3c2b7"};
-  var OTHER_BAND_COLOUR = "#a3acb9";
+  // Deeper shades since 2026-11-14: every band is at least 4:1 against the light plot.
+  var BAND_COLOURS = {g: "#17865f", r: "#d44f4f", o: "#9a7400", c: "#2f7ad4", i: "#7a6fd6", z: "#c44373", y: "#c24d1d", u: "#2b8a99", G: "#6f7268"};
+  var OTHER_BAND_COLOUR = "#6c7480";
   var lcPlots = {};
   function bandColour(band) { return BAND_COLOURS[band] || OTHER_BAND_COLOUR; }
   function dayText(days) { var value = Number(days); return (value > 0 ? "+" : value < 0 ? "−" : "") + Math.abs(value).toFixed(Math.abs(value) >= 100 ? 0 : 1); }
@@ -1476,7 +1477,12 @@
     var cached = state.cachedSnapshot;
     var localPreview = window.location.protocol === "file:";
     var validUntilMs = status.valid_until ? new Date(status.valid_until).getTime() : NaN;
-    var stale = Number.isFinite(validUntilMs) && Date.now() > validUntilMs;
+    // Site review A4 (2026-11-14): visitors read "out of date" as broken, and CTAS publishes
+    // about every 45 minutes, so the page calls a snapshot stale only once it is more than
+    // 3 hours old (status.valid_until stays in the release for machines and the watchdog).
+    var generatedMs = generated ? new Date(generated).getTime() : NaN;
+    var stale = Number.isFinite(generatedMs) ? Date.now() - generatedMs > 3 * 3600 * 1000
+      : Number.isFinite(validUntilMs) && Date.now() > validUntilMs;
     var skyHeading = document.querySelector(".ctas-console-identity h1 span");
     var liveDot = document.querySelector(".ctas-live-dot");
     if (skyHeading) skyHeading.textContent = "Sky catalog";
@@ -1503,7 +1509,7 @@
         ? "Checksums and public-file consistency · Snapshot " + esc(shortHash(assurance.content_release_id)) + "…"
         : "Checksum report available below";
     el.status.classList.toggle("is-degraded", !localPreview && (degraded || cached || stale));
-    var pipelineValue = localPreview ? "Local preview" : cached ? "Cached snapshot" : stale ? "Snapshot out of date" : degraded ? "Source limits" : "Operational";
+    var pipelineValue = localPreview ? "Local preview" : cached ? "Cached snapshot" : stale ? "Snapshot out of date" : degraded ? "Source limits" : relative(generated) ? "Updated " + relative(generated) : "Operational";
     var pipelineDetail = localPreview ? "This file is a bundled development snapshot, not the live publishing endpoint. Its age does not describe the public CTAS publisher."
       : cached ? "A live refresh failed; the last successfully loaded public snapshot remains usable."
       : stale ? "This snapshot has passed its freshness window. That alone does not establish whether the publisher is stopped, still exporting, or unable to publish."
@@ -2057,8 +2063,10 @@
     // The CTAS bar sticks below the global site header rather than underneath
     // it. The header's height changes with viewport width, so measure it
     // rather than freezing a number that is wrong on the next breakpoint.
-    var header = document.querySelector(".site-header");
-    if (!header) return;
+    // The shared site header (assets/partials/header.html) scrolls away on this
+    // page, so the bar sticks at the top (ctas.css sets the height to 0).
+    var header = document.querySelector(".jm-header");
+    if (!header || ["sticky", "fixed"].indexOf(getComputedStyle(header).position) === -1) return;
     function apply() {
       var height = Math.round(header.getBoundingClientRect().height);
       if (height > 0) {

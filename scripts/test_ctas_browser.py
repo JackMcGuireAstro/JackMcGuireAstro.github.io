@@ -905,7 +905,7 @@ class BrowserTests(unittest.TestCase):
                 self.page.evaluate("() => window.scrollTo(0, 1400)")
                 self.page.wait_for_timeout(400)
                 geometry = self.page.evaluate(
-                    "() => {const g = document.querySelector('.site-header');"
+                    "() => {const g = document.querySelector('.jm-header');"
                     "const c = document.querySelector('.ctas-navigation');"
                     "if (!g || !c) return null;"
                     "const gr = g.getBoundingClientRect(), cr = c.getBoundingClientRect();"
