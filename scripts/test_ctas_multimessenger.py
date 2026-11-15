@@ -227,10 +227,16 @@ class ReleaseTests(unittest.TestCase):
             raise unittest.SkipTest("no generated CTAS release under ctas/data")
         from ctas_chunks import decode_chunk
         manifest = json.loads(manifest_path.read_text())
+        # Only the fields these tests and gates read, one chunk decoded at a time: the whole
+        # catalog is about 7 GB decoded and does not fit beside the publisher (2026-11-15).
+        keep = ("event_id", "name", mm.CANDIDATE_KEY)
         cls.candidates = []
         for metadata in manifest["chunks"]:
             raw = (ROOT / metadata["path"]).read_bytes()
-            cls.candidates.extend(decode_chunk(raw, lambda path: (ROOT / path).read_bytes())["candidates"])
+            for row in decode_chunk(raw, lambda path: (ROOT / path).read_bytes())["candidates"]:
+                slim = {key: row[key] for key in keep if key in row}
+                cls.candidates.append(slim)
+            del raw
 
     def test_every_published_block_passes_the_gate_and_the_schema(self):
         self.assertEqual(mm.multimessenger_problems(self.candidates), [])

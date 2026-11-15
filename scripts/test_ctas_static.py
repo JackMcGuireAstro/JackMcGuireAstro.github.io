@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import csv
+import gc
 import hashlib
 import importlib.util
 import json
@@ -13,6 +14,7 @@ import tempfile
 import unittest
 import uuid
 import xml.etree.ElementTree as ET
+import zlib
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -1119,6 +1121,88 @@ class PublisherPageAllowlistTests(unittest.TestCase):
         self.write_pages(1)
         self.assertEqual(self.collect(commit=False).returncode, 0)
 
+# The complete catalog is about 2.5 GB of JSON (19,580 dossiers on 2026-11-15) and about
+# 7 GB once decoded. This suite used to hold all of it for the whole class, plus a second
+# copy and the 2.5 GB canonical string in the chunk test; on the publish runner that was
+# the step the runner guard stopped (run 43664009250, 2026-11-15). Every check that reads
+# whole dossiers now runs in ONE streaming pass in setUpClass with one chunk decoded at a
+# time, and the tests assert on what that pass recorded. The checks themselves are the
+# ones the tests made before; a failing dossier is reported by event id.
+CHECK = unittest.TestCase()
+CHECK.maxDiff = 4000
+STREAM_FAILURE_SAMPLE = 20
+PINNED_REGRESSION_EVENT_IDS = frozenset({
+    "3f55528c-f552-4513-933b-9c982b8b675f", "1a6053f4-5660-4228-ad6a-c0a2f9c553f5",
+    "2ce4c4eb-dd3a-485e-9f34-e46ba0553883", "c72e4f9e-ad8d-4573-bb15-917a911b5a6b",
+})
+
+
+def _check_follow_up_counts(candidate):
+    for key, count in candidate["follow_up_counts"].items():
+        CHECK.assertEqual(count, len(candidate.get("follow_up", {}).get(key, [])))
+    CHECK.assertEqual(candidate["follow_up_total"], sum(candidate["follow_up_counts"].values()))
+
+
+def _score_problem(candidate):
+    model = candidate["score_model"]
+    applied = [row for row in model["terms"] if row["applicable"]]
+    core = float(model["baseline"]) + sum(float(row["points"]) for row in applied)
+    expected = round(
+        max(0.0, min(100.0, max(0.0, min(100.0, core)) + float(model["multimessenger_bonus"]))), 2
+    )
+    if model["status_override"]:
+        expected = 0.0
+    if model["schema"] != EXPORTER.SCORE_METHOD_VERSION:
+        return (candidate["event_id"], "schema", model["schema"])
+    if abs(float(candidate["ctas_score"]) - expected) > float(model["tolerance"]):
+        return (candidate["event_id"], "arithmetic", candidate["ctas_score"], expected)
+    if str(candidate.get("status") or "").lower() in {"retracted", "bogus"} \
+            and candidate["ctas_score"] != 0.0:
+        return (candidate["event_id"], "terminal", candidate["ctas_score"])
+    return None
+
+
+def _check_retired_score_fields(candidate):
+    for retired in ("score_as_of", "valid_until", "evidence_age_days"):
+        CHECK.assertNotIn(retired, candidate["score_model"])
+
+
+def _check_science_brief(candidate):
+    brief = candidate["science_brief"]
+    CHECK.assertEqual(brief["schema"], "ctas.candidate-science-brief@1.0.0")
+    CHECK.assertEqual(brief, EXPORTER.science_brief_for(candidate))
+    CHECK.assertEqual(
+        {row["component_id"] for row in brief["missing_information"]},
+        {
+            row["id"] for row in candidate["record_completeness"]["components"]
+            if row["state"] in {"missing", "not-assessed"}
+        },
+    )
+    CHECK.assertTrue(brief["what_happened"]["basis_record_ids"])
+    CHECK.assertIn("does not confirm", brief["claim_boundary"])
+
+
+def _check_suggested_follow_up(candidate):
+    block = candidate["suggested_follow_up"]
+    CHECK.assertEqual(block["schema"], EXPORTER.SUGGESTED_FOLLOW_UP_SCHEMA)
+    CHECK.assertEqual(block, EXPORTER.suggested_follow_up_for(candidate))
+    CHECK.assertEqual(bool(block["objectives"]), block["eligibility"]["is_target"])
+    CHECK.assertEqual(block["cadence"]["code"] == "none", not block["objectives"])
+    CHECK.assertEqual(block["claim_boundary"], EXPORTER.SUGGESTED_FOLLOW_UP_CLAIM)
+
+
+def _check_replay_timeline(candidate):
+    timeline = candidate["evidence_timeline"]
+    CHECK.assertEqual(len({row["entry_id"] for row in timeline}), len(timeline))
+    for row in timeline:
+        CHECK.assertIn(
+            row.get("public_available_at"),
+            {row.get("provider_publication_time"), row.get("ctas_receipt_time"), None},
+        )
+        if not row.get("provider_publication_time") and not row.get("ctas_receipt_time"):
+            CHECK.assertIsNone(row.get("public_available_at"))
+
+
 class CertificateAndArtifactTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -1135,22 +1219,182 @@ class CertificateAndArtifactTests(unittest.TestCase):
         cls.manifest = json.loads((cls.data_dir / "candidate-chunks/manifest.json").read_text())
         if cls.manifest.get("schema") != EXPORTER.CANDIDATE_MANIFEST_SCHEMA:
             raise AssertionError("complete-catalog artifacts do not use the current manifest schema")
-        complete_by_id = {}
-        for metadata in cls.manifest["chunks"]:
-            raw = (ROOT / metadata["path"]).read_bytes()
-            if len(raw) != metadata["bytes"] or hashlib.sha256(raw).hexdigest() != metadata["sha256"]:
-                raise AssertionError(f"invalid candidate chunk: {metadata['path']}")
-            for candidate in EXPORTER.decode_chunk(raw, lambda path: (ROOT / path).read_bytes())["candidates"]:
-                if candidate["event_id"] in complete_by_id:
-                    raise AssertionError(f"duplicate candidate UUID: {candidate['event_id']}")
-                complete_by_id[candidate["event_id"]] = candidate
-        ordered = [complete_by_id[row["event_id"]] for row in cls.index_candidates]
-        cls.snapshot = {**cls.index, "candidates": ordered}
+        # Release-level fields; the dossiers themselves are read by _stream_catalog.
+        cls.snapshot = dict(cls.index)
         cls.universe = json.loads((cls.data_dir / "source-universe.json").read_text())
         cls.alias_index = json.loads((cls.data_dir / "alias-index.json").read_text())
         cls.research_manifest = json.loads((cls.data_dir / "research/manifest.json").read_text())
         cls.status = json.loads((cls.data_dir / "status.json").read_text())
         cls.certificate = json.loads((cls.data_dir / "certification.json").read_text())
+        cls._stream_catalog()
+
+    @classmethod
+    def _stream_catalog(cls):
+        """One pass over every chunk; at most one decoded chunk is held at a time."""
+
+        failures = {}
+
+        def run(name, candidate, check):
+            try:
+                check(candidate)
+            except Exception as exc:  # noqa: BLE001 - every failure is reported by its test
+                count, sample = failures.setdefault(name, [0, []])
+                failures[name][0] = count + 1
+                if len(sample) < STREAM_FAILURE_SAMPLE:
+                    sample.append(f"{candidate.get('event_id')}: {type(exc).__name__}: {exc}")
+
+        seen_ids = set()
+        names = set()
+        canonical = {}
+        chunk_problems = []
+        score_problems = []
+        score_clocks = set()
+        universe_versions = set()
+        all_suggested = True
+        event_only = zero_follow_up = 0
+        validate_problems = list(EXPORTER.validate({**cls.index, "candidates": []}))
+        alias_rows = []
+        buckets = set()
+        pinned = {}
+        accounting_aggregate = {
+            "applicableSourceEvaluations": 0,
+            "executedQueryReceipts": 0,
+            "dataBearingSourceEvaluations": 0,
+            "outcomeCounts": {},
+        }
+        per_source = {}
+        magnitude = {"names_with_percent": 0, "out_of_range": 0, "flagged": 0, "flagged_without_reported": 0}
+        patterns = cls.source_matrix_patterns
+        declared_sources = cls.universe["source_count"]
+
+        def source_accounting(candidate):
+            accounting = candidate["source_accounting"]
+            matrix = EXPORTER.expand_source_matrix(candidate["source_matrix"], patterns)
+            receipt_extensions = candidate["compatibility_provenance"]["receiptProvenance"]
+            CHECK.assertEqual(accounting["declaredSources"], declared_sources)
+            CHECK.assertEqual(accounting["applicableSources"], len(matrix))
+            CHECK.assertEqual(
+                accounting["executedQueryReceipts"],
+                sum(row["executionState"] == "EXECUTED" for row in receipt_extensions),
+            )
+            CHECK.assertEqual(
+                accounting["dataBearingSources"],
+                sum(int(row["retainedRecordCount"]) > 0 for row in matrix),
+            )
+            reproduced_outcomes = {}
+            for row in matrix:
+                outcome = row["currentQueryOutcome"]
+                reproduced_outcomes[outcome] = reproduced_outcomes.get(outcome, 0) + 1
+            CHECK.assertEqual(accounting["outcomeCounts"], dict(sorted(reproduced_outcomes.items())))
+            accounting_aggregate["applicableSourceEvaluations"] += accounting["applicableSources"]
+            accounting_aggregate["executedQueryReceipts"] += accounting["executedQueryReceipts"]
+            accounting_aggregate["dataBearingSourceEvaluations"] += accounting["dataBearingSources"]
+            for outcome, count in accounting["outcomeCounts"].items():
+                totals = accounting_aggregate["outcomeCounts"]
+                totals[outcome] = totals.get(outcome, 0) + count
+            # the per-source denominators in source-accounting.json
+            for row in matrix:
+                counts = per_source.setdefault(row["sourceContractId"], {"applicable_events": 0, "executed_query_receipts": 0, "data_returned_events": 0, "events_with_retained_records": 0})
+                counts["applicable_events"] += 1
+                counts["executed_query_receipts"] += int(row.get("executedReceiptCount") or 0)
+                counts["data_returned_events"] += 1 if row.get("currentQueryOutcome") == "DATA_RETURNED" else 0
+                counts["events_with_retained_records"] += 1 if int(row.get("retainedRecordCount") or 0) > 0 else 0
+
+        def read_part(path):
+            return (ROOT / path).read_bytes()
+
+        for metadata in cls.manifest["chunks"]:
+            raw = (ROOT / metadata["path"]).read_bytes()
+            if len(raw) != metadata["bytes"] or hashlib.sha256(raw).hexdigest() != metadata["sha256"]:
+                raise AssertionError(f"invalid candidate chunk: {metadata['path']}")
+            if len(raw) > EXPORTER.CANDIDATE_SHARD_TARGET_MAX_BYTES:
+                chunk_problems.append(f"{metadata['path']} is {len(raw)} bytes")
+            document = EXPORTER.decode_chunk(raw, read_part)
+            del raw
+            if document["schema"] != EXPORTER.CANDIDATE_CHUNK_SCHEMA:
+                chunk_problems.append(f"{metadata['path']} schema {document['schema']}")
+            if document["candidate_count"] != metadata["candidate_count"]:
+                chunk_problems.append(f"{metadata['path']} count {document['candidate_count']} != {metadata['candidate_count']}")
+            if document["bucket"] != Path(metadata["path"]).stem:
+                chunk_problems.append(f"{metadata['path']} names bucket {document['bucket']}")
+            candidates = document["candidates"]
+            validate_problems.extend(EXPORTER.validate({"schema_version": cls.index.get("schema_version"), "candidates": candidates}))
+            for candidate in candidates:
+                event_id = candidate["event_id"]
+                if event_id in seen_ids:
+                    raise AssertionError(f"duplicate candidate UUID: {event_id}")
+                seen_ids.add(event_id)
+                try:
+                    if str(uuid.UUID(event_id)) != event_id:
+                        chunk_problems.append(f"{event_id} is not a canonical UUID")
+                except ValueError:
+                    chunk_problems.append(f"{event_id} is not a UUID")
+                if document["bucket"] != EXPORTER.candidate_bucket(event_id):
+                    chunk_problems.append(f"{event_id} is in bucket {document['bucket']}")
+                buckets.add(EXPORTER.candidate_bucket(event_id))
+                names.add(candidate["name"])
+                # index-order reassembly for the manifest checksum, compressed (~10x)
+                canonical[event_id] = zlib.compress(EXPORTER.canonical_candidate_bytes(candidate), 1)
+                run("follow_up_counts", candidate, _check_follow_up_counts)
+                problem = None
+                try:
+                    problem = _score_problem(candidate)
+                except Exception as exc:  # noqa: BLE001
+                    problem = (event_id, type(exc).__name__, str(exc))
+                if problem:
+                    score_problems.append(problem)
+                score_clocks.add(candidate["score_model"]["score_clock"])
+                run("retired_score_fields", candidate, _check_retired_score_fields)
+                universe_versions.add(candidate["astro_evidence"]["sourceUniverseVersion"])
+                run("science_brief", candidate, _check_science_brief)
+                if "suggested_follow_up" in candidate:
+                    run("suggested_follow_up", candidate, _check_suggested_follow_up)
+                else:
+                    all_suggested = False
+                run("replay_timeline", candidate, _check_replay_timeline)
+                for alias in candidate.get("designations", []):
+                    if alias.get("designation"):
+                        alias_rows.append([
+                            event_id, str(alias.get("source_key") or ""),
+                            str(alias.get("designation") or ""), bool(alias.get("ambiguous")),
+                        ])
+                event_only += candidate["record_completeness"]["label"] == "Event record only"
+                zero_follow_up += candidate["follow_up_total"] == 0
+                run("source_accounting", candidate, source_accounting)
+                if event_id in PINNED_REGRESSION_EVENT_IDS:
+                    pinned[event_id] = candidate
+                magnitude["names_with_percent"] += "%" in candidate["name"]
+                if not (candidate.get("discovery_magnitude") is None
+                        or -30 <= float(candidate["discovery_magnitude"]) <= 40):
+                    magnitude["out_of_range"] += 1
+                if candidate.get("data_quality_flags"):
+                    magnitude["flagged"] += 1
+                    magnitude["flagged_without_reported"] += "reported_discovery_magnitude" not in candidate
+            del document, candidates
+        accounting_aggregate["outcomeCounts"] = dict(sorted(accounting_aggregate["outcomeCounts"].items()))
+        cls.stream_failures = failures
+        cls.complete_event_ids = frozenset(seen_ids)
+        cls.complete_names = frozenset(names)
+        cls.canonical_by_id = canonical
+        cls.chunk_problems = chunk_problems
+        cls.score_problems = score_problems
+        cls.score_clocks = score_clocks
+        cls.universe_versions = universe_versions
+        cls.all_suggested = all_suggested
+        cls.event_only_count = event_only
+        cls.zero_follow_up_count = zero_follow_up
+        cls.validate_problems = validate_problems
+        cls.alias_rows = alias_rows
+        cls.complete_buckets = frozenset(buckets)
+        cls.pinned_events = pinned
+        cls.accounting_aggregate = accounting_aggregate
+        cls.per_source_accounting = per_source
+        cls.magnitude_facts = magnitude
+        gc.collect()
+
+    def assertStreamCheckPassed(self, name):
+        count, sample = self.stream_failures.get(name, [0, []])
+        self.assertEqual(count, 0, f"{count} dossiers failed the {name} check; first {len(sample)}:\n" + "\n".join(sample))
 
     def test_certificate_pass_and_failure_logic(self):
         self.assertEqual(EXPORTER.certificate_status([{"passed": True}]), "verified-static-snapshot")
@@ -1542,31 +1786,11 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertNotIn("ctas/data/candidates.json", html + app)
 
     def test_follow_up_counts_reproduce_arrays(self):
-        for candidate in self.snapshot["candidates"]:
-            for key, count in candidate["follow_up_counts"].items():
-                self.assertEqual(count, len(candidate.get("follow_up", {}).get(key, [])))
-            self.assertEqual(candidate["follow_up_total"], sum(candidate["follow_up_counts"].values()))
+        self.assertStreamCheckPassed("follow_up_counts")
 
     def test_every_published_score_reconciles_and_terminal_records_are_zero(self):
-        release_clock = self.index["catalog_as_of"]
-        del release_clock
-        problems = []
-        for candidate in self.snapshot["candidates"]:
-            model = candidate["score_model"]
-            applied = [row for row in model["terms"] if row["applicable"]]
-            core = float(model["baseline"]) + sum(float(row["points"]) for row in applied)
-            expected = round(
-                max(0.0, min(100.0, max(0.0, min(100.0, core)) + float(model["multimessenger_bonus"]))), 2
-            )
-            if model["status_override"]:
-                expected = 0.0
-            if model["schema"] != EXPORTER.SCORE_METHOD_VERSION:
-                problems.append((candidate["event_id"], "schema", model["schema"]))
-            elif abs(float(candidate["ctas_score"]) - expected) > float(model["tolerance"]):
-                problems.append((candidate["event_id"], "arithmetic", candidate["ctas_score"], expected))
-            elif str(candidate.get("status") or "").lower() in {"retracted", "bogus"} \
-                    and candidate["ctas_score"] != 0.0:
-                problems.append((candidate["event_id"], "terminal", candidate["ctas_score"]))
+        self.assertIn("catalog_as_of", self.index)
+        problems = self.score_problems
         self.assertEqual(problems[:5], [], f"{len(problems)} records did not reproduce their score")
 
     def test_the_release_declares_its_local_store_exceptions(self):
@@ -1580,7 +1804,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
             self.assertEqual(len(row["unreadable_event_ids"]), row["unreadable_event_count"])
 
     def test_every_published_score_carries_one_release_clock(self):
-        references = {candidate["score_model"]["score_clock"] for candidate in self.snapshot["candidates"]}
+        references = self.score_clocks
         self.assertEqual(references, {EXPORTER.SCORE_CLOCK_REFERENCE}, "records refer to the release clock")
         clock = self.manifest["score_clock"]
         self.assertEqual(clock["schema"], EXPORTER.SCORE_CLOCK_SCHEMA)
@@ -1592,9 +1816,8 @@ class CertificateAndArtifactTests(unittest.TestCase):
         stamps = {(row["score_as_of"], row["score_valid_until"]) for row in self.index_candidates}
         self.assertEqual(stamps, {(clock["score_as_of"], clock["valid_until"])},
                          "one release computes one score clock")
-        for candidate in self.snapshot["candidates"][:200]:
-            for retired in ("score_as_of", "valid_until", "evidence_age_days"):
-                self.assertNotIn(retired, candidate["score_model"])
+        # every dossier now (the first 200 before the streaming pass)
+        self.assertStreamCheckPassed("retired_score_fields")
 
     def test_every_dossier_names_the_source_universe_definition(self):
         expected = (
@@ -1611,7 +1834,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
             "both published checksums reproduce from the published file",
         )
         self.assertEqual(
-            {candidate["astro_evidence"]["sourceUniverseVersion"] for candidate in self.snapshot["candidates"]},
+            self.universe_versions,
             {expected},
         )
 
@@ -1621,49 +1844,16 @@ class CertificateAndArtifactTests(unittest.TestCase):
             self.assertTrue(by_id[event_id]["default_leaderboard_eligible"])
 
     def test_every_science_brief_matches_completeness_and_is_claim_bounded(self):
-        for candidate in self.snapshot["candidates"]:
-            brief = candidate["science_brief"]
-            with self.subTest(event_id=candidate["event_id"]):
-                self.assertEqual(brief["schema"], "ctas.candidate-science-brief@1.0.0")
-                self.assertEqual(brief, EXPORTER.science_brief_for(candidate))
-                self.assertEqual(
-                    {row["component_id"] for row in brief["missing_information"]},
-                    {
-                        row["id"] for row in candidate["record_completeness"]["components"]
-                        if row["state"] in {"missing", "not-assessed"}
-                    },
-                )
-                self.assertTrue(brief["what_happened"]["basis_record_ids"])
-                self.assertIn("does not confirm", brief["claim_boundary"])
+        self.assertStreamCheckPassed("science_brief")
 
     def test_every_suggested_follow_up_reproduces_and_is_claim_bounded(self):
-        if not all("suggested_follow_up" in candidate for candidate in self.snapshot["candidates"]):
+        if not self.all_suggested:
             self.skipTest("this release predates ctas-suggested-follow-up.v1; the browser derives the draft")
-        for candidate in self.snapshot["candidates"]:
-            block = candidate["suggested_follow_up"]
-            with self.subTest(event_id=candidate["event_id"]):
-                self.assertEqual(block["schema"], EXPORTER.SUGGESTED_FOLLOW_UP_SCHEMA)
-                self.assertEqual(block, EXPORTER.suggested_follow_up_for(candidate))
-                self.assertEqual(bool(block["objectives"]), block["eligibility"]["is_target"])
-                self.assertEqual(block["cadence"]["code"] == "none", not block["objectives"])
-                self.assertEqual(block["claim_boundary"], EXPORTER.SUGGESTED_FOLLOW_UP_CLAIM)
+        self.assertStreamCheckPassed("suggested_follow_up")
         self.assertIn("suggested-follow-up-integrity", {gate["id"] for gate in self.certificate["gates"]})
 
     def test_replay_timeline_never_uses_observation_time_as_public_availability(self):
-        for candidate in self.snapshot["candidates"]:
-            timeline = candidate["evidence_timeline"]
-            with self.subTest(event_id=candidate["event_id"]):
-                self.assertEqual(
-                    len({row["entry_id"] for row in timeline}),
-                    len(timeline),
-                )
-                for row in timeline:
-                    self.assertIn(
-                        row.get("public_available_at"),
-                        {row.get("provider_publication_time"), row.get("ctas_receipt_time"), None},
-                    )
-                    if not row.get("provider_publication_time") and not row.get("ctas_receipt_time"):
-                        self.assertIsNone(row.get("public_available_at"))
+        self.assertStreamCheckPassed("replay_timeline")
 
     def test_source_universe_schema_and_vocabulary(self):
         self.assertEqual(self.universe["schema"], EXPORTER.SOURCE_UNIVERSE_SCHEMA)
@@ -1691,17 +1881,9 @@ class CertificateAndArtifactTests(unittest.TestCase):
                 "sha256": hashlib.sha256(alias_raw).hexdigest(),
             },
         )
-        expected = sorted([
-            [
-                candidate["event_id"], str(alias.get("source_key") or ""),
-                str(alias.get("designation") or ""), bool(alias.get("ambiguous")),
-            ]
-            for candidate in self.snapshot["candidates"]
-            for alias in candidate.get("designations", [])
-            if alias.get("designation")
-        ], key=lambda row: (row[2].casefold(), row[1].casefold(), row[0]))
+        expected = sorted(self.alias_rows, key=lambda row: (row[2].casefold(), row[1].casefold(), row[0]))
         self.assertEqual(self.alias_index["rows"], expected)
-        event_ids = {candidate["event_id"] for candidate in self.snapshot["candidates"]}
+        event_ids = self.complete_event_ids
         self.assertTrue(all(
             len(row) == 4 and row[0] in event_ids and isinstance(row[3], bool)
             for row in self.alias_index["rows"]
@@ -1808,7 +1990,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
         id_column = tom_header.index("ctas_event_id")
         type_column = tom_header.index("type")
         # Build the immutable lookup once, not once per exported target row.
-        candidate_ids = {candidate["event_id"] for candidate in self.snapshot["candidates"]}
+        candidate_ids = self.complete_event_ids
         self.assertTrue(all(
             row[type_column] == "SIDEREAL" and row[id_column] in candidate_ids
             for row in tom_rows
@@ -1829,12 +2011,12 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertIn('href="ctas/research/ctas-quickstart.ipynb"', html)
 
     def test_event_only_coverage_is_exact(self):
-        event_only = [candidate for candidate in self.snapshot["candidates"] if candidate["record_completeness"]["label"] == "Event record only"]
-        zero_follow_up = [candidate for candidate in self.snapshot["candidates"] if candidate["follow_up_total"] == 0]
-        self.assertEqual(len(event_only), len(zero_follow_up))
+        self.assertEqual(self.event_only_count, self.zero_follow_up_count)
 
     def test_public_allowlist_and_publisher_contract(self):
-        self.assertFalse(EXPORTER.validate(self.snapshot))
+        # EXPORTER.validate over the release fields and then chunk by chunk; duplicate
+        # UUIDs across chunks are refused by the streaming pass itself.
+        self.assertFalse(self.validate_problems)
         publisher = (ROOT / "scripts/publish_ctas.sh").read_text()
         self.assertNotIn("git add -- ctas/data\n", publisher)
         self.assertIn('source.execute("BEGIN")', publisher)
@@ -1949,9 +2131,6 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertEqual(self.manifest["candidate_count"], self.snapshot["candidate_count"])
         self.assertEqual(self.manifest["chunk_count"], EXPORTER.CANDIDATE_BUCKET_COUNT)
         self.assertEqual(len(self.manifest["chunks"]), EXPORTER.CANDIDATE_BUCKET_COUNT)
-        names = set()
-        event_ids = set()
-        complete_by_id = {}
         self.assertEqual(self.manifest["catalog_index"]["path"], "ctas/data/catalog-index.json")
         index_raw = self.index_raw
         self.assertEqual(len(index_raw), self.manifest["catalog_index"]["bytes"])
@@ -1960,32 +2139,19 @@ class CertificateAndArtifactTests(unittest.TestCase):
             [row["path"] for row in self.manifest["chunks"]],
             [f"ctas/data/candidate-chunks/{index:03x}.json" for index in range(EXPORTER.CANDIDATE_BUCKET_COUNT)],
         )
-        for row in self.manifest["chunks"]:
-            path = ROOT / row["path"]
-            raw = path.read_bytes()
-            self.assertEqual(len(raw), row["bytes"])
-            self.assertEqual(hashlib.sha256(raw).hexdigest(), row["sha256"])
-            self.assertLessEqual(len(raw), EXPORTER.CANDIDATE_SHARD_TARGET_MAX_BYTES)
-            document = EXPORTER.decode_chunk(raw, lambda part: (ROOT / part).read_bytes())
-            self.assertEqual(document["schema"], EXPORTER.CANDIDATE_CHUNK_SCHEMA)
-            self.assertEqual(document["candidate_count"], row["candidate_count"])
-            self.assertEqual(document["bucket"], Path(row["path"]).stem)
-            for candidate in document["candidates"]:
-                parsed = uuid.UUID(candidate["event_id"])
-                self.assertEqual(str(parsed), candidate["event_id"])
-                self.assertEqual(document["bucket"], EXPORTER.candidate_bucket(candidate["event_id"]))
-                names.add(candidate["name"])
-                self.assertNotIn(candidate["event_id"], event_ids)
-                event_ids.add(candidate["event_id"])
-                complete_by_id[candidate["event_id"]] = candidate
-        self.assertEqual(names, {row["name"] for row in self.snapshot["candidates"]})
-        self.assertEqual(names, {row["name"] for row in self.index_candidates})
-        self.assertEqual(event_ids, {row["event_id"] for row in self.snapshot["candidates"]})
-        self.assertEqual(event_ids, {row["event_id"] for row in self.index_candidates})
-        ordered = [complete_by_id[row["event_id"]] for row in self.index_candidates]
-        self.assertEqual(ordered, self.snapshot["candidates"])
+        # Bytes, checksums, size cap, chunk schema, counts, buckets, UUID form and duplicate
+        # UUIDs were checked chunk by chunk in the streaming pass.
+        self.assertEqual(self.chunk_problems, [])
+        self.assertEqual(self.complete_names, {row["name"] for row in self.index_candidates})
+        self.assertEqual(self.complete_event_ids, {row["event_id"] for row in self.index_candidates})
+        self.assertEqual(len(self.complete_event_ids), self.snapshot["candidate_count"])
+        # The dossiers reassembled in catalog-index order reproduce the manifest's checksum
+        # (canonical_candidate_list_sha256 hashes the same bytes canonical_candidate_list_bytes
+        # would hold, one dossier at a time).
         self.assertEqual(
-            hashlib.sha256(EXPORTER.canonical_candidate_list_bytes(ordered)).hexdigest(),
+            EXPORTER.canonical_candidate_list_sha256(
+                zlib.decompress(self.canonical_by_id[row["event_id"]]) for row in self.index_candidates
+            ),
             self.manifest["assembled_candidates_checksum_sha256"],
         )
 
@@ -2052,39 +2218,8 @@ class CertificateAndArtifactTests(unittest.TestCase):
             self.assertEqual(EXPORTER.git_catalog_document(ROOT, "sharded")["candidates"], ordered)
 
     def test_source_accounting_reconciles_from_every_event(self):
-        aggregate = {
-            "applicableSourceEvaluations": 0,
-            "executedQueryReceipts": 0,
-            "dataBearingSourceEvaluations": 0,
-            "outcomeCounts": {},
-        }
-        for candidate in self.snapshot["candidates"]:
-            accounting = candidate["source_accounting"]
-            matrix = EXPORTER.expand_source_matrix(
-                candidate["source_matrix"], self.source_matrix_patterns
-            )
-            receipt_extensions = candidate["compatibility_provenance"]["receiptProvenance"]
-            self.assertEqual(accounting["declaredSources"], self.universe["source_count"])
-            self.assertEqual(accounting["applicableSources"], len(matrix))
-            self.assertEqual(
-                accounting["executedQueryReceipts"],
-                sum(row["executionState"] == "EXECUTED" for row in receipt_extensions),
-            )
-            self.assertEqual(
-                accounting["dataBearingSources"],
-                sum(int(row["retainedRecordCount"]) > 0 for row in matrix),
-            )
-            reproduced_outcomes = {}
-            for row in matrix:
-                outcome = row["currentQueryOutcome"]
-                reproduced_outcomes[outcome] = reproduced_outcomes.get(outcome, 0) + 1
-            self.assertEqual(accounting["outcomeCounts"], dict(sorted(reproduced_outcomes.items())))
-            aggregate["applicableSourceEvaluations"] += accounting["applicableSources"]
-            aggregate["executedQueryReceipts"] += accounting["executedQueryReceipts"]
-            aggregate["dataBearingSourceEvaluations"] += accounting["dataBearingSources"]
-            for outcome, count in accounting["outcomeCounts"].items():
-                aggregate["outcomeCounts"][outcome] = aggregate["outcomeCounts"].get(outcome, 0) + count
-        aggregate["outcomeCounts"] = dict(sorted(aggregate["outcomeCounts"].items()))
+        self.assertStreamCheckPassed("source_accounting")
+        aggregate = self.accounting_aggregate
         self.assertEqual(self.snapshot["source_accounting"], {
             "declaredSources": self.universe["source_count"],
             **aggregate,
@@ -2095,9 +2230,10 @@ class CertificateAndArtifactTests(unittest.TestCase):
         # legitimately: AT2026zxx became SN2026zxx when TNS received its classification on
         # 2026-10-19 17:04 UTC, and a lookup by name refused every release for seven hours.
         # The name is reported, never required.
-        by_event = {row["event_id"]: row for row in self.snapshot["candidates"]}
+        by_event = self.pinned_events
 
         def pinned(event_id, former_names):
+            self.assertIn(event_id, PINNED_REGRESSION_EVENT_IDS, "the streaming pass keeps only the pinned events")
             self.assertIn(event_id, by_event, f"pinned regression event {event_id} ({'/'.join(former_names)}) is missing from the release")
             row = by_event[event_id]
             self.assertTrue(row["name"], f"pinned regression event {event_id} has no name")
@@ -2149,7 +2285,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
             self.assertEqual((len(raw), hashlib.sha256(raw).hexdigest()), (row["bytes"], row["sha256"]), row["path"])
             self.assertIn(row["path"], self.certificate["files"])
             self.assertNotIn(self.snapshot["catalog_content_checksum_sha256"].encode(), raw, "per-bucket DataLink documents carry no release clock")
-        buckets = {EXPORTER.candidate_bucket(candidate["event_id"]) for candidate in self.snapshot["candidates"]}
+        buckets = self.complete_buckets
         self.assertEqual({row["bucket"] for row in datalink_manifest["documents"]}, buckets)
         bulk = json.loads((self.data_dir / "bulk-downloads.json").read_text())
         self.assertEqual(bulk["catalog_content_checksum_sha256"], self.snapshot["catalog_content_checksum_sha256"])
@@ -2194,14 +2330,7 @@ class CertificateAndArtifactTests(unittest.TestCase):
             self.assertEqual(entry["summary"], ctas_changelog.plain_words(entry))
         # per-source accounting reproduces from the dossiers' expanded source matrices
         accounting = json.loads((ROOT / "ctas/data/source-accounting.json").read_text())
-        recomputed = {}
-        for candidate in self.snapshot["candidates"]:
-            for row in EXPORTER.expand_source_matrix(candidate["source_matrix"], self.source_matrix_patterns):
-                counts = recomputed.setdefault(row["sourceContractId"], {"applicable_events": 0, "executed_query_receipts": 0, "data_returned_events": 0, "events_with_retained_records": 0})
-                counts["applicable_events"] += 1
-                counts["executed_query_receipts"] += int(row.get("executedReceiptCount") or 0)
-                counts["data_returned_events"] += 1 if row.get("currentQueryOutcome") == "DATA_RETURNED" else 0
-                counts["events_with_retained_records"] += 1 if int(row.get("retainedRecordCount") or 0) > 0 else 0
+        recomputed = self.per_source_accounting
         by_key = {row["source_key"]: row for row in accounting["sources"]}
         self.assertEqual(set(recomputed) <= set(by_key), True)
         for key, counts in recomputed.items():
@@ -2234,8 +2363,8 @@ class CertificateAndArtifactTests(unittest.TestCase):
         self.assertEqual(set(str(p.relative_to(ROOT)) for p in (ROOT / "ctas/data/feeds").rglob("*") if p.is_file()),
                          set(feed_files) | {"ctas/data/feeds/index.json"}, "nothing but the declared feeds under feeds/")
         all_items = json.loads(feed_files["ctas/data/feeds/all-events.json"])["items"]
-        self.assertEqual(len(all_items), min(ctas_feed.FEED_ITEMS, len(self.snapshot["candidates"])))
-        event_ids = {candidate["event_id"] for candidate in self.snapshot["candidates"]}
+        self.assertEqual(len(all_items), min(ctas_feed.FEED_ITEMS, len(self.complete_event_ids)))
+        event_ids = self.complete_event_ids
         self.assertTrue(all(item["_ctas"]["event_id"] in event_ids for item in all_items))
         # the pages and the workflow that go with them
         page = (ROOT / "ctas.html").read_text()
@@ -2281,15 +2410,11 @@ class CertificateAndArtifactTests(unittest.TestCase):
         ))
 
     def test_published_magnitudes_and_names_are_safe_for_scientific_views(self):
-        candidates = self.snapshot["candidates"]
-        self.assertTrue(all("%" not in row["name"] for row in candidates))
-        self.assertTrue(all(
-            row.get("discovery_magnitude") is None or -30 <= float(row["discovery_magnitude"]) <= 40
-            for row in candidates
-        ))
-        flagged = [row for row in candidates if row.get("data_quality_flags")]
-        self.assertEqual(len(flagged), self.snapshot["statistics"]["magnitude_values_excluded"])
-        self.assertTrue(all("reported_discovery_magnitude" in row for row in flagged))
+        facts = self.magnitude_facts
+        self.assertEqual(facts["names_with_percent"], 0)
+        self.assertEqual(facts["out_of_range"], 0)
+        self.assertEqual(facts["flagged"], self.snapshot["statistics"]["magnitude_values_excluded"])
+        self.assertEqual(facts["flagged_without_reported"], 0)
 
 
 if __name__ == "__main__":

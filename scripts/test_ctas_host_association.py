@@ -246,10 +246,25 @@ class ReleaseTests(unittest.TestCase):
             raise unittest.SkipTest("no generated CTAS release under ctas/data")
         from ctas_chunks import decode_chunk
         manifest = json.loads(manifest_path.read_text())
+        # Only the fields these tests and gates read, one chunk decoded at a time: the whole
+        # catalog is about 7 GB decoded and does not fit beside the publisher (2026-11-15).
+        keep = ("event_id", "name", host.CANDIDATE_KEY)
         cls.candidates = []
         for metadata in manifest["chunks"]:
             raw = (ROOT / metadata["path"]).read_bytes()
-            cls.candidates.extend(decode_chunk(raw, lambda path: (ROOT / path).read_bytes())["candidates"])
+            for row in decode_chunk(raw, lambda path: (ROOT / path).read_bytes())["candidates"]:
+                slim = {key: row[key] for key in keep if key in row}
+                # host_problems traces ranked hosts to the dossier's retained catalogue rows;
+                # the population gate reads the light-curve feature run (ctas_population_anomaly.feature_row).
+                counterparts = (row.get("follow_up") or {}).get("catalog_counterparts")
+                if counterparts is not None:
+                    slim["follow_up"] = {"catalog_counterparts": counterparts}
+                lightcurve = row.get("lightcurve_science")
+                if isinstance(lightcurve, dict):
+                    slim["lightcurve_science"] = {"runs": [run for run in lightcurve.get("runs") or []
+                                                           if run.get("analysisType") == "lightcurve-features"]}
+                cls.candidates.append(slim)
+            del raw
         path = ROOT / population.PATH
         cls.population = json.loads(path.read_text()) if path.exists() else None
 
