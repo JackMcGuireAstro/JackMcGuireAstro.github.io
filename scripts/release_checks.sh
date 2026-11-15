@@ -24,6 +24,11 @@
 #                       deploy's runs against older candidate trees, which may predate a test)
 #   CHECK_ONLY_BLOCKING=1 record an advisory check as skipped without running it (the deploy's
 #                       fallback candidates: an advisory result cannot change which one is chosen)
+#   CHECK_TIMEOUT_SECONDS a time limit for each check's command (optional; ignored for a shell
+#                       function and where `timeout` is missing). A check that runs out of
+#                       time is stopped and recorded as failed, so an integrity check that
+#                       hangs blocks like one that fails (2026-11-15: a static suite that ran
+#                       out of memory hung a deploy for 48 minutes).
 
 check() {
   local id=$1 out rc=0 started arg
@@ -46,7 +51,19 @@ check() {
     done
   fi
   started=$(date +%s)
-  "$@" >"$out" 2>&1 || rc=$?
+  if [ -n "${CHECK_TIMEOUT_SECONDS:-}" ] && command -v timeout >/dev/null 2>&1 && ! declare -F "$1" >/dev/null; then
+    # --foreground keeps the check in the caller's process group, so the cloud runner's
+    # guard (scripts/ctas_cloud_run.sh run_guarded) still stops it with the publisher.
+    timeout --foreground --kill-after=30 "$CHECK_TIMEOUT_SECONDS" "$@" >"$out" 2>&1 || rc=$?
+    case "$rc" in
+      124) printf '\nTIMEOUT  %s did not finish within %s seconds; counted as a failure\n' \
+             "$id" "$CHECK_TIMEOUT_SECONDS" >>"$out" ;;
+      137) printf '\nKILLED  %s was killed (time limit of %s seconds, or memory); counted as a failure\n' \
+             "$id" "$CHECK_TIMEOUT_SECONDS" >>"$out" ;;
+    esac
+  else
+    "$@" >"$out" 2>&1 || rc=$?
+  fi
   [ -z "${CHECK_LOG:-}" ] || cat "$out" >>"$CHECK_LOG"
   [ "${CHECK_ECHO:-0}" != "1" ] || tail -n "${CHECK_ECHO_LINES:-200}" "$out"
   record_check "$id" "$rc" "$out" --seconds "$(( $(date +%s) - started ))"

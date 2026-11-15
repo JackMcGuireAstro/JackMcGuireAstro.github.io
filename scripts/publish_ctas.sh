@@ -712,7 +712,9 @@ for suite in scripts/test_ctas_static.py scripts/test_ctas_links.py scripts/test
              scripts/test_ctas_screens.py scripts/test_ctas_comparison.py \
              scripts/test_ctas_lightcurve_science.py scripts/test_ctas_host_association.py \
              scripts/test_ctas_multimessenger.py scripts/test_ctas_observer.py; do
-  check "ctas.$(basename "$suite" .py)" python3 "$suite" \
+  # 20 minutes each (the static suite takes about 2 since it streams the catalog): a suite
+  # that hangs is stopped and blocks the release instead of holding the runner.
+  CHECK_TIMEOUT_SECONDS=1200 check "ctas.$(basename "$suite" .py)" python3 "$suite" \
     || block "$suite failed against the generated release; nothing committed"
   phase_done "$(basename "$suite")"
 done

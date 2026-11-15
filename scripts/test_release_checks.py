@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -910,6 +911,42 @@ RELEASE_CHECKS=/nonexistent/release_checks.py check ctas.front.sky true; echo "b
                 self.assertIn(needle, done.stdout, done.stdout + done.stderr)
             rows = [json.loads(line) for line in Path(folder, "results.jsonl").read_text().splitlines()]
             self.assertEqual([row["outcome"] for row in rows], ["warn", "block", "pass", "skip", "skip", "block"])
+
+    def test_a_check_that_runs_out_of_time_blocks_like_a_failure(self):
+        """2026-11-15: a static suite that ran out of memory held a deploy for 48 minutes."""
+        if shutil.which("timeout") is None:
+            self.skipTest("timeout(1) is not installed here (macOS); the runners have it")
+        with tempfile.TemporaryDirectory(prefix="release-checks-timeout-") as folder:
+            script = f"""
+set -uo pipefail
+RELEASE_CHECKS={ROOT / 'scripts/release_checks.py'}
+CHECK_SCOPE=deploy
+CHECK_RESULTS={folder}/results.jsonl
+CHECK_DIR={folder}/out
+. {ROOT / 'scripts/release_checks.sh'}
+CHECK_TIMEOUT_SECONDS=1 check ctas.test_ctas_static sleep 20; echo "timed-out=$?"
+CHECK_TIMEOUT_SECONDS=20 check ctas.test_ctas_links true; echo "in-time=$?"
+quick() {{ true; }}
+CHECK_TIMEOUT_SECONDS=1 check ctas.test_ctas_chunks quick; echo "function=$?"
+"""
+            started = time.monotonic()
+            done = subprocess.run(["/bin/bash", "-c", script], cwd=ROOT, text=True, capture_output=True)
+            self.assertLess(time.monotonic() - started, 15, "the limit stopped the sleeping check")
+            for needle in ("timed-out=3", "in-time=0", "function=0"):
+                self.assertIn(needle, done.stdout, done.stdout + done.stderr)
+            self.assertIn("TIMEOUT  ctas.test_ctas_static did not finish within 1 seconds",
+                          Path(folder, "out", "ctas.test_ctas_static.log").read_text())
+            rows = [json.loads(line) for line in Path(folder, "results.jsonl").read_text().splitlines()]
+            self.assertEqual([row["outcome"] for row in rows], ["block", "pass", "pass"])
+        # in the caller's process group: the runner guard stops a check with the publisher
+        self.assertIn("timeout --foreground", (ROOT / "scripts/release_checks.sh").read_text())
+        publisher = (ROOT / "scripts/publish_ctas.sh").read_text()
+        self.assertIn('CHECK_TIMEOUT_SECONDS=1200 check "ctas.$(basename "$suite" .py)"', publisher)
+        workflow = (ROOT / ".github/workflows/worldsindex-release.yml").read_text()
+        step = workflow[workflow.index("- name: CTAS static release"):workflow.index("- name: CTAS published JSON")]
+        self.assertIn("timeout-minutes: 30", step)
+        self.assertIn('CHECK_TIMEOUT_SECONDS: "900"', step)
+        self.assertIn('CHECK_TIMEOUT_SECONDS="${CHECK_TIMEOUT_SECONDS:-900}"', (ROOT / "scripts/deploy_candidates.sh").read_text())
 
 
 # ============================================================================ the one fallback attempt
