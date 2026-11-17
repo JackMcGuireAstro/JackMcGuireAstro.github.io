@@ -112,13 +112,17 @@ say "checking the reviewed identity rules"
   || { tail -20 "$LOGS/reidentify.log"; say "FAIL  the identity re-linking did not match the reviewed list; nothing published or saved"; exit 1; }
 say "identity rules: $(grep -m1 -o '"outcome": "[A-Z_]*"' "$LOGS/reidentify.log" || echo 'outcome not recorded')"
 
-# Gaia DR4 (announced for 2026-12-02), fail-closed (builder packages/exonexus/gaia/dr4.ts): before
-# the release date this asks nothing; afterwards it checks one real row of each draft-contract
-# table and retrieves and cross-matches only the tables that pass. Never fatal: an older builder
-# without the command, an unreachable archive or a schema mismatch only leaves DR4 off.
+# Gaia DR4 (released 2026-12-02; the archive re-opens 12:00 CET), fail-closed (builder
+# packages/exonexus/gaia/dr4.ts, contract v2 2026-11-17): before the release this asks nothing; then
+# it checks one real row of each contracted table every cycle until one passes, retrieves only the
+# rows WorldsIndex shows as asynchronous TAP jobs within a 7-minute budget (a cycle that runs out, or
+# meets an overloaded archive, stops cleanly and the next one resumes), and writes
+# public/data/gaia-dr4.json, which the publisher below turns into worldsindex/data/gaia-dr4.json.
+# Never fatal: an older builder without the command, an unreachable archive or a schema mismatch
+# only leaves DR4 (or that table) off.
 say "checking Gaia DR4"
 (cd "$SOURCE" && timeout 600 npm run --silent gaia-dr4 -- cycle) >"$LOGS/gaia-dr4.log" 2>&1 || true
-say "gaia dr4: $(grep -m1 -o '"states":{[^}]*}\|"note":"[^"]*"' "$LOGS/gaia-dr4.log" | head -1 || echo 'not run')"
+say "gaia dr4: $(grep -m1 -o '"publish":{"state":"[A-Z_]*"' "$LOGS/gaia-dr4.log" | sed 's/.*"state"://' || echo 'not run') $(grep -m1 -o '"states":{[^}]*}\|"note":"[^"]*"\|"retrieval":{[^}]*}' "$LOGS/gaia-dr4.log" | head -1 || true)"
 
 ARGS=(--full)
 [ "$DRY_RUN" = "1" ] && ARGS+=(--dry-run)

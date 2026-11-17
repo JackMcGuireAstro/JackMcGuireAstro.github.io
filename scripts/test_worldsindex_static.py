@@ -166,6 +166,7 @@ def main() -> None:
     transit_count = check_transit_ephemerides(manifest, by_id, packaged_records)
     interop_note = check_interop_products(manifest)
     conflict_note = check_conflict_products(manifest, by_id, packaged_record_ids)
+    check_gaia_dr4(manifest, by_id)
     check_front_end(atlas)
 
     assert "object-hd-209458-b" in by_id
@@ -482,6 +483,37 @@ def check_front_end(atlas: dict) -> None:
     assert len(without_coordinates) <= 20, f"unexpectedly many objects without coordinates: {len(without_coordinates)}"
     notes = (ROOT / "WORLDSINDEX-AUTOMATION.md").read_text(encoding="utf-8")
     assert "Aladin Lite" in notes and "LGPL" in notes and "status.html" in notes, "WORLDSINDEX-AUTOMATION.md must document the sky panel, its licence and the status page"
+
+
+def check_gaia_dr4(manifest: dict, by_id: dict) -> None:
+    """Gaia DR4 (2026-11-17), optional like the other later artifacts: once declared, the file and the
+    manifest block agree, every object it names is in the atlas and points at sources the file
+    carries, every host link is listed (an AMBIGUOUS source names two or more hosts), discoveries are
+    candidates, nothing but the state is published before the release, and the only derived values are
+    the declared unit conversions."""
+    block = manifest.get("gaiaDr4")
+    if "gaia-dr4.json" not in manifest["artifacts"]:
+        assert block is None, "manifest describes Gaia DR4 but does not declare gaia-dr4.json"
+        return
+    data = json.loads((DATA / "gaia-dr4.json").read_text(encoding="utf-8"))
+    assert block and block["path"] == "gaia-dr4.json" and block["state"] == data["state"], "manifest.gaiaDr4 disagrees with gaia-dr4.json"
+    assert data["schemaVersion"] == "worldsindex-gaia-dr4.v1"
+    if data["state"] == "NOT_YET_RELEASED":
+        assert not data["sources"] and not data["objects"] and not data["discoveries"], "rows published before the release"
+    for object_id, source_ids in data["objects"].items():
+        assert object_id in by_id, f"gaia-dr4.json names {object_id}, which the atlas does not hold"
+        assert source_ids and all(source_id in data["sources"] for source_id in source_ids), object_id
+    for source_id, source in data["sources"].items():
+        assert source["sourceId"] == source_id and source["designation"] == f"Gaia DR4 {source_id}"
+        hosts = source["match"]["hosts"]
+        assert source["match"]["state"] == ("NO_KNOWN_HOST" if not hosts else "UNIQUE" if len(hosts) == 1 else "AMBIGUOUS"), source_id
+        for mass in source["masses"]:
+            calculated = mass.get("calculated")
+            assert calculated is None or "unit conversion" in calculated["method"], "only unit conversions may be calculated"
+    for source_id in data["discoveries"]:
+        source = data["sources"][source_id]
+        assert source["candidate"] or source["transit"], f"{source_id} is listed as a discovery but is neither an exoplanet nor a transit candidate"
+    assert "not a confirmed planet" in data["claimBoundary"]
 
 
 if __name__ == "__main__":

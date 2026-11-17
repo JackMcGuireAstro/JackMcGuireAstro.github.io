@@ -70,6 +70,8 @@ SCHEMA_FOR = [
     (r"^staleness\.json$", "staleness.schema.json"),
     # Framework v2 Track 4: the precomputed 30-night transit list for WIRO and Red Buttes.
     (r"^observing-windows\.json$", "observing-windows.schema.json"),
+    # 2026-11-17: Gaia DR4 (scripts/worldsindex_gaia_dr4.mjs).
+    (r"^gaia-dr4\.json$", "gaia-dr4.schema.json"),
 ]
 # Sharded record types: validated by a deterministic sample within the time budget, not in full.
 SHARDED = ("details-shard.schema.json", "conflict-sets-shard.schema.json", "derived-shard.schema.json")

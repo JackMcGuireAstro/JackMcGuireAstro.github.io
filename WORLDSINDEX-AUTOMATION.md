@@ -454,3 +454,49 @@ a known conflict, filters, export, outline, no sideways scroll, axe), and the co
 `test_worldsindex_static.py`, `test_worldsindex_interop.py` and `validate_worldsindex_schemas.py`
 (schemas `conflict-sets-shard`, `conflict-summary`, `conflict-index`, `status-exceptions`; the
 conflict shards are sampled within the same time budget as the detail shards).
+
+## Gaia DR4 (2026-11-17)
+
+Gaia DR4 is released on Wednesday 2 December 2026; the Gaia ESA Archive is down from 25 November
+12:00 CET and re-opens with DR4 at 12:00 CET (11:00 UTC). WorldsIndex picks it up on its own:
+
+- **Builder** (ExoNexus `packages/exonexus/gaia/dr4.ts`, `dr4-public.ts`, `tap.ts`,
+  `scripts/gaia-dr4.ts`; `npm run gaia-dr4 -- cycle`, called by `scripts/worldsindex_cloud_run.sh`
+  every hour). Before 11:00 UTC on 2 December it asks the archive nothing. Afterwards it checks one
+  real row of each contracted table every cycle until one passes: `gaiadr4.gaia_source` (RUWE),
+  `dr3_neighbourhood`, `nss_two_body_orbit`, `nss_masses`, `vari_planetary_transit` and
+  `gaia_exoplanet_candidates`. Table and column names come from ESA's DR4 content page and the
+  draft DR4 data model; `gaia_exoplanet_candidates` is not in the draft data model, so only its
+  `source_id` is required and its other columns are shown as Gaia gives them. A table that is absent
+  or does not match stays off; the others are used.
+- **Retrieval** is bounded to what WorldsIndex shows: the transit table and the exoplanet-candidate
+  table in full, and for the known hosts' DR4 counterparts and the candidates only their
+  `gaia_source`, `nss_two_body_orbit` and `nss_masses` rows, in IN-lists of 300. Queries run as
+  asynchronous TAP jobs within a 7-minute budget per cycle; a cycle that runs out of budget, or meets
+  an overloaded archive (HTTP 429/5xx, retried with backoff), stops cleanly and the next cycle
+  resumes, polling a job the previous cycle left running instead of resubmitting it. When every
+  query is done the rows are frozen as a dated snapshot in `data/snapshots/gaia-dr4/` (the active
+  snapshot and the one before it are kept; a few MB). A snapshot missing a table is re-checked once a
+  day for 30 days; a complete one is never asked about again.
+- **Host links.** ESA states that the DR4 source list is independent of DR3, so a known host (by
+  its Gaia DR3 source_id in the NASA PSCompPars snapshot) is linked to every DR4 source Gaia's
+  `dr3_neighbourhood` table lists for it, with Gaia's `probable_match` flag, or by position within
+  5″. An equal source_id number is never taken as identity. Two or more hosts for one DR4 source is
+  AMBIGUOUS and shown as such.
+- **Published file** `worldsindex/data/gaia-dr4.json` (schema `gaia-dr4.schema.json`; accepted by
+  `scripts/worldsindex_gaia_dr4.mjs`, which drops objects the atlas does not hold) and the
+  `manifest.gaiaDr4` block. Before the release it carries only the state.
+- **Site.** The "Gaia DR4" panel on an object's Evidence tab (`worldsindex/assets/gaia-dr4.js`),
+  absent when no DR4 source is linked; the "New in Gaia DR4" list on Discover (exoplanet and transit
+  candidates near known hosts and without one); one line on the status page. Gaia values carry
+  Gaia's column names; the only derived values are unit conversions of `nss_masses` m2 to Jupiter
+  masses, marked "calculated"; a candidate is never called a planet.
+- **Tests.** Builder: `tests/unit/gaia-dr4*.test.ts` and `tests/integration/gaia-dr4-cycle.test.ts`
+  (the cycle end to end against a local TAP stand-in: before the release, a full release, a renamed
+  column, absent tables, an archive that is down, a cycle that runs out of budget mid-job, 503s with
+  Retry-After). Site: `scripts/test_worldsindex_gaia_dr4.mjs`, `check_gaia_dr4` in
+  `test_worldsindex_static.py`, `GaiaDr4SchemaTests` in `test_worldsindex_schemas.py`.
+- **On 2 December**, read the "checking Gaia DR4" line of the WorldsIndex cloud-run log: it moves from
+  `"NOT_YET_RELEASED"` to `"WAITING_FOR_ARCHIVE"` (archive busy or tables not yet listed),
+  `"RETRIEVING"`, then `"AVAILABLE"` (or `"PARTIAL"` with the table that failed its check named in
+  the status page line).

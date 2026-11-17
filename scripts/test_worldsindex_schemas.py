@@ -76,5 +76,41 @@ class QuarantinedMonitorTests(unittest.TestCase):
         self.assertEqual(self.errors(probe), [])
 
 
+GAIA_DR4_FIXTURE = ROOT / "tests" / "fixtures" / "worldsindex" / "gaia-dr4.synthetic.json"
+
+
+class GaiaDr4SchemaTests(unittest.TestCase):
+    """gaia-dr4.schema.json against the file the ExoNexus builder wrote from SYNTHETIC stand-in tables
+    (builder tests/fixtures/gaia-dr4/standin-tables.json, 2026-11-17), and the pre-release shape."""
+
+    def setUp(self):
+        try:
+            import jsonschema  # noqa: F401
+        except ImportError:
+            self.skipTest("jsonschema is not installed")
+        self.check = validator_for("gaia-dr4.schema.json")
+        self.document = json.loads(GAIA_DR4_FIXTURE.read_text())
+
+    def errors(self, document):
+        return [f"{'/'.join(map(str, error.absolute_path))}: {error.message}" for error in self.check.iter_errors(document)]
+
+    def test_the_builder_file_validates(self):
+        self.assertEqual(self.errors(self.document), [])
+
+    def test_the_pre_release_file_validates(self):
+        document = copy.deepcopy(self.document)
+        document.update(state="NOT_YET_RELEASED", snapshot=None, sources={}, objects={}, discoveries=[])
+        self.assertEqual(self.errors(document), [])
+
+    def test_a_planet_claim_or_an_unknown_link_is_refused(self):
+        document = copy.deepcopy(self.document)
+        source = next(iter(document["sources"].values()))
+        source["match"]["hosts"].append({"hostName": "X", "planetNames": [], "link": "NAME_STRING", "objectIds": []})
+        self.assertTrue(self.errors(document))
+        document = copy.deepcopy(self.document)
+        next(iter(document["sources"].values()))["confirmedPlanet"] = True
+        self.assertTrue(self.errors(document))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

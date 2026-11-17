@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/worldsindex/schemas/gaia-dr4.schema.json",
+  "title": "worldsindex-gaia-dr4.v1",
+  "description": "worldsindex/data/gaia-dr4.json (2026-11-17): Gaia DR4 rows for the known planet hosts' DR4 counterparts and Gaia's exoplanet and planetary-transit candidates, built by the ExoNexus fail-closed adapter (a table is used only after one real DR4 row passed its contract) and accepted into the release by scripts/worldsindex_gaia_dr4.mjs. Gaia values carry Gaia's column names; the only derived values are unit conversions under `calculated`; host links are listed in full and never resolved. Before the release only the state is published.",
+  "type": "object",
+  "required": ["schemaVersion", "generatedAt", "release", "expectedReleaseAt", "state", "stateDetail", "tables", "snapshot", "policy", "archiveUrl", "claimBoundary", "counts", "sources", "objects", "discoveries"],
+  "properties": {
+    "schemaVersion": {"const": "worldsindex-gaia-dr4.v1"},
+    "generatedAt": {"$ref": "common.schema.json#/$defs/isoDateTime"},
+    "release": {"const": "Gaia DR4"},
+    "expectedReleaseAt": {"$ref": "common.schema.json#/$defs/isoDateTime"},
+    "state": {"enum": ["NOT_YET_RELEASED", "WAITING_FOR_ARCHIVE", "RETRIEVING", "AVAILABLE", "PARTIAL"]},
+    "stateDetail": {"type": "string"},
+    "adapterVersion": {"type": "string"},
+    "tables": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["key", "table", "state", "checkedAt"],
+        "properties": {
+          "key": {"enum": ["gaia_source", "dr3_neighbourhood", "nss_two_body_orbit", "nss_masses", "vari_planetary_transit", "astrometric_candidates"]},
+          "table": {"type": ["string", "null"]},
+          "state": {"enum": ["CONFIRMED", "ABSENT", "SCHEMA_MISMATCH", "NOT_YET_RELEASED", "PROBE_FAILED", "NOT_PROBED"]},
+          "checkedAt": {"type": ["string", "null"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "snapshot": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "object", "required": ["snapshotId", "retrievedAt", "tables"], "properties": {
+          "snapshotId": {"type": "string"}, "retrievedAt": {"$ref": "common.schema.json#/$defs/isoDateTime"},
+          "tables": {"type": "array", "items": {"type": "object", "required": ["key", "table", "rows", "complete"], "properties": {"key": {"type": "string"}, "table": {"type": "string"}, "rows": {"type": "integer", "minimum": 0}, "complete": {"type": "boolean"}}, "additionalProperties": false}}
+        }, "additionalProperties": false}
+      ]
+    },
+    "policy": {"type": "object", "required": ["radiusArcsec", "elevatedRuwe", "hostLink"], "properties": {"radiusArcsec": {"type": "number"}, "elevatedRuwe": {"type": "number"}, "hostLink": {"type": "string"}, "positionEpochs": {"type": "string"}}},
+    "archiveUrl": {"type": "string", "format": "uri"},
+    "claimBoundary": {"type": "string", "minLength": 20},
+    "counts": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+    "sources": {"type": "object", "additionalProperties": {"$ref": "#/$defs/source"}},
+    "objects": {"type": "object", "additionalProperties": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^\\d+$"}}},
+    "discoveries": {"type": "array", "items": {"type": "string", "pattern": "^\\d+$"}}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "num": {"type": ["number", "null"]},
+    "source": {
+      "type": "object",
+      "required": ["sourceId", "designation", "raDeg", "decDeg", "parallaxMas", "ruwe", "ruweFlag", "products", "orbits", "masses", "transit", "candidate", "match", "archiveQueryUrl"],
+      "properties": {
+        "sourceId": {"type": "string", "pattern": "^\\d+$"},
+        "designation": {"type": "string", "pattern": "^Gaia DR4 \\d+$"},
+        "raDeg": {"$ref": "#/$defs/num"}, "decDeg": {"$ref": "#/$defs/num"}, "parallaxMas": {"$ref": "#/$defs/num"}, "ruwe": {"$ref": "#/$defs/num"},
+        "ruweFlag": {"enum": ["ELEVATED_RUWE", null]},
+        "products": {"type": "array", "items": {"enum": ["astrometric_candidates", "nss_two_body_orbit", "nss_masses", "vari_planetary_transit", "gaia_source"]}},
+        "orbits": {"type": "array", "items": {"type": "object", "additionalProperties": {"type": ["number", "string", "null"]}}},
+        "masses": {"type": "array", "items": {"type": "object", "properties": {
+          "calculated": {"oneOf": [{"type": "null"}, {"type": "object", "required": ["method"], "properties": {"m2_mjup": {"$ref": "#/$defs/num"}, "m2_lower_mjup": {"$ref": "#/$defs/num"}, "m2_upper_mjup": {"$ref": "#/$defs/num"}, "method": {"type": "string"}}, "additionalProperties": false}]}
+        }}},
+        "transit": {"oneOf": [{"type": "null"}, {"type": "object", "additionalProperties": {"$ref": "#/$defs/num"}}]},
+        "candidate": {"oneOf": [{"type": "null"}, {"type": "object", "required": ["table", "fields"], "properties": {"table": {"type": "string"}, "fields": {"type": "object", "additionalProperties": {"type": "string"}}}, "additionalProperties": false}]},
+        "match": {"type": "object", "required": ["state", "hosts", "note"], "properties": {
+          "state": {"enum": ["UNIQUE", "AMBIGUOUS", "NO_KNOWN_HOST"]},
+          "note": {"type": "string"},
+          "hosts": {"type": "array", "items": {"type": "object", "required": ["hostName", "planetNames", "link", "objectIds"], "properties": {
+            "hostName": {"type": "string"}, "planetNames": {"type": "array", "items": {"type": "string"}},
+            "link": {"enum": ["DR3_NEIGHBOURHOOD", "POSITION"]},
+            "separationArcsec": {"$ref": "#/$defs/num"}, "probableMatch": {"type": ["boolean", "null"]},
+            "angularDistanceMas": {"$ref": "#/$defs/num"}, "magnitudeDifference": {"$ref": "#/$defs/num"},
+            "objectIds": {"type": "array", "items": {"type": "string"}}
+          }, "additionalProperties": false}}
+        }, "additionalProperties": false},
+        "archiveQueryUrl": {"type": "string", "pattern": "^https://gea\\.esac\\.esa\\.int/"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

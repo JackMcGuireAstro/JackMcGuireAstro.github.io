@@ -93,6 +93,8 @@ components:
       $ref: schemas/staleness.schema.json
     ObservingWindows:
       $ref: schemas/observing-windows.schema.json
+    GaiaDr4:
+      $ref: schemas/gaia-dr4.schema.json
   parameters:
     shard:
       name: shard
@@ -537,3 +539,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ObservingWindows"
+  /data/gaia-dr4.json:
+    get:
+      tags: [catalog]
+      summary: Gaia DR4 rows for known planet hosts and Gaia's exoplanet and transit candidates
+      description: Gaia DR4 (2 December 2026) values for the known hosts' DR4 counterparts (linked through Gaia's dr3_neighbourhood table or by position, never resolved) and Gaia's exoplanet and planetary-transit candidates, under Gaia's column names; a table is used only after one real DR4 row passed its contract. Before the release only the state is published.
+      operationId: getGaiaDr4
+      responses:
+        "200":
+          description: JSON.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GaiaDr4"

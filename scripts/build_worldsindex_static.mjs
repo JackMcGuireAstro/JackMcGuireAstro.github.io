@@ -16,6 +16,7 @@ import { buildConflictArtifacts, manifestBlock as conflictManifestBlock, INPUTS 
 import { buildDerivedArtifacts, manifestBlock as derivedManifestBlock } from './worldsindex_derived.mjs';
 import { buildObservingArtifacts } from './worldsindex_observing.mjs';
 import { excludeFromAtlas, manifestBlock as solarSystemManifestBlock } from './worldsindex_solar_system.mjs';
+import { acceptGaiaDr4, gaiaDr4ManifestBlock } from './worldsindex_gaia_dr4.mjs';
 
 const siteRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 // The builder's output directory; scripts/publish_worldsindex.sh sets it (no machine-specific default).
@@ -390,6 +391,19 @@ if (sourceCoverage) {
   await writeFile(join(outputRoot, 'source-coverage.json'), `${JSON.stringify(sourceCoverage, null, 2)}\n`);
   coveragePaths.push('source-coverage.json');
 }
+// Gaia DR4 (2026-11-17, builder packages/exonexus/gaia/dr4-public.ts): optional. The builder's
+// fail-closed adapter decides what is shown; here objects the atlas does not hold are dropped and
+// counted, and the file is published beside the release with a compact manifest block.
+const loadedGaiaDr4 = await readFile(join(sourceRoot, 'public/data/gaia-dr4.json'))
+  .then((bytes) => JSON.parse(bytes.toString('utf8')))
+  .catch((error) => { if (error.code === 'ENOENT') return null; throw error; });
+const gaiaDr4 = acceptGaiaDr4(loadedGaiaDr4, new Set(catalogObjects.map((object) => object.objectId)));
+if (loadedGaiaDr4 && !gaiaDr4.file) console.warn(`gaia-dr4.json ignored: ${gaiaDr4.reason}`);
+if (gaiaDr4.file) {
+  await writeFile(join(outputRoot, 'gaia-dr4.json'), `${JSON.stringify(gaiaDr4.file)}\n`);
+  coveragePaths.push('gaia-dr4.json');
+  console.log(`gaia-dr4.json: ${gaiaDr4.file.state}, ${Object.keys(gaiaDr4.file.sources).length} DR4 sources, ${Object.keys(gaiaDr4.file.objects).length} objects${gaiaDr4.dropped ? `, ${gaiaDr4.dropped} object ids not in this atlas dropped` : ''}`);
+}
 // ---- Interoperability exports (Framework v2, Track 1) ---------------------------------------
 // ECSV 1.0 and VOTable 1.5 of every public table (scripts/worldsindex_interop.mjs), gzip-
 // compressed like the JSON artifacts (Astropy and TOPCAT read .gz transparently); VOParquet
@@ -579,6 +593,8 @@ const manifest = {
   observingWindows: { path: observingArtifacts.path, nights: 30, rows: observingArtifacts.counts.rows, eligiblePlanets: observingArtifacts.counts.eligible, perSite: observingArtifacts.counts.perSite },
   // 2026-11-04 (additive): Solar System bodies and interstellar objects left out of the atlas.
   solarSystemExclusion: solarSystemManifestBlock(solarSystemObjects),
+  // 2026-11-17 (additive): Gaia DR4 (state before the release; rows once the archive confirms them).
+  gaiaDr4: gaiaDr4ManifestBlock(gaiaDr4.file, gaiaDr4.dropped),
   artifacts,
   scientificBoundary: 'Static public catalog projection. Source membership is not independent confirmation; source-composite values are not self-consistent publication solutions; catalog projections are not completeness-corrected populations.',
 };

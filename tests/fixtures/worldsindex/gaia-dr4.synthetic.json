@@ -1,0 +1,411 @@
+{
+  "schemaVersion": "worldsindex-gaia-dr4.v1",
+  "generatedAt": "2026-12-02T11:30:00.000Z",
+  "release": "Gaia DR4",
+  "expectedReleaseAt": "2026-12-02T11:00:00Z",
+  "state": "AVAILABLE",
+  "stateDetail": "Gaia DR4 is shown from every contracted table.",
+  "adapterVersion": "worldsindex-gaia-dr4-adapter.v2",
+  "tables": [
+    {
+      "key": "gaia_source",
+      "table": "gaiadr4.gaia_source",
+      "state": "CONFIRMED",
+      "checkedAt": "2026-12-02T11:30:00.000Z"
+    },
+    {
+      "key": "dr3_neighbourhood",
+      "table": "gaiadr4.dr3_neighbourhood",
+      "state": "CONFIRMED",
+      "checkedAt": "2026-12-02T11:30:00.000Z"
+    },
+    {
+      "key": "nss_two_body_orbit",
+      "table": "gaiadr4.nss_two_body_orbit",
+      "state": "CONFIRMED",
+      "checkedAt": "2026-12-02T11:30:00.000Z"
+    },
+    {
+      "key": "nss_masses",
+      "table": "gaiadr4.nss_masses",
+      "state": "CONFIRMED",
+      "checkedAt": "2026-12-02T11:30:00.000Z"
+    },
+    {
+      "key": "vari_planetary_transit",
+      "table": "gaiadr4.vari_planetary_transit",
+      "state": "CONFIRMED",
+      "checkedAt": "2026-12-02T11:30:00.000Z"
+    },
+    {
+      "key": "astrometric_candidates",
+      "table": "gaiadr4.gaia_exoplanet_candidates",
+      "state": "CONFIRMED",
+      "checkedAt": "2026-12-02T11:30:00.000Z"
+    }
+  ],
+  "snapshot": {
+    "snapshotId": "gaia-dr4-30a710857e675f77-v2",
+    "retrievedAt": "2026-12-02T11:30:00.000Z",
+    "tables": [
+      {
+        "key": "vari_planetary_transit",
+        "table": "gaiadr4.vari_planetary_transit",
+        "rows": 2,
+        "complete": true
+      },
+      {
+        "key": "astrometric_candidates",
+        "table": "gaiadr4.gaia_exoplanet_candidates",
+        "rows": 2,
+        "complete": true
+      },
+      {
+        "key": "dr3_neighbourhood",
+        "table": "gaiadr4.dr3_neighbourhood",
+        "rows": 4,
+        "complete": true
+      },
+      {
+        "key": "gaia_source",
+        "table": "gaiadr4.gaia_source",
+        "rows": 4,
+        "complete": true
+      },
+      {
+        "key": "nss_two_body_orbit",
+        "table": "gaiadr4.nss_two_body_orbit",
+        "rows": 2,
+        "complete": true
+      },
+      {
+        "key": "nss_masses",
+        "table": "gaiadr4.nss_masses",
+        "rows": 2,
+        "complete": true
+      }
+    ]
+  },
+  "policy": {
+    "radiusArcsec": 5,
+    "elevatedRuwe": 1.4,
+    "hostLink": "A known host (NASA Exoplanet Archive PSCompPars, by its Gaia DR3 source_id) is linked to every DR4 source that Gaia's dr3_neighbourhood table lists as its neighbour, with Gaia's probable_match flag; DR4 sources within the radius of the host's catalogue position are linked by position. An equal source_id number is never taken as identity.",
+    "positionEpochs": "DR4 positions are at epoch J2017.5; host positions are the catalogue's J2000 values, so separations are context for moving stars."
+  },
+  "archiveUrl": "https://gea.esac.esa.int/archive/",
+  "claimBoundary": "Gaia DR4 values are shown as the Gaia collaboration published them, under Gaia's column names. A Gaia exoplanet candidate or planetary-transit candidate is a candidate, not a confirmed planet. Links to known planet hosts come from Gaia's dr3_neighbourhood table or from position; they are context, every matching host is listed and none is chosen. Values marked \"calculated\" are unit conversions made by WorldsIndex.",
+  "counts": {
+    "sources": 5,
+    "objectsWithDr4": 4,
+    "hostLinked": 3,
+    "ambiguous": 1,
+    "exoplanetCandidates": 2,
+    "exoplanetCandidatesNearKnownHosts": 1,
+    "exoplanetCandidatesNoKnownHost": 1,
+    "transitCandidates": 2,
+    "transitCandidatesNearKnownHosts": 1,
+    "orbitSolutions": 2,
+    "massSolutions": 2,
+    "elevatedRuwe": 1
+  },
+  "sources": {
+    "1000000000000000001": {
+      "sourceId": "1000000000000000001",
+      "designation": "Gaia DR4 1000000000000000001",
+      "raDeg": 10.0002,
+      "decDeg": 20.0002,
+      "parallaxMas": 5,
+      "ruwe": 1.05,
+      "ruweFlag": null,
+      "products": [
+        "gaia_source"
+      ],
+      "orbits": [],
+      "masses": [],
+      "transit": null,
+      "candidate": null,
+      "match": {
+        "state": "AMBIGUOUS",
+        "hosts": [
+          {
+            "hostName": "Pair A",
+            "planetNames": [
+              "Pair A b"
+            ],
+            "link": "DR3_NEIGHBOURHOOD",
+            "separationArcsec": 0.988,
+            "probableMatch": true,
+            "angularDistanceMas": 40,
+            "magnitudeDifference": 0.1,
+            "objectIds": [
+              "object-pair-a-b"
+            ]
+          },
+          {
+            "hostName": "Pair B",
+            "planetNames": [
+              "Pair B b"
+            ],
+            "link": "DR3_NEIGHBOURHOOD",
+            "separationArcsec": 1.482,
+            "probableMatch": false,
+            "angularDistanceMas": 55,
+            "magnitudeDifference": 0.6,
+            "objectIds": [
+              "object-pair-b-b"
+            ]
+          }
+        ],
+        "note": "more than one known host matches; not resolved"
+      },
+      "archiveQueryUrl": "https://gea.esac.esa.int/tap-server/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=votable&QUERY=SELECT+*+FROM+gaiadr4.gaia_source+WHERE+source_id+%3D+1000000000000000001"
+    },
+    "2000000000000000002": {
+      "sourceId": "2000000000000000002",
+      "designation": "Gaia DR4 2000000000000000002",
+      "raDeg": 50,
+      "decDeg": -10,
+      "parallaxMas": 20,
+      "ruwe": 1.31,
+      "ruweFlag": null,
+      "products": [
+        "astrometric_candidates",
+        "nss_two_body_orbit",
+        "nss_masses",
+        "gaia_source"
+      ],
+      "orbits": [
+        {
+          "solution_id": "375316653866487564",
+          "solution_type": "Orbital",
+          "period": 612,
+          "period_error": 9,
+          "eccentricity": 0.12,
+          "eccentricity_error": 0.08,
+          "inclination": 45,
+          "t_periastron": 101,
+          "significance": 9.8,
+          "gof": 0.7,
+          "mass_function": null
+        }
+      ],
+      "masses": [
+        {
+          "combination_method": "ASTROSPECTROSB1_M1",
+          "m1": 0.72,
+          "m1_lower": 0.69,
+          "m1_upper": 0.75,
+          "m2": 0.0021,
+          "m2_lower": 0.0018,
+          "m2_upper": 0.0024,
+          "fluxratio": null,
+          "flag": null,
+          "exoplanet_candidate_hrd_proba": 0.88,
+          "lowmass_candidate_hrd_proba": 0.1,
+          "calculated": {
+            "m2_mjup": 2.2,
+            "m2_lower_mjup": 1.886,
+            "m2_upper_mjup": 2.514,
+            "method": "unit conversion of Gaia's m2, m2_lower and m2_upper (solar masses) to Jupiter masses with the IAU 2015 nominal ratio 1047.57; no new inference"
+          }
+        }
+      ],
+      "transit": null,
+      "candidate": {
+        "table": "gaiadr4.gaia_exoplanet_candidates",
+        "fields": {
+          "source_id": "2000000000000000002",
+          "ra": "50.0",
+          "dec": "-10.0",
+          "period": "612.0",
+          "period_error": "9.0",
+          "candidate_status": "candidate",
+          "companion_mass_estimate": "2.2"
+        }
+      },
+      "match": {
+        "state": "NO_KNOWN_HOST",
+        "hosts": [],
+        "note": "no known planet host within the radius or listed by dr3_neighbourhood"
+      },
+      "archiveQueryUrl": "https://gea.esac.esa.int/tap-server/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=votable&QUERY=SELECT+*+FROM+gaiadr4.gaia_source+WHERE+source_id+%3D+2000000000000000002"
+    },
+    "3000000000000000003": {
+      "sourceId": "3000000000000000003",
+      "designation": "Gaia DR4 3000000000000000003",
+      "raDeg": 330.79488,
+      "decDeg": 18.88432,
+      "parallaxMas": 20.15,
+      "ruwe": 0.98,
+      "ruweFlag": null,
+      "products": [
+        "vari_planetary_transit",
+        "gaia_source"
+      ],
+      "orbits": [],
+      "masses": [],
+      "transit": {
+        "transit_reference_time": 1823.5,
+        "transit_period": 3.52474859,
+        "transit_depth": 14.2,
+        "transit_duration": 0.127,
+        "num_in_transit": 12
+      },
+      "candidate": null,
+      "match": {
+        "state": "UNIQUE",
+        "hosts": [
+          {
+            "hostName": "HD 209458",
+            "planetNames": [
+              "HD 209458 b"
+            ],
+            "link": "DR3_NEIGHBOURHOOD",
+            "separationArcsec": 0.048,
+            "probableMatch": true,
+            "angularDistanceMas": 3.1,
+            "magnitudeDifference": -0.02,
+            "objectIds": [
+              "object-hd-209458-b"
+            ]
+          }
+        ],
+        "note": "one known host matches; a match is context, not confirmation"
+      },
+      "archiveQueryUrl": "https://gea.esac.esa.int/tap-server/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=votable&QUERY=SELECT+*+FROM+gaiadr4.gaia_source+WHERE+source_id+%3D+3000000000000000003"
+    },
+    "4000000000000000004": {
+      "sourceId": "4000000000000000004",
+      "designation": "Gaia DR4 4000000000000000004",
+      "raDeg": null,
+      "decDeg": null,
+      "parallaxMas": null,
+      "ruwe": null,
+      "ruweFlag": null,
+      "products": [
+        "vari_planetary_transit"
+      ],
+      "orbits": [],
+      "masses": [],
+      "transit": {
+        "transit_reference_time": 2011.1,
+        "transit_period": 1.7701,
+        "transit_depth": 21,
+        "transit_duration": 0.083,
+        "num_in_transit": 9
+      },
+      "candidate": null,
+      "match": {
+        "state": "NO_KNOWN_HOST",
+        "hosts": [],
+        "note": "no known planet host within the radius or listed by dr3_neighbourhood"
+      },
+      "archiveQueryUrl": "https://gea.esac.esa.int/tap-server/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=votable&QUERY=SELECT+*+FROM+gaiadr4.gaia_source+WHERE+source_id+%3D+4000000000000000004"
+    },
+    "4472832130942575873": {
+      "sourceId": "4472832130942575873",
+      "designation": "Gaia DR4 4472832130942575873",
+      "raDeg": 269.4486,
+      "decDeg": 4.7397,
+      "parallaxMas": 546.97,
+      "ruwe": 1.92,
+      "ruweFlag": "ELEVATED_RUWE",
+      "products": [
+        "astrometric_candidates",
+        "nss_two_body_orbit",
+        "nss_masses",
+        "gaia_source"
+      ],
+      "orbits": [
+        {
+          "solution_id": "375316653866487564",
+          "solution_type": "Orbital",
+          "period": 233.8,
+          "period_error": 1.2,
+          "eccentricity": 0.31,
+          "eccentricity_error": 0.05,
+          "inclination": 92.1,
+          "t_periastron": 12.3,
+          "significance": 14.2,
+          "gof": 1.1,
+          "mass_function": null
+        }
+      ],
+      "masses": [
+        {
+          "combination_method": "ORBITAL_M1",
+          "m1": 0.16,
+          "m1_lower": 0.15,
+          "m1_upper": 0.17,
+          "m2": null,
+          "m2_lower": 0.0009,
+          "m2_upper": 0.0015,
+          "fluxratio": 0,
+          "flag": null,
+          "exoplanet_candidate_hrd_proba": 0.93,
+          "lowmass_candidate_hrd_proba": 0.04,
+          "calculated": {
+            "m2_mjup": null,
+            "m2_lower_mjup": 0.9428,
+            "m2_upper_mjup": 1.571,
+            "method": "unit conversion of Gaia's m2, m2_lower and m2_upper (solar masses) to Jupiter masses with the IAU 2015 nominal ratio 1047.57; no new inference"
+          }
+        }
+      ],
+      "transit": null,
+      "candidate": {
+        "table": "gaiadr4.gaia_exoplanet_candidates",
+        "fields": {
+          "source_id": "4472832130942575873",
+          "ra": "269.4486",
+          "dec": "4.7397",
+          "period": "233.8",
+          "period_error": "1.2",
+          "candidate_status": "candidate",
+          "companion_mass_estimate": "1.3"
+        }
+      },
+      "match": {
+        "state": "UNIQUE",
+        "hosts": [
+          {
+            "hostName": "Barnard's star",
+            "planetNames": [
+              "Barnard b"
+            ],
+            "link": "DR3_NEIGHBOURHOOD",
+            "separationArcsec": 167.288,
+            "probableMatch": true,
+            "angularDistanceMas": 12.5,
+            "magnitudeDifference": 0.01,
+            "objectIds": [
+              "object-barnard-b"
+            ]
+          }
+        ],
+        "note": "one known host matches; a match is context, not confirmation"
+      },
+      "archiveQueryUrl": "https://gea.esac.esa.int/tap-server/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=votable&QUERY=SELECT+*+FROM+gaiadr4.gaia_source+WHERE+source_id+%3D+4472832130942575873"
+    }
+  },
+  "objects": {
+    "object-pair-a-b": [
+      "1000000000000000001"
+    ],
+    "object-pair-b-b": [
+      "1000000000000000001"
+    ],
+    "object-hd-209458-b": [
+      "3000000000000000003"
+    ],
+    "object-barnard-b": [
+      "4472832130942575873"
+    ]
+  },
+  "discoveries": [
+    "2000000000000000002",
+    "4472832130942575873",
+    "4000000000000000004",
+    "3000000000000000003"
+  ]
+}

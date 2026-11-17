@@ -2,7 +2,7 @@
  *
  * Reads only files the release already publishes (manifest.json, source-coverage.json,
  * source-monitor.json, cloud-run.json, provenance.json, bulk-downloads.json, exports/index.json,
- * changelog.json, registry.json.gz) and shows them as they are: the four denominators per source
+ * changelog.json, registry.json.gz; the Gaia DR4 block of manifest.json) and shows them as they are: the four denominators per source
  * (declared / applicable / executed / data-bearing) with each source's last retrieval attempt, the
  * provider monitor's state including a quarantine and the provider's own error text, the cloud-run
  * marker, identity counts, and links to the machine-readable description of the release. Every table
@@ -190,6 +190,19 @@ function renderExceptions(manifest, data) {
   });
 }
 
+/** Gaia DR4 (2026-11-17): one quiet line from the manifest block; nothing when the release has none. */
+async function renderGaiaDr4(manifest) {
+  const block = manifest?.gaiaDr4;
+  if (!block) return;
+  try {
+    const { statusHtml } = await import('./gaia-dr4.js?v=20261117');
+    const html = statusHtml(block);
+    if (!html) return;
+    set('gaia-dr4-status', html);
+    for (const id of ['gaia-dr4-status-title', 'gaia-dr4-status']) { const node = document.getElementById(id); if (node) node.hidden = false; }
+  } catch { /* the line is optional */ }
+}
+
 async function init() {
   const base = new URL('../', import.meta.url);
   const data = (path, options) => getJson(new URL(`data/${path}`, base), options);
@@ -197,6 +210,7 @@ async function init() {
     data('manifest.json'), data('source-coverage.json'), data('source-monitor.json'), data('cloud-run.json'), data('provenance.json'), data('bulk-downloads.json'), data('exports/index.json'), data('changelog.json'), data('registry.json.gz', { gzip: true }),
   ]);
   renderRelease(manifest, provenance, marker);
+  renderGaiaDr4(manifest);
   renderSources(coverage, registry);
   renderMonitor(monitor);
   renderIdentity(manifest);

@@ -478,6 +478,52 @@
           "additionalProperties": true
         }
       ]
+    },
+    "gaiaDr4": {
+      "description": "2026-11-17 (additive): the Gaia DR4 block (gaia-dr4.json): state before the release, rows once the archive confirms them.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "path",
+            "schemaVersion",
+            "state",
+            "stateDetail",
+            "counts"
+          ],
+          "properties": {
+            "path": {
+              "const": "gaia-dr4.json"
+            },
+            "schemaVersion": {
+              "const": "worldsindex-gaia-dr4.v1"
+            },
+            "state": {
+              "enum": [
+                "NOT_YET_RELEASED",
+                "WAITING_FOR_ARCHIVE",
+                "RETRIEVING",
+                "AVAILABLE",
+                "PARTIAL"
+              ]
+            },
+            "stateDetail": {
+              "type": "string"
+            },
+            "counts": {
+              "type": "object"
+            },
+            "droppedObjectIds": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
     }
   },
   "required": [
