@@ -569,6 +569,14 @@
    "baseline": true,
    "fallback": false
   },
+  "ctas.envelope-archive": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "old raw payloads of the high-volume photometry sources move to verified weekly release assets of the state repository (scripts/ctas_envelope_archive.py); a week that fails is left in the database",
+   "fallback": false
+  },
   "ctas.state-size": {
    "class": "advisory",
    "scopes": [
@@ -798,6 +806,13 @@
    ],
    "what": "scripts/test_ctas_cloud_state.py (operations tooling; cannot change deployed bytes)",
    "baseline": true
+  },
+  "ops.ctas_envelope_archive": {
+   "class": "advisory",
+   "scopes": [
+    "deploy"
+   ],
+   "what": "scripts/test_ctas_envelope_archive.py (operations tooling; cannot change deployed bytes)"
   },
   "ops.ctas_db_retention": {
    "class": "advisory",

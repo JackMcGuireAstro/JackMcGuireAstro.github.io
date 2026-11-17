@@ -147,6 +147,10 @@ jobs:
           CTAS_MEM_FLOOR_MB: ${{ vars.CTAS_MEM_FLOOR_MB || '' }}
           CTAS_PUBLISH_MIN_FREE_MB: ${{ vars.CTAS_PUBLISH_MIN_FREE_MB || '' }}
           CTAS_SWAP_GB: ${{ vars.CTAS_SWAP_GB || '' }}
+          # Envelope archive (scripts/ctas_envelope_archive.py): CTAS_ENVELOPE_ARCHIVE=0 turns it
+          # off; CTAS_ENVELOPE_ARCHIVE_WEEKS weeks at most per run (default 2).
+          CTAS_ENVELOPE_ARCHIVE: ${{ vars.CTAS_ENVELOPE_ARCHIVE || '1' }}
+          CTAS_ENVELOPE_ARCHIVE_WEEKS: ${{ vars.CTAS_ENVELOPE_ARCHIVE_WEEKS || '' }}
           # Named in fallback-active and release-blocked issues so they reach email.
           RELEASE_ISSUE_MENTION: "@JackMcGuireAstro"
         run: bash site/scripts/ctas_cloud_run.sh

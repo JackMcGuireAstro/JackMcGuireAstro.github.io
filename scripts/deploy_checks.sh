@@ -180,7 +180,7 @@ group_browser() {
 
 group_tooling() {
   local name
-  for name in watchdog_freshness cloud_run_marker publisher_housekeeping ctas_db_retention data_branch \
+  for name in watchdog_freshness cloud_run_marker publisher_housekeeping ctas_db_retention ctas_envelope_archive data_branch \
               ctas_cloud_state worldsindex_cloud_state release_checks run_report release_issues release_commit verify_live; do
     check "ops.$name" python3 "scripts/test_$name.py"
   done

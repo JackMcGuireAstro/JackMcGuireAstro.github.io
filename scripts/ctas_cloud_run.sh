@@ -412,7 +412,11 @@ export SKYMAP_ARTIFACT_DIR="$DATA/skymaps"
 mkdir -p "$SKYMAP_ARTIFACT_DIR"
 set_phase collect
 say "starting the collector"
-( cd "$BACKEND" && exec supernova-ops api --host 127.0.0.1 --port "$PORT" ) >"$LOGS/collector.log" 2>&1 &
+# Archived envelope payloads (scripts/ctas_envelope_archive.py) are fetched on demand by the
+# collector's reader into a cache that is not saved; nothing in the cycle normally needs one.
+( cd "$BACKEND" && CTAS_ENVELOPE_ARCHIVE_TOKEN="$STATE_TOKEN" CTAS_ENVELOPE_ARCHIVE_DIR="$WORK/envelope-archive-cache" \
+    CTAS_ENVELOPE_ARCHIVE_REPO="${CTAS_STATE_REPO:-JackMcGuireAstro/ctas-state}" \
+    exec supernova-ops api --host 127.0.0.1 --port "$PORT" ) >"$LOGS/collector.log" 2>&1 &
 COLLECTOR_PID=$!
 ready=0
 for i in $(seq 1 600); do
@@ -573,6 +577,26 @@ python3 "$SITE/scripts/ctas_source_health.py" --db "$DATA/soc.db" >"$LOGS/source
 # reference file cites. Source data is never touched. The sizes go to the run log so the
 # trend is visible run by run.
 RAW_BEFORE=$(stat -c %s "$DATA/soc.db" 2>/dev/null || echo 0)
+# Old raw payloads of the five high-volume photometry sources move to weekly assets of the
+# state release (scripts/ctas_envelope_archive.py, 2026-11-16): at most
+# CTAS_ENVELOPE_ARCHIVE_WEEKS weeks a run, each one uploaded, downloaded again and verified
+# before any row changes; the collector reads them back on demand. Source data is never
+# lost; a week that cannot be archived leaves the database as it was (advisory check
+# ctas.envelope-archive). Not in dry runs.
+# Only once the collector can read archived payloads (its envelope_archive.py).
+if [ "$DRY_RUN" != "1" ] && [ "${CTAS_ENVELOPE_ARCHIVE:-1}" = "1" ] \
+   && [ -f "$BACKEND/src/supernova_watch/envelope_archive.py" ]; then
+  ARCHIVE_STATUS=0
+  # Time limit: an interrupted week rolls back (SQLite journal); nothing half-archived stays.
+  GH_TOKEN="$STATE_TOKEN" timeout --foreground "${CTAS_ENVELOPE_ARCHIVE_TIMEOUT:-1500}" python3 "$SITE/scripts/ctas_envelope_archive.py" run --db "$DATA/soc.db" \
+    --work "$WORK/envelope-archive" --report "$WORK/envelope-archive.json" >"$LOGS/envelope-archive.log" 2>&1 || ARCHIVE_STATUS=$?
+  grep -E '^(archived|archive moved|nothing to archive|WARN|FAIL)' "$LOGS/envelope-archive.log" | sed 's/^/envelope archive: /' || true
+  [ "$ARCHIVE_STATUS" -eq 0 ] || say "WARN  the envelope archive step failed (exit $ARCHIVE_STATUS); see envelope-archive.log"
+  rm -rf -- "$WORK/envelope-archive"
+  CHECK_SECRET_ENV="$SECRET_ENV" CHECK_SECRET_FILE="$BACKEND/.env" python3 "$SITE/scripts/release_checks.py" record --scope ctas-publish \
+    --id ctas.envelope-archive --exit-code "$ARCHIVE_STATUS" --output "$LOGS/envelope-archive.log" \
+    --results "$CHECKS_MAIN" || true
+fi
 python3 "$SITE/scripts/ctas_db_retention.py" daily --db "$DATA/soc.db" >"$LOGS/retention.log" 2>&1 \
   && say "trimmed superseded derived records" || say "database retention skipped this cycle (see retention.log)"
 grep -E '^.*(prune|deleted|database [0-9])' "$LOGS/retention.log" | sed 's/^/retention: /' || true

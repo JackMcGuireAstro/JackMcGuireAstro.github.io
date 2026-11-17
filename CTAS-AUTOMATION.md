@@ -24,7 +24,9 @@ and the last real run started more than 75 minutes ago. Each cycle:
    `ctas-data` while the collector keeps running, exactly as on the Mac, with
    `DATA_BRANCH_DISPATCHER=0` because an Actions token may not push workflow files;
    the run then starts "Validate and deploy site" itself.
-4. The collector stops cleanly, `scripts/ctas_db_retention.py daily` trims superseded
+4. The collector stops cleanly, `scripts/ctas_envelope_archive.py run` moves old raw
+   payloads of the high-volume photometry alerts into weekly assets of the state release
+   (see "Alert-envelope archive" below), `scripts/ctas_db_retention.py daily` trims superseded
    derived records (as the Mac's daily job did), and `ctas_cloud_state.py save` checkpoints the
    database, requires `PRAGMA quick_check` = ok, uploads a new copy and keeps the
    newest three plus one per day for the two days before. A damaged or failed copy
@@ -274,6 +276,55 @@ every removed row to gzip NDJSON first and compacts the file (run with the backe
 stopped); `daily` prunes in small batches while the backend runs and reclaims pages
 with incremental vacuum. The publisher checks its optional `CTAS_MIN_INTERVAL`
 floor before taking the frozen database snapshot, so a waiting run never takes one.
+
+## Alert-envelope archive
+
+Since 2026-11-16 the raw JSON of photometry alerts from the five high-volume sources
+(`ztf-alerce`, `atlas`, `rubin-fink`, `rubin-lasair`, `ztf-irsa-release`) leaves the
+working database once its ISO week of receipt ended at least 14 days ago. Each such
+payload is about 3 KB, so SQLite fit one row per 4 KB page and these rows were most of
+the file; nothing in the cloud cycle reads them after the first days (the exporter reads
+raw payloads only of TNS and GCN, which are never archived).
+
+`scripts/ctas_envelope_archive.py run` (retention phase, never in dry runs, at most
+`CTAS_ENVELOPE_ARCHIVE_WEEKS` weeks per run, default 2, under a 25-minute limit):
+
+1. writes the week's payloads, verbatim, to `envelopes-<ISO year>-W<week>.ndjson.zst`
+   (one line per envelope: id, sha256, the exact stored text);
+2. checks the file, uploads it to release `state` of the state repository under a name
+   that is not there yet (a later batch of the same week gets `-p2`, `-p3` ...; nothing
+   ever replaces or deletes an archive asset; `ctas_cloud_state.py` only manages
+   `soc-*` copies);
+3. downloads it again, compares its sha256, decompresses it and verifies every payload;
+4. in one transaction replaces each row's `raw_payload` with a pointer
+   `{"ctas_archived_payload": {"schema", "asset", "sha256", "bytes"}}`, each update
+   conditioned on the row holding exactly the text that came back from the release. Any
+   mismatch rolls the whole week back; the database is unchanged for that week;
+5. rebuilds the file (`VACUUM`), because rows that shrink in place give no space back.
+
+Measured on the 2026-11-08 database (5.55 GB raw, 691 MB compressed): archiving every
+week older than 14 days and compacting gave 4.60 GB / 534 MB; archiving all of it,
+3.59 GB / 512 MB. Most of the compressed gain is the compaction (VACUUM alone: 547 MB):
+the payloads compress about 12 to 1, so in the compressed copy they were only about
+70 bytes per row, while the ids and checksums that stay in every row barely compress.
+The archive therefore mostly saves raw size (about 3.4 KB per photometry row, roughly
+50 MB a day: disk, restore and copy time); the compressed copy still grows by roughly
+11-12 MB a day, and the GitHub limit of 2 GiB per release file is reached in months, not
+years, unless the saved copy is split into parts.
+
+Every other column stays (ids, checksums, times, rights), so counts, receipts and the
+exporter's joins are unchanged. The collector reads an archived payload through
+`supernova_watch/envelope_archive.py`: `AlertEnvelope.raw_payload` and the raw-SQL
+readers fetch the asset on demand (`CTAS_ENVELOPE_ARCHIVE_TOKEN`, cache in
+`CTAS_ENVELOPE_ARCHIVE_DIR`), check the payload's sha256 and byte count, and return the
+identical text; when it cannot be fetched they raise `ArchivedPayloadUnavailable`, never
+an empty payload. Restores never need the archives.
+
+The run log has `envelope archive:` lines (weeks, payloads, MB moved, database size
+before and after, weeks still pending); the advisory check `ctas.envelope-archive` opens
+a check-warning issue when a week could not be archived. `ctas_envelope_archive.py
+status --db soc.db` lists archived and kept payloads per week. Repository variable
+`CTAS_ENVELOPE_ARCHIVE=0` turns the step off (nothing else changes).
 
 ## Freshness watchdog
 
