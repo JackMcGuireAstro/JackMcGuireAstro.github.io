@@ -610,9 +610,10 @@ else
   STATE_SIZE_REPORT="$WORK/state-size.json" GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/ctas_cloud_state.py" save "$DATA" \
     >"$LOGS/save.log" 2>&1 || SAVE_STATUS=$?
   cat "$LOGS/save.log"
-  # The compressed size against GitHub's 2 GiB asset limit, as the advisory check
-  # ctas.state-size: a check-warning issue above 1.4 GiB that closes itself once the size is
-  # back under it; above 1.9 GiB the copy is not uploaded (the previous state is kept).
+  # The size as the advisory check ctas.state-size ("state growing"): a check-warning issue
+  # above 1.4 GiB compressed that closes itself once the size is back under it. The copy is
+  # saved in parts below GitHub's 2 GiB file limit (since 2026-11-16); it is refused only above
+  # 20 GiB raw, against the runner's disk (the previous state is then kept).
   if [ -s "$WORK/state-size.json" ]; then
     SIZE_VERDICT=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["verdict"])' "$WORK/state-size.json" 2>/dev/null || echo ok)
     CHECK_SECRET_ENV="$SECRET_ENV" CHECK_SECRET_FILE="$BACKEND/.env" python3 "$SITE/scripts/release_checks.py" record --scope ctas-publish \
@@ -622,9 +623,9 @@ else
 fi
 sync_issues
 if [ "$SAVE_STATUS" -eq 4 ]; then
-  say "FAIL  STATE TOO LARGE: the database was not saved (over 1.9 GiB compressed); the previous state is kept and CTAS keeps publishing from it. Trim it: see save.log and scripts/ctas_db_retention.py"
-  echo "::error title=CTAS state too large::the collector database was not saved (over 1.9 GiB compressed); the previous state is kept. See the run log."
-  [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '\n## STATE TOO LARGE\n\nThe collector database was not saved: its compressed copy is over 1.9 GiB (GitHub refuses release assets of 2 GiB). The previous state is kept and CTAS keeps publishing from it, but each cycle'"'"'s new data is lost until the database is trimmed.\n' >>"$GITHUB_STEP_SUMMARY"
+  say "FAIL  STATE TOO LARGE: the database was not saved (over the raw-size line for the runner's disk, CTAS_STATE_REFUSE_RAW_GIB); the previous state is kept and CTAS keeps publishing from it. Trim it: see save.log, scripts/ctas_db_retention.py and scripts/ctas_envelope_archive.py"
+  echo "::error title=CTAS state too large::the collector database was not saved (over the raw-size line for the runner's disk); the previous state is kept. See the run log."
+  [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '\n## STATE TOO LARGE\n\nThe collector database was not saved: it is over the raw-size line (CTAS_STATE_REFUSE_RAW_GIB, 20 GiB by default; a cycle needs about three times the raw size on the runner'"'"'s disk). The previous state is kept and CTAS keeps publishing from it, but each cycle'"'"'s new data is lost until the database is trimmed.\n' >>"$GITHUB_STEP_SUMMARY"
   exit 1
 fi
 [ "$SAVE_STATUS" -eq 0 ] || { say "FAIL  could not save the database; the previous state is kept"; exit 1; }

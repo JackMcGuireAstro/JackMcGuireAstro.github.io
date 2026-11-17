@@ -17,7 +17,10 @@ and the last real run started more than 75 minutes ago. Each cycle:
 
 1. `scripts/ctas_cloud_state.py restore` downloads the collector's database and
    fixed input files from the private repository `JackMcGuireAstro/ctas-state`
-   (release `state`: `static-inputs.tar.gz` and `soc-<UTC stamp>.db.zst`, zstd since 2026-11-08; older `.db.gz` copies still restore).
+   (release `state`: `static-inputs.tar.gz` and the newest complete database copy: since
+   2026-11-16 a set `soc-<UTC stamp>.parts.json` plus `soc-<UTC stamp>.db.zst.part-000` ...,
+   every part, the joined stream and the database checked against the manifest; older
+   single-file `.db.zst` / `.db.gz` copies still restore; see "State copies in parts").
 2. The collector (`supernova-ops api`, code from the same private repository,
    settings from the `CTAS_BACKEND_ENV` secret) gathers alerts for 15 minutes.
 3. `scripts/publish_ctas.sh` builds, verifies and publishes a release to
@@ -28,9 +31,9 @@ and the last real run started more than 75 minutes ago. Each cycle:
    payloads of the high-volume photometry alerts into weekly assets of the state release
    (see "Alert-envelope archive" below), `scripts/ctas_db_retention.py daily` trims superseded
    derived records (as the Mac's daily job did), and `ctas_cloud_state.py save` checkpoints the
-   database, requires `PRAGMA quick_check` = ok, uploads a new copy and keeps the
-   newest three plus one per day for the two days before. A damaged or failed copy
-   never replaces the last good one.
+   database, requires `PRAGMA quick_check` = ok, saves it as a set of parts (checked before
+   and after the upload) and keeps the newest three copies plus one per day for the two days
+   before. A damaged, failed or half-uploaded copy never replaces the last good one.
 
 Secrets: `CTAS_STATE_TOKEN` (the owner's `gh` sign-in key; fine-grained keys could not
 see the new private repository) and `CTAS_BACKEND_ENV`; the relay holds the same key as
@@ -309,8 +312,8 @@ the payloads compress about 12 to 1, so in the compressed copy they were only ab
 70 bytes per row, while the ids and checksums that stay in every row barely compress.
 The archive therefore mostly saves raw size (about 3.4 KB per photometry row, roughly
 50 MB a day: disk, restore and copy time); the compressed copy still grows by roughly
-11-12 MB a day, and the GitHub limit of 2 GiB per release file is reached in months, not
-years, unless the saved copy is split into parts.
+11-12 MB a day. GitHub's limit of 2 GiB per release file no longer applies since the copy
+is saved in parts (next section); what bounds the state now is the runner's disk.
 
 Every other column stays (ids, checksums, times, rights), so counts, receipts and the
 exporter's joins are unchanged. The collector reads an archived payload through
@@ -325,6 +328,49 @@ before and after, weeks still pending); the advisory check `ctas.envelope-archiv
 a check-warning issue when a week could not be archived. `ctas_envelope_archive.py
 status --db soc.db` lists archived and kept payloads per week. Repository variable
 `CTAS_ENVELOPE_ARCHIVE=0` turns the step off (nothing else changes).
+
+## State copies in parts
+
+GitHub refuses a release asset of 2 GiB or more. Until 2026-11-16 the saved database was
+one asset, and the save was refused above 1.9 GiB compressed, which at about 12 MB a day
+would have been reached in February or March 2027. Since then `ctas_cloud_state.py save`
+writes each copy as a set:
+
+- `soc-<UTC stamp>.db.zst.part-000`, `-part-001` ...: the zstd stream cut into parts of
+  `CTAS_STATE_PART_GIB` (1.5 GiB), written straight from the compressor, never held in memory;
+- `soc-<UTC stamp>.parts.json` (`ctas.state-parts@1`): every part's name, size and sha256,
+  the whole stream's sha256 and size, and the database's sha256 and size.
+
+Save checks that the joined parts decompress to exactly the checked database, uploads the
+parts and then the manifest, checks that every one arrived with its size (a set without its
+manifest is never current), and for the first set in the release downloads it again and
+checks it part by part. Only then are older copies deleted; a set is kept or deleted as one
+copy, and parts of an interrupted save are removed by the next save. Restore takes the
+newest complete set (manifest present, every part present with its size), checks every
+part, the joined stream and the restored database against the manifest, and stops on any
+mismatch rather than fall back silently (a newer incomplete set is reported and skipped).
+Single-file copies saved before 2026-11-16 still restore.
+
+Size guard. `ctas.state-size` is now an early signal, "state growing": a check-warning
+issue above 1.4 GiB compressed (`CTAS_STATE_WARN_GIB`), the copy is still saved. The save is
+refused (exit 4, "STATE TOO LARGE", the previous copy stays current) only above 20 GiB raw
+(`CTAS_STATE_REFUSE_RAW_GIB`), set against the runner's disk: a cycle needs about three
+times the raw size at its peak (the database, plus the temporary copy and journal when the
+envelope archive compacts it), and the hosted runner had about 84 GiB free at setup and
+72 GiB during publish (telemetry 2026-11-15, after the 8 GiB swap file), so 20 GiB raw keeps
+a margin of about 10 GiB. The restore drill (`scripts/state_restore_drill.py --ctas
+soc-....parts.json`, parts beside it) checks a set the same way.
+
+Projection (2026-11-16, measured growth 115 MB a day raw and 12.6 MB a day compressed;
+with the envelope archive about 67 MB a day raw): the raw database, about 6.2 GB now, drops
+to about 4.5-5 GB once the archive has caught up (about 7 runs), then reaches the 20 GiB line
+around the end of July 2027 (around early April 2027 without the archive). Before that nothing else binds:
+compressing, checking and uploading a 20 GiB database takes a few minutes per cycle
+(5.5 GB: 48 s to compress into parts, 14 s to check the join, 18 s to restore, under 100 MB
+of memory, on 2 cores), and the exporter's time and memory follow the number of
+candidates, not the size of the database. When the line comes near, compacting with
+`VACUUM INTO` (one temporary copy instead of a copy plus a journal) would lift it to about
+30 GiB, or old observations can be archived the way the envelope payloads are.
 
 ## Freshness watchdog
 

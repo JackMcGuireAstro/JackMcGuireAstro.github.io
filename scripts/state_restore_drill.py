@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 """Backup-and-restore drill for the two saved state archives (Track 7, gate 9).
 
-Both systems keep their working state as one GitHub Release asset that every cloud run
-restores and saves: CTAS `soc-<time>.db.zst` or `.db.gz` (the collector's SQLite database) in
-JackMcGuireAstro/ctas-state, WorldsIndex `wi-state-<time>.tar.gz` (the builder's snapshots,
-outputs and database) in JackMcGuireAstro/worldsindex-state. The drill restores an archive
+Both systems keep their working state as GitHub Release assets that every cloud run
+restores and saves: CTAS `soc-<time>.parts.json` with its parts `soc-<time>.db.zst.part-NNN`
+(since 2026-11-16; scripts/ctas_cloud_state.py) or a single `soc-<time>.db.zst` / `.db.gz`
+(earlier copies) for the collector's SQLite database in JackMcGuireAstro/ctas-state, and
+WorldsIndex `wi-state-<time>.tar.gz` (the builder's snapshots, outputs and database) in
+JackMcGuireAstro/worldsindex-state. The drill restores an archive
 into a fresh, empty directory the way the cloud runner does and checks that what comes back
 is usable, without touching anything else:
 
-  CTAS        decompress (or, for an already decompressed copy, open it read-only with
+  CTAS        for a set (give the manifest; its parts beside it): every part's size and
+              sha256, the joined stream's sha256 and the restored database's sha256 against
+              the manifest; then, as for a single copy:
+              decompress (or, for an already decompressed copy, open it read-only with
               ?mode=ro&immutable=1, never writable), SQLite quick_check, every table the
               exporter reads present, the six append-only/immutable triggers present, row
               counts of the evidence tables, latest record times, and, when a published
@@ -17,7 +22,7 @@ is usable, without touching anything else:
               every ACTIVE snapshot pointer resolving to a snapshot directory with its
               manifest, the size against the 1 GiB target and 2 GiB hard limit.
 
-  python3 scripts/state_restore_drill.py --ctas soc-....db.gz [--ctas-status ctas/data/status.json] \\
+  python3 scripts/state_restore_drill.py --ctas soc-....parts.json|soc-....db.zst [--ctas-status ctas/data/status.json] \\
       [--worldsindex wi-state-....tar.gz] --report benchmarks/recovery/drill-<date>.json
 
 Exit status 0 when every check that ran passed, 1 otherwise. Nothing is uploaded or changed.
@@ -63,7 +68,23 @@ def check(results: list, name: str, ok: bool, detail) -> None:
 def drill_ctas(archive: Path, status_path: Path | None, work: Path) -> dict:
     results: list = []
     started = time.monotonic()
-    if archive.suffix == ".gz":
+    if archive.name.endswith(".parts.json"):   # a set saved in parts (2026-11-16)
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import ctas_cloud_state as state
+        target = work / "soc.db"
+        try:
+            manifest = state.read_manifest(archive)
+            state.restore_set(archive.parent, manifest, target)
+            set_ok, set_detail = True, {"parts": len(manifest["parts"]), "bytes": manifest["bytes"]}
+        except (RuntimeError, OSError, ValueError) as error:
+            set_ok, set_detail = False, str(error)[:300]
+        check(results, "every part, the joined stream and the database match the manifest", set_ok, set_detail)
+        if not set_ok:
+            return {"archive": archive.name, "bytes": archive.stat().st_size, "sha256": sha256(archive), "mode": "set",
+                    "restore_seconds": round(time.monotonic() - started, 1), "checks": results, "ok": False}
+        uri, mode = f"file:{target}?mode=ro", "set joined and restored into an empty directory"
+    elif archive.suffix == ".gz":
         target = work / "soc.db"
         with gzip.open(archive, "rb") as source, target.open("wb") as sink:
             shutil.copyfileobj(source, sink, 1 << 20)
@@ -106,7 +127,8 @@ def drill_ctas(archive: Path, status_path: Path | None, work: Path) -> dict:
               {"database_events": events, "published_candidate_count": published, "release": released,
                "archive_latest_alert": archive_latest, "archive_older_than_release": older})
     connection.close()
-    return {"archive": archive.name, "bytes": archive.stat().st_size, "sha256": sha256(archive) if archive.suffix in {".gz", ".zst"} else None,
+    return {"archive": archive.name, "bytes": archive.stat().st_size,
+            "sha256": sha256(archive) if archive.suffix in {".gz", ".zst"} or archive.name.endswith(".parts.json") else None,
             "mode": mode, "restore_seconds": restore_seconds, "checks": results, "ok": all(r["ok"] for r in results)}
 
 

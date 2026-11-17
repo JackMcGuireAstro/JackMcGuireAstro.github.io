@@ -236,6 +236,8 @@ class WiringTests(unittest.TestCase):
                    {"id": 2, "name": "soc-20261108T000000Z.db.zst", "size": 1, "created_at": "x"}]
         self.assertEqual([a["name"] for a in state.database_assets(listing)], ["soc-20261108T000000Z.db.zst"])
         self.assertEqual(state.to_delete(listing), [])
+        self.assertIsNone(state.stamp_of("envelopes-2026-W40.ndjson.zst"))
+        self.assertEqual(state.incomplete_assets(listing, {}, "20261116T000000Z"), [])
 
 
 if __name__ == "__main__":

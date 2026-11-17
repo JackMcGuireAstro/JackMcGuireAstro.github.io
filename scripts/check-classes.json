@@ -582,7 +582,7 @@
    "scopes": [
     "ctas-publish"
    ],
-   "what": "the compressed collector database stays under GitHub's 2 GiB release-asset limit: warning above 1.4 GiB; above 1.9 GiB it is not uploaded and the previous state is kept",
+   "what": "state growing: the compressed collector database is over 1.4 GiB (an early signal; the copy is saved in parts below GitHub's 2 GiB file limit, and is refused only above 20 GiB raw, against the runner's disk)",
    "fallback": false
   },
   "ctas.schemas": {
