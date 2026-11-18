@@ -100,7 +100,8 @@ fi
 # published beside the release as worldsindex/data/cloud-run.json for the freshness watchdog.
 MARKER="$WORK/cloud-run.json"
 GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/cloud_run_marker.py" --workflow worldsindex-cloud.yml \
-  --receipt "$WORK/state-restored.json" --output "$MARKER" --probe-token --site-commit "$MAIN_COMMIT" || { say "WARN  could not write the cloud-run marker"; MARKER=""; }
+  --receipt "$WORK/state-restored.json" --output "$MARKER" --probe-token --site-commit "$MAIN_COMMIT" \
+  --worldsindex-health "$SOURCE" || { say "WARN  could not write the cloud-run marker"; MARKER=""; }
 
 # Reviewed identity-rule upgrades (v1 -> v2 2026-10-02, v2 -> v3 2026-10-03): the builder
 # re-links exoplanet.eu rows under newer identity rules only if the result matches the
@@ -178,8 +179,17 @@ else
     say "WARN  compaction failed; saving the working data as it is ($(tail -1 "$LOGS/compact.err" 2>/dev/null))"
   fi
   say "saving the working data to the state repository"
-  GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/worldsindex_cloud_state.py" save "$SOURCE" \
-    || { say "FAIL  could not save the working data; the previous state is kept"; exit 1; }
+  # The save's own output (sizes, warnings, the reason for a refusal) goes to save.log and,
+  # in short, into runner.log: until 2026-11-18 a failed save said only "could not save".
+  SAVE_EXIT=0
+  GH_TOKEN="$STATE_TOKEN" python3 "$SITE/scripts/worldsindex_cloud_state.py" save "$SOURCE" >"$LOGS/save.log" 2>&1 || SAVE_EXIT=$?
+  cat "$LOGS/save.log"
+  grep -E '^(WARN|round trip verified)' "$LOGS/save.log" | while IFS= read -r line; do say "$line"; done
+  if [ "$SAVE_EXIT" -ne 0 ]; then
+    say "FAIL  could not save the working data (exit $SAVE_EXIT); the previous state is kept: $(grep -v '^removed ' "$LOGS/save.log" | tail -3 | tr '\n' ' ' | cut -c1-600)"
+    exit 1
+  fi
+  say "$(tail -1 "$LOGS/save.log")"
 fi
 
 if [ "$PUBLISHED" -eq 1 ] && [ "$DRY_RUN" != "1" ]; then

@@ -117,8 +117,37 @@ def fallback_fields(decision: dict | None) -> dict:
     }}
 
 
+def worldsindex_health(source: str | None) -> dict:
+    """WorldsIndex facts from the restored working data, for the freshness watchdog: the source
+    monitor's last attempt and last validated run (a QUARANTINED monitor withholds every
+    catalog refresh; from 2026-10-21 it stayed so for four weeks with no alert), and the
+    builder's compaction record (snapshot retirement held back since 2026-11-12, which let
+    the saved state outgrow GitHub's 2 GiB file limit on 2026-11-18). Nothing secret."""
+    if not source:
+        return {}
+    root = Path(source)
+    attempt = read_receipt(str(root / "outputs/sync/latest-attempt.json"))
+    last_good = read_receipt(str(root / "outputs/sync/last-good.json"))
+    compaction = read_receipt(str(root / "outputs/compaction/latest.json"))
+    failing = [f"{o.get('sourceId')}: {o.get('state')}" for o in attempt.get("observations") or []
+               if isinstance(o, dict) and o.get("required") and o.get("state") != "AVAILABLE"]
+    return {"worldsindex_health": {
+        "monitor_state": attempt.get("state"),
+        "monitor_attempt_at": attempt.get("completedAt"),
+        "monitor_last_validated_at": last_good.get("completedAt"),
+        "monitor_failing_required": failing[:20],
+        "compaction_at": compaction.get("at"),
+        "retirement_decision": compaction.get("retirementDecision"),
+        "retirement_reason": str(compaction.get("retirementReason") or "")[:300] or None,
+        "retirement_last_ran_at": compaction.get("retirementLastRanAt"),
+        "retirement_skipped_since": compaction.get("retirementSkippedSince"),
+        "state_bytes": compaction.get("stateBytes"),
+    }}
+
+
 def build_marker(workflow: str, receipt: dict, environ: dict, generated_at: str | None = None,
-                 token: dict | None = None, site_commit: str | None = None, decision: dict | None = None) -> dict:
+                 token: dict | None = None, site_commit: str | None = None, decision: dict | None = None,
+                 health: dict | None = None) -> dict:
     run_id = environ.get("GITHUB_RUN_ID") or None
     server = environ.get("GITHUB_SERVER_URL", "https://github.com").rstrip("/")
     repository = environ.get("GITHUB_REPOSITORY")
@@ -134,6 +163,7 @@ def build_marker(workflow: str, receipt: dict, environ: dict, generated_at: str 
         **(token or {"token_status": "not-checked", "token_expires_at": None}),
         "site_commit": site_commit,
         **fallback_fields(decision),
+        **(health or {}),
     }
 
 
@@ -146,11 +176,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--site-commit", help="the website commit whose code builds this release")
     parser.add_argument("--site", help="the website checkout; its HEAD is the site commit when --site-commit is not given")
     parser.add_argument("--fallback", help="decision JSON (scripts/release_checks.py decide) of a fallback-code retry")
+    parser.add_argument("--worldsindex-health", metavar="SOURCE",
+                        help="WorldsIndex builder folder after the restore: adds worldsindex_health (monitor and compaction)")
     args = parser.parse_args(argv)
     token = probe_token(os.environ.get("GH_TOKEN", "")) if args.probe_token else None
     decision = read_receipt(args.fallback) if args.fallback else None
     marker = build_marker(args.workflow, read_receipt(args.receipt), os.environ, token=token,
-                          site_commit=args.site_commit or site_head(args.site), decision=decision)
+                          site_commit=args.site_commit or site_head(args.site), decision=decision,
+                          health=worldsindex_health(args.worldsindex_health))
     Path(args.output).write_text(json.dumps(marker, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"cloud-run marker: state saved {marker['state_saved_at'] or 'unknown'} ({marker['state_asset'] or 'no receipt'}); "
           f"key {marker['token_status']}, expires {marker['token_expires_at'] or 'never or unknown'}; "

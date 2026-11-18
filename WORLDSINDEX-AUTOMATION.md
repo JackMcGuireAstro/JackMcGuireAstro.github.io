@@ -24,6 +24,39 @@ was on the Mac. The builder's `.env.local`, if any, is the `WORLDSINDEX_ENV` sec
 its values are scrubbed from the kept publish log. The move was done by
 `Move WorldsIndex to GitHub.command`. The sections below describe the earlier Mac operation.
 
+State copies in parts (2026-11-18). On 2026-11-18 every save failed: the working data had
+grown to 3.2 GB uncompressed (2.2 GB of it release migrations under `data/atlas/migrations`)
+and its single `.tar.gz` passed GitHub's 2 GiB per-asset limit. Two causes, both fixed:
+
+* The builder's snapshot retirement (which turns superseded snapshots' ~68 MB migrations into
+  stubs) had been skipped since 2026-11-12: a failed Exoplanet.eu retrieval left
+  `outputs/promotion/exoplanet-eu/promote-20261112T210806-retrieval-failed` without
+  `outcome.json`, and the "promotion in progress" guard read directory times, which every
+  restore sets to the time of the restore. The guard now reads the newest *file* inside;
+  an unfinished directory whose newest file is older than 6 h is recorded as `ABANDONED`
+  (its `outcome.json`, evidence kept) and a failed retrieval now records `RETRIEVAL_FAILED`
+  itself. `outputs/compaction/latest.json` records each run's retirement decision.
+* `scripts/worldsindex_cloud_state.py` now saves a **set**: the tar (directories included,
+  so their times survive a restore) compressed with zstd into parts under 1.5 GiB
+  (`wi-state-<stamp>.tar.zst.part-NNN`) plus `wi-state-<stamp>.parts.json` (each part's size
+  and sha256, the joined stream's and the tar's sha256). The joined parts must decompress to
+  exactly the tar before anything is uploaded; parts go first and the manifest last; the
+  first set in the release is downloaded again and checked before anything older is deleted;
+  a set is kept or deleted whole; leftovers of an interrupted save are removed by the next
+  save. Restore takes the newest complete set (or an older single `.tar.gz`), checks every
+  part, the joined stream and the tar, then unpacks; a newer incomplete set is skipped with a
+  warning. A save is refused (exit 4) only above 20 GiB uncompressed (the runner's disk);
+  above 1.5 GiB compressed it warns "state growing" and saves. The reason for a failed save
+  is now in `runner.log` (and the run report), the full output in `save.log`.
+* The cloud-run marker (`worldsindex/data/cloud-run.json`) carries `worldsindex_health`: the
+  source monitor's state and last validated run, and the retirement decision. The freshness
+  watchdog alerts (`worldsindex-quarantined`, `worldsindex-retirement-held`) when either has
+  lasted more than 24 h. From 2026-10-21 to 11-18 the monitor was quarantined by an
+  unreachable CoRoT probe with no alert (the old alert was a macOS notification); CoRoT is
+  now a frozen catalog in the builder (probed, not required for a refresh).
+* Do not run a `worldsindex_cloud_state.py` from before 2026-11-18 against this release: it
+  only sees single `.tar.gz` copies and would restore a stale one while those remain.
+
 Resilience (2026-10-22, RESILIENCE.md). What changed in plain words:
 
 * Every release check has a class in `scripts/check-classes.json`. An **advisory** failure

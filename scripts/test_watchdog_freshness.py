@@ -273,6 +273,43 @@ class EvaluateTests(unittest.TestCase):
         # The limits are configurable.
         self.assertTrue(watchdog.evaluate(*fresh, deploy(), now=now, ctas_marker=late, ctas_state_max_age_hours=5)["ok"])
 
+    def test_worldsindex_quarantine_and_held_retirement_raise_alerts_from_a_current_marker(self):
+        # 2026-11-18: the monitor had been QUARANTINED since 10-21 (CoRoT unreachable) and
+        # snapshot retirement held back since 11-12, and nothing alerted on either.
+        now = at("2026-11-18T18:40:00Z")
+        fresh = (ctas_status("2026-11-18T18:20:00Z"), None, worlds_manifest("2026-11-18T18:30:00Z"), None)
+        health = {"monitor_state": "QUARANTINED", "monitor_last_validated_at": "2026-10-21T15:35:35.526Z",
+                  "monitor_failing_required": ["corot-transit-catalog: QUERY_FAILED"],
+                  "retirement_decision": "SKIPPED", "retirement_skipped_since": "2026-11-12T22:00:00.000Z",
+                  "retirement_reason": "a promotion may be in progress: outputs/promotion/exoplanet-eu/promote-20261112T210806-retrieval-failed",
+                  "state_bytes": 3_188_000_000}
+        sick = marker("worldsindex-cloud.yml", "2026-11-18T18:23:00Z", "2026-11-18T17:00:00Z", worldsindex_health=health)
+        report = watchdog.evaluate(*fresh, deploy(), now=now, worldsindex_marker=sick)
+        self.assertEqual(self.codes(report), ["worldsindex-quarantined", "worldsindex-retirement-held"])
+        by_code = {row["code"]: row for row in report["alerts"]}
+        self.assertIn("corot-transit-catalog: QUERY_FAILED", by_code["worldsindex-quarantined"]["message"])
+        self.assertIn("2026-10-21T15:35:35Z", by_code["worldsindex-quarantined"]["message"])
+        self.assertIn("promote-20261112T210806-retrieval-failed", by_code["worldsindex-retirement-held"]["message"])
+        self.assertIn("3.19 GB", by_code["worldsindex-retirement-held"]["message"])
+        self.assertIn("source-policy.ts", by_code["worldsindex-quarantined"]["action"])
+        self.assertIn("ABANDONED", by_code["worldsindex-retirement-held"]["action"])
+        # Under the 24 h limits, or healthy: no alert.
+        recent = {**health, "monitor_last_validated_at": "2026-11-18T06:00:00Z", "retirement_skipped_since": "2026-11-18T06:00:00Z"}
+        self.assertTrue(watchdog.evaluate(*fresh, deploy(), now=now, worldsindex_marker=marker(
+            "worldsindex-cloud.yml", "2026-11-18T18:23:00Z", "2026-11-18T17:00:00Z", worldsindex_health=recent))["ok"])
+        healthy = {"monitor_state": "VALIDATED_UNCHANGED", "monitor_last_validated_at": "2026-11-18T18:00:00Z",
+                   "retirement_decision": "NOTHING_TO_RETIRE", "retirement_skipped_since": None}
+        self.assertTrue(watchdog.evaluate(*fresh, deploy(), now=now, worldsindex_marker=marker(
+            "worldsindex-cloud.yml", "2026-11-18T18:23:00Z", "2026-11-18T17:00:00Z", worldsindex_health=healthy))["ok"])
+        # A marker without the block (older code), or an old marker: no health alert.
+        self.assertTrue(watchdog.evaluate(*fresh, deploy(), now=now, worldsindex_marker=marker(
+            "worldsindex-cloud.yml", "2026-11-18T18:23:00Z", "2026-11-18T17:00:00Z"))["ok"])
+        old = marker("worldsindex-cloud.yml", "2026-11-18T08:00:00Z", "2026-11-18T07:00:00Z", worldsindex_health=health)
+        self.assertNotIn("worldsindex-quarantined", self.codes(watchdog.evaluate(*fresh, deploy(), now=now, worldsindex_marker=old)))
+        # The limit is configurable.
+        self.assertNotIn("worldsindex-quarantined", self.codes(watchdog.evaluate(
+            *fresh, deploy(), now=now, worldsindex_marker=sick, worldsindex_quarantine_max_hours=1000)))
+
     def test_stale_marker_leaves_the_state_check_to_the_freshness_alerts(self):
         # CTAS stopped publishing 5 h ago: its marker is as old as its release, and the
         # restored copy ages with it. That is the stall, not a save failure.

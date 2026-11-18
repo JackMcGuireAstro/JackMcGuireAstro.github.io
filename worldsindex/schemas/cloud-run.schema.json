@@ -112,6 +112,72 @@
         "failed_check",
         "used_commit"
       ]
+    },
+    "worldsindex_health": {
+      "type": "object",
+      "description": "WorldsIndex facts read from the restored working data (2026-11-18), for the freshness watchdog: the source monitor's last attempt and last validated run, and the builder's compaction record (snapshot retirement). Absent on markers written before then.",
+      "properties": {
+        "monitor_state": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "monitor_attempt_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "monitor_last_validated_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "monitor_failing_required": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "compaction_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retirement_decision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retirement_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retirement_last_ran_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retirement_skipped_since": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state_bytes": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
     }
   },
   "required": [

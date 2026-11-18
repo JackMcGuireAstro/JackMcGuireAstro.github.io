@@ -100,6 +100,10 @@ DEFAULT_THRESHOLDS = {
     "worldsindex_state_max_age_hours": 6.0,
     # The state key: warn this many days before the expiry date the marker records.
     "token_warn_days": 10.0,
+    # WorldsIndex health in its marker (2026-11-18): a source-monitor quarantine (every catalog
+    # refresh withheld) or snapshot retirement held back for longer than this raises an alert.
+    "worldsindex_quarantine_max_hours": 24.0,
+    "worldsindex_retirement_held_max_hours": 24.0,
     # The public site: an alert when it lags a fresh data branch by more than this.
     "site_lag_minutes": 60.0,
     # Early warning (item 8): CTAS older than this, below the hard limits above.
@@ -119,7 +123,8 @@ CLOUD_WORKFLOWS = {
 UNINFORMATIVE_CONCLUSIONS = {"cancelled", "skipped", None}
 # Most urgent first: the first alert's action becomes the first line of the issue.
 SEVERITY = ("state-token-rejected", "deploy-stale", "-runs-failing", "-stalled-while-", "-stale", "-unavailable",
-            "-runs-failing-after-publish", "-state-not-saved", "deploy-failed", "state-token-expiring")
+            "-runs-failing-after-publish", "-state-not-saved", "deploy-failed", "-retirement-held", "-quarantined",
+            "state-token-expiring")
 RENEW = "run `Renew cloud key.command` on the Mac (it copies a fresh `gh auth token` into the CTAS_STATE_TOKEN secret)"
 
 
@@ -222,6 +227,27 @@ def describe_marker(marker, error, now):
         "token_checked_at": marker.get("token_checked_at"),
         "token_expires_at": expires.date().isoformat() if expires else None,
         "token_days_left": (expires.date() - now.date()).days if expires else None,
+        "worldsindex_health": describe_worldsindex_health(marker.get("worldsindex_health"), now),
+    }
+
+
+def describe_worldsindex_health(health, now):
+    """The WorldsIndex block of a marker (scripts/cloud_run_marker.py --worldsindex-health), with ages."""
+    if not isinstance(health, dict):
+        return None
+    validated = parse_utc(health.get("monitor_last_validated_at"))
+    skipped = parse_utc(health.get("retirement_skipped_since"))
+    return {
+        "monitor_state": health.get("monitor_state"),
+        "monitor_last_validated_at": iso(validated),
+        "monitor_validated_age_hours": hours_between(now, validated),
+        "monitor_failing_required": list(health.get("monitor_failing_required") or []),
+        "retirement_decision": health.get("retirement_decision"),
+        "retirement_reason": health.get("retirement_reason"),
+        "retirement_last_ran_at": health.get("retirement_last_ran_at"),
+        "retirement_skipped_since": iso(skipped),
+        "retirement_held_hours": hours_between(now, skipped),
+        "state_bytes": health.get("state_bytes"),
     }
 
 
@@ -372,6 +398,15 @@ def describe_action(code, report):
         return (f"The {workflow['file']} runs keep restoring a state saved {marker.get('state_saved_at')}, so the "
                 f"save at the end of each run fails: open the newest run{run}, read the lines after "
                 "\"saving ... to the state repository\" and save the log.")
+    if code == "worldsindex-quarantined":
+        return ("Read the failing required checks above and outputs/sync/latest-attempt.json in the newest "
+                "`worldsindex-publish-log` artifact (publish/publish.log): a provider that is down or refuses "
+                "GitHub's runners keeps every catalog refresh withheld. Fix the probe, or, for a frozen catalog of a "
+                "finished mission, mark it frozen in the builder (packages/exonexus/archive/source-policy.ts).")
+    if code == "worldsindex-retirement-held":
+        return ("Read the \"compacted:\" line in the newest WorldsIndex run's runner.log: it names what holds snapshot "
+                "retirement back (usually an unfinished promotion directory under outputs/promotion). An unfinished "
+                "directory older than 6 h is recorded as ABANDONED automatically; anything else needs the builder fixed.")
     if code == "deploy-stale":
         deploy = report["deploy"]
         failed = f" ({deploy['newest_failed_url']})" if deploy.get("newest_failed_url") else ""
@@ -544,6 +579,30 @@ def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, d
                   f"The {label} run that published {marker_age:g} h ago restored a working state saved "
                   f"{state_age:g} h ago ({marker.get('state_asset')}; limit {limit:g} h): the runs publish, "
                   "but saving the state at the end of each run fails, so every run restores an old state.")
+
+    # 5b. WorldsIndex health (2026-11-18): a quarantined source monitor withholds every catalog
+    # refresh (2026-10-21..11-18 unnoticed), and snapshot retirement held back lets the saved
+    # state grow until saves fail (2026-11-12..11-18). Read only from a current marker.
+    health = (markers["worldsindex"] or {}).get("worldsindex_health") if markers["worldsindex"].get("available") else None
+    marker_age = markers["worldsindex"].get("age_hours")
+    if health and marker_age is not None and marker_age <= limits["worldsindex_state_max_age_hours"]:
+        validated_age = health.get("monitor_validated_age_hours")
+        if health.get("monitor_state") == "QUARANTINED" and (validated_age is None or validated_age > limits["worldsindex_quarantine_max_hours"]):
+            failing = "; ".join(health.get("monitor_failing_required") or []) or "no failing check recorded"
+            since = (f"its last validated run was {health.get('monitor_last_validated_at')} ({validated_age:g} h ago)"
+                     if validated_age is not None else "it has no validated run")
+            alert("worldsindex-quarantined",
+                  f"The WorldsIndex source monitor is QUARANTINED and {since}, over the "
+                  f"{limits['worldsindex_quarantine_max_hours']:g} h limit: every catalog refresh is withheld. "
+                  f"Failing required checks: {failing}.")
+        held = health.get("retirement_held_hours")
+        if held is not None and held > limits["worldsindex_retirement_held_max_hours"]:
+            size = f" The working data was {health['state_bytes'] / 1e9:.2f} GB." if isinstance(health.get("state_bytes"), (int, float)) else ""
+            alert("worldsindex-retirement-held",
+                  f"WorldsIndex snapshot retirement has not run since {health.get('retirement_skipped_since')} "
+                  f"({held:g} h; limit {limits['worldsindex_retirement_held_max_hours']:g} h): "
+                  f"{health.get('retirement_decision')}: {health.get('retirement_reason') or 'no reason recorded'}. "
+                  f"Release migrations pile up until the state cannot be saved.{size}")
 
     # 6. the state key, as the most recently published marker saw it (one secret, two users).
     checked = [m for m in markers.values() if m["available"] and m["token_status"] not in ("not-checked", "unknown")]

@@ -144,6 +144,33 @@ class MarkerTests(unittest.TestCase):
             self.assertIsNone(json.loads((folder / "cloud-run.json").read_text())["state_saved_at"])
             self.assertIn("state saved unknown (no receipt)", result.stdout)
 
+    def test_worldsindex_health_comes_from_the_restored_working_data(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "outputs/sync").mkdir(parents=True)
+            (root / "outputs/compaction").mkdir(parents=True)
+            (root / "outputs/sync/latest-attempt.json").write_text(json.dumps({"state": "QUARANTINED", "completedAt": "2026-11-18T18:24:00Z",
+                "observations": [{"sourceId": "corot-transit-catalog", "required": True, "state": "QUERY_FAILED", "error": "fetch failed"},
+                                 {"sourceId": "ads", "required": False, "state": "BLOCKED_AUTH"},
+                                 {"sourceId": "nasa-ps", "required": True, "state": "AVAILABLE"}]}))
+            (root / "outputs/sync/last-good.json").write_text(json.dumps({"completedAt": "2026-10-21T15:35:35.526Z"}))
+            (root / "outputs/compaction/latest.json").write_text(json.dumps({"at": "2026-11-18T18:36:20Z", "retirementDecision": "SKIPPED",
+                "retirementReason": "a promotion may be in progress", "retirementLastRanAt": None,
+                "retirementSkippedSince": "2026-11-12T22:00:00Z", "stateBytes": 3188000000}))
+            health = marker.worldsindex_health(str(root))["worldsindex_health"]
+            self.assertEqual(health["monitor_state"], "QUARANTINED")
+            self.assertEqual(health["monitor_last_validated_at"], "2026-10-21T15:35:35.526Z")
+            self.assertEqual(health["monitor_failing_required"], ["corot-transit-catalog: QUERY_FAILED"])
+            self.assertEqual(health["retirement_skipped_since"], "2026-11-12T22:00:00Z")
+            self.assertEqual(health["state_bytes"], 3188000000)
+            built = marker.build_marker("worldsindex-cloud.yml", {}, {}, health=marker.worldsindex_health(str(root)))
+            self.assertEqual(built["worldsindex_health"]["retirement_decision"], "SKIPPED")
+            # Nothing restored yet: every field is empty, nothing fails.
+            self.assertEqual(marker.worldsindex_health(str(root / "missing"))["worldsindex_health"]["monitor_state"], None)
+            self.assertEqual(marker.worldsindex_health(None), {})
+            self.assertNotIn("worldsindex_health", marker.build_marker("ctas-cloud.yml", {}, {}))
+        self.assertIn('--worldsindex-health "$SOURCE"', (ROOT / "scripts/worldsindex_cloud_run.sh").read_text())
+
     def test_cloud_runs_write_the_marker_and_the_publishers_release_it(self):
         ctas_run = (ROOT / "scripts/ctas_cloud_run.sh").read_text()
         worlds_run = (ROOT / "scripts/worldsindex_cloud_run.sh").read_text()

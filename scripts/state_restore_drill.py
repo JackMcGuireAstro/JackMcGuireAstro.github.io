@@ -5,7 +5,9 @@ Both systems keep their working state as GitHub Release assets that every cloud 
 restores and saves: CTAS `soc-<time>.parts.json` with its parts `soc-<time>.db.zst.part-NNN`
 (since 2026-11-16; scripts/ctas_cloud_state.py) or a single `soc-<time>.db.zst` / `.db.gz`
 (earlier copies) for the collector's SQLite database in JackMcGuireAstro/ctas-state, and
-WorldsIndex `wi-state-<time>.tar.gz` (the builder's snapshots, outputs and database) in
+WorldsIndex `wi-state-<time>.parts.json` with its parts `wi-state-<time>.tar.zst.part-NNN`
+(since 2026-11-18; scripts/worldsindex_cloud_state.py) or a single `wi-state-<time>.tar.gz`
+(earlier copies) of the builder's snapshots, outputs and database in
 JackMcGuireAstro/worldsindex-state. The drill restores an archive
 into a fresh, empty directory the way the cloud runner does and checks that what comes back
 is usable, without touching anything else:
@@ -18,12 +20,14 @@ is usable, without touching anything else:
               exporter reads present, the six append-only/immutable triggers present, row
               counts of the evidence tables, latest record times, and, when a published
               status.json is given, the database's public events against the release count.
-  WorldsIndex extract with tar into the empty directory, refuse absolute or ".." members,
-              every ACTIVE snapshot pointer resolving to a snapshot directory with its
-              manifest, the size against the 1 GiB target and 2 GiB hard limit.
+  WorldsIndex for a set (give the manifest; its parts beside it): every part, the joined
+              stream and the tar against the manifest; then extract with tar into the empty
+              directory, refuse absolute or ".." members, every ACTIVE snapshot pointer
+              resolving to a snapshot directory with its manifest, the size against the
+              1 GiB target and the 20 GiB disk line.
 
   python3 scripts/state_restore_drill.py --ctas soc-....parts.json|soc-....db.zst [--ctas-status ctas/data/status.json] \\
-      [--worldsindex wi-state-....tar.gz] --report benchmarks/recovery/drill-<date>.json
+      [--worldsindex wi-state-....parts.json|wi-state-....tar.gz] --report benchmarks/recovery/drill-<date>.json
 
 Exit status 0 when every check that ran passed, 1 otherwise. Nothing is uploaded or changed.
 """
@@ -50,7 +54,7 @@ CTAS_REQUIRED_TABLES = (
 )
 CTAS_TRIGGERS = tuple(f"{table}_no_{op}" for table in ("certification_runs", "publication_bundles", "security_audit_events") for op in ("update", "delete"))
 CTAS_COUNTED = ("events", "alert_envelopes", "classification_assertions", "observations", "spectra", "source_query_attempts", "analysis_runs")
-WI_TARGET, WI_LIMIT = 1 << 30, 2 << 30
+WI_TARGET, WI_LIMIT = 1 << 30, 20 << 30
 
 
 def sha256(path: Path) -> str:
@@ -135,15 +139,37 @@ def drill_ctas(archive: Path, status_path: Path | None, work: Path) -> dict:
 def drill_worldsindex(archive: Path, work: Path) -> dict:
     results: list = []
     started = time.monotonic()
-    with tarfile.open(archive, "r:gz") as tar:
-        members = tar.getmembers()
-        unsafe = [m.name for m in members if m.name.startswith("/") or ".." in Path(m.name).parts]
-        check(results, "no absolute or parent-directory members", not unsafe, unsafe[:10])
-        if not unsafe:
-            tar.extractall(work, filter="data")
+    tar_path = archive
+    if archive.name.endswith(".parts.json"):   # a set saved in parts (2026-11-18)
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import state_parts
+        import worldsindex_cloud_state as wi_state
+        tar_path = work.parent / f"{work.name}.state.tar"
+        try:
+            manifest = wi_state.read_manifest(archive)
+            state_parts.join_into(archive.parent, manifest, tar_path)
+            check(results, "every part, the joined stream and the tar match the manifest", True,
+                  {"parts": len(manifest["parts"]), "bytes": manifest["bytes"]})
+        except (RuntimeError, OSError, ValueError) as error:
+            check(results, "every part, the joined stream and the tar match the manifest", False, str(error)[:300])
+            return {"archive": archive.name, "bytes": archive.stat().st_size, "sha256": sha256(archive),
+                    "restore_seconds": round(time.monotonic() - started, 1), "checks": results, "ok": False}
+    try:
+        with tarfile.open(tar_path) as tar:
+            members = tar.getmembers()
+            unsafe = [m.name for m in members if m.name.startswith("/") or ".." in Path(m.name).parts]
+            check(results, "no absolute or parent-directory members", not unsafe, unsafe[:10])
+            if not unsafe:
+                tar.extractall(work, filter="data")
+    finally:
+        if tar_path != archive:
+            tar_path.unlink(missing_ok=True)
     restore_seconds = round(time.monotonic() - started, 1)
     size = sum(f.stat().st_size for f in work.rglob("*") if f.is_file())
-    check(results, "restored size within the 2 GiB hard limit", size < WI_LIMIT,
+    # Since 2026-11-18 the state is saved in parts, so GitHub's 2 GiB file limit no longer
+    # bounds it; the line is the runner's disk (worldsindex_cloud_state.REFUSE_RAW_BYTES).
+    check(results, "restored size within the 20 GiB disk line", size < WI_LIMIT,
           {"bytes": size, "target_1_GiB_met": size < WI_TARGET})
     pointers = list(work.rglob("ACTIVE.json"))
     broken = []
