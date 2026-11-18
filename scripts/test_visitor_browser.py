@@ -325,7 +325,7 @@ process.stdout.write(encodeFilterForUrl({schema: "jm.visitor-filter@1", title: "
         finder.click("#finder-runlist [data-runcart-load]")
         finder.wait_for_selector("#finder-runcart:not([hidden])", timeout=30000)
         self.assertEqual(finder.input_value("#label"), "Empty field")
-        self.assertEqual(finder.get_attribute("#finder-runcart", "aria-pressed"), "true")
+        finder.wait_for_function("document.querySelector('#finder-runcart').getAttribute('aria-pressed') === 'true'", timeout=10000)
         self.assertEqual(finder.errors, [])
         # The run sheet prints every kind, in order, the plain target with its exposure.
         sheet = context.new_page(); sheet.errors = []

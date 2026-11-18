@@ -183,6 +183,8 @@ function showChart(target) {
     const item = target.cartItem || { kind: "target", id: C.targetId(target.ra, target.dec), name: target.name || `${formatRA(target.ra, 1)} ${formatDec(target.dec, 0)}`, ra: target.ra, dec: target.dec };
     Object.assign(toggle.dataset, { kind: item.kind, id: item.id, name: item.name, ra: String(item.ra), dec: String(item.dec) });
     toggle.hidden = false;
+    // Label it now rather than on the next animation frame, which a background tab may never run.
+    if (globalThis.RunCartUI) globalThis.RunCartUI.refresh();
   }
 }
 
