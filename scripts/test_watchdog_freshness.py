@@ -234,6 +234,17 @@ class EvaluateTests(unittest.TestCase):
         old = runs("success", "failure", "failure", "failure", "failure", start="2026-10-16T12:30:00Z",
                    step_minutes=12 * 60)
         self.assertTrue(watchdog.evaluate(*fresh, deploy(), now=now, ctas_runs=old)["ok"])
+        # Recovered: the newest three completed runs succeeded, so the old failures are a note, not an alert.
+        recovered = runs("success", "success", "success", "failure", "failure", "failure", "failure", "failure",
+                         start="2026-10-16T12:30:00Z", step_minutes=45)
+        report = watchdog.evaluate(*fresh, deploy(), now=now, ctas_runs=recovered)
+        self.assertTrue(report["ok"], report["alerts"])
+        self.assertTrue(any("recovered" in note for note in report["notes"]), report["notes"])
+        # Two successes after the failures are not enough yet.
+        recovering = runs("success", "success", "failure", "failure", "failure", "failure", start="2026-10-16T12:30:00Z",
+                          step_minutes=45)
+        self.assertEqual(self.codes(watchdog.evaluate(*fresh, deploy(), now=now, ctas_runs=recovering)),
+                         ["ctas-runs-failing-after-publish"])
         # Fewer than four completed runs in the window never trip the rate rule.
         few = runs("success", "failure", "failure", start="2026-10-16T12:30:00Z")
         self.assertTrue(watchdog.evaluate(*fresh, deploy(), now=now, ctas_runs=few)["ok"])
@@ -558,6 +569,17 @@ class LiveSiteTests(unittest.TestCase):
         self.assertIn("deploy-stale", codes("2026-10-21T15:00:00Z", "2026-10-21T17:55:00Z", site_lag_minutes=120))
         self.assertNotIn("deploy-stale", codes("2026-10-21T16:00:00Z", "2026-10-21T17:55:00Z", site_lag_minutes=120))
         self.assertNotIn("deploy-stale", codes("2026-10-21T17:30:00Z", None))
+        # Slow, not stopped: a deploy succeeded 30 min ago, so a 90 min lag is a note; past 180 min it alerts.
+        working = [{"conclusion": "success", "status": "completed", "createdAt": "2026-10-21T17:30:00Z", "headSha": "f" * 40,
+                    "displayTitle": "Validate and deploy site", "databaseId": 600,
+                    "url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/600"}]
+        def slow(live):
+            return watchdog.evaluate(ctas_status(live), None, worlds_manifest("2026-10-21T17:20:00Z"), None, working,
+                                     now=at(self.NOW), ctas_branch=ctas_status("2026-10-21T17:55:00Z"))
+        report = slow("2026-10-21T16:25:00Z")                                                        # 90 min behind
+        self.assertNotIn("deploy-stale", [row["code"] for row in report["alerts"]])
+        self.assertTrue(any("slow, not stopped" in note for note in report["notes"]), report["notes"])
+        self.assertIn("deploy-stale", [row["code"] for row in slow("2026-10-21T14:50:00Z")["alerts"]])  # 185 min
         self.assertFalse(watchdog.evaluate(ctas_status("2026-10-21T17:30:00Z"), None, worlds_manifest("2026-10-21T17:20:00Z"), None,
                                            None, now=at(self.NOW))["site"]["ctas"]["known"])
 

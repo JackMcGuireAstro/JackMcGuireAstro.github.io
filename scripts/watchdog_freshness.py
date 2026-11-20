@@ -93,6 +93,9 @@ DEFAULT_THRESHOLDS = {
     "consecutive_failures": 3.0,
     "failure_rate_percent": 50.0,
     "failure_window_hours": 24.0,
+    # ...unless the newest this many completed runs all succeeded: the failures are over,
+    # and the rate rule would otherwise keep alerting until they leave the 24 h window.
+    "recovered_after_successes": 3.0,
     # State saves: the marker a run publishes names the state copy it restored. CTAS
     # runs every ~30-45 min and WorldsIndex hourly, so the restored copy is normally
     # under two hours old when the marker is read; older than this, the saves fail.
@@ -106,6 +109,10 @@ DEFAULT_THRESHOLDS = {
     "worldsindex_retirement_held_max_hours": 24.0,
     # The public site: an alert when it lags a fresh data branch by more than this.
     "site_lag_minutes": 60.0,
+    # ...but while a deploy succeeded within site_lag_minutes the deploys are working, only
+    # slow (25-60 min each while CTAS publishes every ~45 min): a note, not an alert, until
+    # the lag passes this hard limit (2026-11-20: deploy-stale was firing on slowness alone).
+    "site_lag_hard_minutes": 180.0,
     # Early warning (item 8): CTAS older than this, below the hard limits above.
     "ctas_early_age_hours": 2.0,
 }
@@ -340,6 +347,11 @@ def describe_runs(runs, run_jobs, now, window_hours):
         if row.get("conclusion") == "success":
             break
         streak += 1
+    successes = 0
+    for row in completed:
+        if row.get("conclusion") != "success":
+            break
+        successes += 1
     since = now - dt.timedelta(hours=window_hours)
     in_window = [row for row in completed if (parse_utc(row.get("createdAt")) or since) >= since]
     failed_in_window = [row for row in in_window if row.get("conclusion") != "success"]
@@ -353,6 +365,7 @@ def describe_runs(runs, run_jobs, now, window_hours):
         "newest_conclusion": completed[0].get("conclusion"),
         "newest_created_at": completed[0].get("createdAt"),
         "consecutive_failures": streak,
+        "consecutive_successes": successes,
         "streak_started_at": streak_started,
         "window_completed": len(in_window),
         "window_failed": len(failed_in_window),
@@ -539,6 +552,12 @@ def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, d
         if streak >= limits["consecutive_failures"]:
             how = f"the last {streak} completed runs of {workflow['file']} failed"
             failing_since = summary["streak_started_at"]
+        elif summary["window_completed"] >= 4 and rate > limits["failure_rate_percent"] \
+                and summary["consecutive_successes"] >= limits["recovered_after_successes"]:
+            notes.append(f"{summary['window_failed']} of the last {summary['window_completed']} completed runs of "
+                         f"{workflow['file']} failed in {limits['failure_window_hours']:g} h, but the newest "
+                         f"{summary['consecutive_successes']} succeeded: recovered.")
+            continue
         elif summary["window_completed"] >= 4 and rate > limits["failure_rate_percent"]:
             how = (f"{summary['window_failed']} of the last {summary['window_completed']} completed runs of "
                    f"{workflow['file']} ({rate:g}%) failed in {limits['failure_window_hours']:g} h")
@@ -628,6 +647,13 @@ def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, d
     }
     lagging = [(name, row) for name, row in site.items() if isinstance(row, dict) and row.get("known")
                and (row.get("lag_minutes") or 0) > limits["site_lag_minutes"]]
+    last_success = parse_utc(deployment.get("last_success_at"))
+    deploying = last_success is not None and (now - last_success).total_seconds() / 60 <= limits["site_lag_minutes"]
+    if lagging and deploying and all((row.get("lag_minutes") or 0) <= limits["site_lag_hard_minutes"] for _, row in lagging):
+        notes.append("The public site trails the data by " + ", ".join(
+            f"{row['lag_minutes']:g} min ({'CTAS' if name == 'ctas' else 'WorldsIndex'})" for name, row in lagging)
+            + f", but a deploy succeeded at {deployment.get('last_success_at')}: deploys are slow, not stopped.")
+        lagging = []
     if lagging:
         parts = [f"{'CTAS' if name == 'ctas' else 'WorldsIndex'} live {row['live_update']} vs "
                  f"{name}-data {row['branch_update']} ({row['lag_minutes']:g} min behind)" for name, row in lagging]
