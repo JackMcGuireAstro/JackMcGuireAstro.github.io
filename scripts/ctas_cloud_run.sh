@@ -242,15 +242,21 @@ resource_summary() {  # one "phase <name> took Ns (...)" line per phase (scripts
   fi
 }
 
-add_swap() {  # more swap on the runner's spare disk (/mnt), never on the system disk
+add_swap() {  # more swap: on the runner's spare disk (/mnt) when it has one, otherwise on the
+  # system disk when that has room to spare. 2026-11-19: a runner without a separate /mnt got
+  # no swap, and the export ran into the memory ceiling (run 44512725679).
   [ "${SWAP_GB:-0}" -gt 0 ] 2>/dev/null || return 0
   command -v sudo >/dev/null && sudo -n true 2>/dev/null || { say "swap: no sudo; unchanged"; return 0; }
-  local file=/mnt/ctas-swap free
-  [ -d /mnt ] && [ "$(stat -c %d /mnt)" != "$(stat -c %d /)" ] || { say "swap: /mnt is not a separate disk; unchanged"; return 0; }
-  free=$(free_mb /mnt)
-  [ "${free:-0}" -ge $(( (SWAP_GB + 4) * 1024 )) ] || { say "swap: only ${free:-0} MB free on /mnt; unchanged"; return 0; }
+  local file=/mnt/ctas-swap where=/mnt free margin=4
+  if ! { [ -d /mnt ] && [ "$(stat -c %d /mnt)" != "$(stat -c %d /)" ]; }; then
+    # The system disk also holds the database (about 3x its size at the peak of a cycle), so
+    # it must keep a wide margin: SWAP_GB plus 40 GB free, or no swap.
+    file=/ctas-swap where=/ margin=40
+  fi
+  free=$(free_mb "$where")
+  [ "${free:-0}" -ge $(( (SWAP_GB + margin) * 1024 )) ] || { say "swap: only ${free:-0} MB free on $where; unchanged"; return 0; }
   if sudo -n fallocate -l "${SWAP_GB}G" "$file" && sudo -n chmod 600 "$file" && sudo -n mkswap -q "$file" >/dev/null && sudo -n swapon "$file"; then
-    say "swap: added ${SWAP_GB} GB on /mnt ($(awk '/^SwapTotal:/ {printf "%.1f", $2/1048576}' /proc/meminfo) GB in all)"
+    say "swap: added ${SWAP_GB} GB on $where ($(awk '/^SwapTotal:/ {printf "%.1f", $2/1048576}' /proc/meminfo) GB in all)"
   else
     sudo -n rm -f "$file" 2>/dev/null
     say "swap: could not add ${SWAP_GB} GB; unchanged"
