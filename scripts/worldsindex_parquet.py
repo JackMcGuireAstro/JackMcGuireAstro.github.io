@@ -80,7 +80,7 @@ def read_ecsv(path: Path):
         newline = raw.find(b"\n", position)
     column_line_end = newline if newline >= 0 else len(raw)
     column_line = raw[position:column_line_end].decode("utf-8")
-    header = Table.read(header_lines + [column_line], format="ascii.ecsv")
+    header = Table.read(header_lines + [column_line], format="ascii.ecsv", guess=False)
     arrow_types = {}
     for name in header.colnames:
         kind = header[name].dtype.kind

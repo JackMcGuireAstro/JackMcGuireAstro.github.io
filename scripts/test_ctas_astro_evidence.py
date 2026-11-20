@@ -582,7 +582,7 @@ class AstroEvidenceTests(unittest.TestCase):
             self.skipTest(str(exc))
         ecsv_name = next(name for name in first["files"] if name.endswith(".ecsv"))
         vot_name = next(name for name in first["files"] if name.endswith(".vot"))
-        ecsv = Table.read(io.BytesIO(first["files"][ecsv_name]["content"].encode()), format="ascii.ecsv")
+        ecsv = Table.read(io.BytesIO(first["files"][ecsv_name]["content"].encode()), format="ascii.ecsv", guess=False)
         votable = parse_single_table(io.BytesIO(first["files"][vot_name]["content"].encode())).to_table()
         ecsv_keys = {(str(row["record_type"]), str(row["record_id"])) for row in ecsv}
         votable_keys = {(str(row["record_type"]), str(row["record_id"])) for row in votable}

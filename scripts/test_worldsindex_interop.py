@@ -60,7 +60,7 @@ def read_gzip_json(path: Path):
 def read_ecsv(path: Path) -> Table:
     text = gzip.decompress(path.read_bytes()).decode("utf-8")
     assert text.startswith("# %ECSV 1.0\n# ---\n"), f"{path.name}: not ECSV 1.0"
-    return Table.read(text.splitlines(), format="ascii.ecsv")
+    return Table.read(text.splitlines(), format="ascii.ecsv", guess=False)
 
 
 def read_votable(path: Path):

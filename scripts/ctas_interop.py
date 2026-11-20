@@ -691,6 +691,27 @@ def _table_problems(
     return problems
 
 
+def read_ecsv_text(text: str) -> Table:
+    """Read ECSV held in memory, exactly as the format is declared.
+
+    ``guess=False`` matters: with guessing on, Astropy (7.2) first sniffs the input for
+    HTML, and when the first 100,000 characters happen to end in ".htm" or ".html" (one of
+    the ctas.html dossier URLs straddling that offset) it stats the whole 100,000-character
+    string as a file name and raises OSError "File name too long". Which releases hit it
+    depends only on byte offsets, so it looked intermittent (issue #215, 2026-11-19).
+    The format is never in doubt here, so nothing is guessed.
+    """
+
+    return Table.read(text, format="ascii.ecsv", guess=False)
+
+
+def _short_error(exc: BaseException, limit: int = 400) -> str:
+    """The exception as one bounded line: some Astropy errors quote the whole input."""
+
+    text = f"{type(exc).__name__}: {exc}"
+    return text if len(text) <= limit else text[:limit] + f"… ({len(text)} characters)"
+
+
 def round_trip_problems(
     label: str, specs: tuple[ColumnSpec, ...], rows: list[list[Any]], *,
     ecsv: bytes | None = None, votable: bytes | None = None, parquet: bytes | None = None,
@@ -702,9 +723,9 @@ def round_trip_problems(
         warnings.simplefilter("ignore")
         if ecsv is not None:
             try:
-                read = Table.read(ecsv.decode("utf-8"), format="ascii.ecsv")
+                read = read_ecsv_text(ecsv.decode("utf-8"))
             except Exception as exc:  # noqa: BLE001 - any parse failure is a release defect
-                problems.append(f"{label}: ECSV does not parse ({exc})")
+                problems.append(f"{label}: ECSV does not parse ({_short_error(exc)})")
             else:
                 problems.extend(_table_problems(label + " ECSV", specs, rows, read))
         if votable is not None:

@@ -299,7 +299,7 @@ class WorldsIndex(_Reader):
 
         def load():
             raw = self.raw("worldsindex/data/exports/measurements.ecsv.gz")
-            return Table.read(gzip.decompress(raw).decode(), format="ascii.ecsv")
+            return Table.read(gzip.decompress(raw).decode(), format="ascii.ecsv", guess=False)
         table = self.cached("measurements", load)
         return table[table["object_id"] == object_id]
 

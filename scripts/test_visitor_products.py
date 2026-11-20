@@ -106,7 +106,7 @@ class VisitorProductsTests(unittest.TestCase):
             raw = source.read_bytes()
             text = (gzip.decompress(raw) if raw[:2] == b"\x1f\x8b" else raw).decode()
             from astropy.table import Table
-            ecsv = Table.read(text, format="ascii.ecsv")
+            ecsv = Table.read(text, format="ascii.ecsv", guess=False)
             self.assertEqual(len(ecsv), parquet.num_rows, name)
             self.assertEqual(ecsv.colnames, parquet.column_names, name)
 

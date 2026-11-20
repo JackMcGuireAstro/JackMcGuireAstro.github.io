@@ -118,7 +118,7 @@ def read_ecsv(parquet, path: Path):
     import pyarrow as pa
     from astropy.table import Table
 
-    table = Table.read(io.BytesIO(gzip.decompress(raw) if raw[:2] == b"\x1f\x8b" else raw), format="ascii.ecsv")
+    table = Table.read(io.BytesIO(gzip.decompress(raw) if raw[:2] == b"\x1f\x8b" else raw), format="ascii.ecsv", guess=False)
     arrays = {}
     for name in table.colnames:
         col = table[name]

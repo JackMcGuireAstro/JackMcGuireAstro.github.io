@@ -133,7 +133,7 @@ class RoundTripTests(unittest.TestCase):
         self.assertEqual(I.round_trip_problems("photometry", specs, rows, ecsv=ecsv, votable=votable), [])
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            back_ecsv = Table.read(ecsv.decode(), format="ascii.ecsv")
+            back_ecsv = Table.read(ecsv.decode(), format="ascii.ecsv", guess=False)
             back_vot = Table.read(io.BytesIO(votable), format="votable")
         names = [spec.name for spec in specs]
         limit_row = next(index for index, row in enumerate(rows) if row[names.index("assertion_id")] == "obs-2")
@@ -170,6 +170,42 @@ class RoundTripTests(unittest.TestCase):
         limit_row = next(index for index, row in enumerate(rows) if row[names.index("assertion_id")] == "obs-2")
         dropped_limit[limit_row][names.index("is_upper_limit")] = False
         self.assertTrue(I.round_trip_problems("photometry", specs, dropped_limit, ecsv=ecsv))
+
+    def test_ecsv_round_trip_survives_a_dossier_url_at_astropys_html_sniff_offset(self):
+        """Issue #215: Astropy's default read sniffs the first 100,000 characters for HTML and,
+        when they end in ".html", stats them as a file name ("File name too long"). The
+        round trip reads without guessing, so such a release passes; a damaged file still fails."""
+        columns = ["name", "type", "ra", "dec", "epoch", "ctas_event_id", "ctas_score",
+                   "classification", "primary_messenger", "ctas_url", "source_url"]
+        specs = I.tom_target_column_specs(columns)
+
+        def rows(pad: int) -> list[list]:
+            out = []
+            for n in range(700):
+                event = f"00000000-0000-4000-8000-{n:012d}"
+                name = f"AT2026t{n:04d}" + ("x" * pad if n == 0 else "")
+                out.append([name, "SIDEREAL", 10.0 + n / 1000, -5.0, 2000.0, event, 23.0, "Unclassified",
+                            "electromagnetic", f"https://jackmcguireastro.github.io/ctas.html?event={event}#dossier",
+                            f"https://www.wis-tns.org/object/2026t{n:04d}"])
+            return out
+
+        def ecsv_for(table_rows: list[list]) -> str:
+            return I.ecsv_bytes(I.build_table(specs, table_rows, name="ctas_tom_targets", description="d")).decode()
+
+        first = ecsv_for(rows(0))
+        end = first.rfind(".html", 0, 100_000 - 4) + len(".html")
+        aligned_rows = rows(100_000 - end)
+        aligned = ecsv_for(aligned_rows)
+        self.assertTrue(aligned[:100_000].endswith(".html"), "the fixture puts a dossier URL at the sniff offset")
+        self.assertEqual(I.round_trip_problems("tom-targets", specs, aligned_rows, ecsv=aligned.encode()), [])
+        self.assertEqual(len(I.read_ecsv_text(aligned)), len(aligned_rows))
+
+        header = " ".join(columns)
+        broken = aligned.replace(header, " ".join(columns[:-1]), 1)
+        problems = I.round_trip_problems("tom-targets", specs, aligned_rows, ecsv=broken.encode())
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn("ECSV does not parse", problems[0])
+        self.assertLess(len(problems[0]), 600, "the problem line is bounded, not the whole file")
 
     def test_voparquet_metadata_sort_and_row_groups(self):
         import pyarrow as pa
@@ -535,7 +571,7 @@ class FixtureExportTests(unittest.TestCase):
         tom = (self.out / "research/tom-targets.ecsv").read_bytes()
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            tom_table = Table.read(tom.decode(), format="ascii.ecsv")
+            tom_table = Table.read(tom.decode(), format="ascii.ecsv", guess=False)
         self.assertEqual(len(tom_table), tables["tom-targets.csv"]["row_count"])
 
     def test_voparquet_assets_match_bulk_downloads_and_read_back(self):
