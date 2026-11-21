@@ -1,0 +1,108 @@
+{
+  "check_counts": {
+    "block": 0,
+    "pass": 6,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [],
+  "commit": "db989ec080ce6ea4451b22f1af24692ad6d5d857",
+  "decision": {
+    "action": "block",
+    "blocking": [],
+    "explanation": "the runner guard stopped the release (memory ceiling: 1380 MB of memory and swap left (floor 1536 MB) (publisher)); the database was still saved and the published release is unchanged. See the phase lines and logs/resources.log.",
+    "main_commit": "db989ec080ce6ea4451b22f1af24692ad6d5d857",
+    "reason": "memory-ceiling"
+  },
+  "event": "workflow_dispatch",
+  "failing_check": null,
+  "failing_checks": [],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: 08:20:35  FAIL  memory ceiling: 1380 MB of memory and swap left (floor 1536 MB); stopping the publisher cleanly",
+    "runner.log: 08:24:51  phase  setup took 1s (peak memory used 1.3 of 15.6 GiB, min available 14.3 GiB, peak swap 0.0 GiB, min headroom 17.3 GiB, min free disk / 83.9 GiB, work 83.9 GiB; 1 samples)",
+    "runner.log: 08:24:51  phase  restore took 40s (peak memory used 1.2 of 15.6 GiB, min available 14.4 GiB, peak swap 0.0 GiB, min headroom 17.4 GiB, min free disk / 78.7 GiB, work 78.7 GiB; 1 samples)",
+    "runner.log: 08:24:51  phase  collect took 941s (peak memory used 1.8 of 15.6 GiB, min available 13.8 GiB, peak swap 0.0 GiB, min headroom 16.8 GiB, min free disk / 75.7 GiB, work 75.7 GiB; 31 samples)",
+    "runner.log: 08:24:51  phase  publish took 1892s (peak memory used 15.0 of 15.6 GiB, min available 0.6 GiB, peak swap 1.9 GiB, min headroom 3.4 GiB, min free disk / 72.8 GiB, work 72.8 GiB; 63 samples)",
+    "runner.log: 08:24:51  phase  retention took 125s (peak memory used 0.8 of 15.6 GiB, min available 14.8 GiB, peak swap 0.2 GiB, min headroom 17.6 GiB, min free disk / 72.8 GiB, work 72.8 GiB; 4 samples)",
+    "runner.log: 08:24:51  phase  save took 127s (peak memory used 1.5 of 15.6 GiB, min available 14.1 GiB, peak swap 0.2 GiB, min headroom 17.0 GiB, min free disk / 72.2 GiB, work 72.2 GiB; 4 samples)",
+    "runner.log: 08:24:51  phase  deploy took 2s (no sample)",
+    "publish.log: 2026-11-15 07:50:25 UTC  phase  freeze-database took 0s",
+    "publish.log: 2026-11-15 08:15:22 UTC  phase  export took 1497s",
+    "publish.log: 2026-11-15 08:18:01 UTC  phase  link-check took 159s",
+    "publish.log: 2026-11-15 08:18:13 UTC  phase  bind-link-health took 12s",
+    "publish.log: 2026-11-15 08:18:31 UTC  phase  validate-detail-pages-and-retirement took 18s"
+  ],
+  "note": null,
+  "outcome": "failed",
+  "phases": [
+    {
+      "log": "runner.log",
+      "phase": "setup",
+      "seconds": 1
+    },
+    {
+      "log": "runner.log",
+      "phase": "restore",
+      "seconds": 40
+    },
+    {
+      "log": "runner.log",
+      "phase": "collect",
+      "seconds": 941
+    },
+    {
+      "log": "runner.log",
+      "phase": "publish",
+      "seconds": 1892
+    },
+    {
+      "log": "runner.log",
+      "phase": "retention",
+      "seconds": 125
+    },
+    {
+      "log": "runner.log",
+      "phase": "save",
+      "seconds": 127
+    },
+    {
+      "log": "runner.log",
+      "phase": "deploy",
+      "seconds": 2
+    },
+    {
+      "log": "publish.log",
+      "phase": "freeze-database",
+      "seconds": 0
+    },
+    {
+      "log": "publish.log",
+      "phase": "export",
+      "seconds": 1497
+    },
+    {
+      "log": "publish.log",
+      "phase": "link-check",
+      "seconds": 159
+    },
+    {
+      "log": "publish.log",
+      "phase": "bind-link-health",
+      "seconds": 12
+    },
+    {
+      "log": "publish.log",
+      "phase": "validate-detail-pages-and-retirement",
+      "seconds": 18
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "43690340777",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/43690340777",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-11-15T08:24:51Z"
+}

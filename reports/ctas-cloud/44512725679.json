@@ -1,0 +1,84 @@
+{
+  "check_counts": {
+    "block": 0,
+    "pass": 2,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [],
+  "commit": "3f78833061c5aaec9c29d3a9275c7024df78e91e",
+  "decision": {
+    "action": "block",
+    "blocking": [],
+    "explanation": "the runner guard stopped the release (memory ceiling: 243 MB of memory and swap left (floor 1536 MB) (publisher)); the database was still saved and the published release is unchanged. See the phase lines and logs/resources.log.",
+    "main_commit": "3f78833061c5aaec9c29d3a9275c7024df78e91e",
+    "reason": "memory-ceiling"
+  },
+  "event": "workflow_dispatch",
+  "failing_check": null,
+  "failing_checks": [],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: 11:45:17  FAIL  memory ceiling: 243 MB of memory and swap left (floor 1536 MB); stopping the publisher cleanly",
+    "runner.log: 11:48:08  phase  setup took 2s (peak memory used 1.0 of 15.3 GiB, min available 14.3 GiB, peak swap 0.0 GiB, min headroom 14.3 GiB, min free disk / 87.1 GiB, work 87.1 GiB; 1 samples)",
+    "runner.log: 11:48:08  phase  restore took 55s (peak memory used 1.2 of 15.3 GiB, min available 14.2 GiB, peak swap 0.0 GiB, min headroom 14.2 GiB, min free disk / 84.5 GiB, work 84.5 GiB; 1 samples)",
+    "runner.log: 11:48:08  phase  collect took 930s (peak memory used 1.6 of 15.3 GiB, min available 13.8 GiB, peak swap 0.0 GiB, min headroom 13.8 GiB, min free disk / 80.1 GiB, work 80.1 GiB; 31 samples)",
+    "runner.log: 11:48:08  phase  publish took 908s (peak memory used 12.5 of 15.3 GiB, min available 2.8 GiB, peak swap 0.0 GiB, min headroom 2.8 GiB, min free disk / 79.9 GiB, work 79.9 GiB; 31 samples)",
+    "runner.log: 11:48:08  phase  retention took 50s (peak memory used 0.9 of 15.3 GiB, min available 14.4 GiB, peak swap 0.0 GiB, min headroom 14.4 GiB, min free disk / 79.9 GiB, work 79.9 GiB; 1 samples)",
+    "runner.log: 11:48:08  phase  save took 118s (peak memory used 1.2 of 15.3 GiB, min available 14.1 GiB, peak swap 0.0 GiB, min headroom 14.1 GiB, min free disk / 79.3 GiB, work 79.3 GiB; 4 samples)",
+    "runner.log: 11:48:08  phase  deploy took 2s (no sample)",
+    "publish.log: 2026-11-19 11:31:22 UTC  phase  freeze-database took 0s"
+  ],
+  "note": null,
+  "outcome": "failed",
+  "phases": [
+    {
+      "log": "runner.log",
+      "phase": "setup",
+      "seconds": 2
+    },
+    {
+      "log": "runner.log",
+      "phase": "restore",
+      "seconds": 55
+    },
+    {
+      "log": "runner.log",
+      "phase": "collect",
+      "seconds": 930
+    },
+    {
+      "log": "runner.log",
+      "phase": "publish",
+      "seconds": 908
+    },
+    {
+      "log": "runner.log",
+      "phase": "retention",
+      "seconds": 50
+    },
+    {
+      "log": "runner.log",
+      "phase": "save",
+      "seconds": 118
+    },
+    {
+      "log": "runner.log",
+      "phase": "deploy",
+      "seconds": 2
+    },
+    {
+      "log": "publish.log",
+      "phase": "freeze-database",
+      "seconds": 0
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "44512725679",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/44512725679",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-11-19T11:48:08Z"
+}

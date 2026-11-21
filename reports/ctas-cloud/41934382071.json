@@ -1,0 +1,130 @@
+{
+  "check_counts": {
+    "block": 1,
+    "pass": 0,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [
+    {
+      "class": "integrity",
+      "id": "ctas.export",
+      "mode": "block",
+      "outcome": "block",
+      "parts": [],
+      "scope": "ctas-publish"
+    }
+  ],
+  "commit": "79aef6e4b76bb481732d9aed87b301fb609b67c3",
+  "decision": {
+    "action": "block",
+    "blocking": [
+      "ctas.export"
+    ],
+    "blocking_detail": "OSError: [Errno 28] No space left on device",
+    "code_fallback": null,
+    "decided_at": "2026-11-05T00:00:50Z",
+    "explanation": "ctas.export failed with the same code that produced the published release: the data or the environment changed",
+    "fallback": false,
+    "main_commit": "79aef6e4b76bb481732d9aed87b301fb609b67c3",
+    "reason": "release-commit-is-current",
+    "release_commit": "79aef6e4b76bb481732d9aed87b301fb609b67c3",
+    "schema": "release-decision@1",
+    "scope": "ctas-publish",
+    "warnings": []
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "integrity",
+    "id": "ctas.export",
+    "mode": "block",
+    "outcome": "block",
+    "output_tail": [
+      "database        : ctas-publish.xLnThd",
+      "real events     : 18,261",
+      "published       : 18,259   (skipped 1)",
+      "detail shards   : 1986993 KB in 4096 files",
+      "",
+      "sample record:",
+      "{",
+      "  \"event_id\": \"fa71ebe6-201f-4536-bac7-535f1732b77b\",",
+      "  \"name\": \"AT2026aidc\",",
+      "  \"ra_deg\": 114.6945481,",
+      "  \"dec_deg\": 13.163356,",
+      "  \"discovery_time\": \"2026-10-26T11:11:02.002000Z\",",
+      "  \"discovery_survey\": \"ZTF\",",
+      "  \"discovery_magnitude\": 19.8477,",
+      "  \"status\": \"candidate\",",
+      "  \"classification\": \"Unclassified\",",
+      "  \"ctas_score\": 45.9,",
+      "  \"event_type\": \"optical-transient\",",
+      "  \"primary_messenger\": \"electromagnetic\",",
+      "  \"updated_at\": \"2026-11-04T23:48:18.478494Z\",",
+      "  \"score_factors\": {",
+      "    \"recency_points\": 0.0,",
+      "    \"brightness_points\": 2.88,",
+      "    \"classification_gap_points\": 12.0,",
+      "    \"spectroscopy_gap_points\": 7.0,",
+      "    \"coverage_reduction\": 12.0,",
+      "    \"observation_gap_points\": 1.02",
+      "  },",
+      "  \"links\": [",
+      "    {",
+      "      \"alias_id\": \"25661\",",
+      "      \"source_key\": \"tns\",",
+      "      \"label\": \"TNS\",",
+      "      \"designation\": \"AT2026aidc\",",
+      "      \"is_preferred\": true,",
+      "      \"asserted_at\": \"2026-11-04T23:01:54.041323Z\",",
+      "      \"url\":",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/export_ctas_snapshot.py\", line 7067, in <module>",
+      "    raise SystemExit(main())",
+      "                     ~~~~^^",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/export_ctas_snapshot.py\", line 7015, in main",
+      "    write_output_artifact(out, relative, raw)",
+      "    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/export_ctas_snapshot.py\", line 4656, in write_output_artifact",
+      "    atomic_write(target, raw)",
+      "    ~~~~~~~~~~~~^^^^^^^^^^^^^",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/export_ctas_snapshot.py\", line 4569, in atomic_write",
+      "    temporary.write_bytes(raw)",
+      "    ~~~~~~~~~~~~~~~~~~~~~^^^^^",
+      "  File \"/opt/hostedtoolcache/Python/3.13.18/x64/lib/python3.13/pathlib/_abc.py\", line 642, in write_bytes",
+      "    return f.write(view)",
+      "           ~~~~~~~^^^^^^",
+      "OSError: [Errno 28] No space left on device"
+    ],
+    "parts": [],
+    "reason": "promoted 2026-10-24T01:59:11Z",
+    "scope": "ctas-publish"
+  },
+  "failing_checks": [
+    "ctas.export"
+  ],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: FAIL  check ctas.export failed: integrity, blocking [promoted 2026-10-24T01:59:11Z]",
+    "runner.log: FAIL  export failed; nothing committed",
+    "publish.log: 2026-11-04 23:49:48 UTC  phase  freeze-database took 29s",
+    "publish.log: FAIL  check ctas.export failed: integrity, blocking [promoted 2026-10-24T01:59:11Z]",
+    "publish.log: 2026-11-05 00:00:49 UTC  FAIL  export failed; nothing committed"
+  ],
+  "note": null,
+  "outcome": "blocked",
+  "phases": [
+    {
+      "log": "publish.log",
+      "phase": "freeze-database",
+      "seconds": 29
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "41934382071",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/41934382071",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-11-05T00:03:59Z"
+}

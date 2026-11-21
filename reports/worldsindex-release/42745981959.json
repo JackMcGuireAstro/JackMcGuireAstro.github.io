@@ -1,0 +1,112 @@
+{
+  "check_counts": {
+    "block": 0,
+    "pass": 94,
+    "skip": 0,
+    "warn": 1
+  },
+  "checks": [
+    {
+      "class": "advisory",
+      "id": "browser.visitor",
+      "mode": "warn",
+      "outcome": "warn",
+      "output_tail": [
+        "  sources = sum(1 for _ in (ROOT / \"ctas/data/research/sources.csv\").open()) - 1",
+        "ok",
+        "",
+        "======================================================================",
+        "FAIL: test_follow_cone_and_finder_fill_one_run_list_that_the_run_sheet_prints (__main__.VisitorBrowserTests.test_follow_cone_and_finder_fill_one_run_list_that_the_run_sheet_prints)",
+        "----------------------------------------------------------------------",
+        "Traceback (most recent call last):",
+        "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_visitor_browser.py\", line 328, in test_follow_cone_and_finder_fill_one_run_list_that_the_run_sheet_prints",
+        "    self.assertEqual(finder.get_attribute(\"#finder-runcart\", \"aria-pressed\"), \"true\")",
+        "AssertionError: None != 'true'",
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 8 tests in 25.427s",
+        "",
+        "FAILED (failures=1)"
+      ],
+      "parts": [],
+      "scope": "deploy"
+    }
+  ],
+  "commit": "a70385b3d5928b94d1f156f89899729f58bb5c65",
+  "decision": {
+    "action": "block",
+    "blocking": [],
+    "candidates": [
+      {
+        "blocking": [],
+        "commit": "a70385b3d5928b94d1f156f89899729f58bb5c65",
+        "label": "main",
+        "status": "passed",
+        "warnings": [
+          "browser.visitor"
+        ]
+      }
+    ],
+    "decided_at": "2026-11-10T03:22:02Z",
+    "explanation": "validated, but the Pages deploy ended success and the live check failure",
+    "fallback": false,
+    "fallback_label": null,
+    "landing_window": false,
+    "main_commit": "a70385b3d5928b94d1f156f89899729f58bb5c65",
+    "reason": "deploy-failed",
+    "release_commit": null,
+    "schema": "release-decision@1",
+    "scope": "deploy"
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "advisory",
+    "id": "browser.visitor",
+    "mode": "warn",
+    "outcome": "warn",
+    "output_tail": [
+      "test_a_shared_filter_link_fills_the_builder (__main__.VisitorBrowserTests.test_a_shared_filter_link_fills_the_builder) ... ok",
+      "test_axe (__main__.VisitorBrowserTests.test_axe) ... ok",
+      "test_cone_search_finds_the_event_and_writes_a_votable (__main__.VisitorBrowserTests.test_cone_search_finds_the_event_and_writes_a_votable) ... ok",
+      "test_follow_cone_and_finder_fill_one_run_list_that_the_run_sheet_prints (__main__.VisitorBrowserTests.test_follow_cone_and_finder_fill_one_run_list_that_the_run_sheet_prints) ... FAIL",
+      "test_follow_watchlist_regions_filters_and_new_since_last_look (__main__.VisitorBrowserTests.test_follow_watchlist_regions_filters_and_new_since_last_look) ... ok",
+      "test_no_sideways_scroll (__main__.VisitorBrowserTests.test_no_sideways_scroll) ... ok",
+      "test_notebook_page_and_links (__main__.VisitorBrowserTests.test_notebook_page_and_links) ... ok",
+      "test_sql_page_lists_tables_and_runs_queries (__main__.VisitorBrowserTests.test_sql_page_lists_tables_and_runs_queries) ... /home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_visitor_browser.py:211: ResourceWarning: unclosed file <_io.TextIOWrapper name='/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/ctas/data/research/sources.csv' mode='r' encoding='UTF-8'>",
+      "  sources = sum(1 for _ in (ROOT / \"ctas/data/research/sources.csv\").open()) - 1",
+      "ok",
+      "",
+      "======================================================================",
+      "FAIL: test_follow_cone_and_finder_fill_one_run_list_that_the_run_sheet_prints (__main__.VisitorBrowserTests.test_follow_cone_and_finder_fill_one_run_list_that_the_run_sheet_prints)",
+      "----------------------------------------------------------------------",
+      "Traceback (most recent call last):",
+      "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_visitor_browser.py\", line 328, in test_follow_cone_and_finder_fill_one_run_list_that_the_run_sheet_prints",
+      "    self.assertEqual(finder.get_attribute(\"#finder-runcart\", \"aria-pressed\"), \"true\")",
+      "AssertionError: None != 'true'",
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 8 tests in 25.427s",
+      "",
+      "FAILED (failures=1)"
+    ],
+    "parts": [],
+    "reason": "advisory: never blocks",
+    "scope": "deploy"
+  },
+  "failing_checks": [],
+  "failing_phase": null,
+  "lines": [],
+  "note": "jobs: validate=success deploy=success verify-live=failure (never matched after 20 attempts: WorldsIndex-manifest(HTTP 200)); deployed code: main a70385b3d5",
+  "outcome": "failed",
+  "phases": [],
+  "run_attempt": "1",
+  "run_id": "42745981959",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/42745981959",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [
+    "browser.visitor"
+  ],
+  "workflow": "worldsindex-release.yml",
+  "written_at": "2026-11-10T03:29:27Z"
+}

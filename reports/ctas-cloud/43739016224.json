@@ -1,0 +1,109 @@
+{
+  "check_counts": {
+    "block": 0,
+    "pass": 6,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [],
+  "commit": "db989ec080ce6ea4451b22f1af24692ad6d5d857",
+  "decision": {
+    "action": "block",
+    "blocking": [],
+    "explanation": "the runner guard stopped the release (memory ceiling: 874 MB of memory and swap left (floor 1536 MB) (publisher)); the database was still saved and the published release is unchanged. See the phase lines and logs/resources.log.",
+    "main_commit": "db989ec080ce6ea4451b22f1af24692ad6d5d857",
+    "reason": "memory-ceiling"
+  },
+  "event": "schedule",
+  "failing_check": null,
+  "failing_checks": [],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: 17:05:24  WARN  previous run died without a report: https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/43729264928",
+    "runner.log: 17:42:52  FAIL  memory ceiling: 874 MB of memory and swap left (floor 1536 MB); stopping the publisher cleanly",
+    "runner.log: 17:46:00  phase  setup took 5s (peak memory used 1.1 of 15.3 GiB, min available 14.2 GiB, peak swap 0.0 GiB, min headroom 17.2 GiB, min free disk / 87.1 GiB, work 87.1 GiB; 1 samples)",
+    "runner.log: 17:46:00  phase  restore took 43s (peak memory used 1.2 of 15.3 GiB, min available 14.1 GiB, peak swap 0.0 GiB, min headroom 17.1 GiB, min free disk / 82.2 GiB, work 82.2 GiB; 1 samples)",
+    "runner.log: 17:46:00  phase  collect took 931s (peak memory used 1.7 of 15.3 GiB, min available 13.7 GiB, peak swap 0.0 GiB, min headroom 16.7 GiB, min free disk / 78.9 GiB, work 78.9 GiB; 31 samples)",
+    "runner.log: 17:46:00  phase  publish took 1273s (peak memory used 12.1 of 15.3 GiB, min available 3.2 GiB, peak swap 2.5 GiB, min headroom 4.2 GiB, min free disk / 76.0 GiB, work 76.0 GiB; 42 samples)",
+    "runner.log: 17:46:00  phase  retention took 86s (peak memory used 2.4 of 15.3 GiB, min available 13.0 GiB, peak swap 1.1 GiB, min headroom 14.9 GiB, min free disk / 76.0 GiB, work 76.0 GiB; 3 samples)",
+    "runner.log: 17:46:00  phase  save took 99s (peak memory used 1.1 of 15.3 GiB, min available 14.3 GiB, peak swap 0.3 GiB, min headroom 17.0 GiB, min free disk / 75.3 GiB, work 75.3 GiB; 4 samples)",
+    "runner.log: 17:46:00  phase  deploy took 2s (no sample)",
+    "publish.log: 2026-11-15 17:22:59 UTC  phase  freeze-database took 0s",
+    "publish.log: 2026-11-15 17:38:48 UTC  phase  export took 949s",
+    "publish.log: 2026-11-15 17:40:42 UTC  phase  link-check took 114s",
+    "publish.log: 2026-11-15 17:40:51 UTC  phase  bind-link-health took 9s",
+    "publish.log: 2026-11-15 17:41:06 UTC  phase  validate-detail-pages-and-retirement took 15s"
+  ],
+  "note": null,
+  "outcome": "failed",
+  "phases": [
+    {
+      "log": "runner.log",
+      "phase": "setup",
+      "seconds": 5
+    },
+    {
+      "log": "runner.log",
+      "phase": "restore",
+      "seconds": 43
+    },
+    {
+      "log": "runner.log",
+      "phase": "collect",
+      "seconds": 931
+    },
+    {
+      "log": "runner.log",
+      "phase": "publish",
+      "seconds": 1273
+    },
+    {
+      "log": "runner.log",
+      "phase": "retention",
+      "seconds": 86
+    },
+    {
+      "log": "runner.log",
+      "phase": "save",
+      "seconds": 99
+    },
+    {
+      "log": "runner.log",
+      "phase": "deploy",
+      "seconds": 2
+    },
+    {
+      "log": "publish.log",
+      "phase": "freeze-database",
+      "seconds": 0
+    },
+    {
+      "log": "publish.log",
+      "phase": "export",
+      "seconds": 949
+    },
+    {
+      "log": "publish.log",
+      "phase": "link-check",
+      "seconds": 114
+    },
+    {
+      "log": "publish.log",
+      "phase": "bind-link-health",
+      "seconds": 9
+    },
+    {
+      "log": "publish.log",
+      "phase": "validate-detail-pages-and-retirement",
+      "seconds": 15
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "43739016224",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/43739016224",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-11-15T17:46:00Z"
+}
