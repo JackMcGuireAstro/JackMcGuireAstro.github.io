@@ -1,0 +1,2668 @@
+{
+  "candidate_count": 20076,
+  "catalog_content_checksum_sha256": "8da5fe34546fb291a686e1beb3e013379c4c3f4a101905ca16273f6fd85d3b94",
+  "definitions": {
+    "applicable_events": "Public records whose applicability rule names this source (the source is a row of their source matrix).",
+    "data_returned_events": "Public records whose current query outcome for this source is DATA_RETURNED.",
+    "declared": "The source contract is in this release's versioned source universe.",
+    "events_with_executed_receipts": "Public records with at least one executed receipt for this source.",
+    "events_with_retained_records": "Public records that keep rights-cleared rows (aliases, measurements, notices, reports or products) from this source.",
+    "executed_query_receipts": "Persisted query receipts for this source with an executed terminal outcome, summed over records.",
+    "outcome_counts": "Current query outcome per record for this source (one outcome per applicable record)."
+  },
+  "generated_at": "2026-11-21T20:59:40Z",
+  "per_source_versus_aggregate": "Per source, 'declared' is a yes/no fact about the contract, and the three other columns are counts of records. The aggregate figures in status.json (applicableSourceEvaluations, executedQueryReceipts, dataBearingSourceEvaluations) are the sums of the per-source columns applicable_events, executed_query_receipts and events_with_retained_records; the release fails if they do not reproduce. Nothing here is a success rate of the provider: NOT_QUERIED, NOT_CONFIGURED and LINK_ONLY_NOT_QUERIED describe CTAS, not the provider.",
+  "schema": "ctas.public-source-accounting@1.0.0",
+  "source_count": 150,
+  "sources": [
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "2MASS Point Source Catalog",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "host-counterpart-and-catalog-context",
+      "representation_state": "through-provider",
+      "source_key": "2mass"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 10890,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 22879,
+      "implementation_state": "implemented",
+      "name": "AAVSO AVSpec Published Spectra",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "AMBIGUOUS": 2,
+        "NOT_QUERIED": 8340,
+        "QUERY_FAILED": 80,
+        "SEARCHED_NO_MATCH": 10810
+      },
+      "primary_family": "spectroscopy",
+      "representation_state": "dispositions-only",
+      "source_key": "aavso"
+    },
+    {
+      "applicable_events": 19233,
+      "data_returned_events": 4,
+      "declared": true,
+      "events_with_executed_receipts": 10851,
+      "events_with_retained_records": 4,
+      "executed_query_receipts": 20509,
+      "implementation_state": "implemented-credentials-required",
+      "name": "AAVSO International Database Photometry",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "AMBIGUOUS": 2,
+        "DATA_RETURNED": 4,
+        "NOT_CONFIGURED": 8329,
+        "NOT_QUERIED": 54,
+        "QUERY_BLOCKED": 637,
+        "QUERY_FAILED": 50,
+        "SEARCHED_NO_MATCH": 10157
+      },
+      "primary_family": "photometric-follow-up",
+      "representation_state": "direct",
+      "source_key": "aavso-aid"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 9613,
+      "declared": true,
+      "events_with_executed_receipts": 11785,
+      "events_with_retained_records": 9616,
+      "executed_query_receipts": 15924,
+      "implementation_state": "implemented-credentials-required",
+      "name": "NASA Astrophysics Data System",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "AMBIGUOUS": 52,
+        "DATA_RETURNED": 9613,
+        "NOT_CONFIGURED": 7080,
+        "NOT_QUERIED": 1174,
+        "QUERY_FAILED": 113,
+        "SEARCHED_NO_MATCH": 2044
+      },
+      "primary_family": "other-declared-sources",
+      "representation_state": "direct",
+      "source_key": "ads"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 754,
+      "declared": true,
+      "events_with_executed_receipts": 1058,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 1242,
+      "implementation_state": "implemented",
+      "name": "ALeRCE ZTF Classifier Probabilities",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "AMBIGUOUS": 10,
+        "DATA_RETURNED": 754,
+        "NOT_QUERIED": 19008,
+        "QUERY_FAILED": 11,
+        "SEARCHED_NO_MATCH": 293
+      },
+      "primary_family": "discovery-and-alert-brokers",
+      "representation_state": "dispositions-only",
+      "source_key": "alerce-classifiers"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "AllWISE Source Catalog",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "host-counterpart-and-catalog-context",
+      "representation_state": "through-provider",
+      "source_key": "allwise"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 569,
+      "declared": true,
+      "events_with_executed_receipts": 1056,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 1240,
+      "implementation_state": "implemented",
+      "name": "ANTARES ZTF Loci",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "AMBIGUOUS": 12,
+        "DATA_RETURNED": 569,
+        "NOT_QUERIED": 19008,
+        "QUERY_FAILED": 264,
+        "SEARCHED_NO_MATCH": 223
+      },
+      "primary_family": "discovery-and-alert-brokers",
+      "representation_state": "dispositions-only",
+      "source_key": "antares-ztf-loci"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "manual-only",
+      "name": "ASAS-SN Sky Patrol",
+      "operational_state": "temporarily-unavailable",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 16157,
+        "QUERY_BLOCKED": 3075
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "direct",
+      "source_key": "asas-sn"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 2220,
+      "declared": true,
+      "events_with_executed_receipts": 2549,
+      "events_with_retained_records": 2324,
+      "executed_query_receipts": 8695,
+      "implementation_state": "implemented-credentials-required",
+      "name": "ATLAS",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "DATA_RETURNED": 2220,
+        "NOT_CONFIGURED": 16505,
+        "PARTIAL_RESULT": 257,
+        "QUERY_FAILED": 250
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "direct",
+      "source_key": "atlas"
+    },
+    {
+      "applicable_events": 0,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented-user-authorization-required",
+      "name": "Authorized local file import",
+      "operational_state": "scheduled",
+      "outcome_counts": {},
+      "primary_family": "authorized-user-supplied-sources",
+      "representation_state": "none",
+      "source_key": "authorized-file-drop"
+    },
+    {
+      "applicable_events": 0,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented-user-authorization-required",
+      "name": "Authorized observatory/TOM/SkyPortal webhook",
+      "operational_state": "not-applicable",
+      "outcome_counts": {},
+      "primary_family": "authorized-user-supplied-sources",
+      "representation_state": "none",
+      "source_key": "authorized-webhook"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "BlackGEM",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "blackgem"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "BOOM Optical Transient Notices",
+      "operational_state": "active-no-recent-messages",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "none",
+      "source_key": "boom-gcn"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "blocked-policy",
+      "name": "Canadian Astronomy Data Centre",
+      "operational_state": "rights-blocked",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "archives",
+      "representation_state": "none",
+      "source_key": "cadc"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "CALET-GBM Public Flight Lightcurves",
+      "operational_state": "active-returning-data",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "through-provider",
+      "source_key": "calet-gcn"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "CHIME/FRB Public Notices",
+      "operational_state": "active-returning-data",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "through-provider",
+      "source_key": "chime"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "DSA-110 FRB Public Notices",
+      "operational_state": "not-applicable",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "none",
+      "source_key": "dsa110-gcn"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Einstein Probe",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "through-provider",
+      "source_key": "einstein-probe"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 53,
+      "declared": true,
+      "events_with_executed_receipts": 10506,
+      "events_with_retained_records": 53,
+      "executed_query_receipts": 22295,
+      "implementation_state": "implemented",
+      "name": "ESO Science Archive",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "AMBIGUOUS": 26,
+        "DATA_RETURNED": 53,
+        "NOT_QUERIED": 8700,
+        "QUERY_FAILED": 112,
+        "SEARCHED_NO_MATCH": 10341
+      },
+      "primary_family": "archives",
+      "representation_state": "direct",
+      "source_key": "eso-archive"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "Fermi GBM and LAT Public Notices",
+      "operational_state": "active-returning-data",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "through-provider",
+      "source_key": "fermi-gcn"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 668,
+      "declared": true,
+      "events_with_executed_receipts": 1058,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 1242,
+      "implementation_state": "implemented",
+      "name": "Fink ZTF Science-Module Scores",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "AMBIGUOUS": 10,
+        "DATA_RETURNED": 668,
+        "NOT_QUERIED": 19008,
+        "QUERY_FAILED": 37,
+        "SEARCHED_NO_MATCH": 353
+      },
+      "primary_family": "discovery-and-alert-brokers",
+      "representation_state": "dispositions-only",
+      "source_key": "fink-science-scores"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "archival-only",
+      "name": "Gaia Science Alerts",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "none",
+      "source_key": "gaia-alerts"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 640,
+      "declared": true,
+      "events_with_executed_receipts": 6691,
+      "events_with_retained_records": 646,
+      "executed_query_receipts": 7449,
+      "implementation_state": "implemented",
+      "name": "Gaia Data Release 3",
+      "operational_state": "provider-failure",
+      "outcome_counts": {
+        "DATA_RETURNED": 640,
+        "NOT_QUERIED": 12541,
+        "QUERY_FAILED": 2673,
+        "SEARCHED_NO_MATCH": 3378
+      },
+      "primary_family": "host-counterpart-and-catalog-context",
+      "representation_state": "direct",
+      "source_key": "gaia-dr3"
+    },
+    {
+      "applicable_events": 1104,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 1104,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented-credentials-required",
+      "name": "NASA General Coordinates Network",
+      "operational_state": "active-returning-data",
+      "outcome_counts": {
+        "NOT_CONFIGURED": 1104
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "direct",
+      "source_key": "gcn"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 439,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "NASA GCN Circulars",
+      "operational_state": "active-returning-data",
+      "outcome_counts": {
+        "NOT_QUERIED": 20076
+      },
+      "primary_family": "reports-and-literature",
+      "representation_state": "direct",
+      "source_key": "gcn-circulars"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "GCN Unified Mission Notices",
+      "operational_state": "active-no-recent-messages",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "none",
+      "source_key": "gcn-high-energy"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "GECAM Public Flight and Ground Notices",
+      "operational_state": "active-no-recent-messages",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "none",
+      "source_key": "gecam-gcn"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "blocked-deployment-access",
+      "name": "Gemini Observatory Archive",
+      "operational_state": "temporarily-unavailable",
+      "outcome_counts": {
+        "NOT_CONFIGURED": 19232
+      },
+      "primary_family": "archives",
+      "representation_state": "none",
+      "source_key": "gemini-archive"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Gravitational-wave Optical Transient Observer",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "goto"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "HAWC Very-High-Energy Burst Monitor",
+      "operational_state": "active-no-recent-messages",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "none",
+      "source_key": "hawc-gcn"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 398,
+      "declared": true,
+      "events_with_executed_receipts": 10478,
+      "events_with_retained_records": 398,
+      "executed_query_receipts": 22234,
+      "implementation_state": "implemented",
+      "name": "HEASARC",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "DATA_RETURNED": 398,
+        "NOT_QUERIED": 8754,
+        "QUERY_FAILED": 1923,
+        "SEARCHED_NO_MATCH": 8157
+      },
+      "primary_family": "archives",
+      "representation_state": "direct",
+      "source_key": "heasarc"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "IceCube High-Energy Cascade Alerts",
+      "operational_state": "active-returning-data",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "through-provider",
+      "source_key": "icecube-cascade-gcn"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "IceCube Public Multimessenger Notices",
+      "operational_state": "active-returning-data",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "through-provider",
+      "source_key": "icecube-gcn"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "INTEGRAL",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "none",
+      "source_key": "integral-gcn"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 3488,
+      "declared": true,
+      "events_with_executed_receipts": 8285,
+      "events_with_retained_records": 3512,
+      "executed_query_receipts": 9416,
+      "implementation_state": "implemented",
+      "name": "NASA/IPAC Infrared Science Archive",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "DATA_RETURNED": 3488,
+        "NOT_QUERIED": 10947,
+        "QUERY_FAILED": 554,
+        "SEARCHED_NO_MATCH": 4243
+      },
+      "primary_family": "host-counterpart-and-catalog-context",
+      "representation_state": "direct",
+      "source_key": "irsa"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "generic-import-supported",
+      "name": "IVOA-compatible services",
+      "operational_state": "not-applicable",
+      "outcome_counts": {
+        "NOT_CONFIGURED": 19232
+      },
+      "primary_family": "archives",
+      "representation_state": "none",
+      "source_key": "ivoa"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "interface-review-required",
+      "name": "KM3NeT",
+      "operational_state": "not-implemented",
+      "outcome_counts": {
+        "NOT_CONFIGURED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "none",
+      "source_key": "km3net-gcn"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "Konus-Wind High-Energy Lightcurves",
+      "operational_state": "active-returning-data",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "through-provider",
+      "source_key": "konus-gcn"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented-credentials-required",
+      "name": "LIGO/Virgo/KAGRA Public Alerts",
+      "operational_state": "active-no-recent-messages",
+      "outcome_counts": {
+        "NOT_CONFIGURED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "none",
+      "source_key": "lvk-public-alerts"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 74,
+      "declared": true,
+      "events_with_executed_receipts": 10555,
+      "events_with_retained_records": 74,
+      "executed_query_receipts": 22546,
+      "implementation_state": "implemented",
+      "name": "Mikulski Archive for Space Telescopes",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "DATA_RETURNED": 74,
+        "NOT_QUERIED": 8677,
+        "QUERY_FAILED": 1115,
+        "SEARCHED_NO_MATCH": 9366
+      },
+      "primary_family": "archives",
+      "representation_state": "direct",
+      "source_key": "mast"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "MASTER Global Robotic Net",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "master"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "MAXI/GSC Public Notices",
+      "operational_state": "active-returning-data",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "through-provider",
+      "source_key": "maxi"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "MOA",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "none",
+      "source_key": "moa-gcn"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 5413,
+      "declared": true,
+      "events_with_executed_receipts": 8624,
+      "events_with_retained_records": 513,
+      "executed_query_receipts": 10218,
+      "implementation_state": "implemented",
+      "name": "NASA/IPAC Extragalactic Database",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "AMBIGUOUS": 7,
+        "DATA_RETURNED": 5413,
+        "NOT_QUERIED": 10603,
+        "PARTIAL_RESULT": 32,
+        "QUERY_FAILED": 524,
+        "SEARCHED_NO_MATCH": 2653
+      },
+      "primary_family": "host-counterpart-and-catalog-context",
+      "representation_state": "direct",
+      "source_key": "ned"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 5114,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "NED Positional Candidates",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "host-counterpart-and-catalog-context",
+      "representation_state": "through-provider",
+      "source_key": "ned-cone"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 93,
+      "declared": true,
+      "events_with_executed_receipts": 8348,
+      "events_with_retained_records": 93,
+      "executed_query_receipts": 19418,
+      "implementation_state": "implemented",
+      "name": "NOIRLab Astro Data Archive",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "AMBIGUOUS": 90,
+        "DATA_RETURNED": 93,
+        "NOT_QUERIED": 10806,
+        "QUERY_FAILED": 1408,
+        "SEARCHED_NO_MATCH": 6835
+      },
+      "primary_family": "archives",
+      "representation_state": "direct",
+      "source_key": "noirlab-archive"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "AMON IceCube\u2013HAWC Coincidences",
+      "operational_state": "active-returning-data",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "through-provider",
+      "source_key": "nuem-gcn"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Pan-STARRS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "pan-starrs"
+    },
+    {
+      "applicable_events": 0,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "blocked-user-authorization",
+      "name": "Private TOM Toolkit / SkyPortal / marshal instances",
+      "operational_state": "manual-access-required",
+      "outcome_counts": {},
+      "primary_family": "authorized-user-supplied-sources",
+      "representation_state": "none",
+      "source_key": "private-tom-skyportal"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "AMPEL",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-ampel"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "ANTARES",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-antares"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "ASO",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-aso"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "ATALab",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-atalab"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "BHTOM",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-bhtom"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "BOSS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-boss"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "CacaSN",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-cacasn"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "CASCN",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-cascn"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "CET-3PO",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-cet-3po"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "COIN",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-coin"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "CSNS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-csns"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "DAO_OTS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-dao-ots"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "DCAP",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-dcap"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "DECam-GROWTH",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-decam-growth"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "DESIRT",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-desirt"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "DLT40",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-dlt40"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "EHSSP",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-ehssp"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "ePESSTO",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-epessto"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "F. D. Romanov",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-f-d-romanov"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Fink",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-fink"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "GaiaAlerts",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-gaiaalerts"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Gattini",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-gattini"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "GEOTS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-geots"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "GIT",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-git"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "GLO",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-glo"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "GSNST",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-gsnst"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "GW-MMADS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-gw-mmads"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "HETH",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-heth"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Icarus",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-icarus"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "IMSNG",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-imsng"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "iPTF",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-iptf"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "ISSP",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-issp"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "J-VAR",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-j-var"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "JADES",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-jades"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "JIST",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-jist"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "JWST-NEXUS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-jwst-nexus"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Lasair",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-lasair"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "LAST",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-last"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "LOSS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-loss"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "LSQ",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-lsq"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "MeerLICHT",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-meerlicht"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Moonbase search SN South",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-moonbase-search-sn-south"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Neil Gehrels Swift Observatory",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-neil-gehrels-swift-observatory"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "NUTS2",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-nuts2"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "OGLE",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-ogle"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Padova-Asiago",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-padova-asiago"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "PALEO",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-paleo"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "PESSTO",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-pessto"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "PIKA",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-pika"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "POSS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-poss"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "PSH",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-psh"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "PTSS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-ptss"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "RANSSP",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-ranssp"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "ROTS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-rots"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "RTSG",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-rtsg"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "SAGUARO",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-saguaro"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "SGLF",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-sglf"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Shadow",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-shadow"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "SkyMapper",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-skymapper"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "SKYS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-skys"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "SNAD",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-snad"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "SNHunt",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-snhunt"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "STSP",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-stsp"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "SUNBIRD",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-sunbird"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Swope SN Survey",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-swope-sn-survey"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "SZCYS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-szcys"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "TAROT",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-tarot"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "TESSELLATE",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-tessellate"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "TMTS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-tmts"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "TNTS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-tnts"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Tomo-e Gozen",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-tomo-e-gozen"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "TSST_COSMOS_3D",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-tsst-cosmos-3d"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "TURBO",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-turbo"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "USTC-TDE-Hunter",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-ustc-tde-hunter"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Vera C. Rubin Observatory",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-vera-c-rubin-observatory"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "XOSS",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "represented-survey-xoss"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "documented-not-implemented",
+      "name": "ALeRCE",
+      "operational_state": "not-implemented",
+      "outcome_counts": {
+        "NOT_CONFIGURED": 20076
+      },
+      "primary_family": "discovery-and-alert-brokers",
+      "representation_state": "direct",
+      "source_key": "rubin-alerce"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "interface-review-required",
+      "name": "AMPEL",
+      "operational_state": "not-implemented",
+      "outcome_counts": {
+        "NOT_CONFIGURED": 20076
+      },
+      "primary_family": "discovery-and-alert-brokers",
+      "representation_state": "none",
+      "source_key": "rubin-ampel"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "documented-not-implemented",
+      "name": "ANTARES",
+      "operational_state": "not-implemented",
+      "outcome_counts": {
+        "NOT_CONFIGURED": 20076
+      },
+      "primary_family": "discovery-and-alert-brokers",
+      "representation_state": "none",
+      "source_key": "rubin-antares"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "interface-review-required",
+      "name": "Babamul",
+      "operational_state": "not-implemented",
+      "outcome_counts": {
+        "NOT_CONFIGURED": 20076
+      },
+      "primary_family": "discovery-and-alert-brokers",
+      "representation_state": "none",
+      "source_key": "rubin-babamul"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 1286,
+      "declared": true,
+      "events_with_executed_receipts": 6167,
+      "events_with_retained_records": 1956,
+      "executed_query_receipts": 23334,
+      "implementation_state": "implemented",
+      "name": "Fink",
+      "operational_state": "active-returning-data",
+      "outcome_counts": {
+        "AMBIGUOUS": 33,
+        "DATA_RETURNED": 1286,
+        "NOT_QUERIED": 13876,
+        "PARTIAL_RESULT": 12,
+        "QUERY_FAILED": 437,
+        "SEARCHED_NO_MATCH": 4432
+      },
+      "primary_family": "discovery-and-alert-brokers",
+      "representation_state": "direct",
+      "source_key": "rubin-fink"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 1050,
+      "declared": true,
+      "events_with_executed_receipts": 14310,
+      "events_with_retained_records": 1051,
+      "executed_query_receipts": 26546,
+      "implementation_state": "implemented",
+      "name": "Fink Rubin Positional Candidates",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "DATA_RETURNED": 1050,
+        "NOT_QUERIED": 5766,
+        "QUERY_FAILED": 224,
+        "SEARCHED_NO_MATCH": 13036
+      },
+      "primary_family": "discovery-and-alert-brokers",
+      "representation_state": "direct",
+      "source_key": "rubin-fink-crossmatch"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 740,
+      "declared": true,
+      "events_with_executed_receipts": 1055,
+      "events_with_retained_records": 743,
+      "executed_query_receipts": 2079,
+      "implementation_state": "implemented-credentials-required",
+      "name": "Lasair",
+      "operational_state": "provider-failure",
+      "outcome_counts": {
+        "AMBIGUOUS": 10,
+        "DATA_RETURNED": 740,
+        "NOT_CONFIGURED": 16353,
+        "NOT_QUERIED": 2658,
+        "PARTIAL_RESULT": 1,
+        "QUERY_FAILED": 314
+      },
+      "primary_family": "discovery-and-alert-brokers",
+      "representation_state": "direct",
+      "source_key": "rubin-lasair"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Vera C. Rubin Observatory / LSST",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "none",
+      "source_key": "rubin-lsst"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "documented-not-implemented",
+      "name": "Pitt-Google",
+      "operational_state": "not-implemented",
+      "outcome_counts": {
+        "NOT_CONFIGURED": 20076
+      },
+      "primary_family": "discovery-and-alert-brokers",
+      "representation_state": "none",
+      "source_key": "rubin-pitt-google"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 309,
+      "declared": true,
+      "events_with_executed_receipts": 309,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 311,
+      "implementation_state": "implemented",
+      "name": "Rubin Science Platform Alert Retrieval Service",
+      "operational_state": "active-no-recent-messages",
+      "outcome_counts": {
+        "DATA_RETURNED": 309,
+        "NOT_QUERIED": 19767
+      },
+      "primary_family": "discovery-and-alert-brokers",
+      "representation_state": "dispositions-only",
+      "source_key": "rubin-rsp-alerts"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 1308,
+      "declared": true,
+      "events_with_executed_receipts": 7865,
+      "events_with_retained_records": 1319,
+      "executed_query_receipts": 8941,
+      "implementation_state": "implemented",
+      "name": "SIMBAD Astronomical Database",
+      "operational_state": "provider-failure",
+      "outcome_counts": {
+        "DATA_RETURNED": 1308,
+        "NOT_QUERIED": 11367,
+        "QUERY_FAILED": 3484,
+        "SEARCHED_NO_MATCH": 3073
+      },
+      "primary_family": "host-counterpart-and-catalog-context",
+      "representation_state": "direct",
+      "source_key": "simbad"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "SuperNova Early Warning System",
+      "operational_state": "active-no-recent-messages",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "none",
+      "source_key": "snews-gcn"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented-topic-authorization-required",
+      "name": "Super-Kamiokande Supernova Neutrino Alerts",
+      "operational_state": "credentials-required",
+      "outcome_counts": {
+        "NOT_CONFIGURED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "none",
+      "source_key": "superk-gcn"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented-topic-authorization-required",
+      "name": "SVOM Public GRB and Counterpart Notices",
+      "operational_state": "credentials-required",
+      "outcome_counts": {
+        "NOT_CONFIGURED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "none",
+      "source_key": "svom-gcn"
+    },
+    {
+      "applicable_events": 1100,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "Swift BAT to XRT/UVOT Follow-up",
+      "operational_state": "active-no-recent-messages",
+      "outcome_counts": {
+        "NOT_QUERIED": 1100
+      },
+      "primary_family": "multimessenger-and-high-energy",
+      "representation_state": "none",
+      "source_key": "swift-gcn"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 17839,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented-credentials-required",
+      "name": "IAU Transient Name Server",
+      "operational_state": "active-returning-data",
+      "outcome_counts": {
+        "NOT_CONFIGURED": 20076
+      },
+      "primary_family": "discovery-and-alert-brokers",
+      "representation_state": "direct",
+      "source_key": "tns"
+    },
+    {
+      "applicable_events": 20076,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 343,
+      "executed_query_receipts": 0,
+      "implementation_state": "implemented",
+      "name": "TNS AstroNotes",
+      "operational_state": "temporarily-unavailable",
+      "outcome_counts": {
+        "NOT_QUERIED": 20076
+      },
+      "primary_family": "reports-and-literature",
+      "representation_state": "direct",
+      "source_key": "tns-astronotes"
+    },
+    {
+      "applicable_events": 19233,
+      "data_returned_events": 2810,
+      "declared": true,
+      "events_with_executed_receipts": 9628,
+      "events_with_retained_records": 3148,
+      "executed_query_receipts": 14406,
+      "implementation_state": "implemented-credentials-required",
+      "name": "TNS Public Object Details and Spectra",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "AMBIGUOUS": 373,
+        "DATA_RETURNED": 2810,
+        "NOT_CONFIGURED": 9232,
+        "QUERY_FAILED": 6818
+      },
+      "primary_family": "spectroscopy",
+      "representation_state": "direct",
+      "source_key": "tns-public-reports"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Wide Field Survey Telescope",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "wfst"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 297,
+      "declared": true,
+      "events_with_executed_receipts": 9571,
+      "events_with_retained_records": 298,
+      "executed_query_receipts": 14219,
+      "implementation_state": "implemented",
+      "name": "WISeREP Public Spectra",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "DATA_RETURNED": 297,
+        "NOT_QUERIED": 9661,
+        "QUERY_FAILED": 6922,
+        "SEARCHED_NO_MATCH": 2352
+      },
+      "primary_family": "spectroscopy",
+      "representation_state": "direct",
+      "source_key": "wiserep"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Young Supernova Experiment",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "yse"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 0,
+      "declared": true,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 0,
+      "implementation_state": "represented-through-provider",
+      "name": "Zwicky Transient Facility",
+      "operational_state": "represented-through-another-provider",
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 19232
+      },
+      "primary_family": "optical-and-time-domain-surveys",
+      "representation_state": "through-provider",
+      "source_key": "ztf"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 4536,
+      "declared": true,
+      "events_with_executed_receipts": 13381,
+      "events_with_retained_records": 4533,
+      "executed_query_receipts": 18926,
+      "implementation_state": "implemented",
+      "name": "ZTF Alert Light Curves via ALeRCE",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "AMBIGUOUS": 1,
+        "DATA_RETURNED": 4536,
+        "NOT_QUERIED": 5850,
+        "QUERY_FAILED": 191,
+        "SEARCHED_NO_MATCH": 8654
+      },
+      "primary_family": "photometric-follow-up",
+      "representation_state": "direct",
+      "source_key": "ztf-alerce"
+    },
+    {
+      "applicable_events": 19232,
+      "data_returned_events": 489,
+      "declared": true,
+      "events_with_executed_receipts": 10598,
+      "events_with_retained_records": 0,
+      "executed_query_receipts": 22584,
+      "implementation_state": "implemented",
+      "name": "ZTF Public Data-Release Light Curves at IRSA",
+      "operational_state": "scheduled",
+      "outcome_counts": {
+        "AMBIGUOUS": 13,
+        "DATA_RETURNED": 489,
+        "NOT_QUERIED": 8621,
+        "QUERY_FAILED": 1682,
+        "SEARCHED_NO_MATCH": 8427
+      },
+      "primary_family": "photometric-follow-up",
+      "representation_state": "direct",
+      "source_key": "ztf-irsa"
+    },
+    {
+      "applicable_events": 490,
+      "data_returned_events": 0,
+      "declared": false,
+      "events_with_executed_receipts": 0,
+      "events_with_retained_records": 490,
+      "executed_query_receipts": 0,
+      "implementation_state": null,
+      "name": "ztf-irsa-release",
+      "operational_state": null,
+      "outcome_counts": {
+        "LINK_ONLY_NOT_QUERIED": 490
+      },
+      "primary_family": null,
+      "representation_state": null,
+      "source_key": "ztf-irsa-release"
+    }
+  ],
+  "statement": "The four source denominators per source for this release, summed over every public record's source matrix: declared (the contract is in this release's source universe), applicable (records whose executable applicability rule names the source), executed (persisted query receipts with an executed terminal outcome, and the records that hold at least one), and data-bearing (records whose current query outcome for the source is DATA_RETURNED, beside the records that keep retained rows from it, which also counts rows retained before the receipt model).",
+  "totals": {
+    "applicable_source_evaluations": 2422968,
+    "data_bearing_source_evaluations": 55610,
+    "data_returned_source_evaluations": 36812,
+    "declared_sources": 149,
+    "executed_query_receipts": 316653,
+    "outcome_counts": {
+      "AMBIGUOUS": 641,
+      "DATA_RETURNED": 36812,
+      "LINK_ONLY_NOT_QUERIED": 1749727,
+      "NOT_CONFIGURED": 221923,
+      "NOT_QUERIED": 271838,
+      "PARTIAL_RESULT": 302,
+      "QUERY_BLOCKED": 3712,
+      "QUERY_FAILED": 29186,
+      "SEARCHED_NO_MATCH": 108827
+    }
+  }
+}
