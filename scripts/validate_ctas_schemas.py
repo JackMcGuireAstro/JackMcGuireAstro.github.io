@@ -72,6 +72,8 @@ DECLARED_FILES = {
     "feeds/index.json": ("feeds_index_path", "feeds-index"),
     # Track 3c part 2: the population anomaly and nearest neighbours.
     "population-anomaly.json": ("population_anomaly_path", "population-anomaly"),
+    # The incremental release (2026-11-24): the per-record input fingerprints and build record.
+    "input-fingerprints.json": ("input_fingerprints_path", "input-fingerprints"),
 }
 # Present only after the link checker ran (the publisher) or in a deployed tree; the
 # cloud-run marker only when the GitHub Actions publisher built the release; the check

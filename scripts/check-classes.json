@@ -98,6 +98,14 @@
    "baseline": true,
    "prerequisite": true
   },
+  "ctas.incremental-reuse": {
+   "class": "advisory",
+   "scopes": [
+    "ctas-publish"
+   ],
+   "what": "incremental release: a sample of the dossiers reused from the previous release is rebuilt from the database each cycle and compared byte for byte; a mismatch turns that release into a full rebuild (published) and is reported here",
+   "fallback": false
+  },
   "ctas.feed-build": {
    "class": "integrity",
    "scopes": [

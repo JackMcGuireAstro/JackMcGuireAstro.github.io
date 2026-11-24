@@ -205,6 +205,60 @@ reason; the next run with the switch on recomputes everything. Set it to `0` whe
 releases stop and the publish log shows the exporter running out of memory or time;
 set it back once the cause is fixed.
 
+## Incremental releases
+
+Until 2026-11-24 every release rebuilt all 20,000 dossiers from the database although a
+cycle changes a few hundred of them: 20 to 27 minutes and 11 to 15.5 GB of the runner's
+16 GB, the source of the memory-ceiling stops and most lost runners. The exporter now
+(`scripts/ctas_release_build.py`):
+
+- reads the light layer of every eligible event (the events row, aliases, identity
+  resolution, positional neighbours) and streams every other row a dossier is built from
+  through a 16-byte digest per event, the *input fingerprint*, with the same SQL the
+  dossier pipeline runs; nothing is retained but the digest and a few facts;
+- reads the previous release from the data branch (its dossiers as compressed canonical
+  JSON, its `ctas/data/input-fingerprints.json`, its score clock), verified against its
+  manifest the way the history always was — in a spawned process while the fingerprints
+  are computed, each about two minutes at 20,000 events (`CTAS_PREVIOUS_RELEASE_WORKER=0`
+  reads it inline, after the plan);
+- reuses a dossier byte for byte when its fingerprint and the release-wide context (the
+  bound code hashes, the source-universe definition fields the projection reads, the
+  analysis switch) are unchanged and its clock-dependent score terms cannot have moved
+  (discovery older than 72 h and the latest observation older than 120 h at the previous
+  clock; the 180-day follow-up window not crossed). Events with messenger signals or
+  collector screens read other events of the release and are rebuilt every cycle;
+- rebuilds everything else from the database in batches of `CTAS_BUILD_BATCH` (1,000)
+  events, the messenger-signal events last with the complete multimessenger index;
+- keeps every dossier of the release as compressed canonical JSON and streams the catalog
+  products, statistics and gates from it once; memory no longer grows with the catalog;
+- writes a bucket's chunk by copying the previous release's bytes when none of its
+  dossiers changed, and encodes the others from the store, reading each back.
+
+Safety:
+
+- every cycle rebuilds a sample of the reused dossiers from the database (1 % of them,
+  at least 150; `CTAS_SAMPLE_FRACTION`, `CTAS_SAMPLE_MINIMUM`) and compares the bytes; a
+  mismatch turns that cycle into a full rebuild, is recorded in the fingerprints file
+  (`build.sample_mismatch_at`) and reported by the advisory check `ctas.incremental-reuse`
+  (an issue), and full rebuilds continue for `CTAS_FULL_REBUILD_HOURS`;
+- `CTAS_RELEASE_CLOCK` (an ISO instant) pins the release clock so that two releases of
+  the same database can be compared byte for byte; tests and rehearsals only, the runner
+  never sets it;
+- a full rebuild runs at least every `CTAS_FULL_REBUILD_HOURS` (24), whenever the context
+  changed (every code landing), when the previous release or its fingerprints cannot be
+  read, and with the repository variable `CTAS_INCREMENTAL=0` or `--full`;
+- the certificate (`build`), `status.json` (`build`, `input_fingerprints_path`) and the
+  publish log (`release build   :` lines) say how each release was built: mode, reason,
+  reused and rebuilt counts, the sample result, why records were rebuilt
+  (`decisions`: new, changed, clock, cross-event, unreadable).
+
+A full and an incremental release of the same database at the same clock are
+byte-identical (every chunk, page, index, research table and asset; the test
+`scripts/test_ctas_release_build.py` proves it on the fixture, and the exporter's own
+sample proves it on every cycle). Reading an incremental release needs nothing new:
+`input-fingerprints.json` is one more declared file (`ctas/openapi.yaml`,
+`ctas/schemas/input-fingerprints.schema.json`).
+
 ## Install or replace the service
 
 Run once:

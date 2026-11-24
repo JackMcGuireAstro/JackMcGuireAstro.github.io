@@ -397,6 +397,22 @@
             "sha256"
           ],
           "additionalProperties": true
+        },
+        "input_fingerprints": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "ctas/data/input-fingerprints.json"
+            },
+            "sha256": {
+              "$ref": "common.schema.json#/$defs/sha256"
+            }
+          },
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "additionalProperties": true
         }
       },
       "required": [
@@ -445,6 +461,58 @@
     "population_anomaly_path": {
       "const": "ctas/data/population-anomaly.json",
       "description": "Track 3c part 2: the release-level isolation-forest scores and nearest neighbours."
+    },
+    "input_fingerprints_path": {
+      "const": "ctas/data/input-fingerprints.json",
+      "description": "The incremental release (2026-11-24): one input digest per record and the build record."
+    },
+    "build": {
+      "type": "object",
+      "description": "How this release was built: full (every dossier from the database) or incremental (unchanged dossiers reused from the previous release, a sample re-verified).",
+      "required": [
+        "mode",
+        "reused",
+        "rebuilt",
+        "full_rebuild_at",
+        "sample"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "full",
+            "incremental"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "reused": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rebuilt": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "full_rebuild_at": {
+          "type": "string"
+        },
+        "sample": {
+          "type": "object",
+          "required": [
+            "size",
+            "mismatches"
+          ],
+          "properties": {
+            "size": {
+              "type": "integer"
+            },
+            "mismatches": {
+              "type": "integer"
+            }
+          }
+        }
+      }
     }
   },
   "required": [

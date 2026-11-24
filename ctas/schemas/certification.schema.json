@@ -112,6 +112,56 @@
     },
     "report_checksum_sha256": {
       "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "build": {
+      "type": "object",
+      "description": "How the release was built (full or incremental; see input-fingerprints.schema.json build).",
+      "required": [
+        "mode",
+        "reason",
+        "reused",
+        "rebuilt",
+        "full_rebuild_at",
+        "sample"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "full",
+            "incremental"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "reused": {
+          "type": "integer"
+        },
+        "rebuilt": {
+          "type": "integer"
+        },
+        "full_rebuild_at": {
+          "type": "string"
+        },
+        "sample": {
+          "type": "object"
+        },
+        "decisions": {
+          "type": "object"
+        },
+        "previous_score_as_of": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "full_rebuild_hours": {
+          "type": "number"
+        },
+        "sample_mismatch_at": {
+          "type": "string"
+        }
+      }
     }
   },
   "required": [

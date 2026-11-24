@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jackmcguireastro.github.io/ctas/schemas/input-fingerprints.schema.json",
+  "title": "CTAS input fingerprints",
+  "description": "One digest per published record over every database row its dossier was built from, with the release-wide context digest and the build record (how the release was built: full or incremental). The next release reuses a record's dossier bytes only while its fingerprint, the context and its clock-dependent score terms are unchanged; a sample of reused records is rebuilt and compared every cycle.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "generated_at",
+    "score_as_of",
+    "context_digest",
+    "statement",
+    "build",
+    "fingerprints"
+  ],
+  "properties": {
+    "schema": {
+      "const": "ctas.input-fingerprints@1.0.0"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "score_as_of": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The release's score clock (score_clock.score_as_of); the next release's clock rule compares against it."
+    },
+    "context_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "sha256 over the bound code hashes, the source-universe definition fields the projection reads and the analysis switch."
+    },
+    "statement": {
+      "type": "string"
+    },
+    "build": {
+      "type": "object",
+      "required": [
+        "mode",
+        "reason",
+        "reused",
+        "rebuilt",
+        "full_rebuild_at",
+        "sample"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "full",
+            "incremental"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "reused": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rebuilt": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "full_rebuild_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When every dossier was last rebuilt from the database (this release when mode is full)."
+        },
+        "full_rebuild_hours": {
+          "type": "number",
+          "minimum": 0
+        },
+        "previous_score_as_of": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sample_mismatch_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The last time a re-verified dossier did not reproduce; full rebuilds continue for full_rebuild_hours after it."
+        },
+        "decisions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Why records were rebuilt: new, changed (fingerprint), clock (time-dependent score terms), cross-event (messenger signals or collector screens), unreadable; and unchanged (reused)."
+        },
+        "sample": {
+          "type": "object",
+          "required": [
+            "size",
+            "mismatches"
+          ],
+          "properties": {
+            "size": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "mismatches": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "mismatched_event_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "fingerprints": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{32}$"
+      },
+      "description": "event_id -> blake2b-128 digest (hex)."
+    }
+  }
+}

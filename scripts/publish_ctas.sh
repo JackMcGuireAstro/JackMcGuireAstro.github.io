@@ -52,6 +52,7 @@ PUBLIC_FILES=(
   ctas/data/changelog.json
   ctas/data/source-accounting.json
   ctas/data/population-anomaly.json
+  ctas/data/input-fingerprints.json
   ctas/data/feeds/index.json
   ctas/data/status.json
   ctas/data/source-universe.json
@@ -412,6 +413,12 @@ check ctas.export with_release python3 scripts/export_ctas_snapshot.py --databas
   --release-base-ref "$DATA_TIP" --bulk-dir "$BULK_DIR" \
   || block "export failed; nothing committed"
 phase_done export
+# The incremental release (scripts/ctas_release_build.py): the exporter reuses unchanged
+# dossiers from the previous release and rebuilds a sample of them from the database to
+# compare. A sample that did not reproduce made this release a full rebuild already; it is
+# reported here (advisory: the published release is a full rebuild) so it reaches an issue.
+check ctas.incremental-reuse python3 scripts/ctas_reuse_check.py ctas/data/input-fingerprints.json \
+  || say "WARN  a reused dossier did not reproduce from the database; this release was rebuilt in full (see ctas/data/input-fingerprints.json)"
 check ctas.link-check python3 scripts/check_ctas_links.py --catalog-index ctas/data/catalog-index.json \
   --candidate-manifest ctas/data/candidate-chunks/manifest.json \
   --source-universe ctas/data/source-universe.json --output ctas/data/link-health.json \

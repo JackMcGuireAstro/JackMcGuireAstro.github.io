@@ -424,13 +424,16 @@ def _valid_sha256(value: Any) -> bool:
     return isinstance(value, str) and len(value) == 64 and all(c in "0123456789abcdef" for c in value)
 
 
-def multimessenger_problems(candidates: Iterable[dict[str, Any]]) -> list[str]:
+def multimessenger_problems(candidates: Iterable[dict[str, Any]], ids: Iterable[str] | None = None) -> list[str]:
     """Certificate gate: every run names its method version and inputs with a checksum; the
     MOC areas nest; galaxy lists name their catalogue; registry and region rows reference
-    events of this release; region rows lie inside their circle."""
+    events of this release; region rows lie inside their circle.
+
+    ``ids`` is the event-id set of the whole release when ``candidates`` is only a part of it
+    (the exporter checks one streamed dossier at a time)."""
 
     candidates = list(candidates)
-    ids = {str(c.get("event_id")) for c in candidates}
+    ids = {str(c.get("event_id")) for c in candidates} if ids is None else set(ids)
     problems: list[str] = []
     for candidate in candidates:
         block = candidate.get(CANDIDATE_KEY)

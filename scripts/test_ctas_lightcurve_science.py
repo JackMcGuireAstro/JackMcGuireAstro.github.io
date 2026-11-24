@@ -317,9 +317,14 @@ class WiringTests(unittest.TestCase):
         # A query after the exporter closes its connection marks every event unreadable
         # (found in the 2026-10-27 rehearsal); the receipts must be read with the others.
         source = (ROOT / "scripts/export_ctas_snapshot.py").read_text()
-        read = source.index("broker_rows = rows_by_event(cur, ids, broker_classes.broker_rows_sql())")
-        close = source.index("    con.close()\n", source.index("def export("))
-        self.assertLess(read, close)
+        # The loader reads them with the other evidence (load_evidence); export() and the
+        # exporter's batch build close the connection only after the loader ran.
+        read = source.index('evidence["broker_rows"] = rows_by_event(cur, ids, broker_classes.broker_rows_sql())')
+        self.assertLess(source.index("def load_evidence("), read)
+        export = source.index("def export(")
+        self.assertLess(source.index("evidence = load_evidence(cur, ", export), source.index("    con.close()\n", export))
+        main = source.index("def main() -> int:")
+        self.assertLess(source.index("store, minis = build_dossiers(", main), source.index("    con.close()\n", main))
 
 
 class ReleaseTests(unittest.TestCase):

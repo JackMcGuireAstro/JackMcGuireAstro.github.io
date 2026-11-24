@@ -38,10 +38,11 @@ import subprocess
 import sys
 import time
 import xml.etree.ElementTree as ET
+import zlib
 from datetime import datetime, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 UTC = timezone.utc  # datetime.UTC is 3.11+; this works on 3.9+
 
@@ -64,6 +65,11 @@ try:
     from ctas_chunks import encode_chunk, decode_chunk
 except ModuleNotFoundError:
     from scripts.ctas_chunks import encode_chunk, decode_chunk
+
+try:
+    import ctas_release_build as release_build
+except ModuleNotFoundError:
+    from scripts import ctas_release_build as release_build
 
 try:
     import ctas_analysis_screens as analysis_screens
@@ -393,6 +399,7 @@ API_DESCRIPTION_PATHS = (
     "ctas/schemas/feeds-index.schema.json",
     "ctas/schemas/check-history.schema.json",
     "ctas/schemas/population-anomaly.schema.json",
+    "ctas/schemas/input-fingerprints.schema.json",
     # Track 4: the shapes of the observer tools' drafts (ctas/observer.js); never published data.
     "ctas/schemas/tns-at-report.schema.json",
     "ctas/schemas/tns-classification-report.schema.json",
@@ -427,6 +434,8 @@ BOUND_CODE_PATHS = (
     "tests/fixtures/ctas-brokers/fink-empty-ZTF99zzzzzzz.json", "tests/fixtures/ctas-brokers/antares-empty-ZTF99zzzzzzz.json",
     "tests/fixtures/ctas-brokers/dossier-blocks.json",
     "scripts/ctas_chunks.py", "scripts/test_ctas_chunks.py", "scripts/test_ctas_chunk_loader.js",
+    # The incremental release (2026-11-24): fingerprints, the dossier store, reuse and the chunk writer.
+    "scripts/ctas_release_build.py", "scripts/test_ctas_release_build.py", "scripts/ctas_reuse_check.py",
     "scripts/test_ctas_publisher_recovery.py",
     "scripts/check_ctas_links.py", "scripts/rebuild_ctas_release_history.py",
     "scripts/validate_ctas_schemas.py", "scripts/test_ctas_interop.py",
@@ -2327,45 +2336,10 @@ def comparison_envelope_receipts(db_path: Path, envelope_ids: list[str]) -> dict
     return receipts
 
 
-def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    uri = f"file:{db_path}?mode=ro"
-    con = sqlite3.connect(uri, uri=True, timeout=15)
-    con.row_factory = sqlite3.Row
-    cur = con.cursor()
-
-    cols = ", ".join(COLUMNS)
-    event_sql = (
-        f"SELECT id, simulation, priority_factors, {cols} FROM events "
-        f"WHERE COALESCE(simulation, 0) = 0 AND INSTR(preferred_name, '%') = 0 "
-        f"ORDER BY COALESCE(updated_at, discovery_time) DESC"
-    )
-    rows = cur.execute(event_sql + (" LIMIT ?" if limit > 0 else ""), ((limit,) if limit > 0 else ())).fetchall()
-
-    # Aliases for exactly the events we are publishing.
-    ids = [r["id"] for r in rows]
-    alias_map: dict[str, list[sqlite3.Row]] = {}
-    CHUNK = 400
-    for i in range(0, len(ids), CHUNK):
-        chunk = ids[i:i + CHUNK]
-        q = ",".join("?" * len(chunk))
-        for a in cur.execute(
-            f"SELECT id, event_id, provider, external_id, is_preferred, created_at FROM aliases "
-            f"WHERE event_id IN ({q}) ORDER BY is_preferred DESC, provider, external_id",
-            chunk,
-        ):
-            alias_map.setdefault(a["event_id"], []).append(a)
-
-    # Unresolved provider identity is fail-closed, never silently resolved.
-    ambiguous_tns_identity: dict[str, list[str]] = {}
-    for event_id, alias_rows in alias_map.items():
-        object_ids = conflicting_tns_object_ids(alias_rows)
-        if len(object_ids) > 1:
-            ambiguous_tns_identity[str(event_id)] = object_ids
-
-    classifications = rows_by_event(
-        cur,
-        ids,
-        """
+# The loader's per-event queries (rows_by_event); scripts/ctas_release_build.py streams the same
+# statements through the input fingerprints, so a change in any selected column is a change.
+EVIDENCE_SQL: dict[str, str] = {
+    "classifications": """
         SELECT ca.event_id, ca.id AS assertion_id, ca.envelope_id AS source_record_id,
                ca.provider, ca.classification, ca.subtype, ca.probability,
                ca.method, ca.model_name, ca.model_version, ca.asserted_at,
@@ -2380,11 +2354,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
           AND COALESCE(ca.retracted, 0) = 0
         ORDER BY ca.event_id, ca.asserted_at DESC, ca.id
         """,
-    )
-    classification_history = rows_by_event(
-        cur,
-        ids,
-        """
+    "classification_history": """
         SELECT ca.event_id, ca.id AS assertion_id, ca.envelope_id AS source_record_id,
                ca.provider, ca.classification, ca.subtype, ca.probability,
                ca.method, ca.model_name, ca.model_version, ca.asserted_at,
@@ -2398,11 +2368,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
           AND (COALESCE(ca.superseded, 0) = 1 OR COALESCE(ca.retracted, 0) = 1)
         ORDER BY ca.event_id, ca.asserted_at DESC, ca.id
         """,
-    )
-    observations = rows_by_event(
-        cur,
-        ids,
-        """
+    "observations": """
         SELECT o.event_id, o.id AS assertion_id, o.envelope_id AS source_record_id,
                o.provider, o.provider_observation_id, o.observed_at, o.original_time,
                o.mjd, o.jd, o.detection, o.telescope, o.observatory, o.instrument,
@@ -2421,11 +2387,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
           AND o.data_rights IN ('public', 'open')
         ORDER BY o.event_id, o.observed_at DESC, o.id
         """,
-    )
-    signals = rows_by_event(
-        cur,
-        ids,
-        """
+    "messenger_signals": """
         SELECT ms.event_id, ms.id AS assertion_id, ms.envelope_id AS source_record_id,
                ms.provider, ms.provider_signal_id, ms.observed_at,
                ms.messenger, ms.role, ms.instrument, ms.detection, ms.alert_type,
@@ -2442,15 +2404,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
           AND COALESCE(ms.simulation, 0) = 0
         ORDER BY ms.event_id, ms.observed_at DESC, ms.id
         """,
-    )
-    signals = {
-        event_id: derive_messenger_revisions(rows)
-        for event_id, rows in signals.items()
-    }
-    publications = rows_by_event(
-        cur,
-        ids,
-        """
+    "publications": """
         WITH latest_revision AS (
           SELECT pr.*,
                  ROW_NUMBER() OVER (
@@ -2472,12 +2426,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
           AND p.data_rights IN ('public', 'open')
         ORDER BY pel.event_id, p.published_at DESC, p.id
         """,
-    )
-
-    publication_revisions = rows_by_event(
-        cur,
-        ids,
-        """
+    "publication_revisions": """
         SELECT pel.event_id, p.id AS publication_assertion_id,
                pr.id AS assertion_id, p.provider, p.provider_publication_id,
                p.publication_type, p.canonical_url, p.published_at,
@@ -2497,12 +2446,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
           AND p.data_rights IN ('public', 'open')
         ORDER BY pel.event_id, p.published_at DESC, p.id, pr.retrieved_at DESC, pr.id
         """,
-    )
-
-    spectra = rows_by_event(
-        cur,
-        ids,
-        """
+    "spectra": """
         SELECT s.event_id, s.id AS assertion_id, s.envelope_id AS source_record_id,
                s.provider, s.provider_spectrum_id, s.observed_at,
                s.telescope, s.instrument, s.configuration, s.wavelength_unit,
@@ -2516,12 +2460,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
           AND s.data_rights IN ('public', 'open')
         ORDER BY s.event_id, s.observed_at DESC, s.id
         """,
-    )
-
-    host_context = rows_by_event(
-        cur,
-        ids,
-        """
+    "host_context": """
         SELECT h.event_id, h.id AS assertion_id, h.envelope_id AS source_record_id,
                h.provider, h.queried_name, h.canonical_name,
                h.cross_identifications, h.ra_deg, h.dec_deg, h.transient_offset_arcsec, h.redshift,
@@ -2536,12 +2475,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         WHERE h.event_id IN ({ids}) AND h.data_rights IN ('public', 'open')
         ORDER BY h.event_id, h.queried_at DESC, h.id
         """,
-    )
-
-    catalog_counterparts = rows_by_event(
-        cur,
-        ids,
-        """
+    "catalog_counterparts": """
         SELECT event_id, id AS assertion_id, provider, catalog, catalog_record_id, catalog_description,
                ra_deg, dec_deg, separation_arcsec, position_error_arcsec,
                counterpart_type, photometry, motion, description, source_url,
@@ -2553,12 +2487,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         WHERE event_id IN ({ids}) AND data_rights IN ('public', 'open')
         ORDER BY event_id, queried_at DESC, separation_arcsec, id
         """,
-    )
-
-    archive_products = rows_by_event(
-        cur,
-        ids,
-        """
+    "archive_products": """
         SELECT event_id, id AS assertion_id, provider, provider_product_id, mission, observation_id,
                product_group_id, data_product_type, product_type, product_subgroup,
                product_filename, description,
@@ -2572,12 +2501,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         WHERE event_id IN ({ids}) AND data_rights IN ('public', 'open')
         ORDER BY event_id, queried_at DESC, id
         """,
-    )
-
-    all_attempts = rows_by_event(
-        cur,
-        ids,
-        """
+    "all_attempts": """
         SELECT sqa.*, sources.display_name, sources.documentation_url
         FROM source_query_attempts sqa
         JOIN sources ON sources.id = sqa.source_id
@@ -2585,21 +2509,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
         ORDER BY sqa.event_id, sqa.source_id, sqa.query_kind,
                  sqa.checked_at DESC, sqa.id DESC
         """,
-    )
-    latest_attempts: dict[str, list[dict[str, Any]]] = {}
-    for event_id, event_attempts in all_attempts.items():
-        seen_attempt_keys: set[tuple[str, str]] = set()
-        for attempt in event_attempts:
-            key = (str(attempt.get("source_id") or ""), str(attempt.get("query_kind") or ""))
-            if key in seen_attempt_keys:
-                continue
-            seen_attempt_keys.add(key)
-            latest_attempts.setdefault(event_id, []).append(attempt)
-
-    analysis_runs = rows_by_event(
-        cur,
-        ids,
-        """
+    "analysis_runs": """
         SELECT ar.*
         FROM analysis_runs ar
         WHERE ar.event_id IN ({ids})
@@ -2607,13 +2517,7 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
           AND ar.data_rights IN ('public', 'open')
         ORDER BY ar.event_id, COALESCE(ar.completed_at, ar.created_at), ar.id
         """,
-    )
-    # Track 3a: the complete collector screens (anomaly, multiband colour screen, GW
-    # counterpart ranking and tiling), published under analysis_screens; scripts/ctas_analysis_screens.py.
-    analysis_screen_runs = rows_by_event(
-        cur,
-        ids,
-        """
+    "analysis_screen_runs": """
         SELECT ar.*
         FROM analysis_runs ar
         WHERE ar.event_id IN ({ids})
@@ -2623,102 +2527,97 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
           AND ar.data_rights IN ('public', 'open')
         ORDER BY ar.event_id, COALESCE(ar.completed_at, ar.created_at), ar.id
         """,
+}
+
+EVIDENCE_TABLE_TAGS = (
+    "classifications", "classification_history", "observations", "messenger_signals", "publications",
+    "publication_revisions", "spectra", "host_context", "catalog_counterparts", "archive_products",
+)
+
+
+class LightLayer:
+    """Every eligible event without its evidence rows: the events row, the aliases, the public
+    links and designations, the record role, and the two cross-event structures (identity
+    resolution and positional neighbours). Cheap for the whole catalog; the dossier pipeline
+    and the input fingerprints both start from it."""
+
+    def __init__(self) -> None:
+        self.ids: list[str] = []                       # catalog order (the events query order)
+        self.rows: dict[str, sqlite3.Row] = {}
+        self.records: dict[str, dict[str, Any]] = {}  # the light part of each base record
+        self.alias_map: dict[str, list[sqlite3.Row]] = {}
+        self.ambiguous_tns_identity: dict[str, list[str]] = {}
+        self.skipped = 0
+        self.limit = 0
+
+    def payload(self, event_id: str) -> bytes:
+        """The light layer of one event for its input fingerprint."""
+
+        row = self.rows[event_id]
+        return json.dumps({
+            "event": [clean_for_json(value) for value in tuple(row)],
+            "aliases": [[clean_for_json(value) for value in tuple(alias)] for alias in self.alias_map.get(row["id"], [])],
+            "record": self.records[event_id],
+        }, sort_keys=True, separators=(",", ":"), default=str).encode()
+
+
+def clean_for_json(value: Any) -> Any:
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return "sha256:" + hashlib.sha256(bytes(value)).hexdigest()
+    if isinstance(value, float) and (value != value or value in (float("inf"), float("-inf"))):
+        return repr(value)
+    return value
+
+
+def open_database(db_path: Path) -> sqlite3.Connection:
+    con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=15)
+    con.row_factory = sqlite3.Row
+    return con
+
+
+def read_light_layer(cur: sqlite3.Cursor, limit: int) -> LightLayer:
+    light = LightLayer()
+    light.limit = limit
+    cols = ", ".join(COLUMNS)
+    event_sql = (
+        f"SELECT id, simulation, priority_factors, {cols} FROM events "
+        f"WHERE COALESCE(simulation, 0) = 0 AND INSTR(preferred_name, '%') = 0 "
+        f"ORDER BY COALESCE(updated_at, discovery_time) DESC"
     )
-    # Track 3d: the collector's localization MOCs, galaxy rankings and counterpart rankings,
-    # every revision, for the multimessenger event pages; scripts/ctas_multimessenger.py.
-    multimessenger_runs = rows_by_event(cur, ids, multimessenger.RUNS_SQL)
-    # Track 2b: every retained source assertion of position, classification, redshift and
-    # host, side by side under the comparison key; scripts/ctas_comparison.py.
-    comparison_envelopes = rows_by_event(cur, ids, comparison.ENVELOPE_SQL)
-    comparison_classifications = rows_by_event(cur, ids, comparison.CLASSIFICATION_SQL)
-    comparison_hosts = rows_by_event(cur, ids, comparison.HOST_SQL)
-    # Track 3c part 1: the broker-classification receipts (ALeRCE, Fink, ANTARES) with the
-    # kept response bytes; scripts/ctas_broker_classes.py re-reads them.
-    broker_rows = rows_by_event(cur, ids, broker_classes.broker_rows_sql())
+    rows = cur.execute(event_sql + (" LIMIT ?" if limit > 0 else ""), ((limit,) if limit > 0 else ())).fetchall()
 
-    latest_source_attempts = latest_source_attempts_of(cur)
-    source_success_times = {
-        str(row["source_id"]): iso(row["last_successful_at"])
-        for row in cur.execute(
-            """SELECT source_id, MAX(checked_at) AS last_successful_at
-               FROM source_query_attempts WHERE terminal_state = 'data' GROUP BY source_id"""
-        )
-    }
-    source_disposition_counts: dict[str, dict[str, int]] = {}
-    for row in cur.execute(
-        "SELECT source_id, terminal_state, COUNT(*) AS n FROM source_query_attempts GROUP BY source_id, terminal_state"
-    ):
-        source_disposition_counts.setdefault(str(row["source_id"]), {})[
-            public_attempt_state(str(row["terminal_state"] or ""))
-        ] = int(row["n"])
+    # Aliases for exactly the events we are publishing.
+    ids = [r["id"] for r in rows]
+    alias_map: dict[str, list[sqlite3.Row]] = {}
+    CHUNK = 400
+    for i in range(0, len(ids), CHUNK):
+        chunk = ids[i:i + CHUNK]
+        q = ",".join("?" * len(chunk))
+        for a in cur.execute(
+            f"SELECT id, event_id, provider, external_id, is_preferred, created_at FROM aliases "
+            f"WHERE event_id IN ({q}) ORDER BY is_preferred DESC, provider, external_id",
+            chunk,
+        ):
+            alias_map.setdefault(a["event_id"], []).append(a)
+    light.alias_map = alias_map
 
-    counts = {
-        "total_real_events": cur.execute(
-            "SELECT COUNT(*) FROM events WHERE COALESCE(simulation,0)=0").fetchone()[0],
-        "eligible_public_events": cur.execute(
-            """SELECT COUNT(*) FROM events WHERE COALESCE(simulation,0)=0
-               AND LOWER(COALESCE(status,'')) != 'merged'
-               AND INSTR(preferred_name, '%') = 0
-               AND preferred_name IS NOT NULL AND TRIM(preferred_name) != ''"""
-        ).fetchone()[0],
-        "quality_quarantined_events": cur.execute(
-            """SELECT COUNT(*) FROM events WHERE COALESCE(simulation,0)=0
-               AND LOWER(COALESCE(status,'')) != 'merged'
-               AND INSTR(preferred_name, '%') > 0"""
-        ).fetchone()[0],
-    }
-
-    source_rows = [
-        {
-            "source": clean(row["id"]),
-            "label": clean(row["display_name"]),
-            "facility": clean(row["facility"]),
-            "data_types": json.loads(row["data_types"] or "[]"),
-            "mode": clean(row["mode"]),
-            "public_scope": clean(row["public_scope"]),
-            "state": clean(row["runtime_state"]) or "unknown",
-            "detail": public_runtime_detail(row["runtime_detail"]),
-            "last_message_at": iso(row["last_message_at"]),
-            "lag_seconds": clean(row["lag_seconds"]),
-            "documentation_url": (
-                clean(row["documentation_url"])
-                if str(clean(row["documentation_url"]) or "").startswith("https://") else None
-            ),
-            "protocol": clean(row["protocol"]),
-            "authentication_requirement": clean(row["auth"]),
-            "proprietary_risk": clean(row["proprietary_risk"]),
-            "rate_or_cadence_limit": clean(row["rate_limit"]),
-            "adapter_status": clean(row["adapter_status"]),
-            "last_verified": clean(row["last_verified"]),
-            "enabled": bool(row["enabled"]),
-        }
-        for row in cur.execute(
-            """
-            SELECT id, display_name, facility, data_types, mode, public_scope,
-                   runtime_state, runtime_detail, last_message_at, lag_seconds,
-                   documentation_url, protocol, auth, proprietary_risk, rate_limit,
-                   adapter_status, last_verified, enabled
-            FROM sources
-            ORDER BY display_name, id
-            """
-        )
-    ]
-
-    con.close()
-
-    source_by_id = {str(row["source"]): row for row in source_rows}
+    # Unresolved provider identity is fail-closed, never silently resolved.
+    ambiguous_tns_identity: dict[str, list[str]] = {}
+    for event_id, alias_rows in alias_map.items():
+        object_ids = conflicting_tns_object_ids(alias_rows)
+        if len(object_ids) > 1:
+            ambiguous_tns_identity[str(event_id)] = object_ids
+    light.ambiguous_tns_identity = ambiguous_tns_identity
 
     out: list[dict[str, Any]] = []
-    skipped = 0
     for r in rows:
         if str(r["status"] or "").lower() in EXCLUDED_STATUS:
-            skipped += 1
+            light.skipped += 1
             continue
         name = clean(r["preferred_name"])
         if not name:
-            skipped += 1
+            light.skipped += 1
             continue
-
         rec: dict[str, Any] = {"event_id": str(r["id"])}
         for src, dest in COLUMNS.items():
             v = clean(r[src])
@@ -2810,179 +2709,14 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             for item in links
         ]
 
-        follow_up = {
-            "classifications": classifications.get(r["id"], []),
-            "classification_history": classification_history.get(r["id"], []),
-            "observations": observations.get(r["id"], []),
-            "spectra": spectra.get(r["id"], []),
-            "messenger_signals": signals.get(r["id"], []),
-            "publications": publications.get(r["id"], []),
-            "publication_revisions": publication_revisions.get(r["id"], []),
-            "host_context": host_context.get(r["id"], []),
-            "catalog_counterparts": catalog_counterparts.get(r["id"], []),
-            "archive_products": archive_products.get(r["id"], []),
-        }
-        rec["follow_up_counts"] = {
-            key: len(value) for key, value in follow_up.items()
-        }
-        rec["follow_up_total"] = sum(rec["follow_up_counts"].values())
-        rec["photometry_outcomes"] = photometry_outcomes(follow_up["observations"])
-        if any(follow_up.values()):
-            rec["follow_up"] = follow_up
-
-        evidence_by_provider: dict[str, dict[str, Any]] = {}
-        for evidence_type, evidence_rows in follow_up.items():
-            for evidence_row in evidence_rows:
-                provider = provider_source_key(evidence_row.get("provider"))
-                if not provider:
-                    continue
-                ledger = evidence_by_provider.setdefault(provider, {"count": 0, "types": {}, "url": None})
-                ledger["count"] += 1
-                ledger["types"][evidence_type] = ledger["types"].get(evidence_type, 0) + 1
-                if not ledger["url"]:
-                    for url_key in (
-                        "canonical_url", "citation_url", "public_download_url", "source_url",
-                        "catalog_documentation_url", "product_documentation_url",
-                    ):
-                        url_value = clean(evidence_row.get(url_key))
-                        if url_value and str(url_value).startswith("https://"):
-                            ledger["url"] = url_value
-                            break
-        for alias in alias_map.get(r["id"], []):
-            provider = str(alias["provider"] or "").strip().lower()
-            if not provider or provider not in PUBLIC_LINKS:
-                continue
-            ledger = evidence_by_provider.setdefault(provider, {"count": 0, "types": {}, "url": None})
-            ledger["count"] += 1
-            ledger["types"]["designations"] = ledger["types"].get("designations", 0) + 1
-            if provider == "tns" and str(r["id"]) not in ambiguous_tns_identity:
-                linked_id = tns_object_id(str(alias["external_id"] or ""))
-                own_id = tns_object_id(str(r["preferred_name"] or ""))
-                # The coverage row carries no designation of its own, so a
-                # mismatched object id would read as this candidate's TNS
-                # record.  Never let a later alias overwrite the ledger.
-                if linked_id and own_id in (None, linked_id):
-                    ledger["url"] = PUBLIC_LINKS["tns"][1].format(id=linked_id)
-
-        coverage = []
-        attempted_sources = set()
-        for attempt in latest_attempts.get(r["id"], []):
-            raw_state = str(attempt.get("terminal_state") or "")
-            state = public_attempt_disposition(raw_state, attempt.get("error_code"))
-            source_id = str(attempt.get("source_id") or "")
-            attempted_sources.add(source_id)
-            retained = evidence_by_provider.get(source_id, {"count": 0, "types": {}, "url": None})
-            row = {
-                "source_id": source_id,
-                "source_name": attempt.get("display_name"),
-                "data_types_sought": [str(attempt.get("query_kind") or "bounded target query").replace("-", " ")],
-                "disposition": state,
-                "query_kind": attempt.get("query_kind"),
-                "checked_at": iso(attempt.get("checked_at")),
-                "retained_record_count": int(retained["count"]),
-                "retained_record_types": retained["types"],
-                "basis": "explicit-source-query",
-                "documentation_url": attempt.get("documentation_url"),
-            }
-            if attempt.get("evidence_url") and str(attempt["evidence_url"]).startswith("https://"):
-                row["query_evidence_url"] = attempt["evidence_url"]
-            if retained.get("url"):
-                row["object_specific_result_url"] = retained["url"]
-            if attempt.get("next_eligible_at"):
-                row["next_eligible_at"] = iso(attempt["next_eligible_at"])
-            if attempt.get("error_code") and state in {
-                "provider-failure", "temporarily-unavailable", "incomplete-result",
-                "credentials-required", "ambiguous-identity", "rate-limited", "not-searched",
-            }:
-                row["reason_code"] = attempt["error_code"]
-            coverage.append(row)
-        for source_id, retained in sorted(evidence_by_provider.items()):
-            if source_id in attempted_sources:
-                continue
-            source = source_by_id.get(source_id, {})
-            coverage.append({
-                "source_id": source_id,
-                "source_name": source.get("label") or source_id,
-                "data_types_sought": sorted(retained["types"]),
-                "disposition": "active-returning-data",
-                "checked_at": None,
-                "retained_record_count": int(retained["count"]),
-                "retained_record_types": retained["types"],
-                "basis": "ingested-public-record",
-                "documentation_url": source.get("documentation_url"),
-                **({"object_specific_result_url": retained["url"]} if retained.get("url") else {}),
-            })
-        if coverage:
-            rec["source_coverage"] = coverage
-
-        rec["record_completeness"] = completeness_for(rec)
-        rec["reported_label_kind"] = reported_label_kind(rec)
-        rec["score_explanation"] = score_explanation_for(rec)
-        timeline = timeline_for(rec)
-        meaningful = next(
-            (entry for entry in timeline if entry.get("assertion_kind") == "provider assertion"),
-            timeline[0] if timeline else None,
-        )
-        if meaningful:
-            rec["most_recent_meaningful_change"] = {
-                key: meaningful[key] for key in (
-                    "evidence_type", "provider", "title", "scientific_time",
-                    "provider_publication_time", "ctas_receipt_time",
-                ) if key in meaningful
-            }
-
-        def latest_time(rows_for_type: list[dict[str, Any]], keys: tuple[str, ...]) -> str | None:
-            values = [
-                iso(row.get(key)) for row in rows_for_type for key in keys if row.get(key)
-            ]
-            return max((value for value in values if value), default=None)
-
-        rec["latest_classification_at"] = latest_time(
-            follow_up["classifications"], ("asserted_at", "source_published_at", "ctas_received_at")
-        )
-        rec["latest_spectrum_at"] = latest_time(
-            follow_up["spectra"], ("observed_at", "source_published_at", "ctas_received_at")
-        )
-        rec["latest_messenger_at"] = latest_time(
-            follow_up["messenger_signals"], ("observed_at", "source_published_at", "ctas_received_at")
-        )
-        rec["latest_retraction_at"] = latest_time(
-            [row for row in follow_up["classification_history"] if row.get("retracted")],
-            ("asserted_at", "source_published_at", "ctas_received_at"),
-        )
-        channels = {
-            str(row.get("messenger") or "").strip().lower()
-            for row in follow_up["messenger_signals"] if str(row.get("messenger") or "").strip()
-        }
-        primary = str(rec.get("primary_messenger") or "").strip().lower()
-        if primary and primary not in {"unknown", "multimessenger"}:
-            channels.add(primary)
-        rec["messenger_channels"] = sorted(channels)
-        missing_labels = [
-            component["label"] for component in rec["record_completeness"]["components"]
-            if component["state"] in {"missing", "not-assessed"}
-        ]
-        known_bits = [
-            rec.get("event_type") or "public transient candidate",
-            rec.get("classification") or "unclassified",
-            f"{rec['follow_up_total']} retained public evidence rows",
-        ]
-        source_attribution = rec.get("discovery_survey")
-        if not source_attribution and rec.get("designations"):
-            source_attribution = rec["designations"][0].get("source")
-        rec["candidate_summary"] = {
-            "why_in_ctas": "CTAS retains a rights-cleared public event record attributed to " + str(source_attribution or "a declared public event source") + ".",
-            "known": "; ".join(str(value) for value in known_bits),
-            "missing": ", ".join(missing_labels) if missing_labels else "No applicable component in the public-record model is currently marked missing.",
-            "non_claim": "Inclusion or positional context does not establish discovery, classification, counterpart, or host identity.",
-        }
-
         role, ranking_channel = record_role_for(rec)
         rec["record_role"] = role
         rec["ranking_channel"] = ranking_channel
         rec["default_leaderboard_eligible"] = role in TARGET_ROLES
-
         out.append(rec)
+        light.ids.append(str(r["id"]))
+        light.rows[str(r["id"])] = r
+        light.records[str(r["id"])] = rec
 
     scoped_alias_bindings: dict[tuple[str, str], set[str]] = {}
     unscoped_alias_bindings: dict[str, set[str]] = {}
@@ -3087,9 +2821,357 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
             "neighbours": rows,
         }
 
+    neighbours = positional_neighbours(out)
+    for candidate in out:
+        rows_for = neighbours.get(str(candidate["event_id"]), [])
+        candidate["positional_neighbours"] = {
+            "schema": "ctas.positional-neighbours@1.0.0",
+            "radius_arcsec": POSITIONAL_NEIGHBOUR_ARCSEC,
+            "policy": ("Other retained follow-up targets within the radius, from source-retained coordinates. "
+                       "Advisory only: CTAS does not merge records or change identity by position."),
+            "neighbours": rows_for,
+        }
+    return light
+
+
+def evidence_statements() -> list[tuple[str, str]]:
+    """The loader's per-event queries as (tag, statement) in loader order: the dossier
+    pipeline reads exactly these rows, so the input fingerprints hash exactly these."""
+
+    return [
+        ("classifications", EVIDENCE_SQL["classifications"]),
+        ("classification_history", EVIDENCE_SQL["classification_history"]),
+        ("observations", EVIDENCE_SQL["observations"]),
+        ("messenger_signals", EVIDENCE_SQL["messenger_signals"]),
+        ("publications", EVIDENCE_SQL["publications"]),
+        ("publication_revisions", EVIDENCE_SQL["publication_revisions"]),
+        ("spectra", EVIDENCE_SQL["spectra"]),
+        ("host_context", EVIDENCE_SQL["host_context"]),
+        ("catalog_counterparts", EVIDENCE_SQL["catalog_counterparts"]),
+        ("archive_products", EVIDENCE_SQL["archive_products"]),
+        ("all_attempts", EVIDENCE_SQL["all_attempts"]),
+        ("analysis_runs", EVIDENCE_SQL["analysis_runs"]),
+        ("analysis_screen_runs", EVIDENCE_SQL["analysis_screen_runs"]),
+        ("multimessenger_runs", multimessenger.RUNS_SQL),
+        ("comparison_envelopes", comparison.ENVELOPE_SQL),
+        ("comparison_classifications", comparison.CLASSIFICATION_SQL),
+        ("comparison_hosts", comparison.HOST_SQL),
+        ("broker_rows", broker_classes.broker_rows_sql()),
+    ]
+
+
+def load_evidence(cur: sqlite3.Cursor, ids: list[str]) -> dict[str, Any]:
+    """Every per-event table the dossier pipeline reads, for these events only."""
+
+    evidence: dict[str, Any] = {}
+    for tag in EVIDENCE_TABLE_TAGS + ("all_attempts", "analysis_runs", "analysis_screen_runs"):
+        evidence[tag] = rows_by_event(cur, ids, EVIDENCE_SQL[tag])
+    evidence["messenger_signals"] = {
+        event_id: derive_messenger_revisions(rows)
+        for event_id, rows in evidence["messenger_signals"].items()
+    }
+    latest_attempts: dict[str, list[dict[str, Any]]] = {}
+    for event_id, event_attempts in evidence["all_attempts"].items():
+        seen_attempt_keys: set[tuple[str, str]] = set()
+        for attempt in event_attempts:
+            key = (str(attempt.get("source_id") or ""), str(attempt.get("query_kind") or ""))
+            if key in seen_attempt_keys:
+                continue
+            seen_attempt_keys.add(key)
+            latest_attempts.setdefault(event_id, []).append(attempt)
+    evidence["latest_attempts"] = latest_attempts
+    # Track 3d: the collector's localization MOCs, galaxy rankings and counterpart rankings,
+    # every revision, for the multimessenger event pages; scripts/ctas_multimessenger.py.
+    evidence["multimessenger_runs"] = rows_by_event(cur, ids, multimessenger.RUNS_SQL)
+    # Track 2b: every retained source assertion of position, classification, redshift and
+    # host, side by side under the comparison key; scripts/ctas_comparison.py.
+    evidence["comparison_inputs"] = {
+        "envelopes": rows_by_event(cur, ids, comparison.ENVELOPE_SQL),
+        "classifications": rows_by_event(cur, ids, comparison.CLASSIFICATION_SQL),
+        "hosts": rows_by_event(cur, ids, comparison.HOST_SQL),
+    }
+    # Track 3c part 1: the broker-classification receipts (ALeRCE, Fink, ANTARES) with the
+    # kept response bytes; scripts/ctas_broker_classes.py re-reads them.
+    evidence["broker_rows"] = rows_by_event(cur, ids, broker_classes.broker_rows_sql())
+    return evidence
+
+
+def read_dbwide(cur: sqlite3.Cursor) -> dict[str, Any]:
+    """The database-wide facts of a release: source rows and states, attempt dispositions,
+    the event counts."""
+
+    latest_source_attempts = latest_source_attempts_of(cur)
+    source_success_times = {
+        str(row["source_id"]): iso(row["last_successful_at"])
+        for row in cur.execute(
+            """SELECT source_id, MAX(checked_at) AS last_successful_at
+               FROM source_query_attempts WHERE terminal_state = 'data' GROUP BY source_id"""
+        )
+    }
+    source_disposition_counts: dict[str, dict[str, int]] = {}
+    for row in cur.execute(
+        "SELECT source_id, terminal_state, COUNT(*) AS n FROM source_query_attempts GROUP BY source_id, terminal_state"
+    ):
+        source_disposition_counts.setdefault(str(row["source_id"]), {})[
+            public_attempt_state(str(row["terminal_state"] or ""))
+        ] = int(row["n"])
+
+    counts = {
+        "total_real_events": cur.execute(
+            "SELECT COUNT(*) FROM events WHERE COALESCE(simulation,0)=0").fetchone()[0],
+        "eligible_public_events": cur.execute(
+            """SELECT COUNT(*) FROM events WHERE COALESCE(simulation,0)=0
+               AND LOWER(COALESCE(status,'')) != 'merged'
+               AND INSTR(preferred_name, '%') = 0
+               AND preferred_name IS NOT NULL AND TRIM(preferred_name) != ''"""
+        ).fetchone()[0],
+        "quality_quarantined_events": cur.execute(
+            """SELECT COUNT(*) FROM events WHERE COALESCE(simulation,0)=0
+               AND LOWER(COALESCE(status,'')) != 'merged'
+               AND INSTR(preferred_name, '%') > 0"""
+        ).fetchone()[0],
+    }
+
+    source_rows = [
+        {
+            "source": clean(row["id"]),
+            "label": clean(row["display_name"]),
+            "facility": clean(row["facility"]),
+            "data_types": json.loads(row["data_types"] or "[]"),
+            "mode": clean(row["mode"]),
+            "public_scope": clean(row["public_scope"]),
+            "state": clean(row["runtime_state"]) or "unknown",
+            "detail": public_runtime_detail(row["runtime_detail"]),
+            "last_message_at": iso(row["last_message_at"]),
+            "lag_seconds": clean(row["lag_seconds"]),
+            "documentation_url": (
+                clean(row["documentation_url"])
+                if str(clean(row["documentation_url"]) or "").startswith("https://") else None
+            ),
+            "protocol": clean(row["protocol"]),
+            "authentication_requirement": clean(row["auth"]),
+            "proprietary_risk": clean(row["proprietary_risk"]),
+            "rate_or_cadence_limit": clean(row["rate_limit"]),
+            "adapter_status": clean(row["adapter_status"]),
+            "last_verified": clean(row["last_verified"]),
+            "enabled": bool(row["enabled"]),
+        }
+        for row in cur.execute(
+            """
+            SELECT id, display_name, facility, data_types, mode, public_scope,
+                   runtime_state, runtime_detail, last_message_at, lag_seconds,
+                   documentation_url, protocol, auth, proprietary_risk, rate_limit,
+                   adapter_status, last_verified, enabled
+            FROM sources
+            ORDER BY display_name, id
+            """
+        )
+    ]
+
+    return {
+        "counts": counts, "source_rows": source_rows, "latest_source_attempts": latest_source_attempts,
+        "source_success_times": source_success_times, "source_disposition_counts": source_disposition_counts,
+    }
+
+
+def complete_base_record(
+    rec: dict[str, Any], r: sqlite3.Row, light: LightLayer, evidence: dict[str, Any],
+    source_by_id: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """Attach one event's evidence to its light record: the base dossier before scoring.
+
+    ``rec`` is copied first: the light layer serves every build of a release."""
+
+    rec = json.loads(json.dumps(rec))
+    alias_map = light.alias_map
+    ambiguous_tns_identity = light.ambiguous_tns_identity
+    classifications = evidence["classifications"]
+    classification_history = evidence["classification_history"]
+    observations = evidence["observations"]
+    spectra = evidence["spectra"]
+    signals = evidence["messenger_signals"]
+    publications = evidence["publications"]
+    publication_revisions = evidence["publication_revisions"]
+    host_context = evidence["host_context"]
+    catalog_counterparts = evidence["catalog_counterparts"]
+    archive_products = evidence["archive_products"]
+    latest_attempts = evidence["latest_attempts"]
+    follow_up = {
+        "classifications": classifications.get(r["id"], []),
+        "classification_history": classification_history.get(r["id"], []),
+        "observations": observations.get(r["id"], []),
+        "spectra": spectra.get(r["id"], []),
+        "messenger_signals": signals.get(r["id"], []),
+        "publications": publications.get(r["id"], []),
+        "publication_revisions": publication_revisions.get(r["id"], []),
+        "host_context": host_context.get(r["id"], []),
+        "catalog_counterparts": catalog_counterparts.get(r["id"], []),
+        "archive_products": archive_products.get(r["id"], []),
+    }
+    rec["follow_up_counts"] = {
+        key: len(value) for key, value in follow_up.items()
+    }
+    rec["follow_up_total"] = sum(rec["follow_up_counts"].values())
+    rec["photometry_outcomes"] = photometry_outcomes(follow_up["observations"])
+    if any(follow_up.values()):
+        rec["follow_up"] = follow_up
+
+    evidence_by_provider: dict[str, dict[str, Any]] = {}
+    for evidence_type, evidence_rows in follow_up.items():
+        for evidence_row in evidence_rows:
+            provider = provider_source_key(evidence_row.get("provider"))
+            if not provider:
+                continue
+            ledger = evidence_by_provider.setdefault(provider, {"count": 0, "types": {}, "url": None})
+            ledger["count"] += 1
+            ledger["types"][evidence_type] = ledger["types"].get(evidence_type, 0) + 1
+            if not ledger["url"]:
+                for url_key in (
+                    "canonical_url", "citation_url", "public_download_url", "source_url",
+                    "catalog_documentation_url", "product_documentation_url",
+                ):
+                    url_value = clean(evidence_row.get(url_key))
+                    if url_value and str(url_value).startswith("https://"):
+                        ledger["url"] = url_value
+                        break
+    for alias in alias_map.get(r["id"], []):
+        provider = str(alias["provider"] or "").strip().lower()
+        if not provider or provider not in PUBLIC_LINKS:
+            continue
+        ledger = evidence_by_provider.setdefault(provider, {"count": 0, "types": {}, "url": None})
+        ledger["count"] += 1
+        ledger["types"]["designations"] = ledger["types"].get("designations", 0) + 1
+        if provider == "tns" and str(r["id"]) not in ambiguous_tns_identity:
+            linked_id = tns_object_id(str(alias["external_id"] or ""))
+            own_id = tns_object_id(str(r["preferred_name"] or ""))
+            # The coverage row carries no designation of its own, so a
+            # mismatched object id would read as this candidate's TNS
+            # record.  Never let a later alias overwrite the ledger.
+            if linked_id and own_id in (None, linked_id):
+                ledger["url"] = PUBLIC_LINKS["tns"][1].format(id=linked_id)
+
+    coverage = []
+    attempted_sources = set()
+    for attempt in latest_attempts.get(r["id"], []):
+        raw_state = str(attempt.get("terminal_state") or "")
+        state = public_attempt_disposition(raw_state, attempt.get("error_code"))
+        source_id = str(attempt.get("source_id") or "")
+        attempted_sources.add(source_id)
+        retained = evidence_by_provider.get(source_id, {"count": 0, "types": {}, "url": None})
+        row = {
+            "source_id": source_id,
+            "source_name": attempt.get("display_name"),
+            "data_types_sought": [str(attempt.get("query_kind") or "bounded target query").replace("-", " ")],
+            "disposition": state,
+            "query_kind": attempt.get("query_kind"),
+            "checked_at": iso(attempt.get("checked_at")),
+            "retained_record_count": int(retained["count"]),
+            "retained_record_types": retained["types"],
+            "basis": "explicit-source-query",
+            "documentation_url": attempt.get("documentation_url"),
+        }
+        if attempt.get("evidence_url") and str(attempt["evidence_url"]).startswith("https://"):
+            row["query_evidence_url"] = attempt["evidence_url"]
+        if retained.get("url"):
+            row["object_specific_result_url"] = retained["url"]
+        if attempt.get("next_eligible_at"):
+            row["next_eligible_at"] = iso(attempt["next_eligible_at"])
+        if attempt.get("error_code") and state in {
+            "provider-failure", "temporarily-unavailable", "incomplete-result",
+            "credentials-required", "ambiguous-identity", "rate-limited", "not-searched",
+        }:
+            row["reason_code"] = attempt["error_code"]
+        coverage.append(row)
+    for source_id, retained in sorted(evidence_by_provider.items()):
+        if source_id in attempted_sources:
+            continue
+        source = source_by_id.get(source_id, {})
+        coverage.append({
+            "source_id": source_id,
+            "source_name": source.get("label") or source_id,
+            "data_types_sought": sorted(retained["types"]),
+            "disposition": "active-returning-data",
+            "checked_at": None,
+            "retained_record_count": int(retained["count"]),
+            "retained_record_types": retained["types"],
+            "basis": "ingested-public-record",
+            "documentation_url": source.get("documentation_url"),
+            **({"object_specific_result_url": retained["url"]} if retained.get("url") else {}),
+        })
+    if coverage:
+        rec["source_coverage"] = coverage
+
+    rec["record_completeness"] = completeness_for(rec)
+    rec["reported_label_kind"] = reported_label_kind(rec)
+    rec["score_explanation"] = score_explanation_for(rec)
+    timeline = timeline_for(rec)
+    meaningful = next(
+        (entry for entry in timeline if entry.get("assertion_kind") == "provider assertion"),
+        timeline[0] if timeline else None,
+    )
+    if meaningful:
+        rec["most_recent_meaningful_change"] = {
+            key: meaningful[key] for key in (
+                "evidence_type", "provider", "title", "scientific_time",
+                "provider_publication_time", "ctas_receipt_time",
+            ) if key in meaningful
+        }
+
+    def latest_time(rows_for_type: list[dict[str, Any]], keys: tuple[str, ...]) -> str | None:
+        values = [
+            iso(row.get(key)) for row in rows_for_type for key in keys if row.get(key)
+        ]
+        return max((value for value in values if value), default=None)
+
+    rec["latest_classification_at"] = latest_time(
+        follow_up["classifications"], ("asserted_at", "source_published_at", "ctas_received_at")
+    )
+    rec["latest_spectrum_at"] = latest_time(
+        follow_up["spectra"], ("observed_at", "source_published_at", "ctas_received_at")
+    )
+    rec["latest_messenger_at"] = latest_time(
+        follow_up["messenger_signals"], ("observed_at", "source_published_at", "ctas_received_at")
+    )
+    rec["latest_retraction_at"] = latest_time(
+        [row for row in follow_up["classification_history"] if row.get("retracted")],
+        ("asserted_at", "source_published_at", "ctas_received_at"),
+    )
+    channels = {
+        str(row.get("messenger") or "").strip().lower()
+        for row in follow_up["messenger_signals"] if str(row.get("messenger") or "").strip()
+    }
+    primary = str(rec.get("primary_messenger") or "").strip().lower()
+    if primary and primary not in {"unknown", "multimessenger"}:
+        channels.add(primary)
+    rec["messenger_channels"] = sorted(channels)
+    missing_labels = [
+        component["label"] for component in rec["record_completeness"]["components"]
+        if component["state"] in {"missing", "not-assessed"}
+    ]
+    known_bits = [
+        rec.get("event_type") or "public transient candidate",
+        rec.get("classification") or "unclassified",
+        f"{rec['follow_up_total']} retained public evidence rows",
+    ]
+    source_attribution = rec.get("discovery_survey")
+    if not source_attribution and rec.get("designations"):
+        source_attribution = rec["designations"][0].get("source")
+    rec["candidate_summary"] = {
+        "why_in_ctas": "CTAS retains a rights-cleared public event record attributed to " + str(source_attribution or "a declared public event source") + ".",
+        "known": "; ".join(str(value) for value in known_bits),
+        "missing": ", ".join(missing_labels) if missing_labels else "No applicable component in the public-record model is currently marked missing.",
+        "non_claim": "Inclusion or positional context does not establish discovery, classification, counterpart, or host identity.",
+    }
+    return rec
+
+
+def provider_and_survey_counts(candidates: Iterable[dict[str, Any]]) -> tuple[dict[str, dict[str, int]], dict[str, int]]:
+    """The provider-by-evidence-type and discovery-survey totals of a candidate set, the way
+    the release statistics and the source universe count them."""
+
     provider_counts: dict[str, dict[str, int]] = {}
     survey_counts: dict[str, int] = {}
-    for candidate in out:
+    for candidate in candidates:
         survey = str(candidate.get("discovery_survey") or "").strip()
         if survey:
             survey_counts[survey] = survey_counts.get(survey, 0) + 1
@@ -3107,27 +3189,47 @@ def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, A
                     provider_counts.setdefault(provider, {}).get("designations", 0) + 1
                 )
 
-    survey_rows = [
+    return provider_counts, survey_counts
+
+
+def survey_rows_from_counts(survey_counts: dict[str, int]) -> list[dict[str, Any]]:
+    return [
         {"survey": survey, "candidate_count": count}
         for survey, count in sorted(survey_counts.items(), key=lambda item: (-item[1], item[0]))
     ]
+
+
+def export(db_path: Path, limit: int) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """The complete base catalog: every eligible event with its evidence (as before the
+    incremental release; the exporter's main() now builds in batches, this stays for tests
+    and tools)."""
+
+    con = open_database(db_path)
+    cur = con.cursor()
+    light = read_light_layer(cur, limit)
+    dbwide = read_dbwide(cur)
+    evidence = load_evidence(cur, [light.rows[event_id]["id"] for event_id in light.ids])
+    con.close()
+    source_by_id = {str(row["source"]): row for row in dbwide["source_rows"]}
+    out = [complete_base_record(light.records[event_id], light.rows[event_id], light, evidence, source_by_id)
+           for event_id in light.ids]
+    provider_counts, survey_counts = provider_and_survey_counts(out)
+    counts = dict(dbwide["counts"])
     counts["published"] = len(out)
-    counts["skipped"] = skipped
+    counts["skipped"] = light.skipped
     counts["catalog_truncated"] = limit > 0 and counts["eligible_public_events"] > len(out)
-    counts["sources"] = source_rows
+    counts["sources"] = dbwide["source_rows"]
     counts["provider_counts"] = provider_counts
-    counts["surveys"] = survey_rows
-    counts["latest_source_attempts"] = latest_source_attempts
-    counts["source_success_times"] = source_success_times
-    counts["source_disposition_counts"] = source_disposition_counts
-    counts["all_attempts"] = all_attempts
-    counts["analysis_runs"] = analysis_runs
-    counts["analysis_screen_runs"] = analysis_screen_runs
-    counts["multimessenger_runs"] = multimessenger_runs
-    counts["comparison_inputs"] = {
-        "envelopes": comparison_envelopes, "classifications": comparison_classifications, "hosts": comparison_hosts,
-    }
-    counts["broker_rows"] = broker_rows
+    counts["surveys"] = survey_rows_from_counts(survey_counts)
+    counts["latest_source_attempts"] = dbwide["latest_source_attempts"]
+    counts["source_success_times"] = dbwide["source_success_times"]
+    counts["source_disposition_counts"] = dbwide["source_disposition_counts"]
+    counts["all_attempts"] = evidence["all_attempts"]
+    counts["analysis_runs"] = evidence["analysis_runs"]
+    counts["analysis_screen_runs"] = evidence["analysis_screen_runs"]
+    counts["multimessenger_runs"] = evidence["multimessenger_runs"]
+    counts["comparison_inputs"] = evidence["comparison_inputs"]
+    counts["broker_rows"] = evidence["broker_rows"]
     return out, counts
 
 
@@ -3822,6 +3924,7 @@ def research_table_artifacts(
     catalog_content_checksum_sha256: str,
     candidate_rows: list[list[Any]] | None = None,
     release_history: dict[str, Any] | None = None,
+    event_rows: list[list[Any]] | None = None,
 ) -> tuple[dict[str, bytes], dict[str, Any], bytes]:
     """Build normalized and astronomy-interoperable research artifacts.
 
@@ -3832,7 +3935,8 @@ def research_table_artifacts(
     """
 
     event_columns = list(CATALOG_CANDIDATE_COLUMNS)
-    event_rows = [compact_candidate_row(candidate) for candidate in candidates]
+    if event_rows is None:
+        event_rows = [compact_candidate_row(candidate) for candidate in candidates]
     alias_columns = ["event_id", "source_key", "designation", "ambiguous"]
     alias_rows = [
         [candidate["event_id"], row.get("source_key"), row.get("designation"), bool(row.get("ambiguous"))]
@@ -4037,6 +4141,7 @@ def photometry_rows(candidates: list[dict[str, Any]]) -> list[list[Any]]:
 def bulk_artifacts(
     candidates: list[dict[str, Any]], candidate_rows: list[list[Any]],
     catalog_content_checksum_sha256: str, generated_at: str,
+    photometry: list[list[Any]] | None = None,
 ) -> tuple[dict[str, bytes], dict[str, Any], bytes, list[str]]:
     """The VOParquet release assets and the Pages-tree index that names them."""
 
@@ -4047,7 +4152,7 @@ def bulk_artifacts(
         [io_module.healpix_index(row[column_index["ra_deg"]], row[column_index["dec_deg"]]), *row]
         for row in candidate_rows
     ], io_module.CANDIDATE_BULK_COLUMN_SPECS, ("event_id",))
-    bulk_photometry_rows = photometry_rows(candidates)
+    bulk_photometry_rows = photometry_rows(candidates) if photometry is None else photometry
     tables = (
         (BULK_CANDIDATES_ASSET, "candidates", io_module.CANDIDATE_BULK_COLUMN_SPECS, bulk_candidate_rows, "ctas_candidates",
          "One row per public CTAS candidate (the catalog-index candidate table with the release score clock), sorted by HEALPix order 8 nested index."),
@@ -4144,7 +4249,8 @@ def interop_column_registry_problems(table_set: dict[str, dict[str, Any]]) -> li
     return problems
 
 
-def database_identity(db_path: Path, candidates: list[dict[str, Any]], counts: dict[str, Any]) -> dict[str, Any]:
+def database_identity(db_path: Path, candidates: list[dict[str, Any]], counts: dict[str, Any],
+                      latest_record_update: str | None = None) -> dict[str, Any]:
     """What the provenance names the frozen database by: content hash, size and counts."""
 
     io_module = interop()
@@ -4158,9 +4264,9 @@ def database_identity(db_path: Path, candidates: list[dict[str, Any]], counts: d
         "bytes": size,
         "event_count": counts.get("total_real_events"),
         "eligible_public_event_count": counts.get("eligible_public_events"),
-        "latest_record_update": max(
+        "latest_record_update": latest_record_update if latest_record_update is not None else (max(
             (row.get("updated_at") or row.get("discovery_time") or "" for row in candidates), default="",
-        ) or None,
+        ) or None),
         "access": "read-only SQLite (mode=ro); nothing written",
     }
 
@@ -4647,6 +4753,7 @@ class PhaseClock:
     def done(self, phase: str) -> None:
         now = time.monotonic()
         self.phases.append((phase, now - self.mark))
+        progress(f"{phase} took {now - self.mark:.0f}s")
         self.mark = now
 
     def report(self) -> str:
@@ -4667,6 +4774,103 @@ def peak_rss_mb(children: bool = False) -> float:
     except (ImportError, OSError, ValueError):
         return 0.0
     return usage.ru_maxrss / 1024.0 if sys.platform != "darwin" else usage.ru_maxrss / (1024.0 * 1024.0)
+
+
+def read_previous_release_for_export(site_root: str, ref: str, keep: Callable[[str], bool]) -> "release_build.PreviousRelease | None":
+    """release_build.read_previous_release with this exporter's codecs and schemas."""
+
+    root = Path(site_root)
+    return release_build.read_previous_release(
+        lambda path: git_blob(root, ref, path),
+        decode_chunk=decode_chunk, inflate_index=inflate_catalog_candidates,
+        canonical_candidate_bytes=canonical_candidate_bytes, semantic_candidate_bytes=semantic_bytes_of_decoded,
+        list_sha256=canonical_candidate_list_sha256, readable_manifest_schemas=CANDIDATE_MANIFEST_READABLE_SCHEMAS,
+        slim_fields=PREVIOUS_RELEASE_SLIM_FIELDS, keep=keep, patterns_path=SOURCE_MATRIX_PATTERNS_PATH,
+    )
+
+
+def trim_previous_release(previous: "release_build.PreviousRelease", keep: set[str]) -> None:
+    """Drop the compressed bytes and index minis of the dossiers the plan will not reuse."""
+
+    for event_id in list(previous.compressed_by_id):
+        if event_id not in keep:
+            del previous.compressed_by_id[event_id]
+            previous.index_minis.pop(event_id, None)
+
+
+def previous_release_reader(connection: Any, site_root: str, ref: str) -> None:
+    """The body of the spawned previous-release reader (see main): read the previous
+    release with every dossier kept (the plan is not known yet), tell the parent whether
+    there is one, wait for the set of dossiers the plan may reuse, trim to it and pickle the
+    result to a temporary file whose path the parent receives.
+
+    A separate process so that the read overlaps the fingerprint pass (about two minutes
+    each at 20,000 events) and so that the 2.5 GB of decoded chunks it churns through never
+    fragment the exporter's own heap; the file, not the object, crosses the boundary, so the
+    exporter never holds the pickled bytes and the release at once (2026-11-24)."""
+
+    import pickle
+    import tempfile
+
+    previous = read_previous_release_for_export(site_root, ref, lambda event_id: True)
+    connection.send(previous is not None)
+    if previous is None:
+        return
+    keep = connection.recv()
+    trim_previous_release(previous, keep)
+    handle = tempfile.NamedTemporaryFile(prefix="ctas-previous-release-", suffix=".pickle", delete=False)
+    with handle:
+        pickle.dump(previous, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    connection.send(handle.name)
+
+
+class PreviousReleaseReader:
+    """The spawned previous-release reader from the exporter's side."""
+
+    def __init__(self, site_root: str, ref: str) -> None:
+        import multiprocessing
+
+        context = multiprocessing.get_context("spawn")
+        self.connection, child = context.Pipe()
+        self.process = context.Process(target=previous_release_reader, args=(child, site_root, ref), daemon=True)
+        self.process.start()
+        child.close()
+
+    def result(self, keep: set[str]) -> "release_build.PreviousRelease | None":
+        import pickle
+
+        try:
+            if not self.connection.recv():
+                return None
+            self.connection.send(set(keep))
+            path = self.connection.recv()
+        except EOFError as exc:
+            raise RuntimeError("the previous-release reader ended before answering") from exc
+        finally:
+            self.process.join()
+        try:
+            with open(path, "rb") as handle:
+                return pickle.load(handle)
+        finally:
+            Path(path).unlink(missing_ok=True)
+
+
+def current_rss_mb() -> float:
+    try:
+        with open("/proc/self/status") as handle:
+            for line in handle:
+                if line.startswith("VmRSS:"):
+                    return int(line.split()[1]) / 1024.0
+    except OSError:
+        pass
+    return 0.0
+
+
+def progress(message: str) -> None:
+    """One line to stderr per step of a release (the publish log keeps stderr), with the
+    resident memory now and at its peak, so a slow or large step can be named afterwards."""
+
+    print(f"progress        : {message} (rss {current_rss_mb():.0f} MB, peak {peak_rss_mb():.0f} MB)", file=sys.stderr, flush=True)
 
 
 def output_path_for_public_artifact(output_dir: Path, public_path: str) -> Path:
@@ -4754,7 +4958,7 @@ def link_health_is_current(link_health: Any, catalog_checksum: str | None) -> bo
 def snapshot_is_fresh(generated_at: Any, valid_until: Any) -> bool:
     generated = parse_utc(generated_at)
     expiry = parse_utc(valid_until)
-    now = datetime.now(UTC)
+    now = release_clock()
     return bool(
         generated and expiry and generated <= now + timedelta(minutes=1)
         and expiry >= now + timedelta(minutes=5)
@@ -4920,38 +5124,49 @@ def semantic_catalog_candidates(candidates: list[dict[str, Any]]) -> list[dict[s
     return [semantic_candidate(candidate) for candidate in candidates]
 
 
+def scrub_semantic_in_place(candidate: dict[str, Any]) -> dict[str, Any]:
+    """Remove the polling-only and clock-only fields from one candidate, in place (the
+    caller owns the dict: a decoded copy, never a dossier that is still being built)."""
+
+    for coverage in candidate.get("source_coverage", []):
+        coverage.pop("checked_at", None)
+        coverage.pop("next_eligible_at", None)
+    astro_evidence = candidate.get("astro_evidence")
+    if isinstance(astro_evidence, dict):
+        # The projection timestamp says when this export was assembled,
+        # not that the underlying event evidence changed.
+        astro_evidence.pop("generatedAt", None)
+    # The review score is recomputed against each release clock. Its
+    # inputs are all separately checksummed here, so including the ticking
+    # output would make every heartbeat look like a new catalog.
+    candidate.pop("ctas_score", None)
+    candidate.pop("score_model", None)
+    candidate.pop("score_explanation", None)
+    candidate.pop("score_factors", None)
+    matrix = candidate.get("source_matrix")
+    matrix_rows = matrix.get("rows", []) if isinstance(matrix, dict) else (matrix or [])
+    for source_row in matrix_rows:
+        # Age is a view of a retained timestamp at export time. The
+        # timestamp itself remains checksum-bearing; the ticking duration
+        # must not manufacture a new catalog release every heartbeat.
+        source_row.pop("retainedEvidenceAgeSeconds", None)
+    return candidate
+
+
 def semantic_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     """One candidate's semantic content (a scrubbed deep copy; the original is untouched)."""
 
-    semantic = [json.loads(json.dumps(candidate))]
-    for candidate in semantic:
-        for coverage in candidate.get("source_coverage", []):
-            coverage.pop("checked_at", None)
-            coverage.pop("next_eligible_at", None)
-        astro_evidence = candidate.get("astro_evidence")
-        if isinstance(astro_evidence, dict):
-            # The projection timestamp says when this export was assembled,
-            # not that the underlying event evidence changed.
-            astro_evidence.pop("generatedAt", None)
-        # The review score is recomputed against each release clock. Its
-        # inputs are all separately checksummed here, so including the ticking
-        # output would make every heartbeat look like a new catalog.
-        candidate.pop("ctas_score", None)
-        candidate.pop("score_model", None)
-        candidate.pop("score_explanation", None)
-        candidate.pop("score_factors", None)
-        matrix = candidate.get("source_matrix")
-        matrix_rows = matrix.get("rows", []) if isinstance(matrix, dict) else (matrix or [])
-        for source_row in matrix_rows:
-            # Age is a view of a retained timestamp at export time. The
-            # timestamp itself remains checksum-bearing; the ticking duration
-            # must not manufacture a new catalog release every heartbeat.
-            source_row.pop("retainedEvidenceAgeSeconds", None)
-    return semantic[0]
+    return scrub_semantic_in_place(json.loads(json.dumps(candidate)))
 
 
 def semantic_candidate_bytes(candidate: dict[str, Any]) -> bytes:
     return json.dumps(semantic_candidate(candidate), sort_keys=True, separators=(",", ":")).encode()
+
+
+def semantic_bytes_of_decoded(candidate: dict[str, Any]) -> bytes:
+    """semantic_candidate_bytes for a dict the caller will not use again (no copy)."""
+
+    return json.dumps(scrub_semantic_in_place(candidate), sort_keys=True, separators=(",", ":")).encode()
 
 
 def catalog_semantic_checksum(candidates: Iterable[dict[str, Any]]) -> str:
@@ -5163,6 +5378,291 @@ def projection_integrity_problems(projection: dict[str, Any]) -> list[str]:
     return problems
 
 
+def release_clock() -> datetime:
+    """The release's one clock: now, or CTAS_RELEASE_CLOCK (tests and rehearsals compare
+    two builds of the same database at the same clock)."""
+
+    override = os.environ.get("CTAS_RELEASE_CLOCK")
+    if override:
+        parsed = parse_utc(override)
+        if parsed is not None:
+            return parsed.replace(microsecond=0)
+    return datetime.now(UTC).replace(microsecond=0)
+
+
+def incremental_enabled() -> bool:
+    value = (os.environ.get("CTAS_INCREMENTAL") or "1").strip().lower()
+    return value not in {"0", "false", "no", "off"}
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.environ.get(name) or default)
+    except ValueError:
+        return default
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.environ.get(name) or default)
+    except ValueError:
+        return default
+
+
+class BoundFiles:
+    """The release's checksum-bound files: small ones as bytes, the dossier chunks and parts
+    as files already written (their sha256 and size), so the whole catalog is never held
+    in memory twice."""
+
+    def __init__(self) -> None:
+        self.memory: dict[str, bytes] = {}
+        self.disk: dict[str, tuple[str, int, Path]] = {}
+
+    def __contains__(self, path: str) -> bool:
+        return path in self.memory or path in self.disk
+
+    def __len__(self) -> int:
+        return len(self.memory) + len(self.disk)
+
+    def paths(self) -> list[str]:
+        return sorted(set(self.memory) | set(self.disk))
+
+    def size(self, path: str) -> int:
+        return len(self.memory[path]) if path in self.memory else self.disk[path][1]
+
+    def sha256(self, path: str) -> str:
+        return hashlib.sha256(self.memory[path]).hexdigest() if path in self.memory else self.disk[path][0]
+
+    def read(self, path: str) -> bytes:
+        return self.memory[path] if path in self.memory else self.disk[path][2].read_bytes()
+
+    def files_map(self) -> dict[str, dict[str, Any]]:
+        return {name: {"sha256": self.sha256(name), "bytes": self.size(name)} for name in self.paths()}
+
+    def release_id(self) -> str:
+        # Hashed piecewise: joining every bound file into one bytes object was a ~3 GB spike at
+        # the end of a complete export (same digest as the former b"".join).
+        digest = hashlib.sha256()
+        for name in self.paths():
+            digest.update(name.encode())
+            digest.update(b"\0")
+            if name in self.memory:
+                digest.update(self.memory[name])
+            else:
+                with self.disk[name][2].open("rb") as handle:
+                    for block in iter(lambda: handle.read(1 << 20), b""):
+                        digest.update(block)
+        return digest.hexdigest()
+
+
+def compact_source_matrix_patterns_for(candidate: dict[str, Any], patterns: dict[str, list[dict[str, Any]]],
+                                       previous_patterns: dict[str, list[dict[str, Any]]]) -> bool:
+    """Make sure the pattern a reused dossier's source matrix refers to is in this release's
+    pattern document (carried over from the previous release). False when it is missing."""
+
+    matrix = candidate.get("source_matrix")
+    if not isinstance(matrix, dict):
+        return True
+    key = str(matrix.get("no_evidence_pattern") or "")
+    if key in patterns:
+        return True
+    if key in previous_patterns:
+        patterns[key] = previous_patterns[key]
+        return True
+    return False
+
+
+def complete_catalog_manifest_from_rows(
+    candidate_count: int,
+    index_candidate_count: int,
+    catalog_index_raw: bytes,
+    chunk_rows: list[dict[str, Any]],
+    part_rows: list[dict[str, Any]],
+    catalog_content_checksum_sha256: str,
+    assembled_checksum: str,
+    score_clock: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any], bytes]:
+    manifest = {
+        "schema": CANDIDATE_MANIFEST_SCHEMA,
+        "schema_version": SCHEMA_VERSION,
+        "catalog_content_checksum_sha256": catalog_content_checksum_sha256,
+        "candidate_count": candidate_count,
+        "chunk_count": len(chunk_rows),
+        # Every score_model in the chunks refers here (SCORE_CLOCK_REFERENCE).
+        "score_clock": score_clock,
+        "catalog_index": {
+            "path": "ctas/data/catalog-index.json",
+            "candidate_count": index_candidate_count,
+            "bytes": len(catalog_index_raw),
+            "sha256": hashlib.sha256(catalog_index_raw).hexdigest(),
+            "ordering_field": "candidate_rows[][event_id column]",
+        },
+        "assembled_candidates_checksum_sha256": assembled_checksum,
+        "reconstruction": {
+            "contract_version": "1.0.0",
+            "description": (
+                "Together the listed chunks and their declared JSON parts reconstruct every "
+                "complete public candidate record exactly once. All download files are bounded; "
+                "multipart chunks preserve the complete original JSON without truncation."
+            ),
+            "steps": [
+                "Fetch catalog_index.path and verify its byte length and SHA-256.",
+                "Fetch every chunks[].path in listed order and verify its byte length and SHA-256.",
+                "For a ctas.candidate-chunk-parts@1.0.0 root, fetch its ordered parts, requiring each path, byte length and SHA-256 to match the global parts list. Verify each part schema, bucket and ordinal; concatenate json_fragment strings and verify assembled_bytes and assembled_sha256 before parsing the complete chunk.",
+                "Verify complete chunk bucket and candidate_count, and require every declared supplemental part to be used exactly once.",
+                "Reject missing or duplicate event_id values and require the chunk UUID set to equal the catalog-index UUID set.",
+                "Inflate catalog_index.candidate_rows with candidate_columns, map complete chunk records by event_id, then order them by the inflated event_id column.",
+                "Verify SHA-256 over UTF-8 JSON of that ordered candidate array serialized with sorted keys, compact separators, and one trailing newline.",
+            ],
+            "canonical_json": "json.dumps(candidates, sort_keys=True, separators=(',', ':')) + newline",
+        },
+        "chunks": [
+            {"path": row["path"], "candidate_count": row["candidate_count"], "bytes": row["bytes"], "sha256": row["sha256"]}
+            for row in sorted(chunk_rows, key=lambda row: row["path"])
+        ],
+        "parts": [
+            {"path": row["path"], "bytes": row["bytes"], "sha256": row["sha256"]}
+            for row in sorted(part_rows, key=lambda row: row["path"])
+        ],
+    }
+    raw = (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode()
+    return manifest, raw
+
+
+def photometry_rows_for(candidate: dict[str, Any]) -> list[list[Any]]:
+    """photometry_rows for one candidate, unsorted (the caller sorts the whole table)."""
+
+    io_module = interop()
+    specs = io_module.PHOTOMETRY_COLUMN_SPECS
+    rows: list[list[Any]] = []
+    pixel = io_module.healpix_index(candidate.get("ra_deg"), candidate.get("dec_deg"))
+    for observation in (candidate.get("follow_up") or {}).get("observations", []):
+        detection = observation.get("detection") in (True, 1)
+        limiting = observation.get("limiting_magnitude")
+        try:
+            has_limit = limiting not in (None, "") and math.isfinite(float(limiting))
+        except (TypeError, ValueError):
+            has_limit = False
+        values = {
+            io_module.HEALPIX_COLUMN: pixel,
+            "event_id": candidate.get("event_id"),
+            "name": candidate.get("name"),
+            "ra_deg": candidate.get("ra_deg"),
+            "dec_deg": candidate.get("dec_deg"),
+            "provider": provider_source_key(observation.get("provider")) or None,
+            "detection": detection,
+            "is_upper_limit": (not detection) and has_limit,
+            "difference_photometry": observation.get("difference_photometry") in (True, 1),
+            "superseded": observation.get("superseded") in (True, 1),
+            "retracted": observation.get("retracted") in (True, 1),
+            "quality_flags": observation.get("quality_flags") if isinstance(observation.get("quality_flags"), list) else (
+                [observation["quality_flags"]] if observation.get("quality_flags") not in (None, "") else None
+            ),
+        }
+        row = []
+        for spec in specs:
+            if spec.name in values:
+                row.append(values[spec.name])
+            else:
+                row.append(observation.get(spec.name))
+        rows.append(row)
+    return rows
+
+
+SLIM_FIELDS = (
+    "event_id", "name", "status", "classification", "latest_retraction_at", "updated_at", "discovery_time",
+    "ra_deg", "dec_deg", "discovery_survey", "discovery_magnitude", "primary_messenger", "event_type", "redshift",
+    "ctas_score", "follow_up_total", "follow_up_counts", "links", "designations", "record_role", "ranking_channel",
+    "default_leaderboard_eligible", "most_recent_meaningful_change", "source_accounting",
+)
+
+
+def slim_record(candidate: dict[str, Any]) -> dict[str, Any]:
+    """The few fields of a dossier the catalog-level products read, kept for every record
+    while the dossiers themselves stay compressed."""
+
+    slim = {field: candidate[field] for field in SLIM_FIELDS if field in candidate}
+    slim["data_quality_flagged"] = bool(candidate.get("data_quality_flags"))
+    slim["projection_generated_at"] = str((candidate.get("astro_evidence") or {}).get("generatedAt") or "")
+    return slim
+
+
+def validate_release_level(payload: dict[str, Any]) -> list[str]:
+    problems = []
+    if payload.get("schema_version") != SCHEMA_VERSION:
+        problems.append("schema_version mismatch")
+    problems.extend(recursive_safety_problems({key: value for key, value in payload.items() if key != "candidates"},
+                                              "candidates-artifact"))
+    return problems
+
+
+def validate_candidate(c: dict[str, Any], i: int, event_ids: set[str]) -> list[str]:
+    """validate() for one candidate (the exporter streams its dossiers); ``event_ids`` is the
+    set of ids seen so far, for the duplicate check."""
+
+    problems: list[str] = []
+    required_astro_fields = {
+        "projectionSchema", "coreSchemaName", "coreSchemaVersion", "generatedAt",
+        "sourceUniverseVersion", "target", "persistedQueryReceipts", "conflictSets",
+        "selections", "dataProducts", "analysisRuns", "measurementCount", "projectionMethod",
+    }
+    canonical_outcomes = {
+        "DATA_RETURNED", "SEARCHED_NO_MATCH", "PARTIAL_RESULT", "QUERY_FAILED",
+        "QUERY_BLOCKED", "NOT_CONFIGURED", "NOT_APPLICABLE", "AMBIGUOUS",
+        "STALE_LAST_GOOD_RETAINED", "LINK_ONLY_NOT_QUERIED", "NOT_QUERIED",
+    }
+    if not c.get("name"):
+        problems.append(f"candidate {i} has no name")
+    event_id = str(c.get("event_id") or "")
+    if not re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", event_id, re.IGNORECASE):
+        problems.append(f"candidate {i} has no stable RFC-4122 event UUID")
+    if event_id in event_ids:
+        problems.append(f"candidate {i} duplicates event UUID {event_id}")
+    event_ids.add(event_id)
+    if "ctas_score" not in c:
+        problems.append(f"candidate {i} has no CTAS score")
+    else:
+        try:
+            score = float(c["ctas_score"])
+        except (TypeError, ValueError):
+            problems.append(f"candidate {i} has a nonnumeric CTAS score")
+        else:
+            if not 0 <= score <= 100:
+                problems.append(f"candidate {i} has CTAS score outside 0-100")
+    has_ra = c.get("ra_deg") is not None
+    has_dec = c.get("dec_deg") is not None
+    if has_ra != has_dec:
+        problems.append(f"candidate {i} has an incomplete coordinate pair")
+    if has_ra:
+        try:
+            ra, dec = float(c["ra_deg"]), float(c["dec_deg"])
+        except (TypeError, ValueError):
+            problems.append(f"candidate {i} has nonnumeric coordinates")
+        else:
+            if not 0 <= ra < 360 or not -90 <= dec <= 90:
+                problems.append(f"candidate {i} has coordinates outside valid ranges")
+    leaked = BANNED_KEYS & set(c)
+    if leaked:
+        problems.append(f"candidate {i} leaks {sorted(leaked)}")
+    projection = c.get("astro_evidence")
+    if not isinstance(projection, dict) or set(projection) != required_astro_fields:
+        problems.append(f"candidate {i} does not expose the exact AstroEvidence compatibility descriptor")
+    else:
+        if projection.get("coreSchemaVersion") != "0.1.0" or projection.get("target", {}).get("targetId") != event_id:
+            problems.append(f"candidate {i} has an inconsistent AstroEvidence identity or schema version")
+        contract_ids = set(c.get("source_accounting", {}).get("applicableSourceIds", []))
+        if any(row.get("sourceContractId") not in contract_ids for row in projection.get("persistedQueryReceipts", [])):
+            problems.append(f"candidate {i} has a receipt outside its applicable source set")
+        if any(row.get("outcome") not in canonical_outcomes for row in projection.get("persistedQueryReceipts", [])):
+            problems.append(f"candidate {i} has a receipt outside the canonical outcome vocabulary")
+        accounting = c.get("source_accounting", {})
+        if accounting.get("applicableSources") != len(contract_ids):
+            problems.append(f"candidate {i} has inconsistent applicable-source accounting")
+        problems.extend(receipt_provenance_problems(c, i))
+    problems.extend(recursive_safety_problems(c, f"candidates-artifact.candidates[{i}]"))
+    return problems
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -5188,6 +5688,10 @@ def main() -> int:
         help="do not export; bind the link-health artifact beside an export already in "
              "--output-dir into its verification report and status (see rebind_link_health)",
     )
+    ap.add_argument(
+        "--full", action="store_true",
+        help="rebuild every dossier from the database (the same as CTAS_INCREMENTAL=0)",
+    )
     args = ap.parse_args()
 
     if args.rebind_link_health:
@@ -5205,26 +5709,97 @@ def main() -> int:
         return 2
 
     clock = PhaseClock()
+    generated_dt = release_clock()
+    score_clock = score_clock_for(generated_dt)
+    generated_at = generated_dt.isoformat().replace("+00:00", "Z")
+    site_root = Path(__file__).resolve().parents[1]
+    heavy_analyses = heavy_analyses_enabled()
+    code_paths = BOUND_CODE_PATHS
+    working_code = {
+        path: (site_root / path).read_bytes()
+        for path in code_paths if (site_root / path).exists()
+    }
+    head_code = {path: git_blob(site_root, "HEAD", path) for path in code_paths}
+    origin_code = {path: git_blob(site_root, "origin/main", path) for path in code_paths}
+    working_matches_head = all(
+        path in working_code and head_code.get(path) == working_code[path]
+        for path in code_paths
+    )
+    head_matches_origin = all(
+        head_code.get(path) is not None and head_code.get(path) == origin_code.get(path)
+        for path in code_paths
+    )
+    code_hashes = {path: hashlib.sha256(raw).hexdigest() for path, raw in sorted(working_code.items())}
+    clock.done("code-binding")
+
+    # The previous release is read in a spawned process while this one reads and
+    # fingerprints the database (previous_release_reader); CTAS_PREVIOUS_RELEASE_WORKER=0
+    # reads it here, after the plan, instead.
+    previous_reader = None
+    if os.environ.get("CTAS_PREVIOUS_RELEASE_WORKER", "1") != "0":
+        previous_reader = PreviousReleaseReader(str(site_root), args.release_base_ref)
+
+    # ------------------------------------------------------------------ light layer
     try:
-        candidates, counts = export(db, args.limit)
+        con = open_database(db)
+        cur = con.cursor()
+        light = read_light_layer(cur, args.limit)
+        dbwide = read_dbwide(cur)
     except sqlite3.Error as exc:
         print(f"error: could not read the database read-only: {exc}", file=sys.stderr)
         return 1
-    clock.done("read-database")
+    clock.done("read-light-layer")
+    source_by_id = {str(row["source"]): row for row in dbwide["source_rows"]}
+    public_events = {
+        event_id: {"name": light.records[event_id].get("name"), "status": light.records[event_id].get("status")}
+        for event_id in light.ids
+    }
+    discovery_by_id = {event_id: parse_utc(light.records[event_id].get("discovery_time")) for event_id in light.ids}
 
-    # Reconstruct derived ranking arithmetic before any aggregate or recent
-    # view is produced.  This also applies the documented terminal-state repair
-    # to legacy rows that predate the ingestion-order fix.
-    generated_dt = datetime.now(UTC).replace(microsecond=0)
-    score_clock = score_clock_for(generated_dt)
-    for candidate in candidates:
-        candidate["score_model"] = score_model_for(candidate, generated_dt)
-        candidate["ctas_score"] = candidate["score_model"]["final_score"]
-        candidate["score_explanation"] = score_explanation_for(candidate)
+    # --------------------------------------------------------------- fingerprints
+    # Every row the dossier pipeline reads, streamed once per event into a digest; the
+    # provider and survey totals, the catalog-product counts and the clocks the reuse rule
+    # needs come out of the same pass (scripts/ctas_release_build.py).
+    facts = release_build.fingerprint_events(
+        cur, light.ids, light.payload, evidence_statements(),
+        envelope_checksum_sql=comparison.ENVELOPE_CHECKSUM_SQL,
+        follow_up_types={tag: tag for tag in EVIDENCE_TABLE_TAGS},
+        provider_key=provider_source_key, clean=clean, iso=iso, parse_utc=parse_utc,
+    )
+    provider_counts: dict[str, dict[str, int]] = {}
+    survey_counts: dict[str, int] = {}
+    catalog_product_counts = {"allwise": 0, "2mass": 0}
+    for event_id in light.ids:
+        fact = facts[event_id]
+        record = light.records[event_id]
+        survey = str(record.get("discovery_survey") or "").strip()
+        if survey:
+            survey_counts[survey] = survey_counts.get(survey, 0) + 1
+        for evidence_type, by_provider in fact.provider_counts.items():
+            for provider, count in by_provider.items():
+                provider_counts.setdefault(provider, {})[evidence_type] = (
+                    provider_counts.setdefault(provider, {}).get(evidence_type, 0) + count
+                )
+        for link_row in record.get("links", []):
+            if link_row.get("label") == "TNS":
+                provider_counts.setdefault("tns", {})["designations"] = (
+                    provider_counts.setdefault("tns", {}).get("designations", 0) + 1
+                )
+        catalog_product_counts["allwise"] += fact.catalog_products["allwise"]
+        catalog_product_counts["2mass"] += fact.catalog_products["2mass"]
+    counts: dict[str, Any] = dict(dbwide["counts"])
+    counts["published"] = len(light.ids)
+    counts["skipped"] = light.skipped
+    counts["catalog_truncated"] = args.limit > 0 and counts["eligible_public_events"] > len(light.ids)
+    counts["sources"] = dbwide["source_rows"]
+    counts["provider_counts"] = provider_counts
+    counts["surveys"] = survey_rows_from_counts(survey_counts)
+    counts["latest_source_attempts"] = dbwide["latest_source_attempts"]
+    counts["source_success_times"] = dbwide["source_success_times"]
+    counts["source_disposition_counts"] = dbwide["source_disposition_counts"]
+    clock.done("fingerprints")
 
-    clock.done("score")
-    generated_at = generated_dt.isoformat().replace("+00:00", "Z")
-    payload = {
+    payload: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "generated_at": generated_at,
         "export_checked_at": generated_at,
@@ -5233,66 +5808,11 @@ def main() -> int:
         # every cycle. 90 minutes covers one full cycle plus a missed one; a longer gap
         # (the Mac asleep or the publisher stuck) still shows as out of date.
         "valid_until": (generated_dt + timedelta(minutes=SNAPSHOT_VALIDITY_MINUTES)).isoformat().replace("+00:00", "Z"),
-        "latest_record_update": max(
-            (row.get("updated_at") or row.get("discovery_time") or "" for row in candidates),
-            default="",
-        ) or None,
         "origin": "local-snapshot",
         "cadence": "about every 30 minutes",
-        "candidate_count": len(candidates),
+        "candidate_count": len(light.ids),
         "degraded": False,
         "score_clock": score_clock,
-        "candidates": candidates,
-    }
-
-    def total(field: str) -> int:
-        return sum(int(c.get("follow_up_counts", {}).get(field, 0)) for c in candidates)
-
-    messenger_counts: dict[str, int] = {}
-    event_type_counts: dict[str, int] = {}
-    priority_bands = {"urgent_75_100": 0, "high_50_74": 0, "routine_25_49": 0, "low_0_24": 0}
-    for candidate in candidates:
-        messenger = str(candidate.get("primary_messenger") or "unknown")
-        messenger_counts[messenger] = messenger_counts.get(messenger, 0) + 1
-        event_type = str(candidate.get("event_type") or "unspecified")
-        event_type_counts[event_type] = event_type_counts.get(event_type, 0) + 1
-        score = float(candidate.get("ctas_score") or 0)
-        band = ("urgent_75_100" if score >= 75 else "high_50_74" if score >= 50
-                else "routine_25_49" if score >= 25 else "low_0_24")
-        priority_bands[band] += 1
-
-    recent = sorted(
-        candidates,
-        key=lambda row: row.get("updated_at") or row.get("discovery_time") or "",
-        reverse=True,
-    )[:20]
-    payload["recent_stream"] = [
-        {
-            key: row[key] for key in (
-                "event_id", "name", "updated_at", "discovery_time", "classification",
-                "primary_messenger", "ctas_score", "follow_up_counts",
-            ) if key in row
-        }
-        for row in recent
-    ]
-    payload["statistics"] = {
-        "real_events": counts["total_real_events"],
-        "public_candidates": len(candidates),
-        "quality_quarantined_records": counts["quality_quarantined_events"],
-        "magnitude_values_excluded": sum(bool(c.get("data_quality_flags")) for c in candidates),
-        "observations": total("observations"),
-        "spectra": total("spectra"),
-        "messenger_signals": total("messenger_signals"),
-        "classifications": total("classifications"),
-        "classification_history": total("classification_history"),
-        "publications": total("publications"),
-        "host_context": total("host_context"),
-        "catalog_counterparts": total("catalog_counterparts"),
-        "archive_products": total("archive_products"),
-        "candidates_with_follow_up": sum(c.get("follow_up_total", 0) > 0 for c in candidates),
-        "messengers": dict(sorted(messenger_counts.items())),
-        "event_types": dict(sorted(event_type_counts.items())),
-        "priority_bands": priority_bands,
     }
     payload["sources"] = [
         {**source, "record_counts": counts["provider_counts"].get(str(source["source"]), {})}
@@ -5360,15 +5880,6 @@ def main() -> int:
         source_universe_rows.append(row)
 
     existing_keys = {str(row["source_key"]) for row in source_universe_rows}
-    catalog_product_counts = {"allwise": 0, "2mass": 0}
-    for candidate in candidates:
-        for catalog_row in candidate.get("follow_up", {}).get("catalog_counterparts", []):
-            catalog = str(catalog_row.get("catalog") or "").lower()
-            if "allwise" in catalog:
-                catalog_product_counts["allwise"] += 1
-            elif "2mass" in catalog or catalog == "fp_psc":
-                catalog_product_counts["2mass"] += 1
-
     for (source_key, name, facility, family, data_types, access_mode, documentation_url,
          rights_basis, auth, implementation, operation, limitation) in ADDITIONAL_SOURCE_CONTRACTS:
         if source_key in existing_keys:
@@ -5515,6 +6026,290 @@ def main() -> int:
     source_universe_version = (
         f"{SOURCE_UNIVERSE_SCHEMA}+sha256:{source_universe['definition_checksum_sha256'][:16]}"
     )
+    # ------------------------------------------------------------------- the plan
+    # What a dossier depends on besides its own rows: the bound code, the fields of the
+    # source universe the projection reads (ctas_astro_evidence.source_contract), the
+    # analysis switch and the exporter's constants (in the code). Any change: a full rebuild.
+    context = release_build.context_digest({
+        "code": code_hashes,
+        "source_universe_version": source_universe_version,
+        "sources": [
+            {key: row.get(key) for key in (
+                "source_key", "name", "primary_family", "access_mode", "authentication_requirement",
+                "contract_version", "documentation_url", "known_limitations", "last_verified",
+                "product_contracts", "rate_or_cadence_limit", "rights_or_public_access_basis",
+                "implementation_state", "data_types", "secondary_families", "query_scope", "protocol",
+            )} for row in source_universe_rows
+        ],
+        "source_labels": {key: {"label": row.get("label"), "documentation_url": row.get("documentation_url")}
+                          for key, row in sorted(source_by_id.items())},
+        "heavy_analyses": heavy_analyses,
+        "limit": args.limit,
+    })
+    full_rebuild_hours = _env_float("CTAS_FULL_REBUILD_HOURS", release_build.DEFAULT_FULL_REBUILD_HOURS)
+    enabled = incremental_enabled() and not args.full
+    previous_fingerprints = release_build.parse_fingerprints_document(
+        git_blob(site_root, args.release_base_ref, release_build.INPUT_FINGERPRINTS_PATH)
+    )
+    plan = release_build.plan_release(
+        enabled=enabled, as_of=generated_dt, context=context, current_ids=light.ids, facts=facts,
+        discovery_by_id=discovery_by_id, previous_fingerprints=previous_fingerprints,
+        full_rebuild_hours=full_rebuild_hours, follow_up_window_days=FOLLOW_UP_WINDOW_DAYS,
+        sample_fraction=_env_float("CTAS_SAMPLE_FRACTION", release_build.DEFAULT_SAMPLE_FRACTION),
+        sample_minimum=_env_int("CTAS_SAMPLE_MINIMUM", release_build.DEFAULT_SAMPLE_MINIMUM),
+    )
+    # The previous release: its dossiers (compressed, only those the plan may reuse), the
+    # digests the history and changelog compare, and its source-matrix patterns.
+    keep = plan.reused
+    if previous_reader is not None:
+        previous = previous_reader.result(keep)
+    else:
+        previous = read_previous_release_for_export(str(site_root), args.release_base_ref, lambda event_id: event_id in keep)
+    if previous is None and git_blob(site_root, args.release_base_ref, "ctas/data/candidates.json"):
+        # A legacy single-document base release: history only, never reuse.
+        legacy = git_catalog_digest(site_root, args.release_base_ref)
+        previous_digest = legacy
+    else:
+        previous_digest = None if previous is None else {
+            **previous.index, "candidate_count": len(previous.index_ids),
+            "slim_candidates": [previous.slim_by_id[event_id] for event_id in previous.index_ids],
+            "semantic_checksum": previous.semantic_checksum, "digest_by_name": previous.digest_by_name,
+        }
+    plan = release_build.confirm_plan(plan, previous, as_of=generated_dt)
+    clock.done("read-previous-release")
+    print(f"release build   : {plan.mode} ({plan.reason}); {len(plan.reused)} dossiers reused, "
+          f"{len(plan.rebuilt)} rebuilt, {len(plan.sample)} reused dossiers re-verified")
+
+    # ------------------------------------------------------------------- the build
+    source_matrix_patterns: dict[str, list[dict[str, Any]]] = {}
+    projection_problems: list[str] = []
+    batch_size = max(200, _env_int("CTAS_BUILD_BATCH", 1000))
+
+    def build_dossiers(to_build: set[str]) -> tuple[release_build.DossierStore, dict[str, dict[str, Any]]]:
+        """Every dossier of the release: reused ones from the previous release, the rest built
+        from the database in batches (the events with messenger signals last, because their
+        multimessenger blocks read the positions and hosts of every other event)."""
+
+        store = release_build.DossierStore()
+        minis: dict[str, dict[str, Any]] = {}
+        for event_id in light.ids:
+            if event_id not in to_build:
+                minis[event_id] = previous.index_minis[event_id]
+        ordered = [event_id for event_id in light.ids if event_id in to_build]
+        quiet = [event_id for event_id in ordered if not facts[event_id].has_signals]
+        signalling = [event_id for event_id in ordered if facts[event_id].has_signals]
+        batches = [quiet[index:index + batch_size] for index in range(0, len(quiet), batch_size)]
+        if signalling:
+            batches.append(signalling)
+        built: dict[str, tuple[bytes, str]] = {}     # compressed canonical bytes and their sha256
+        for number, batch in enumerate(batches):
+            final_batch = number == len(batches) - 1
+            progress(f"building batch {number + 1}/{len(batches)} ({len(batch)} dossiers{', the messenger-signal events' if final_batch and signalling else ''})")
+            dossiers = build_batch(batch, final_batch, minis)
+            for candidate in dossiers:
+                canonical = canonical_candidate_bytes(candidate)
+                built[str(candidate["event_id"])] = (zlib.compress(canonical, 1), hashlib.sha256(canonical).hexdigest())
+            del dossiers
+        # The store keeps the catalog order (the events query order), reused and rebuilt alike.
+        for event_id in light.ids:
+            if event_id in to_build:
+                compressed, digest = built.pop(event_id)
+                store.put_compressed(event_id, compressed, digest, reused=False)
+            else:
+                store.put_compressed(event_id, previous.compressed_by_id[event_id], previous.sha_by_id[event_id], reused=True)
+        return store, minis
+
+    def build_batch(batch: list[str], final_batch: bool, minis: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+        row_ids = [light.rows[event_id]["id"] for event_id in batch]
+        evidence = load_evidence(cur, row_ids)
+        candidates = [
+            complete_base_record(light.records[event_id], light.rows[event_id], light, evidence, source_by_id)
+            for event_id in batch
+        ]
+        # Reconstruct derived ranking arithmetic before any aggregate or recent
+        # view is produced.  This also applies the documented terminal-state repair
+        # to legacy rows that predate the ingestion-order fix.
+        for candidate in candidates:
+            candidate["score_model"] = score_model_for(candidate, generated_dt)
+            candidate["ctas_score"] = candidate["score_model"]["final_score"]
+            candidate["score_explanation"] = score_explanation_for(candidate)
+        # Track 3c part 1: broker classes first (the SALT3 selection rule reads them), then the
+        # light-curve science, fitted in worker processes because it is the slow part.
+        # CTAS_EXPORT_HEAVY=0 (the workflow variable CTAS_EXPORT_HEAVY) publishes without the
+        # per-event analysis blocks of Tracks 2b, 3c and 3d: the release's safety valve when a
+        # run cannot finish them. The dossiers then carry no such block (the pages show nothing
+        # rather than a default) and the status document says the analyses were disabled this run.
+        broker_blocks: dict[str, dict[str, Any]] = {}
+        host_blocks: dict[str, dict[str, Any]] = {}
+        lightcurve_blocks: dict[str, dict[str, Any] | None] = {}
+        if heavy_analyses:
+            for candidate in candidates:
+                block = broker_classes.build_broker_classes(candidate, evidence.get("broker_rows", {}).get(str(candidate["event_id"]), []))
+                if block is not None:
+                    broker_blocks[str(candidate["event_id"])] = block
+            # Track 3c part 2: host association first, because the nuclear screen of the light-curve
+            # science reads the probable host's offset.
+            sfd_dir = lightcurve_science.sfd_directory()
+            for candidate in candidates:
+                block = host_association.build_host_association(candidate, sfd_dir, lightcurve_science.sfd_ebv if sfd_dir else None)
+                if block is not None:
+                    host_blocks[str(candidate["event_id"])] = block
+        if heavy_analyses:
+            probable_offsets = {event_id: host_association.probable_host_offset(block) for event_id, block in host_blocks.items()}
+            lightcurve_blocks = lightcurve_science.build_all(candidates, broker_blocks,
+                                                             probable_offsets={k: v for k, v in probable_offsets.items() if v is not None})
+        # The multimessenger index reads every event's position, status, peak magnitude and
+        # prior-activity flag: kept per event (release_build.index_mini) and assembled for the
+        # final batch, the one with the messenger-signal events.
+        for candidate in candidates:
+            event_id = str(candidate["event_id"])
+            minis[event_id] = release_build.index_mini({**candidate, "host_association": host_blocks.get(event_id)} if event_id in host_blocks else candidate)
+        multimessenger_index = None
+        if heavy_analyses and final_batch:
+            multimessenger_index = multimessenger.public_index([minis[event_id] for event_id in light.ids if event_id in minis])
+        for candidate in candidates:
+            event_id = str(candidate["event_id"])
+            candidate_attempts = evidence["all_attempts"].get(event_id, [])
+            candidate_analysis_runs = evidence["analysis_runs"].get(event_id, [])
+            projection_generated_at = stable_candidate_projection_time(
+                candidate, candidate_attempts, candidate_analysis_runs,
+            )
+            projection, accounting, source_matrix, compatibility_metadata = build_projection(
+                candidate,
+                source_universe_rows,
+                candidate_attempts,
+                candidate_analysis_runs,
+                projection_generated_at,
+                source_universe_version,
+            )
+            projection_problems.extend(projection_integrity_problems(projection))
+            candidate["astro_evidence"] = {
+                "projectionSchema": "ctas.astro-evidence-compatibility@1.0.0",
+                "coreSchemaName": projection["schemaName"],
+                "coreSchemaVersion": projection["schemaVersion"],
+                "generatedAt": projection["generatedAt"],
+                "sourceUniverseVersion": projection["sourceUniverseVersion"],
+                "target": projection["target"],
+                "persistedQueryReceipts": projection["queryReceipts"],
+                "conflictSets": projection["conflictSets"],
+                "selections": projection["selections"],
+                "dataProducts": projection["dataProducts"],
+                "analysisRuns": projection["analysisRuns"],
+                "measurementCount": len(projection["measurements"]),
+                "projectionMethod": "The exporter projects source-native retained rows once; the browser deterministically assembles those measurements with versioned source contracts and persisted receipts.",
+            }
+            screens = analysis_screens.build_analysis_screens(
+                candidate, evidence.get("analysis_screen_runs", {}).get(event_id, []), public_events,
+            )
+            if screens is not None:
+                candidate[analysis_screens.CANDIDATE_KEY] = screens
+            if heavy_analyses:
+                comparison_inputs = evidence.get("comparison_inputs") or {}
+                photometry_envelopes = comparison.envelope_ids_for_photometry(candidate)
+                comparison_block = comparison.build_comparison(
+                    candidate,
+                    envelopes=(comparison_inputs.get("envelopes") or {}).get(event_id, []),
+                    classifications=(comparison_inputs.get("classifications") or {}).get(event_id, []),
+                    hosts=(comparison_inputs.get("hosts") or {}).get(event_id, []),
+                    measurements=projection["measurements"] if photometry_envelopes else [],
+                    envelope_receipts=comparison_envelope_receipts(db, photometry_envelopes),
+                )
+                if comparison_block is not None:
+                    candidate[comparison.CANDIDATE_KEY] = comparison_block
+                if event_id in broker_blocks:
+                    candidate[broker_classes.CANDIDATE_KEY] = broker_blocks[event_id]
+                if lightcurve_blocks.get(event_id) is not None:
+                    candidate[lightcurve_science.CANDIDATE_KEY] = lightcurve_blocks[event_id]
+                    lightcurve_blocks[event_id] = None  # the dossier owns it now; drop the duplicate reference
+                if event_id in host_blocks:
+                    candidate[host_association.CANDIDATE_KEY] = host_blocks[event_id]
+                multimessenger_block = multimessenger.build_multimessenger(
+                    candidate, evidence.get("multimessenger_runs", {}).get(event_id, []), multimessenger_index or {},
+                )
+                if multimessenger_block is not None:
+                    candidate[multimessenger.CANDIDATE_KEY] = multimessenger_block
+            candidate["source_accounting"] = accounting
+            complete_source_matrix = [
+                {key: row.get(key) for key in SOURCE_MATRIX_ROW_KEYS}
+                for row in source_matrix
+            ]
+            candidate["source_matrix"] = compact_source_matrix(
+                complete_source_matrix, source_matrix_patterns,
+            )
+            if expand_source_matrix(candidate["source_matrix"], source_matrix_patterns) != complete_source_matrix:
+                projection_problems.append(
+                    f"{candidate.get('name')}: source matrix does not round-trip through its shared pattern"
+                )
+            candidate["compatibility_provenance"] = {
+                "receiptProvenance": compatibility_metadata["receiptProvenance"],
+                "selectionProvenance": compatibility_metadata["selectionProvenance"],
+            }
+            candidate["evidence_timeline"] = timeline_for(candidate)
+            # Scored once, before aggregation. Re-scoring here would overwrite
+            # recorded_score_at_ingest with our freshly derived release score.
+            candidate["science_brief"] = science_brief_for(candidate)
+            candidate["suggested_follow_up"] = suggested_follow_up_for(candidate)
+        del evidence
+        return candidates
+
+    to_build = set(plan.rebuilt) | set(plan.sample)
+    store, minis = build_dossiers(to_build)
+    sample_mismatches = [
+        event_id for event_id in sorted(plan.sample)
+        if store.canonical(event_id) != zlib.decompress(previous.compressed_by_id[event_id])
+    ]
+    sample_record = {
+        "size": len(plan.sample), "mismatches": len(sample_mismatches),
+        "mismatched_event_ids": sample_mismatches[:50],
+    }
+    build_record: dict[str, Any] = {
+        "mode": plan.mode, "reason": plan.reason, "reused": len(plan.reused), "rebuilt": len(plan.rebuilt),
+        "decisions": plan.counts, "sample": sample_record, "full_rebuild_at": plan.full_rebuild_at,
+        "previous_score_as_of": plan.previous_as_of, "full_rebuild_hours": full_rebuild_hours,
+    }
+    if sample_mismatches:
+        # A reused dossier the database no longer reproduces: nothing of this build is trusted;
+        # every dossier is rebuilt now, and full rebuilds continue for full_rebuild_hours.
+        print(f"WARNING: {len(sample_mismatches)} of {len(plan.sample)} re-verified dossiers differ from the previous "
+              f"release (first: {sample_mismatches[0]}); rebuilding every dossier", file=sys.stderr)
+        source_matrix_patterns.clear()
+        projection_problems.clear()
+        LOCAL_STORE_READ_FAILURES.clear()
+        plan = release_build.ReleasePlan("full", "a reused dossier did not reproduce from the database", rebuilt=set(light.ids),
+                                         full_rebuild_at=generated_at)
+        store, minis = build_dossiers(set(light.ids))
+        build_record.update({
+            "mode": "full", "reason": plan.reason, "reused": 0, "rebuilt": len(light.ids),
+            "full_rebuild_at": generated_at, "sample_mismatch_at": generated_at,
+        })
+    else:
+        # The re-verified dossiers reproduced byte for byte: for the chunk writer they are
+        # reused dossiers (their buckets' bytes are the previous release's).
+        store.reused |= set(plan.sample)
+        if previous_fingerprints and (previous_fingerprints.get("build") or {}).get("sample_mismatch_at"):
+            build_record["sample_mismatch_at"] = (previous_fingerprints.get("build") or {}).get("sample_mismatch_at")
+    con.close()
+    del minis
+    clock.done("build-dossiers")
+
+    # --------------------------------------------------------------- the one pass
+    # Every catalog-level product, statistic and gate from the dossiers, read once each from
+    # the store (compressed canonical JSON); only slim records stay in memory.
+    all_ids = set(light.ids)
+    slims: list[dict[str, Any]] = []
+    candidate_rows: list[list[Any]] = []
+    rows_by_event: dict[str, list[Any]] = {}
+    photometry_table: list[list[Any]] = []
+    population_minis: list[dict[str, Any]] = []
+    datalink_rows_by_bucket: dict[str, list[dict[str, Any]]] = {}
+    datalink_events_by_bucket: dict[str, int] = {}
+    receipt_summary = interop().ReceiptSummary()
+    semantic_digest = hashlib.sha256(b"[")
+    assembled_digest = hashlib.sha256(b"[")
+    sha_by_name: dict[str, str] = {}
+    names: list[str] = []
+    tns_links: list[dict[str, Any]] = []
+    per_source_accounting: dict[str, dict[str, Any]] = {}
     accounting_totals = {
         "declaredSources": len(source_universe_rows),
         "applicableSourceEvaluations": 0,
@@ -5522,108 +6317,154 @@ def main() -> int:
         "dataBearingSourceEvaluations": 0,
         "outcomeCounts": {},
     }
-    projection_problems: list[str] = []
-    source_matrix_patterns: dict[str, list[dict[str, Any]]] = {}
-    per_source_accounting: dict[str, dict[str, Any]] = {}
-    public_events = {
-        str(row["event_id"]): {"name": row.get("name"), "status": row.get("status")} for row in candidates
+    previous_patterns = previous.patterns if previous is not None else {}
+    validation_problems: list[str] = []
+    seen_event_ids: set[str] = set()
+    screen_problems: list[str] = []
+    comparison_problems: list[str] = []
+    lightcurve_problems: list[str] = []
+    broker_problems: list[str] = []
+    host_problems: list[str] = []
+    multimessenger_problems: list[str] = []
+    schema_required = dossier_required_keys(site_root)
+    missing_required: list[tuple[str, list[str]]] = []
+    tally = {
+        "required_contract": True, "coordinate_contract": True, "follow_up_integrity": True,
+        "completeness_integrity": True, "timeline_integrity": True, "score_reconciliation": True,
+        "score_applicability": True, "suggested_follow_up_integrity": True, "science_brief_integrity": True,
+        "replay_integrity": True, "magnitude_safety": True, "source_matrix_round_trip": True,
+        "disposition_integrity": True, "universe_versions": True,
     }
-    # Track 3c part 1: broker classes first (the SALT3 selection rule reads them), then the
-    # light-curve science, fitted in worker processes because it is the slow part.
-    # CTAS_EXPORT_HEAVY=0 (the workflow variable CTAS_EXPORT_HEAVY) publishes without the
-    # per-event analysis blocks of Tracks 2b, 3c and 3d: the release's safety valve when a
-    # run cannot finish them. The dossiers then carry no such block (the pages show nothing
-    # rather than a default) and the status document says the analyses were disabled this run.
-    heavy_analyses = heavy_analyses_enabled()
-    broker_blocks: dict[str, dict[str, Any]] = {}
-    host_blocks: dict[str, dict[str, Any]] = {}
-    lightcurve_blocks: dict[str, dict[str, Any] | None] = {}
-    if heavy_analyses:
-        for candidate in candidates:
-            block = broker_classes.build_broker_classes(candidate, counts.get("broker_rows", {}).get(str(candidate["event_id"]), []))
-            if block is not None:
-                broker_blocks[str(candidate["event_id"])] = block
-        # Track 3c part 2: host association first, because the nuclear screen of the light-curve
-        # science reads the probable host's offset.
-        sfd_dir = lightcurve_science.sfd_directory()
-        for candidate in candidates:
-            block = host_association.build_host_association(candidate, sfd_dir, lightcurve_science.sfd_ebv if sfd_dir else None)
-            if block is not None:
-                host_blocks[str(candidate["event_id"])] = block
-    clock.done("host-association")
-    if heavy_analyses:
-        probable_offsets = {event_id: host_association.probable_host_offset(block) for event_id, block in host_blocks.items()}
-        lightcurve_blocks = lightcurve_science.build_all(candidates, broker_blocks,
-                                                         probable_offsets={k: v for k, v in probable_offsets.items() if v is not None})
-    clock.done("lightcurve-science")
-    multimessenger_index = multimessenger.public_index(candidates, host_blocks) if heavy_analyses else None
-    for candidate in candidates:
-        event_id = str(candidate["event_id"])
-        candidate_attempts = counts["all_attempts"].get(event_id, [])
-        candidate_analysis_runs = counts["analysis_runs"].get(event_id, [])
-        projection_generated_at = stable_candidate_projection_time(
-            candidate, candidate_attempts, candidate_analysis_runs,
+    block_counts = {"screens": 0, "screen_runs": 0, "comparison": 0, "conflicts": 0, "lightcurve": 0,
+                    "lightcurve_complete": 0, "broker": 0, "host": 0, "host_posteriors": 0,
+                    "multimessenger": 0, "gravitational_wave": 0}
+    provider_reproduced: dict[str, dict[str, int]] = {}
+    survey_reproduced: dict[str, int] = {}
+    coverage_problem_rows: set[str] = set()
+    source_keys = {str(row["source_key"]) for row in source_universe_rows}
+    expected_stats = {
+        "public_candidates": 0, "observations": 0, "spectra": 0, "messenger_signals": 0, "classifications": 0,
+        "classification_history": 0, "publications": 0, "host_context": 0, "catalog_counterparts": 0,
+        "archive_products": 0, "candidates_with_follow_up": 0,
+    }
+    messenger_counts: dict[str, int] = {}
+    event_type_counts: dict[str, int] = {}
+    priority_bands = {"urgent_75_100": 0, "high_50_74": 0, "routine_25_49": 0, "low_0_24": 0}
+    magnitude_values_excluded = 0
+    latest_record_update = ""
+    catalog_as_of = ""
+
+    def _score_reproduces(candidate: dict[str, Any]) -> bool:
+        model = candidate.get("score_model") or {}
+        applied = [term for term in model.get("terms", []) if term.get("applicable")]
+        core = float(model.get("baseline", 0.0)) + sum(float(term["points"]) for term in applied)
+        final = max(0.0, min(100.0, max(0.0, min(100.0, core)) + float(model.get("multimessenger_bonus") or 0.0)))
+        if model.get("status_override"):
+            final = 0.0
+        return (
+            abs(round(final, 2) - float(model.get("final_score") or 0.0)) <= 0.01
+            and abs(float(candidate.get("ctas_score") or 0.0) - float(model.get("final_score") or 0.0)) <= 0.01
+            and model.get("score_clock") == SCORE_CLOCK_REFERENCE
+            and (str(candidate.get("status") or "").lower() not in {"retracted", "bogus"}
+                 or float(candidate.get("ctas_score") or 0.0) == 0.0)
         )
-        projection, accounting, source_matrix, compatibility_metadata = build_projection(
-            candidate,
-            source_universe_rows,
-            candidate_attempts,
-            candidate_analysis_runs,
-            projection_generated_at,
-            source_universe_version,
+
+    def _score_is_for_this_clock(candidate: dict[str, Any]) -> bool:
+        # Records no longer carry their own copy of the clock, so prove instead
+        # that each published model is exactly what the release clock yields.
+        # recorded_score_at_ingest is the one input-provenance field that cannot
+        # be recomputed here: ctas_score already holds the release score.
+        published = dict(candidate.get("score_model") or {})
+        fresh = score_model_for(candidate, generated_dt)
+        published.pop("recorded_score_at_ingest", None)
+        fresh.pop("recorded_score_at_ingest", None)
+        return published == fresh
+
+    def _suggested_follow_up_holds(candidate: dict[str, Any]) -> bool:
+        block = candidate.get("suggested_follow_up") or {}
+        objectives = block.get("objectives") or []
+        return (
+            block.get("schema") == SUGGESTED_FOLLOW_UP_SCHEMA
+            and block == suggested_follow_up_for(candidate)
+            and block.get("claim_boundary") == SUGGESTED_FOLLOW_UP_CLAIM
+            and all(row["suggested_evidence_type"] in SUGGESTED_EVIDENCE_TYPES.values() for row in objectives)
+            and all(row["kind"] in {"imaging", "spectroscopy", "counterpart", "monitoring"} for row in objectives)
+            and [row["priority"] for row in objectives] == list(range(1, len(objectives) + 1))
+            and (block.get("cadence") or {}).get("code") in FOLLOW_UP_CADENCES
+            and ((block.get("cadence") or {}).get("code") == "none") == (not objectives)
+            and (bool(objectives) == bool((block.get("eligibility") or {}).get("is_target")))
+            and (not (str(candidate.get("status") or "").lower() in {"retracted", "bogus"}) or not objectives)
         )
-        projection_problems.extend(projection_integrity_problems(projection))
-        candidate["astro_evidence"] = {
-            "projectionSchema": "ctas.astro-evidence-compatibility@1.0.0",
-            "coreSchemaName": projection["schemaName"],
-            "coreSchemaVersion": projection["schemaVersion"],
-            "generatedAt": projection["generatedAt"],
-            "sourceUniverseVersion": projection["sourceUniverseVersion"],
-            "target": projection["target"],
-            "persistedQueryReceipts": projection["queryReceipts"],
-            "conflictSets": projection["conflictSets"],
-            "selections": projection["selections"],
-            "dataProducts": projection["dataProducts"],
-            "analysisRuns": projection["analysisRuns"],
-            "measurementCount": len(projection["measurements"]),
-            "projectionMethod": "The exporter projects source-native retained rows once; the browser deterministically assembles those measurements with versioned source contracts and persisted receipts.",
-        }
-        screens = analysis_screens.build_analysis_screens(
-            candidate, counts.get("analysis_screen_runs", {}).get(event_id, []), public_events,
-        )
-        if screens is not None:
-            candidate[analysis_screens.CANDIDATE_KEY] = screens
-        if heavy_analyses:
-            comparison_inputs = counts.get("comparison_inputs") or {}
-            photometry_envelopes = comparison.envelope_ids_for_photometry(candidate)
-            comparison_block = comparison.build_comparison(
-                candidate,
-                envelopes=(comparison_inputs.get("envelopes") or {}).get(event_id, []),
-                classifications=(comparison_inputs.get("classifications") or {}).get(event_id, []),
-                hosts=(comparison_inputs.get("hosts") or {}).get(event_id, []),
-                measurements=projection["measurements"] if photometry_envelopes else [],
-                envelope_receipts=comparison_envelope_receipts(db, photometry_envelopes),
-            )
-            if comparison_block is not None:
-                candidate[comparison.CANDIDATE_KEY] = comparison_block
-            if event_id in broker_blocks:
-                candidate[broker_classes.CANDIDATE_KEY] = broker_blocks[event_id]
-            if lightcurve_blocks.get(event_id) is not None:
-                candidate[lightcurve_science.CANDIDATE_KEY] = lightcurve_blocks[event_id]
-                lightcurve_blocks[event_id] = None  # the dossier owns it now; drop the duplicate reference
-            if event_id in host_blocks:
-                candidate[host_association.CANDIDATE_KEY] = host_blocks[event_id]
-            multimessenger_block = multimessenger.build_multimessenger(
-                candidate, counts.get("multimessenger_runs", {}).get(event_id, []), multimessenger_index,
-            )
-            if multimessenger_block is not None:
-                candidate[multimessenger.CANDIDATE_KEY] = multimessenger_block
-        candidate["source_accounting"] = accounting
-        complete_source_matrix = [
-            {key: row.get(key) for key in SOURCE_MATRIX_ROW_KEYS}
-            for row in source_matrix
-        ]
-        for matrix_row in complete_source_matrix:
+
+    for position, (event_id, candidate, canonical) in enumerate(store.iter_decoded()):
+        if position % 5000 == 0:
+            progress(f"assembling the catalog: dossier {position + 1}/{len(store)}")
+        if position:
+            assembled_digest.update(b",")
+        assembled_digest.update(canonical)
+        slim = slim_record(candidate)
+        slims.append(slim)
+        name = str(candidate.get("name") or "")
+        names.append(name)
+        sha_by_name[name] = store.sha256(event_id)
+        # --- compact rows (the index, the pages, the research tables)
+        row = compact_candidate_row(candidate, score_clock)
+        candidate_rows.append(row)
+        rows_by_event[event_id] = row
+        # --- statistics
+        fuc = candidate.get("follow_up_counts", {}) or {}
+        for field in ("observations", "spectra", "messenger_signals", "classifications", "classification_history",
+                      "publications", "host_context", "catalog_counterparts", "archive_products"):
+            expected_stats[field] += int(fuc.get(field, 0))
+        expected_stats["public_candidates"] += 1
+        if candidate.get("follow_up_total", 0) > 0:
+            expected_stats["candidates_with_follow_up"] += 1
+        magnitude_values_excluded += 1 if candidate.get("data_quality_flags") else 0
+        messenger = str(candidate.get("primary_messenger") or "unknown")
+        messenger_counts[messenger] = messenger_counts.get(messenger, 0) + 1
+        event_type = str(candidate.get("event_type") or "unspecified")
+        event_type_counts[event_type] = event_type_counts.get(event_type, 0) + 1
+        score = float(candidate.get("ctas_score") or 0)
+        band = ("urgent_75_100" if score >= 75 else "high_50_74" if score >= 50
+                else "routine_25_49" if score >= 25 else "low_0_24")
+        priority_bands[band] += 1
+        latest_record_update = max(latest_record_update, str(candidate.get("updated_at") or candidate.get("discovery_time") or ""))
+        catalog_as_of = max(catalog_as_of, str((candidate.get("astro_evidence") or {}).get("generatedAt") or ""))
+        survey = candidate.get("discovery_survey")
+        if survey:
+            survey_reproduced[str(survey)] = survey_reproduced.get(str(survey), 0) + 1
+        for evidence_type, evidence_rows in candidate.get("follow_up", {}).items():
+            for evidence_row in evidence_rows:
+                provider = provider_source_key(evidence_row.get("provider"))
+                if provider:
+                    provider_reproduced.setdefault(provider, {})[evidence_type] = (
+                        provider_reproduced.setdefault(provider, {}).get(evidence_type, 0) + 1
+                    )
+        for public_link in candidate.get("links", []):
+            if public_link.get("source_key") == "tns":
+                provider_reproduced.setdefault("tns", {})["designations"] = (
+                    provider_reproduced.setdefault("tns", {}).get("designations", 0) + 1
+                )
+                tns_links.append(public_link)
+        # --- the research and interoperability tables
+        photometry_table.extend(photometry_rows_for(candidate))
+        lightcurve_block = candidate.get("lightcurve_science") or {}
+        feature_run = next((r for r in lightcurve_block.get("runs") or [] if r.get("analysisType") == "lightcurve-features"), None)
+        population_minis.append({
+            "event_id": candidate.get("event_id"), "name": candidate.get("name"), "classification": candidate.get("classification"),
+            **({"lightcurve_science": {"runs": [feature_run], "inputs": lightcurve_block.get("inputs") or {}}} if feature_run else {}),
+        })
+        bucket = candidate_bucket(event_id)
+        datalink_rows_by_bucket.setdefault(bucket, []).extend(interop().datalink_rows_for(candidate, bucket))
+        datalink_events_by_bucket[bucket] = datalink_events_by_bucket.get(bucket, 0) + 1
+        receipt_summary.add(candidate)
+        # --- per-source accounting from the dossier's source matrix (rebuilt dossiers made
+        # the patterns above; a reused dossier's pattern is carried over from the previous release)
+        if not compact_source_matrix_patterns_for(candidate, source_matrix_patterns, previous_patterns):
+            tally["source_matrix_round_trip"] = False
+        accounting = candidate.get("source_accounting") or {}
+        matrix_rows = expand_source_matrix(candidate.get("source_matrix"), source_matrix_patterns)
+        for matrix_row in matrix_rows:
             per_source = per_source_accounting.setdefault(str(matrix_row.get("sourceContractId")), {
                 "name": matrix_row.get("sourceName"), "applicable_events": 0, "executed_query_receipts": 0,
                 "events_with_executed_receipts": 0, "data_returned_events": 0,
@@ -5637,28 +6478,144 @@ def main() -> int:
             per_source["data_returned_events"] += 1 if outcome == "DATA_RETURNED" else 0
             per_source["events_with_retained_records"] += 1 if int(matrix_row.get("retainedRecordCount") or 0) > 0 else 0
             per_source["outcome_counts"][outcome] = per_source["outcome_counts"].get(outcome, 0) + 1
-        candidate["source_matrix"] = compact_source_matrix(
-            complete_source_matrix, source_matrix_patterns,
-        )
-        if expand_source_matrix(candidate["source_matrix"], source_matrix_patterns) != complete_source_matrix:
-            projection_problems.append(
-                f"{candidate.get('name')}: source matrix does not round-trip through its shared pattern"
-            )
-        candidate["compatibility_provenance"] = {
-            "receiptProvenance": compatibility_metadata["receiptProvenance"],
-            "selectionProvenance": compatibility_metadata["selectionProvenance"],
-        }
-        candidate["evidence_timeline"] = timeline_for(candidate)
-        # Scored once, before aggregation. Re-scoring here would overwrite
-        # recorded_score_at_ingest with our freshly derived release score.
-        candidate["science_brief"] = science_brief_for(candidate)
-        candidate["suggested_follow_up"] = suggested_follow_up_for(candidate)
-        accounting_totals["applicableSourceEvaluations"] += int(accounting["applicableSources"])
-        accounting_totals["executedQueryReceipts"] += int(accounting["executedQueryReceipts"])
-        accounting_totals["dataBearingSourceEvaluations"] += int(accounting["dataBearingSources"])
-        for outcome, count in accounting["outcomeCounts"].items():
+        accounting_totals["applicableSourceEvaluations"] += int(accounting.get("applicableSources") or 0)
+        accounting_totals["executedQueryReceipts"] += int(accounting.get("executedQueryReceipts") or 0)
+        accounting_totals["dataBearingSourceEvaluations"] += int(accounting.get("dataBearingSources") or 0)
+        for outcome, count in (accounting.get("outcomeCounts") or {}).items():
             accounting_totals["outcomeCounts"][outcome] = accounting_totals["outcomeCounts"].get(outcome, 0) + int(count)
+        if not (isinstance(candidate.get("source_matrix"), dict)
+                and len(matrix_rows) == int(candidate["source_matrix"].get("row_count") or 0)
+                == int(accounting.get("applicableSources") or -1)):
+            tally["source_matrix_round_trip"] = False
+        # --- the gates, one dossier at a time
+        validation_problems.extend(validate_candidate(candidate, position, seen_event_ids))
+        if not schema_required <= set(candidate):
+            missing_required.append((str(candidate.get("name") or candidate.get("event_id")), sorted(schema_required - set(candidate))))
+        if not (candidate.get("name") and "ctas_score" in candidate and isinstance(candidate.get("follow_up_counts"), dict)
+                and isinstance(candidate.get("record_completeness"), dict)):
+            tally["required_contract"] = False
+        if not ((candidate.get("ra_deg") is None and candidate.get("dec_deg") is None) or
+                (candidate.get("ra_deg") is not None and candidate.get("dec_deg") is not None and
+                 0 <= float(candidate["ra_deg"]) < 360 and -90 <= float(candidate["dec_deg"]) <= 90)):
+            tally["coordinate_contract"] = False
+        if not (all(int(count) == len(candidate.get("follow_up", {}).get(key, [])) for key, count in fuc.items())
+                and set(candidate.get("follow_up", {})) <= set(fuc)
+                and candidate.get("follow_up_total") == sum(fuc.values())):
+            tally["follow_up_integrity"] = False
+        if not (candidate.get("record_completeness") == completeness_for(candidate) and
+                ((candidate.get("follow_up_total", 0) == 0) ==
+                 (candidate.get("record_completeness", {}).get("label") == "Event record only"))):
+            tally["completeness_integrity"] = False
+        timeline = timeline_for(candidate)
+        if not (bool(timeline) and all(
+                any(entry.get(key) for key in ("scientific_time", "provider_publication_time", "ctas_receipt_time"))
+                and entry.get("assertion_kind") in {"provider assertion", "CTAS-derived summary"}
+                for entry in timeline)):
+            tally["timeline_integrity"] = False
+        if not (_score_reproduces(candidate) and _score_is_for_this_clock(candidate)):
+            tally["score_reconciliation"] = False
+        if (str(candidate.get("ranking_channel") or "") != "optical" or str(candidate.get("record_role") or "") != "follow-up-target-candidate") \
+                and not all(term["code"] != "spectroscopy_gap_points" or term["applicable"] is False
+                            for term in (candidate.get("score_model") or {}).get("terms", [])):
+            tally["score_applicability"] = False
+        if len(_retained_messenger_channels(candidate)) < 2 and float((candidate.get("score_model") or {}).get("multimessenger_bonus") or 0.0) != 0.0:
+            tally["score_applicability"] = False
+        if not _suggested_follow_up_holds(candidate):
+            tally["suggested_follow_up_integrity"] = False
+        if not ((candidate.get("science_brief") or {}).get("schema") == "ctas.candidate-science-brief@1.0.0"
+                and {row["component_id"] for row in (candidate.get("science_brief") or {}).get("missing_information", [])}
+                == {row["id"] for row in (candidate.get("record_completeness") or {}).get("components", [])
+                    if row.get("state") in {"missing", "not-assessed"}}):
+            tally["science_brief_integrity"] = False
+        if not (len({row.get("entry_id") for row in candidate.get("evidence_timeline", [])}) == len(candidate.get("evidence_timeline", []))
+                and all(
+                    row.get("public_available_at") in {row.get("provider_publication_time"), row.get("ctas_receipt_time"), None}
+                    and not (row.get("public_available_at") == row.get("scientific_time")
+                             and not row.get("provider_publication_time") and not row.get("ctas_receipt_time"))
+                    for row in candidate.get("evidence_timeline", []))):
+            tally["replay_integrity"] = False
+        if not (candidate.get("discovery_magnitude") is None or -30 <= float(candidate["discovery_magnitude"]) <= 40):
+            tally["magnitude_safety"] = False
+        for coverage_row in candidate.get("source_coverage", []):
+            if (coverage_row.get("disposition") not in SOURCE_STATE_VOCABULARY
+                    or not isinstance(coverage_row.get("retained_record_count"), int) or coverage_row["retained_record_count"] < 0
+                    or coverage_row.get("source_id") not in source_keys):
+                tally["disposition_integrity"] = False
+                coverage_problem_rows.add(f"{coverage_row.get('source_id')}:{coverage_row.get('disposition')}")
+        if (candidate.get("astro_evidence") or {}).get("sourceUniverseVersion") != source_universe_version:
+            tally["universe_versions"] = False
+        if candidate.get(analysis_screens.CANDIDATE_KEY):
+            block_counts["screens"] += 1
+            block_counts["screen_runs"] += len(candidate[analysis_screens.CANDIDATE_KEY]["runs"])
+        if candidate.get(comparison.CANDIDATE_KEY):
+            block_counts["comparison"] += 1
+            block_counts["conflicts"] += candidate[comparison.CANDIDATE_KEY]["summary"]["propertiesInConflict"]
+        if candidate.get(lightcurve_science.CANDIDATE_KEY):
+            block_counts["lightcurve"] += 1
+            block_counts["lightcurve_complete"] += sum(1 for r in (candidate.get(lightcurve_science.CANDIDATE_KEY) or {}).get("runs", []) if r.get("status") == "complete")
+        if candidate.get(broker_classes.CANDIDATE_KEY):
+            block_counts["broker"] += 1
+        if candidate.get(host_association.CANDIDATE_KEY):
+            block_counts["host"] += 1
+            block_counts["host_posteriors"] += sum(1 for r in (candidate.get(host_association.CANDIDATE_KEY) or {}).get("runs", []) if r.get("analysisType") == "host-posterior" and r.get("status") == "complete")
+        if candidate.get(multimessenger.CANDIDATE_KEY):
+            block_counts["multimessenger"] += 1
+            if (candidate.get(multimessenger.CANDIDATE_KEY) or {}).get("kind") == "gravitational-wave":
+                block_counts["gravitational_wave"] += 1
+        screen_problems.extend(analysis_screens.screen_problems([candidate]))
+        comparison_problems.extend(comparison.comparison_problems([candidate]))
+        lightcurve_problems.extend(lightcurve_science.lightcurve_problems([candidate]))
+        broker_problems.extend(broker_classes.broker_problems([candidate]))
+        host_problems.extend(host_association.host_problems([candidate]))
+        if candidate.get(multimessenger.CANDIDATE_KEY):
+            multimessenger_problems.extend(multimessenger.multimessenger_problems([candidate], ids=all_ids))
+        # --- the semantic checksum, last: it scrubs the decoded dossier in place
+        if position:
+            semantic_digest.update(b",")
+        semantic_digest.update(semantic_bytes_of_decoded(candidate))
+        del candidate
+    assembled_digest.update(b"]\n")
+    semantic_digest.update(b"]")
+    assembled_checksum = assembled_digest.hexdigest()
+    catalog_content_checksum = semantic_digest.hexdigest()
     accounting_totals["outcomeCounts"] = dict(sorted(accounting_totals["outcomeCounts"].items()))
+    payload["catalog_content_checksum_sha256"] = catalog_content_checksum
+    payload["latest_record_update"] = latest_record_update or None
+    payload["candidate_count"] = len(store)
+    slim_by_id = {str(slim["event_id"]): slim for slim in slims}
+    recent = sorted(
+        slims,
+        key=lambda row: row.get("updated_at") or row.get("discovery_time") or "",
+        reverse=True,
+    )[:20]
+    payload["recent_stream"] = [
+        {
+            key: row[key] for key in (
+                "event_id", "name", "updated_at", "discovery_time", "classification",
+                "primary_messenger", "ctas_score", "follow_up_counts",
+            ) if key in row
+        }
+        for row in recent
+    ]
+    payload["statistics"] = {
+        "real_events": counts["total_real_events"],
+        "public_candidates": len(store),
+        "quality_quarantined_records": counts["quality_quarantined_events"],
+        "magnitude_values_excluded": magnitude_values_excluded,
+        "observations": expected_stats["observations"],
+        "spectra": expected_stats["spectra"],
+        "messenger_signals": expected_stats["messenger_signals"],
+        "classifications": expected_stats["classifications"],
+        "classification_history": expected_stats["classification_history"],
+        "publications": expected_stats["publications"],
+        "host_context": expected_stats["host_context"],
+        "catalog_counterparts": expected_stats["catalog_counterparts"],
+        "archive_products": expected_stats["archive_products"],
+        "candidates_with_follow_up": expected_stats["candidates_with_follow_up"],
+        "messengers": dict(sorted(messenger_counts.items())),
+        "event_types": dict(sorted(event_type_counts.items())),
+        "priority_bands": priority_bands,
+    }
     payload["local_store_exceptions"] = {
         "statement": (
             "Rows the local store could not return for this release. These records are "
@@ -5673,26 +6630,51 @@ def main() -> int:
     }
     payload["source_accounting"] = accounting_totals
     payload["statistics"]["source_accounting"] = accounting_totals
-    payload["catalog_content_checksum_sha256"] = catalog_semantic_checksum(candidates)
-    clock.done("project-evidence")
+    clock.done("assemble-catalog")
 
-    population_document = population_anomaly.build(candidates, payload.get("generated_at"))
+    population_document = population_anomaly.build(population_minis, payload.get("generated_at"))
     POPULATION_PERCENTILES.clear()
     POPULATION_PERCENTILES.update({str(row["eventId"]): row["percentile"] for row in population_document.get("events") or []})
     population_anomaly_raw = (json.dumps(population_document, sort_keys=True, separators=(",", ":")) + "\n").encode()
+    # The anomaly percentile is the one compact-row column that needs the whole population.
+    percentile_column = CATALOG_CANDIDATE_COLUMNS.index("anomaly_percentile")
+    for row in candidate_rows:
+        row[percentile_column] = POPULATION_PERCENTILES.get(str(row[CATALOG_CANDIDATE_COLUMNS.index("event_id")]))
+    population_problems = population_anomaly.problems(json.loads(population_anomaly_raw), population_minis)
     clock.done("population-anomaly")
-    candidate_rows = [compact_candidate_row(candidate, score_clock) for candidate in candidates]
 
-    bucket_rows, chunk_raw, part_raw = candidate_chunk_artifacts(candidates)
+    # ------------------------------------------------------------ dossier chunks
+    # Written now (read back below): a bucket none of whose dossiers changed takes the previous
+    # release's bytes, every other bucket is encoded from the store.
+    out = Path(args.output_dir)
+    if args.dry_run:
+        import tempfile
+        chunk_scratch = tempfile.TemporaryDirectory(prefix="ctas-export-dry-run-")
+        chunk_root = Path(chunk_scratch.name)
+    else:
+        chunk_scratch = None
+        chunk_root = out
+    written_paths: dict[str, Path] = {}
+
+    def write_chunk_file(public_path: str, raw: bytes) -> None:
+        written_paths[public_path] = write_output_artifact(chunk_root, public_path, raw)
+
+    chunk_result = release_build.write_chunks(
+        store=store, bucket_of=candidate_bucket, bucket_count=CANDIDATE_BUCKET_COUNT,
+        chunk_schema=CANDIDATE_CHUNK_SCHEMA, encode_chunk=encode_chunk, decode_chunk=decode_chunk,
+        shard_max_bytes=CANDIDATE_SHARD_TARGET_MAX_BYTES, write=write_chunk_file,
+        previous=previous if plan.mode == "incremental" else None,
+        previous_blob=lambda path: git_blob(site_root, args.release_base_ref, path),
+    )
+    chunk_sizes = {row["path"]: row["bytes"] for row in chunk_result.chunk_rows}
+    part_sizes = {row["path"]: row["bytes"] for row in chunk_result.part_rows}
+    chunk_total_bytes = sum(chunk_sizes.values())
     clock.done("serialize-chunks")
 
     catalog_index = {
         "schema": CATALOG_INDEX_SCHEMA,
         "schema_version": SCHEMA_VERSION,
-        "catalog_as_of": max(
-            (str(candidate["astro_evidence"]["generatedAt"]) for candidate in candidates),
-            default=payload["latest_record_update"],
-        ),
+        "catalog_as_of": catalog_as_of or payload["latest_record_update"],
         "latest_record_update": payload["latest_record_update"],
         "origin": payload["origin"],
         "cadence": payload["cadence"],
@@ -5786,10 +6768,6 @@ def main() -> int:
 
     # -------------------------------------------------------- live summary
     column_index = {name: position for position, name in enumerate(CATALOG_CANDIDATE_COLUMNS)}
-    rows_by_event = {
-        str(candidate["event_id"]): row
-        for candidate, row in zip(candidates, candidate_rows)
-    }
     recent_cutoff = generated_dt - timedelta(hours=RECENT_REPORT_WINDOW_HOURS)
 
     def discovery_time_of(candidate: dict[str, Any]) -> datetime | None:
@@ -5806,21 +6784,21 @@ def main() -> int:
 
     recent_candidates = sorted(
         [
-            candidate for candidate in candidates
+            candidate for candidate in slims
             if (discovery_time_of(candidate) or datetime.min.replace(tzinfo=UTC)) >= recent_cutoff
         ],
         key=lambda candidate: str(candidate.get("discovery_time") or ""),
         reverse=True,
     )
     leaderboard = by_score([
-        candidate for candidate in candidates if candidate.get("default_leaderboard_eligible")
+        candidate for candidate in slims if candidate.get("default_leaderboard_eligible")
     ])[:TOP_RANK_LIMIT]
-    channels = sorted({str(candidate.get("ranking_channel") or "") for candidate in candidates})
+    channels = sorted({str(candidate.get("ranking_channel") or "") for candidate in slims})
     channel_top = {
         channel: [
             str(candidate["event_id"])
             for candidate in by_score([
-                candidate for candidate in candidates
+                candidate for candidate in slims
                 if str(candidate.get("ranking_channel") or "") == channel
             ])[:TOP_RANK_LIMIT]
         ]
@@ -5847,7 +6825,7 @@ def main() -> int:
     longest_window = max(sky_windows.values())
     horizon = generated_dt - timedelta(days=longest_window)
     unlocalized = 0
-    for candidate in candidates:
+    for candidate in slims:
         discovered = discovery_time_of(candidate)
         localized = candidate.get("ra_deg") is not None and candidate.get("dec_deg") is not None
         if discovered is not None and discovered >= horizon:
@@ -5859,7 +6837,7 @@ def main() -> int:
         cutoff = generated_dt - timedelta(days=days)
         plotted = 0
         missing = 0
-        for candidate in candidates:
+        for candidate in slims:
             discovered = discovery_time_of(candidate)
             if discovered is None or discovered < cutoff:
                 continue
@@ -5869,17 +6847,17 @@ def main() -> int:
                 missing += 1
         sky_counts[label] = {"plotted": plotted, "unlocalized": missing}
     all_localized = sum(
-        1 for candidate in candidates
+        1 for candidate in slims
         if candidate.get("ra_deg") is not None and candidate.get("dec_deg") is not None
     )
     sky_counts["all"] = {
         "plotted": all_localized,
-        "unlocalized": len(candidates) - all_localized,
+        "unlocalized": len(slims) - all_localized,
     }
 
     role_counts: dict[str, int] = {}
     channel_counts: dict[str, int] = {}
-    for candidate in candidates:
+    for candidate in slims:
         role = str(candidate.get("record_role") or "")
         channel = str(candidate.get("ranking_channel") or "")
         role_counts[role] = role_counts.get(role, 0) + 1
@@ -5907,7 +6885,7 @@ def main() -> int:
             **candidate["most_recent_meaningful_change"],
         }
         for candidate in sorted(
-            [c for c in candidates if c.get("most_recent_meaningful_change")],
+            [c for c in slims if c.get("most_recent_meaningful_change")],
             key=lambda c: material_change_clock(c["most_recent_meaningful_change"])[0],
             reverse=True,
         )[:12]
@@ -5947,7 +6925,7 @@ def main() -> int:
             "last_successful_publication": payload["generated_at"],
             "last_material_catalog_change": payload["latest_record_update"],
             "latest_source_reported_event": max(
-                (str(candidate.get("discovery_time") or "") for candidate in candidates),
+                (str(candidate.get("discovery_time") or "") for candidate in slims),
                 default="",
             ) or None,
             "latest_material_evidence_update": (material_updates[0].get("at") if material_updates else None),
@@ -6015,7 +6993,6 @@ def main() -> int:
     live_summary_raw = (
         json.dumps(live_summary, sort_keys=True, separators=(",", ":")) + "\n"
     ).encode()
-    site_root = Path(__file__).resolve().parents[1]
     # The release history is compared against the published base before the research
     # tables are built, because the ECSV/VOTable pair of the history is one of them.
     try:
@@ -6030,19 +7007,16 @@ def main() -> int:
     if release_history.get("schema") != RELEASE_HISTORY_SCHEMA or not isinstance(release_history.get("entries"), list):
         release_history = {"schema": RELEASE_HISTORY_SCHEMA, "entries": []}
 
-    # The base release is read as digests and five fields per dossier, never as a second
-    # complete catalog in memory (git_catalog_digest; the comparison is the same).
-    previous_snapshot = git_catalog_digest(site_root, args.release_base_ref)
-    clock.done("read-previous-release")
+    previous_snapshot = previous_digest
     previous_checksum = previous_snapshot["semantic_checksum"] if previous_snapshot else None
     if previous_snapshot and previous_checksum != payload["catalog_content_checksum_sha256"]:
         previous_by_name = previous_snapshot["digest_by_name"]
-        current_by_name = {str(row["name"]): row for row in candidates}
+        current_by_name = {str(row["name"]): row for row in slims}
         added = sorted(set(current_by_name) - set(previous_by_name))
         removed = sorted(set(previous_by_name) - set(current_by_name))
         changed = sorted(
             name for name in set(current_by_name) & set(previous_by_name)
-            if hashlib.sha256(canonical_candidate_bytes(current_by_name[name])).hexdigest() != previous_by_name[name]
+            if sha_by_name.get(name) != previous_by_name[name]
         )
         survey_counts_for_added: dict[str, int] = {}
         for name in added:
@@ -6103,7 +7077,7 @@ def main() -> int:
     previous_changelog = _previous_json(CHANGELOG_PATH)
     changelog_entry = changelog_module().build_entry(
         previous_candidates=previous_snapshot.get("slim_candidates") if previous_snapshot else None,
-        current_candidates=candidates,
+        current_candidates=slims,
         previous_universe=previous_universe if isinstance(previous_universe, dict) else None,
         current_universe=source_universe,
         previous_accounting=(previous_snapshot or {}).get("source_accounting"),
@@ -6117,7 +7091,7 @@ def main() -> int:
     changelog_raw = (json.dumps(changelog, indent=2, sort_keys=True) + "\n").encode()
     release_product_problems = changelog_module().changelog_problems(changelog)
     source_accounting_document, source_accounting_problems = source_accounting_by_source(
-        per_source_accounting, source_universe_rows, payload["source_accounting"], len(candidates),
+        per_source_accounting, source_universe_rows, payload["source_accounting"], len(store),
         payload["generated_at"], payload["catalog_content_checksum_sha256"],
     )
     release_product_problems.extend(source_accounting_problems)
@@ -6127,32 +7101,45 @@ def main() -> int:
     feeds_index_raw = (json.dumps(feeds_index, indent=2, sort_keys=True) + "\n").encode()
     clock.done("changelog-source-accounting-feeds")
     alias_index, alias_index_raw = alias_index_artifact(
-        candidates, payload["catalog_content_checksum_sha256"],
+        slims, payload["catalog_content_checksum_sha256"],
     )
+    score_as_of_column = CATALOG_CANDIDATE_COLUMNS.index("score_as_of")
+    score_valid_until_column = CATALOG_CANDIDATE_COLUMNS.index("score_valid_until")
+    event_rows = []
+    for row in candidate_rows:
+        event_row = list(row)
+        event_row[score_as_of_column] = None
+        event_row[score_valid_until_column] = None
+        event_rows.append(event_row)
+    progress("alias index built")
     research_files, research_manifest, research_manifest_raw = research_table_artifacts(
-        candidates, source_universe, payload["catalog_content_checksum_sha256"],
-        candidate_rows, release_history,
+        slims, source_universe, payload["catalog_content_checksum_sha256"],
+        candidate_rows, release_history, event_rows=event_rows,
     )
-    candidate_manifest, candidate_manifest_raw = complete_catalog_manifest_artifact(
-        candidates,
-        index_candidates,
-        catalog_index_raw,
-        bucket_rows,
-        chunk_raw,
-        payload["catalog_content_checksum_sha256"],
-        part_raw,
-        score_clock,
+    del event_rows
+    progress("research tables built and read back")
+    candidate_manifest, candidate_manifest_raw = complete_catalog_manifest_from_rows(
+        len(store), len(index_candidates), catalog_index_raw, chunk_result.chunk_rows, chunk_result.part_rows,
+        payload["catalog_content_checksum_sha256"], assembled_checksum, score_clock,
     )
 
     clock.done("serialize-indexes")
     # Track 1 interoperability products: the VOParquet release assets with their
     # Pages-tree index, and one DataLink links document per dossier bucket.
+    photometry_table = interop().sort_rows_by_healpix(
+        photometry_table, interop().PHOTOMETRY_COLUMN_SPECS, ("event_id", "mjd", "assertion_id"),
+    )
     bulk_files, bulk_downloads, bulk_downloads_raw, bulk_problems = bulk_artifacts(
-        candidates, candidate_rows, payload["catalog_content_checksum_sha256"], payload["generated_at"],
+        [], candidate_rows, payload["catalog_content_checksum_sha256"], payload["generated_at"],
+        photometry=photometry_table,
     )
-    datalink_files, datalink_manifest, datalink_manifest_raw = interop().datalink_artifacts(
-        bucket_rows, payload["catalog_content_checksum_sha256"],
+    del photometry_table
+    progress("bulk VOParquet assets written and read back")
+    datalink_files, datalink_manifest, datalink_manifest_raw = interop().datalink_artifacts_from_rows(
+        datalink_rows_by_bucket, datalink_events_by_bucket, payload["catalog_content_checksum_sha256"],
     )
+    del datalink_rows_by_bucket
+    progress("datalink documents built")
     interop_problems = list((research_manifest.get("interoperability") or {}).get("round_trip_problems") or [])
     interop_problems.extend(bulk_problems)
     for datalink_path, datalink_raw in sorted(datalink_files.items()):
@@ -6161,7 +7148,7 @@ def main() -> int:
             interop_problems.extend(f"{datalink_path}: {problem}" for problem in datalink_document_problems)
             break
     clock.done("interoperability-exports")
-    problems = validate(payload) + projection_problems
+    problems = validate_release_level(payload) + validation_problems + projection_problems
     problems.extend(recursive_safety_problems(source_universe, "source-universe"))
     problems.extend(recursive_safety_problems(catalog_index, "catalog-index"))
     problems.extend(recursive_safety_problems(alias_index, "alias-index"))
@@ -6179,7 +7166,6 @@ def main() -> int:
             print("  -", p, file=sys.stderr)
         return 1
     clock.done("validate")
-
     degraded_source_states = {"temporarily-unavailable", "rate-limited", "provider-failure"}
     degraded_sources = [
         row for row in source_universe_rows
@@ -6215,7 +7201,7 @@ def main() -> int:
         "export_checked_at": payload["export_checked_at"],
         "valid_until": payload["valid_until"],
         "latest_record_update": payload["latest_record_update"],
-        "candidate_count": len(candidates),
+        "candidate_count": len(store),
         "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
         "publication_state_checksum_sha256": publication_state_checksum,
         "degraded_source_count": len(degraded_sources),
@@ -6237,7 +7223,6 @@ def main() -> int:
         for problem in problems[:20]:
             print("  -", problem, file=sys.stderr)
         return 1
-
     print(f"database        : {db.name}")
     print(f"real events     : {counts['total_real_events']:,}")
     print(f"published       : {counts['published']:,}   (skipped {counts['skipped']})")
@@ -6248,16 +7233,16 @@ def main() -> int:
             f"{unreadable} record(s); declared in status.json",
             file=sys.stderr,
         )
-    print(f"detail shards   : {sum(map(len, chunk_raw.values()))/1024:.0f} KB in {len(chunk_raw)} files")
-    if candidates:
+    print(f"detail shards   : {chunk_total_bytes/1024:.0f} KB in {len(chunk_sizes)} files "
+          f"({chunk_result.reused_buckets} buckets reused from the previous release, {chunk_result.written_buckets} written)")
+    print(f"dossier store   : {store.compressed_bytes()/1e6:.0f} MB compressed for {len(store)} dossiers")
+    if store.order:
         print("\nsample record:")
-        print(json.dumps(candidates[0], indent=2)[:900])
+        print(json.dumps(store.decode(store.order[0]), indent=2)[:900])
 
     if args.dry_run:
         print("\n--dry-run: nothing written.")
         return 0
-
-    out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
     source_universe_raw = (json.dumps(source_universe, indent=2, sort_keys=True) + "\n").encode()
     source_matrix_pattern_document = {
@@ -6286,21 +7271,6 @@ def main() -> int:
         if isinstance(link_health, dict) else b""
     )
 
-    code_paths = BOUND_CODE_PATHS
-    working_code = {
-        path: (site_root / path).read_bytes()
-        for path in code_paths if (site_root / path).exists()
-    }
-    head_code = {path: git_blob(site_root, "HEAD", path) for path in code_paths}
-    origin_code = {path: git_blob(site_root, "origin/main", path) for path in code_paths}
-    working_matches_head = all(
-        path in working_code and head_code.get(path) == working_code[path]
-        for path in code_paths
-    )
-    head_matches_origin = all(
-        head_code.get(path) is not None and head_code.get(path) == origin_code.get(path)
-        for path in code_paths
-    )
     clock.done("release-history-and-code-binding")
     # W3C PROV-JSON for this build: sources with their retrieval times and parser
     # versions, the frozen database, the bound code hashes, the release checksum.
@@ -6308,11 +7278,12 @@ def main() -> int:
         generated_at=payload["generated_at"],
         catalog_content_checksum_sha256=payload["catalog_content_checksum_sha256"],
         publication_state_checksum_sha256=publication_state_checksum,
-        candidate_count=len(candidates),
+        candidate_count=len(store),
         source_universe=source_universe,
-        candidates=candidates,
-        database=database_identity(db, candidates, counts),
-        code_hashes={path: hashlib.sha256(raw).hexdigest() for path, raw in sorted(working_code.items())},
+        candidates=None,
+        receipt_summary=receipt_summary,
+        database=database_identity(db, [], counts, latest_record_update=payload["latest_record_update"]),
+        code_hashes=code_hashes,
         collector=interop().git_identity(),
         site={
             "commit": git_ref(site_root, "HEAD"),
@@ -6357,7 +7328,8 @@ def main() -> int:
     ))
     interop_problems.extend(recursive_safety_problems(provenance, "provenance"))
     clock.done("provenance")
-    bound_files = {
+    bound_files = BoundFiles()
+    bound_files.memory.update({
         # Bind the exact working bytes that generated this report. Separate
         # gates below honestly fail while those bytes differ from HEAD/origin.
         **working_code,
@@ -6367,8 +7339,6 @@ def main() -> int:
         "ctas/data/catalog-index.json": catalog_index_raw,
         "ctas/data/alias-index.json": alias_index_raw,
         "ctas/data/candidate-chunks/manifest.json": candidate_manifest_raw,
-        **chunk_raw,
-        **part_raw,
         **research_files,
         "ctas/data/source-universe.json": source_universe_raw,
         SOURCE_MATRIX_PATTERNS_PATH: source_matrix_patterns_raw,
@@ -6382,92 +7352,30 @@ def main() -> int:
         FEEDS_INDEX_PATH: feeds_index_raw,
         POPULATION_ANOMALY_PATH: population_anomaly_raw,
         **feed_files,
-    }
-
+    })
+    for row in chunk_result.chunk_rows + chunk_result.part_rows:
+        bound_files.disk[row["path"]] = (row["sha256"], row["bytes"], written_paths[row["path"]])
     if link_health_raw:
-        bound_files[LINK_HEALTH_PATH] = link_health_raw
+        bound_files.memory[LINK_HEALTH_PATH] = link_health_raw
+
 
     def gate(gate_id: str, passed: bool, evidence: str) -> dict[str, Any]:
         return {"id": gate_id, "passed": bool(passed), "evidence": evidence}
 
-    names = [str(candidate.get("name") or "") for candidate in candidates]
-    screen_problems = analysis_screens.screen_problems(candidates)
-    comparison_problems = comparison.comparison_problems(candidates)
-    lightcurve_problems = lightcurve_science.lightcurve_problems(candidates)
-    broker_problems = broker_classes.broker_problems(candidates)
-    host_problems = host_association.host_problems(candidates)
-    population_problems = population_anomaly.problems(json.loads(population_anomaly_raw), candidates)
-    multimessenger_problems = multimessenger.multimessenger_problems(candidates)
-    # Every key the dossier schema requires of a candidate, checked on every dossier (the
-    # deploy-time schema check validates a one-in-sixteen sample of chunks).
-    schema_required = dossier_required_keys(site_root)
-    missing_required = [
-        (str(candidate.get("name") or candidate.get("event_id")), sorted(schema_required - set(candidate)))
-        for candidate in candidates if not schema_required <= set(candidate)
-    ]
-    required_contract = not missing_required and all(
-        candidate.get("name") and "ctas_score" in candidate and
-        isinstance(candidate.get("follow_up_counts"), dict) and
-        isinstance(candidate.get("record_completeness"), dict)
-        for candidate in candidates
-    )
-    coordinate_contract = all(
-        ((candidate.get("ra_deg") is None and candidate.get("dec_deg") is None) or
-         (candidate.get("ra_deg") is not None and candidate.get("dec_deg") is not None and
-          0 <= float(candidate["ra_deg"]) < 360 and -90 <= float(candidate["dec_deg"]) <= 90))
-        for candidate in candidates
-    )
-    follow_up_integrity = all(
-        all(
-            int(count) == len(candidate.get("follow_up", {}).get(key, []))
-            for key, count in candidate.get("follow_up_counts", {}).items()
-        ) and set(candidate.get("follow_up", {})) <= set(candidate.get("follow_up_counts", {})) and
-        candidate.get("follow_up_total") == sum(candidate.get("follow_up_counts", {}).values())
-        for candidate in candidates
-    )
-    expected_stats = {
-        "public_candidates": len(candidates),
-        "observations": total("observations"),
-        "spectra": total("spectra"),
-        "messenger_signals": total("messenger_signals"),
-        "classifications": total("classifications"),
-        "classification_history": total("classification_history"),
-        "publications": total("publications"),
-        "host_context": total("host_context"),
-        "catalog_counterparts": total("catalog_counterparts"),
-        "archive_products": total("archive_products"),
-        "candidates_with_follow_up": sum(candidate.get("follow_up_total", 0) > 0 for candidate in candidates),
-    }
+    required_contract = not missing_required and tally["required_contract"]
+    coordinate_contract = tally["coordinate_contract"]
+    follow_up_integrity = tally["follow_up_integrity"]
     stats_integrity = all(payload["statistics"].get(key) == value for key, value in expected_stats.items())
-    candidate_by_name = {candidate["name"]: candidate for candidate in candidates}
+    name_set = set(names)
     recent_integrity = (
-        len(payload["recent_stream"]) == min(20, len(candidates)) and
-        all(row.get("name") in candidate_by_name for row in payload["recent_stream"])
+        len(payload["recent_stream"]) == min(20, len(store)) and
+        all(row.get("name") in name_set for row in payload["recent_stream"])
     )
-    provider_reproduced: dict[str, dict[str, int]] = {}
-    survey_reproduced: dict[str, int] = {}
-    for candidate in candidates:
-        survey = candidate.get("discovery_survey")
-        if survey:
-            survey_reproduced[str(survey)] = survey_reproduced.get(str(survey), 0) + 1
-        for evidence_type, evidence_rows in candidate.get("follow_up", {}).items():
-            for evidence_row in evidence_rows:
-                provider = provider_source_key(evidence_row.get("provider"))
-                if provider:
-                    provider_reproduced.setdefault(provider, {})[evidence_type] = (
-                        provider_reproduced.setdefault(provider, {}).get(evidence_type, 0) + 1
-                    )
-        for public_link in candidate.get("links", []):
-            if public_link.get("source_key") == "tns":
-                provider_reproduced.setdefault("tns", {})["designations"] = (
-                    provider_reproduced.setdefault("tns", {}).get("designations", 0) + 1
-                )
     published_provider_stats = {
         str(row["provider"]): {key: value for key, value in row.items() if key != "provider"}
         for row in payload["provider_statistics"]
     }
     published_surveys = {str(row["survey"]): int(row["candidate_count"]) for row in payload["surveys"]}
-    source_keys = {str(row["source_key"]) for row in source_universe_rows}
     required_sources = {
         "tns", "rubin-fink", "rubin-alerce", "rubin-antares", "rubin-ampel",
         "rubin-lasair", "rubin-pitt-google", "rubin-lsst", "ztf", "atlas",
@@ -6491,10 +7399,7 @@ def main() -> int:
         len(source_keys) == len(source_universe_rows) and required_sources <= source_keys and
         universe_checksum == reproduced_universe_checksum and
         source_universe.get("definition_checksum_sha256") == source_universe_definition_checksum(source_universe) and
-        all(
-            (candidate.get("astro_evidence") or {}).get("sourceUniverseVersion") == source_universe_version
-            for candidate in candidates
-        ) and
+        tally["universe_versions"] and
         all(row.get("operational_state") in SOURCE_STATE_VOCABULARY for row in source_universe_rows) and
         all(row.get("implementation_state") in IMPLEMENTATION_STATE_VOCABULARY for row in source_universe_rows) and
         all(row.get("representation_state") in REPRESENTATION_STATE_VOCABULARY for row in source_universe_rows)
@@ -6505,12 +7410,7 @@ def main() -> int:
         for survey in published_surveys
     )
     provider_closure = set(published_provider_stats) <= source_keys
-    disposition_integrity = all(
-        row.get("disposition") in SOURCE_STATE_VOCABULARY and
-        isinstance(row.get("retained_record_count"), int) and row["retained_record_count"] >= 0 and
-        row.get("source_id") in source_keys
-        for candidate in candidates for row in candidate.get("source_coverage", [])
-    )
+    disposition_integrity = tally["disposition_integrity"]
     # Name what a closure or disposition failure is about, so a refused release can be
     # diagnosed from the publish log rather than by replaying the database.
     unknown_providers = sorted(set(published_provider_stats) - source_keys)[:8]
@@ -6519,38 +7419,15 @@ def main() -> int:
         if survey not in SURVEY_SOURCE_ALIASES and
         ("represented-survey-" + re.sub(r"[^a-z0-9]+", "-", survey.lower()).strip("-")) not in source_keys
     )[:8]
-    coverage_problems = sorted({
-        f"{row.get('source_id')}:{row.get('disposition')}"
-        for candidate in candidates for row in candidate.get("source_coverage", [])
-        if row.get("disposition") not in SOURCE_STATE_VOCABULARY or
-        not isinstance(row.get("retained_record_count"), int) or row["retained_record_count"] < 0 or
-        row.get("source_id") not in source_keys
-    })[:8]
+    coverage_problems = sorted(coverage_problem_rows)[:8]
     closure_evidence = f"providers={len(published_provider_stats)}; surveys={len(published_surveys)}" + (
         f"; providers not in the source universe: {', '.join(unknown_providers)}" if unknown_providers else ""
     ) + (f"; surveys not in the source universe: {', '.join(unknown_surveys)}" if unknown_surveys else "")
     disposition_evidence = "controlled dispositions and integer retained-record counts" + (
         f"; offending source:disposition rows: {', '.join(coverage_problems)}" if coverage_problems else ""
     )
-    completeness_integrity = all(
-        candidate.get("record_completeness") == completeness_for(candidate) and
-        ((candidate.get("follow_up_total", 0) == 0) ==
-         (candidate.get("record_completeness", {}).get("label") == "Event record only"))
-        for candidate in candidates
-    )
-    timeline_integrity = all(
-        bool(timeline_for(candidate)) and
-        all(
-            any(entry.get(key) for key in ("scientific_time", "provider_publication_time", "ctas_receipt_time"))
-            and entry.get("assertion_kind") in {"provider assertion", "CTAS-derived summary"}
-            for entry in timeline_for(candidate)
-        )
-        for candidate in candidates
-    )
-    tns_links = [
-        link_row for candidate in candidates for link_row in candidate.get("links", [])
-        if link_row.get("source_key") == "tns"
-    ]
+    completeness_integrity = tally["completeness_integrity"]
+    timeline_integrity = tally["timeline_integrity"]
     tns_structure = bool(tns_links) and all(
         tns_object_id(str(row.get("designation") or "")) and
         row.get("url") == "https://www.wis-tns.org/object/" + str(tns_object_id(str(row["designation"])))
@@ -6593,56 +7470,24 @@ def main() -> int:
         "CTAS_HEARTBEAT_INTERVAL" in publisher_text
     )
     link_health_current = link_health_is_current(link_health, payload["catalog_content_checksum_sha256"])
-    manifest_chunk_rows = [
-        {
-            "path": path,
-            "candidate_count": len(bucket_rows[Path(path).stem]),
-            "bytes": len(raw),
-            "sha256": hashlib.sha256(raw).hexdigest(),
-        }
-        for path, raw in sorted(chunk_raw.items())
-    ]
-    # Verify the shards one at a time.  Materialising every reconstructed
-    # dossier at once doubled peak memory for a complete catalog and was the
-    # reason a full export could not finish.  Proving each shard reproduces its
-    # source records exactly is the same guarantee at a fraction of the cost:
-    # once every shard round-trips, the in-memory records *are* the
-    # reconstruction, so the assembled checksum may be taken from them.
-    originals_by_id = {
-        str(candidate.get("event_id") or ""): candidate for candidate in candidates
-    }
-    reconstructed_ids: set[str] = set()
-    reconstructed_count = 0
-    reconstruction_faithful = True
-    for path in sorted(chunk_raw):
-        for candidate in decode_chunk(chunk_raw[path], part_raw.__getitem__).get("candidates", []):
-            event_id = str(candidate.get("event_id") or "")
-            reconstructed_count += 1
-            reconstructed_ids.add(event_id)
-            if originals_by_id.get(event_id) != candidate:
-                reconstruction_faithful = False
+    # Every chunk was read back as it was written (release_build.write_chunks): a rewritten
+    # bucket decodes to exactly the store's dossiers, a reused bucket carries the previous
+    # release's verified bytes for an identical member set. The store's order is the index
+    # order, so the assembled checksum is the digest over the chunks' reconstruction.
     index_ids = [str(row.get("event_id") or "") for row in index_candidates]
-    reconstructed_in_index_order = [
-        originals_by_id[event_id]
-        for event_id in index_ids
-        if event_id in originals_by_id
-    ]
+    chunk_member_ids = [event_id for bucket in sorted(chunk_result.bucket_members) for event_id in chunk_result.bucket_members[bucket]]
     shard_integrity = (
         catalog_index.get("schema") == CATALOG_INDEX_SCHEMA
-        and catalog_index.get("candidate_count") == len(candidates)
-        and len(index_candidates) == len(candidates)
-        and {row["name"] for row in index_candidates} == set(names)
+        and catalog_index.get("candidate_count") == len(store)
+        and len(index_candidates) == len(store)
+        and {row["name"] for row in index_candidates} == name_set
         and candidate_manifest.get("schema") == CANDIDATE_MANIFEST_SCHEMA
         and candidate_manifest.get("chunk_count") == CANDIDATE_BUCKET_COUNT
-        and candidate_manifest.get("chunks") == manifest_chunk_rows
-        and candidate_manifest.get("parts") == [
-            {"path": path, "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
-            for path, raw in sorted(part_raw.items())
-        ]
-        and sum(row["candidate_count"] for row in manifest_chunk_rows) == len(candidates)
-        and reconstruction_faithful
-        and reconstructed_count == len(reconstructed_ids) == len(candidates)
-        and set(index_ids) == reconstructed_ids
+        and sum(row["candidate_count"] for row in candidate_manifest.get("chunks", [])) == len(store)
+        and chunk_result.faithful
+        and len(chunk_member_ids) == len(set(chunk_member_ids)) == len(store)
+        and set(index_ids) == set(chunk_member_ids) == set(store.order)
+        and index_ids == list(store.order)
         and candidate_manifest.get("catalog_index") == {
             "path": "ctas/data/catalog-index.json",
             "candidate_count": len(index_candidates),
@@ -6650,16 +7495,14 @@ def main() -> int:
             "sha256": hashlib.sha256(catalog_index_raw).hexdigest(),
             "ordering_field": "candidate_rows[][event_id column]",
         }
-        and candidate_manifest.get("assembled_candidates_checksum_sha256") == canonical_candidate_list_sha256(
-            canonical_candidate_bytes(candidate) for candidate in reconstructed_in_index_order
-        )
+        and candidate_manifest.get("assembled_candidates_checksum_sha256") == assembled_checksum
         and all(
             row.get("detail_chunk") == f"candidate-chunks/{candidate_bucket(str(row['event_id']))}.json"
             for row in index_candidates
         )
     )
     artifact_size_integrity = all(
-        len(raw) < GITHUB_MAX_BLOB_BYTES for raw in bound_files.values()
+        bound_files.size(path) < GITHUB_MAX_BLOB_BYTES for path in bound_files.paths()
     )
     # The first screen loads live-summary.json, not the complete catalog, so the
     # bootstrap budget is measured against exactly those bytes.
@@ -6696,34 +7539,8 @@ def main() -> int:
             for candidate in leaderboard
         )
     )
-    download_raw = {**chunk_raw, **part_raw}
-    shard_target_integrity = bool(download_raw) and max(map(len, download_raw.values())) <= CANDIDATE_SHARD_TARGET_MAX_BYTES
-    def _score_reproduces(candidate: dict[str, Any]) -> bool:
-        model = candidate.get("score_model") or {}
-        applied = [term for term in model.get("terms", []) if term.get("applicable")]
-        core = float(model.get("baseline", 0.0)) + sum(float(term["points"]) for term in applied)
-        final = max(0.0, min(100.0, max(0.0, min(100.0, core)) + float(model.get("multimessenger_bonus") or 0.0)))
-        if model.get("status_override"):
-            final = 0.0
-        return (
-            abs(round(final, 2) - float(model.get("final_score") or 0.0)) <= 0.01
-            and abs(float(candidate.get("ctas_score") or 0.0) - float(model.get("final_score") or 0.0)) <= 0.01
-            and model.get("score_clock") == SCORE_CLOCK_REFERENCE
-            and (str(candidate.get("status") or "").lower() not in {"retracted", "bogus"}
-                 or float(candidate.get("ctas_score") or 0.0) == 0.0)
-        )
-
-    def _score_is_for_this_clock(candidate: dict[str, Any]) -> bool:
-        # Records no longer carry their own copy of the clock, so prove instead
-        # that each published model is exactly what the release clock yields.
-        # recorded_score_at_ingest is the one input-provenance field that cannot
-        # be recomputed here: ctas_score already holds the release score.
-        published = dict(candidate.get("score_model") or {})
-        fresh = score_model_for(candidate, generated_dt)
-        published.pop("recorded_score_at_ingest", None)
-        fresh.pop("recorded_score_at_ingest", None)
-        return published == fresh
-
+    download_count = len(chunk_sizes) + len(part_sizes)
+    shard_target_integrity = bool(chunk_sizes) and chunk_result.largest_file <= CANDIDATE_SHARD_TARGET_MAX_BYTES
     # One clock per release, declared once beside the chunks it governs and
     # restated in every compact row; it is the export clock itself.
     score_clock_integrity = (
@@ -6736,63 +7553,11 @@ def main() -> int:
             for row in candidate_rows
         )
     )
-    score_reconciliation = score_clock_integrity and all(
-        _score_reproduces(candidate) and _score_is_for_this_clock(candidate)
-        for candidate in candidates
-    )
-    score_applicability = all(
-        all(
-            term["code"] != "spectroscopy_gap_points" or term["applicable"] is False
-            for term in (candidate.get("score_model") or {}).get("terms", [])
-        )
-        for candidate in candidates
-        if str(candidate.get("ranking_channel") or "") != "optical"
-        or str(candidate.get("record_role") or "") != "follow-up-target-candidate"
-    ) and all(
-        float((candidate.get("score_model") or {}).get("multimessenger_bonus") or 0.0) == 0.0
-        for candidate in candidates
-        if len(_retained_messenger_channels(candidate)) < 2
-    )
-    def _suggested_follow_up_holds(candidate: dict[str, Any]) -> bool:
-        block = candidate.get("suggested_follow_up") or {}
-        objectives = block.get("objectives") or []
-        return (
-            block.get("schema") == SUGGESTED_FOLLOW_UP_SCHEMA
-            and block == suggested_follow_up_for(candidate)
-            and block.get("claim_boundary") == SUGGESTED_FOLLOW_UP_CLAIM
-            and all(row["suggested_evidence_type"] in SUGGESTED_EVIDENCE_TYPES.values() for row in objectives)
-            and all(row["kind"] in {"imaging", "spectroscopy", "counterpart", "monitoring"} for row in objectives)
-            and [row["priority"] for row in objectives] == list(range(1, len(objectives) + 1))
-            and (block.get("cadence") or {}).get("code") in FOLLOW_UP_CADENCES
-            and ((block.get("cadence") or {}).get("code") == "none") == (not objectives)
-            and (bool(objectives) == bool((block.get("eligibility") or {}).get("is_target")))
-            and (not (str(candidate.get("status") or "").lower() in {"retracted", "bogus"}) or not objectives)
-        )
-
-    suggested_follow_up_integrity = all(_suggested_follow_up_holds(candidate) for candidate in candidates)
-    science_brief_integrity = all(
-        (candidate.get("science_brief") or {}).get("schema") == "ctas.candidate-science-brief@1.0.0"
-        and {
-            row["component_id"] for row in (candidate.get("science_brief") or {}).get("missing_information", [])
-        } == {
-            row["id"] for row in (candidate.get("record_completeness") or {}).get("components", [])
-            if row.get("state") in {"missing", "not-assessed"}
-        }
-        for candidate in candidates
-    )
-    replay_integrity = all(
-        len({row.get("entry_id") for row in candidate.get("evidence_timeline", [])}) == len(candidate.get("evidence_timeline", []))
-        and all(
-            row.get("public_available_at") in {row.get("provider_publication_time"), row.get("ctas_receipt_time"), None}
-            and not (
-                row.get("public_available_at") == row.get("scientific_time")
-                and not row.get("provider_publication_time")
-                and not row.get("ctas_receipt_time")
-            )
-            for row in candidate.get("evidence_timeline", [])
-        )
-        for candidate in candidates
-    )
+    score_reconciliation = score_clock_integrity and tally["score_reconciliation"]
+    score_applicability = tally["score_applicability"]
+    suggested_follow_up_integrity = tally["suggested_follow_up_integrity"]
+    science_brief_integrity = tally["science_brief_integrity"]
+    replay_integrity = tally["replay_integrity"]
     alias_event_ids = {str(row[0]) for row in alias_index.get("rows", [])}
     alias_integrity = (
         alias_index.get("schema") == ALIAS_INDEX_SCHEMA
@@ -6810,26 +7575,22 @@ def main() -> int:
             for row in research_manifest.get("tables", [])
         )
     )
-    magnitude_safety = all(
-        candidate.get("discovery_magnitude") is None
-        or -30 <= float(candidate["discovery_magnitude"]) <= 40
-        for candidate in candidates
-    )
+    magnitude_safety = tally["magnitude_safety"]
     interop_expected_paths = [
         *(f"ctas/data/research/{table}.{suffix}" for table in RESEARCH_INTEROP_TABLES for suffix in ("ecsv", "vot")),
         BULK_DOWNLOADS_PATH, DATALINK_MANIFEST_PATH, PROVENANCE_PATH,
     ]
     interop_integrity = (
         not interop_problems
-        and all(path in bound_files and bound_files[path] for path in interop_expected_paths)
+        and all(path in bound_files and bound_files.size(path) for path in interop_expected_paths)
         and (research_manifest.get("interoperability") or {}).get("round_trip_problem_count") == 0
         and all(
             row["path"] in bound_files
-            and row["bytes"] == len(bound_files[row["path"]])
-            and row["sha256"] == hashlib.sha256(bound_files[row["path"]]).hexdigest()
+            and row["bytes"] == bound_files.size(row["path"])
+            and row["sha256"] == bound_files.sha256(row["path"])
             for row in datalink_manifest.get("documents", [])
         )
-        and datalink_manifest.get("event_count") == len(candidates)
+        and datalink_manifest.get("event_count") == len(store)
         and {row["path"] for row in datalink_manifest.get("documents", [])} == set(datalink_files)
         and bool(bulk_downloads.get("assets"))
         and all(
@@ -6866,28 +7627,22 @@ def main() -> int:
             for row in release_history["entries"]
         )
     )
-
-    source_matrix_round_trip = all(
-        isinstance(candidate.get("source_matrix"), dict)
-        and len(expand_source_matrix(candidate["source_matrix"], source_matrix_patterns))
-        == int(candidate["source_matrix"].get("row_count") or 0)
-        == int((candidate.get("source_accounting") or {}).get("applicableSources") or -1)
-        for candidate in candidates
-    )
+    source_matrix_round_trip = tally["source_matrix_round_trip"]
+    identity_and_score_records = sum(1 for slim in slims if slim.get("name") and "ctas_score" in slim)
 
     gates = [
         gate(REQUIRED_ARTIFACTS_GATE_ID, all(path in bound_files for path in REQUIRED_PUBLIC_ARTIFACTS), "HTML, JavaScript, CSS, observatory definitions, research quickstart, frozen AstroEvidence schema, compact index, astronomy research exports, complete-catalog reconstruction manifest and chunks, source universe, history, and link-health artifact"),
-        gate("catalog-population", bool(candidates) and not counts["catalog_truncated"] and len(candidates) == counts["eligible_public_events"] and len(names) == len(set(names)), f"{len(candidates)} complete eligible records; truncated={counts['catalog_truncated']}"),
+        gate("catalog-population", bool(store.order) and not counts["catalog_truncated"] and len(store) == counts["eligible_public_events"] and len(names) == len(set(names)), f"{len(store)} complete eligible records; truncated={counts['catalog_truncated']}"),
         gate("candidate-public-contract", required_contract, (
-            f"{sum(bool(c.get('name')) and 'ctas_score' in c for c in candidates)}/{len(candidates)} identity and score records; "
-            f"{len(candidates) - len(missing_required)}/{len(candidates)} dossiers carry all {len(schema_required)} schema-required keys"
+            f"{identity_and_score_records}/{len(store)} identity and score records; "
+            f"{len(store) - len(missing_required)}/{len(store)} dossiers carry all {len(schema_required)} schema-required keys"
             + ("" if not missing_required else "; missing: " + "; ".join(f"{name}: {', '.join(keys)}" for name, keys in missing_required[:5]))
         )),
-        gate("complete-catalog-reconstruction-integrity", shard_integrity, f"{len(candidates)} complete records exactly once across {len(chunk_raw)} checksum-bound chunks in catalog-index UUID order"),
+        gate("complete-catalog-reconstruction-integrity", shard_integrity, f"{len(store)} complete records exactly once across {len(chunk_sizes)} checksum-bound chunks in catalog-index UUID order"),
         gate("bootstrap-performance-budget", bootstrap_size_integrity, f"first-screen live summary is {len(live_summary_raw)} bytes; budget={LIVE_SUMMARY_MAX_BYTES}; the complete {len(catalog_index_raw)}-byte index is not loaded to draw a first screen"),
         gate("catalog-page-budget", catalog_page_budget, f"largest of {len(page_raw)} complete-catalog pages is {max(map(len, page_raw.values()), default=0)} bytes; budget={CATALOG_PAGE_MAX_BYTES}"),
         gate("live-summary-integrity", live_summary_integrity, f"{len(summary_ids)} summary records resolve, pages and manifest checksums agree, and no terrestrial, solar or retracted record enters the default leaderboard"),
-        gate("detail-shard-performance-budget", shard_target_integrity, f"largest of {len(download_raw)} detail download files ({len(part_raw)} supplemental parts) is {max(map(len, download_raw.values()), default=0)} bytes; budget={CANDIDATE_SHARD_TARGET_MAX_BYTES}"),
+        gate("detail-shard-performance-budget", shard_target_integrity, f"largest of {download_count} detail download files ({len(part_sizes)} supplemental parts) is {chunk_result.largest_file} bytes; budget={CANDIDATE_SHARD_TARGET_MAX_BYTES}"),
         gate("github-blob-size-limit", artifact_size_integrity, f"every bound public artifact is below GitHub's {GITHUB_MAX_BLOB_BYTES}-byte limit"),
         gate("local-store-exceptions-declared", (
             isinstance(status.get("local_store_exceptions"), dict)
@@ -6898,11 +7653,11 @@ def main() -> int:
             )
         ), f"{len(LOCAL_STORE_READ_FAILURES)} unreadable local-store range(s) are declared in the public status rather than published as an absence of evidence"),
         gate("score-term-applicability", score_applicability, "missing-spectrum points are confined to optical follow-up target candidates and a messenger-diversity bonus requires two independently retained channels"),
-        gate("score-arithmetic-reconciliation", score_reconciliation, f"{len(candidates)} scores recomputed against this release's one score clock ({score_clock['score_as_of']}, declared in the complete-catalog manifest), identical to the published models, and reproduced exactly from their applicable terms"),
-        gate("candidate-science-brief-integrity", science_brief_integrity, f"{len(candidates)} deterministic known, uncertain, missing, and recent-change summaries"),
-        gate("suggested-follow-up-integrity", suggested_follow_up_integrity, f"{len(candidates)} clock-free follow-up drafts reproduce from retained evidence; objectives only for eligible targets, evidence types from the science-brief vocabulary, retracted and bogus records carry none"),
+        gate("score-arithmetic-reconciliation", score_reconciliation, f"{len(store)} scores recomputed against this release's one score clock ({score_clock['score_as_of']}, declared in the complete-catalog manifest), identical to the published models, and reproduced exactly from their applicable terms"),
+        gate("candidate-science-brief-integrity", science_brief_integrity, f"{len(store)} deterministic known, uncertain, missing, and recent-change summaries"),
+        gate("suggested-follow-up-integrity", suggested_follow_up_integrity, f"{len(store)} clock-free follow-up drafts reproduce from retained evidence; objectives only for eligible targets, evidence types from the science-brief vocabulary, retracted and bogus records carry none"),
         gate("evidence-replay-no-future-leakage", replay_integrity, "historical availability uses provider-publication or CTAS-receipt clocks, never observation time alone"),
-        gate("source-matrix-round-trip-integrity", source_matrix_round_trip, f"{len(candidates)} source matrices reproduce exactly from {len(source_matrix_patterns)} shared no-evidence patterns"),
+        gate("source-matrix-round-trip-integrity", source_matrix_round_trip, f"{len(store)} source matrices reproduce exactly from {len(source_matrix_patterns)} shared no-evidence patterns"),
         gate("alias-index-integrity", alias_integrity, f"{alias_index.get('alias_count', 0)} provider-scoped aliases bound to the catalog checksum"),
         gate("research-table-integrity", research_integrity, f"{len(research_manifest.get('tables', []))} research tables and interoperability exports checksum-bound to the catalog"),
         gate(INTEROP_GATE_ID, interop_integrity, interop_evidence),
@@ -6921,37 +7676,37 @@ def main() -> int:
         gate("survey-statistics-integrity", published_surveys == survey_reproduced, f"{len(published_surveys)} discovery-survey totals reproduced"),
         gate("public-export-safety", not problems, "recursive allowlist safety check across public candidate and source artifacts"),
         gate("analysis-screen-provenance", not screen_problems, (
-            f"{sum(1 for c in candidates if c.get(analysis_screens.CANDIDATE_KEY))} dossiers carry "
-            f"{sum(len(c[analysis_screens.CANDIDATE_KEY]['runs']) for c in candidates if c.get(analysis_screens.CANDIDATE_KEY))} "
+            f"{block_counts['screens']} dossiers carry "
+            f"{block_counts['screen_runs']} "
             "collector screens, each naming its method version, inputs, input and result checksums and claim boundary"
             + ("" if not screen_problems else "; " + "; ".join(screen_problems[:5]))
         )),
         gate("comparison-receipt-trace", not comparison_problems, (
-            f"{sum(1 for c in candidates if c.get(comparison.CANDIDATE_KEY))} dossiers compare sources; "
-            f"{sum(c[comparison.CANDIDATE_KEY]['summary']['propertiesInConflict'] for c in candidates if c.get(comparison.CANDIDATE_KEY))} "
+            f"{block_counts['comparison']} dossiers compare sources; "
+            f"{block_counts['conflicts']} "
             "properties in conflict, every row of which traces to an alert envelope, provider response or query receipt"
             + ("" if not comparison_problems else "; " + "; ".join(comparison_problems[:5]))
         )),
         gate("lightcurve-science-provenance", not lightcurve_problems, (
-            f"{sum(1 for c in candidates if c.get(lightcurve_science.CANDIDATE_KEY))} dossiers carry light-curve science; "
-            f"{sum(1 for c in candidates for r in (c.get(lightcurve_science.CANDIDATE_KEY) or {}).get('runs', []) if r.get('status') == 'complete')} "
+            f"{block_counts['lightcurve']} dossiers carry light-curve science; "
+            f"{block_counts['lightcurve_complete']} "
             "complete runs, each naming its method version, inputs and checksums; every not-computed run says why"
             + ("" if not lightcurve_problems else "; " + "; ".join(lightcurve_problems[:5]))
         )),
         gate("broker-classes-receipt-trace", not broker_problems, (
-            f"{sum(1 for c in candidates if c.get(broker_classes.CANDIDATE_KEY))} dossiers carry broker classes; "
+            f"{block_counts['broker']} dossiers carry broker classes; "
             "every broker entry names its receipt and every published output its kept response checksum and parser contract"
             + ("" if not broker_problems else "; " + "; ".join(broker_problems[:5]))
         )),
         gate("host-association-provenance", not host_problems, (
-            f"{sum(1 for c in candidates if c.get(host_association.CANDIDATE_KEY))} dossiers carry host association; "
-            f"{sum(1 for c in candidates for r in (c.get(host_association.CANDIDATE_KEY) or {}).get('runs', []) if r.get('analysisType') == 'host-posterior' and r.get('status') == 'complete')} "
+            f"{block_counts['host']} dossiers carry host association; "
+            f"{block_counts['host_posteriors']} "
             "host posteriors, each normalised with the host-missed hypothesis and tracing every ranked galaxy to retained catalogue rows"
             + ("" if not host_problems else "; " + "; ".join(host_problems[:5]))
         )),
         gate("multimessenger-provenance", not multimessenger_problems, (
-            f"{sum(1 for c in candidates if c.get(multimessenger.CANDIDATE_KEY))} dossiers carry a multimessenger block "
-            f"({sum(1 for c in candidates if (c.get(multimessenger.CANDIDATE_KEY) or {}).get('kind') == 'gravitational-wave')} gravitational-wave); "
+            f"{block_counts['multimessenger']} dossiers carry a multimessenger block "
+            f"({block_counts['gravitational_wave']} gravitational-wave); "
             "every run names its method version and inputs with a checksum, MOC areas nest, galaxy lists name their catalogue, "
             "and every registry and region row is an event of this release inside its region"
             + ("" if not multimessenger_problems else "; " + "; ".join(multimessenger_problems[:5]))
@@ -6978,14 +7733,14 @@ def main() -> int:
         gate("exact-claim-boundary", CERTIFICATE_CLAIM.endswith("deployment claim."), CERTIFICATE_CLAIM),
     ]
     clock.done("verification-gates")
-    # Hashed piecewise: joining every bound file into one bytes object was a ~3 GB spike at
-    # the end of a complete export (same digest as the former b"".join).
-    release_digest = hashlib.sha256()
-    for name, raw in sorted(bound_files.items()):
-        release_digest.update(name.encode())
-        release_digest.update(b"\0")
-        release_digest.update(raw)
-    release_id = release_digest.hexdigest()
+    # The input fingerprints travel with the release (bound, like the manifest): the next
+    # release compares its own against them.
+    fingerprints_raw = (json.dumps(release_build.fingerprints_document(
+        generated_at=payload["generated_at"], score_as_of=score_clock["score_as_of"], context=context,
+        facts=facts, ids=store.order, build=build_record,
+    ), sort_keys=True, separators=(",", ":")) + "\n").encode()
+    bound_files.memory[release_build.INPUT_FINGERPRINTS_PATH] = fingerprints_raw
+    release_id = bound_files.release_id()
     certificate = {
         "schema": CERTIFICATE_SCHEMA,
         "generated_at": payload["generated_at"],
@@ -6993,7 +7748,7 @@ def main() -> int:
         "architecture": "local-python-to-static-github-pages",
         "claim_boundary": CERTIFICATE_CLAIM,
         "status": certificate_status(gates),
-        "candidate_count": len(candidates),
+        "candidate_count": len(store),
         "catalog_content_checksum_sha256": payload["catalog_content_checksum_sha256"],
         "content_release_id": release_id,
         "publication_relationship": {
@@ -7003,10 +7758,12 @@ def main() -> int:
             "statement": "Generated public data are the declared next successor to the bound origin/main code; post-push live verification confirms public byte availability.",
         },
         "gates": gates,
-        "files": {name: {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)} for name, raw in sorted(bound_files.items())},
+        "build": build_record,
+        "files": bound_files.files_map(),
     }
     certificate["report_checksum_sha256"] = hashlib.sha256(canonical_report_bytes(certificate)).hexdigest()
     status["static_snapshot_verification"] = verification_summary(certificate)
+
     status["artifacts"] = {
         "catalog_bootstrap": {"path": "ctas/data/catalog-bootstrap.json", "sha256": hashlib.sha256(catalog_index_raw).hexdigest()},
         "catalog_index": {"path": "ctas/data/catalog-index.json", "sha256": hashlib.sha256(catalog_index_raw).hexdigest()},
@@ -7039,16 +7796,22 @@ def main() -> int:
     status["population_anomaly_path"] = POPULATION_ANOMALY_PATH
     status["status_page_path"] = "ctas/status.html"
     status["analysis_blocks"] = heavy_analyses_status(heavy_analyses)
+    # The incremental release (2026-11-24): how this release was built and where its input
+    # fingerprints are; new top-level keys only (rule N1).
+    status["input_fingerprints_path"] = release_build.INPUT_FINGERPRINTS_PATH
+    status["build"] = {key: build_record[key] for key in ("mode", "reason", "reused", "rebuilt", "full_rebuild_at") if key in build_record}
+    status["build"]["sample"] = {"size": sample_record["size"], "mismatches": sample_record["mismatches"]}
+    status["artifacts"]["input_fingerprints"] = {"path": release_build.INPUT_FINGERPRINTS_PATH, "sha256": hashlib.sha256(fingerprints_raw).hexdigest()}
     status_raw = (json.dumps(status, indent=2, sort_keys=True) + "\n").encode()
     certificate_raw = (json.dumps(certificate, indent=2, sort_keys=True) + "\n").encode()
-    final_public_bytes = {
-        **bound_files,
-        "ctas/data/status.json": status_raw,
-        "ctas/data/certification.json": certificate_raw,
+    final_public_sizes = {
+        **{path: bound_files.size(path) for path in bound_files.paths()},
+        "ctas/data/status.json": len(status_raw),
+        "ctas/data/certification.json": len(certificate_raw),
     }
     oversized = {
-        path: len(raw) for path, raw in final_public_bytes.items()
-        if len(raw) >= GITHUB_MAX_BLOB_BYTES
+        path: size for path, size in final_public_sizes.items()
+        if size >= GITHUB_MAX_BLOB_BYTES
     }
     if oversized:
         print("export failed: public artifacts exceed GitHub's single-object limit:", file=sys.stderr)
@@ -7070,8 +7833,10 @@ def main() -> int:
     chunk_dir = out / "candidate-chunks"
     chunk_dir.mkdir(parents=True, exist_ok=True)
     atomic_write(chunk_dir / "manifest.json", candidate_manifest_raw)
-    for relative, raw in {**chunk_raw, **part_raw}.items():
-        write_output_artifact(out, relative, raw)
+    # The chunks and parts are already in place (release_build.write_chunks wrote them into
+    # the output tree); a chunk or part file a previous release left behind that this
+    # release does not declare is retired by the publisher.
+    atomic_write(out / "input-fingerprints.json", fingerprints_raw)
     for relative, raw in research_files.items():
         write_output_artifact(out, relative, raw)
     for relative, raw in {**datalink_files, DATALINK_MANIFEST_PATH: datalink_manifest_raw}.items():
@@ -7108,14 +7873,16 @@ def main() -> int:
     atomic_write(out / "certification.json", certificate_raw)
     print(f"first screen    : {len(live_summary_raw)} bytes live-summary.json ({len(summary_ids)} records)")
     print(f"complete catalog: {len(catalog_index_raw)} bytes across {len(catalog_pages)} pages")
-    interop_pages_bytes = sum(len(bound_files[path]) for path in interop_expected_paths) + sum(map(len, datalink_files.values()))
+    interop_pages_bytes = sum(bound_files.size(path) for path in interop_expected_paths) + sum(map(len, datalink_files.values()))
     print(
         f"interoperability: {interop_pages_bytes} bytes added to the Pages tree "
         f"({len(RESEARCH_INTEROP_TABLES) * 2} ECSV/VOTable tables, {len(datalink_files)} DataLink documents "
         f"{sum(map(len, datalink_files.values()))} bytes, provenance {len(provenance_raw)} bytes); "
         f"{sum(map(len, bulk_files.values()))} bytes of VOParquet in {bulk_dir} for the release assets"
     )
-    print(f"\nwrote compact bootstrap/index, alias index, research tables, complete-catalog manifest, {len(chunk_raw)} checksum-bound detail chunks with {len(part_raw)} supplemental parts, status, source universe, history, and verification report")
+    print(f"\nwrote compact bootstrap/index, alias index, research tables, complete-catalog manifest, {len(chunk_sizes)} checksum-bound detail chunks with {len(part_sizes)} supplemental parts, status, source universe, history, input fingerprints, and verification report")
+    print(f"release build   : {build_record['mode']} ({build_record['reason']}); reused {build_record['reused']}, rebuilt {build_record['rebuilt']}, "
+          f"re-verified {sample_record['size']} with {sample_record['mismatches']} mismatches; {chunk_result.reused_buckets} chunk files reused")
     clock.done("write-files")
     print(clock.report())
     print(f"snapshot verification: {certificate['status']} ({sum(g['passed'] for g in gates)}/{len(gates)} checks)")

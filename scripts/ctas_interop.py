@@ -801,7 +801,10 @@ def parquet_problems(label: str, specs: tuple[ColumnSpec, ...], rows: list[list[
             if any(value is not None for value in values[len(pixels):]):
                 problems.append(f"{label}: rows without a HEALPix index are not all at the end")
         del values
-    # Astropy's own reader must agree with pyarrow.
+    # Astropy's own reader must agree with pyarrow: the schema for the column names and
+    # one numeric column for the row count. A full Table.read would size a numpy text
+    # array for every string column by its longest value (4 bytes per character per row),
+    # which for the photometry table is gigabytes to check two numbers (2026-11-24).
     try:
         import tempfile
 
@@ -811,13 +814,14 @@ def parquet_problems(label: str, specs: tuple[ColumnSpec, ...], rows: list[list[
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                astropy_table = Table.read(str(temporary), format="parquet")
+                astropy_schema = Table.read(str(temporary), format="parquet", schema_only=True)
+                astropy_column = Table.read(str(temporary), format="parquet", include_names=[HEALPIX_COLUMN])
         finally:
             temporary.unlink(missing_ok=True)
     except Exception as exc:  # noqa: BLE001
         problems.append(f"{label}: Astropy cannot read the Parquet file ({exc})")
     else:
-        if len(astropy_table) != len(rows) or list(astropy_table.colnames) != [spec.name for spec in specs]:
+        if len(astropy_column) != len(rows) or list(astropy_schema.colnames) != [spec.name for spec in specs]:
             problems.append(f"{label}: Astropy reads a different table shape from the Parquet file")
     return problems
 
@@ -1010,16 +1014,35 @@ def datalink_artifacts(
 ) -> tuple[dict[str, bytes], dict[str, Any], bytes]:
     """DataLink documents for every non-empty dossier bucket plus their manifest."""
 
-    documents: dict[str, bytes] = {}
-    entries: list[dict[str, Any]] = []
-    event_count = 0
-    link_count = 0
+    rows_by_bucket: dict[str, list[dict[str, Any]]] = {}
+    events_by_bucket: dict[str, int] = {}
     for bucket, candidates in sorted(bucket_rows.items()):
         if not candidates:
             continue
         rows: list[dict[str, Any]] = []
         for candidate in sorted(candidates, key=lambda row: str(row.get("event_id") or "")):
             rows.extend(datalink_rows_for(candidate, bucket, site_base=site_base))
+        rows_by_bucket[bucket] = rows
+        events_by_bucket[bucket] = len(candidates)
+    return datalink_artifacts_from_rows(rows_by_bucket, events_by_bucket, catalog_content_checksum_sha256)
+
+
+def datalink_artifacts_from_rows(
+    rows_by_bucket: dict[str, list[dict[str, Any]]], events_by_bucket: dict[str, int],
+    catalog_content_checksum_sha256: str,
+) -> tuple[dict[str, bytes], dict[str, Any], bytes]:
+    """datalink_artifacts from link rows already built per bucket (datalink_rows_for, in
+    event-id order): the exporter streams its dossiers once and keeps only these rows."""
+
+    documents: dict[str, bytes] = {}
+    entries: list[dict[str, Any]] = []
+    event_count = 0
+    link_count = 0
+    for bucket in sorted(rows_by_bucket):
+        candidates = range(events_by_bucket.get(bucket, 0))
+        if not candidates:
+            continue
+        rows = rows_by_bucket[bucket]
         raw = datalink_document(rows, bucket)
         path = f"ctas/data/links/{bucket}.xml"
         documents[path] = raw
@@ -1089,6 +1112,29 @@ def sha256_file(path: Path, chunk_size: int = 8 * 1024 * 1024) -> str:
     return digest.hexdigest()
 
 
+class ReceiptSummary:
+    """The per-source parser versions and receipt windows the PROV document names, gathered
+    one dossier at a time (the exporter streams its dossiers)."""
+
+    def __init__(self) -> None:
+        self.parser_versions: dict[str, set[str]] = {}
+        self.receipt_windows: dict[str, list[str]] = {}
+
+    def add(self, candidate: dict[str, Any]) -> None:
+        for receipt in (candidate.get("astro_evidence") or {}).get("persistedQueryReceipts") or []:
+            source_key = str(receipt.get("sourceContractId") or "")
+            if not source_key:
+                continue
+            for key in ("parserVersion", "schemaVersion"):
+                value = receipt.get(key)
+                if value:
+                    self.parser_versions.setdefault(source_key, set()).add(f"{key}={value}")
+            for key in ("startedAt", "completedAt"):
+                value = receipt.get(key)
+                if value:
+                    self.receipt_windows.setdefault(source_key, []).append(str(value))
+
+
 def provenance_document(
     *,
     generated_at: str,
@@ -1096,7 +1142,7 @@ def provenance_document(
     publication_state_checksum_sha256: str,
     candidate_count: int,
     source_universe: dict[str, Any],
-    candidates: list[dict[str, Any]],
+    candidates: Iterable[dict[str, Any]] | None,
     database: dict[str, Any],
     code_hashes: dict[str, str],
     collector: dict[str, Any],
@@ -1105,6 +1151,7 @@ def provenance_document(
     site: dict[str, Any] | None = None,
     state_asset: dict[str, Any] | None = None,
     versions: dict[str, Any] | None = None,
+    receipt_summary: "ReceiptSummary | None" = None,
 ) -> dict[str, Any]:
     """W3C PROV-JSON for one build.
 
@@ -1131,21 +1178,12 @@ def provenance_document(
     collector_agent = "ctas:agent/collector"
     operator_agent = "ctas:agent/ctas"
 
-    parser_versions: dict[str, set[str]] = {}
-    receipt_windows: dict[str, list[str]] = {}
-    for candidate in candidates:
-        for receipt in (candidate.get("astro_evidence") or {}).get("persistedQueryReceipts") or []:
-            source_key = str(receipt.get("sourceContractId") or "")
-            if not source_key:
-                continue
-            for key in ("parserVersion", "schemaVersion"):
-                value = receipt.get(key)
-                if value:
-                    parser_versions.setdefault(source_key, set()).add(f"{key}={value}")
-            for key in ("startedAt", "completedAt"):
-                value = receipt.get(key)
-                if value:
-                    receipt_windows.setdefault(source_key, []).append(str(value))
+    summary = receipt_summary if receipt_summary is not None else ReceiptSummary()
+    if candidates is not None:
+        for candidate in candidates:
+            summary.add(candidate)
+    parser_versions = summary.parser_versions
+    receipt_windows = summary.receipt_windows
 
     entity: dict[str, Any] = {
         release_id: {
