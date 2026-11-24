@@ -714,7 +714,7 @@ record_check ctas.release-layout 0 "" >/dev/null
 phase_done validate-detail-pages-and-retirement
 for suite in scripts/test_ctas_static.py scripts/test_ctas_links.py scripts/test_ctas_identity.py \
              scripts/test_ctas_astro_evidence.py scripts/test_ctas_browser.py \
-             scripts/test_ctas_chunks.py scripts/test_ctas_publisher_recovery.py \
+             scripts/test_ctas_chunks.py scripts/test_ctas_release_build.py scripts/test_ctas_publisher_recovery.py \
              scripts/test_ctas_interop.py scripts/test_ctas_changelog.py scripts/test_ctas_feed.py \
              scripts/test_ctas_screens.py scripts/test_ctas_comparison.py \
              scripts/test_ctas_lightcurve_science.py scripts/test_ctas_host_association.py \

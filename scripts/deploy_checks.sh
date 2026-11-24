@@ -130,6 +130,7 @@ group_ctas_static() {
   check ctas.checksums python3 "$RELEASE_CHECKS" checksums --product ctas --root .
   check ctas.test_ctas_outcomes python3 scripts/test_ctas_outcomes.py
   check ctas.test_ctas_chunks python3 scripts/test_ctas_chunks.py
+  check ctas.test_ctas_release_build python3 scripts/test_ctas_release_build.py
   check ctas.test_ctas_links python3 scripts/test_ctas_links.py
   check ctas.test_ctas_publisher_recovery python3 scripts/test_ctas_publisher_recovery.py
   check ctas.test_ctas_static python3 scripts/test_ctas_static.py
