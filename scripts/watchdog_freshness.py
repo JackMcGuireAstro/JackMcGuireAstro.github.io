@@ -817,8 +817,9 @@ def render_markdown(report, site_url, mention=""):
                      "last green workflow or revert the commit.")
         lines.append("- The runbook for every alert code: CTAS-AUTOMATION.md, \"When an alert fires\".")
         lines.append("")
-        lines.append("This issue is maintained by the freshness watchdog workflow: it comments when the situation "
-                     "changes (and every 12 hours while it persists) and closes itself when both publishers are current again.")
+        lines.append("This issue is maintained by the freshness watchdog workflow: it is edited in place each hour, "
+                     "a comment is added only when the picture gets worse, and it closes itself once both publishers "
+                     "have been current for 6 hours.")
     return "\n".join(lines) + "\n"
 
 

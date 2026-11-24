@@ -248,6 +248,7 @@ process.stdout.write(encodeFilterForUrl({schema: "jm.visitor-filter@1", title: "
         except ImportError:  # pragma: no cover
             pass
         page.fill("#cone-radius", "0"); page.click("#cone-run")
+        page.wait_for_function("document.querySelector('#cone-status').textContent.includes('radius')", timeout=10000)
         self.assertIn("radius", page.inner_text("#cone-status"))
         self.assertEqual(page.errors, [])
         page.close()
@@ -310,6 +311,7 @@ process.stdout.write(encodeFilterForUrl({schema: "jm.visitor-filter@1", title: "
         cone.wait_for_selector("#cone-results tbody [data-runcart-toggle]", timeout=60000)
         self.assertIn("Add", cone.inner_text("#cone-add"))
         cone.locator("#cone-results tbody [data-runcart-toggle]").first.click()
+        cone.wait_for_function(f"RunCart.count() === {before + 1}", timeout=10000)
         self.assertEqual(cone.evaluate("RunCart.count()"), before + 1)
         self.assertEqual(cone.evaluate("RunCart.list().at(-1).id"), self.sn["event_id"])
         # The other tab follows: the Follow page's badge counts the cone's addition.

@@ -30,19 +30,53 @@ def issue(number, kind, key, scope=None, fp="x"):
 
 
 class PlanTests(unittest.TestCase):
-    def test_a_warning_opens_one_issue_and_repeats_are_quiet(self):
+    def test_an_advisory_warning_goes_to_the_daily_digest_never_to_an_issue_of_its_own(self):
+        # 2026-11-24: 81 of 100 issues in two weeks were one advisory browser check.
         actions = ri.plan("deploy", [warn()], None, [], repo=REPO, run_url="https://example.test/run/1")
+        self.assertEqual([(a["op"], a["label"]) for a in actions], [("create", "daily-digest")])
+        self.assertEqual(actions[0]["title"], f"Daily digest {ri.today()}")
+        self.assertIn("`ctas.test_ctas_browser` failed in the site deploy (advisory)", actions[0]["body"])
+        self.assertIn("AssertionError: overflow 12px", actions[0]["body"])
+        data = ri.parse_digest(actions[0]["body"])
+        self.assertEqual([(r["kind"], r["key"], r["count"]) for r in data["items"]], [("advisory", "deploy:ctas.test_ctas_browser", 1)])
+        # The same finding again today: the digest is edited (no comment, no e-mail), the count grows.
+        existing = [{"number": 7, "title": actions[0]["title"], "body": actions[0]["body"], "label": "daily-digest"}]
+        again = ri.plan("deploy", [warn()], None, existing, run_url="https://example.test/run/2")
+        self.assertEqual([(a["op"], a["number"]) for a in again], [("edit", 7)])
+        self.assertEqual(ri.parse_digest(again[0]["body"])["items"][0]["count"], 2)
+        self.assertIn("2× between", again[0]["body"])
+        # A different advisory check joins the same digest; nothing opens a check-warning issue.
+        other = ri.plan("ctas-publish", [warn("ctas.test_ctas_feed")], None, existing)
+        self.assertEqual([(a["op"], a["label"]) for a in other], [("edit", "daily-digest")])
+        self.assertEqual(len(ri.parse_digest(other[0]["body"])["items"]), 2)
+        # Nothing to report: no digest is created, and yesterday's digest is closed without a comment.
+        self.assertEqual(ri.plan("deploy", [passed()], None, []), [])
+        old = {"number": 3, "title": "Daily digest 2026-11-23", "label": "daily-digest",
+               "body": ri.render_digest("2026-11-23", [ri.digest_item("note", "k", "t")])}
+        closing = ri.plan("deploy", [passed()], None, [old])
+        self.assertEqual([(a["op"], a["number"], a["body"]) for a in closing], [("close", 3, "")])
+
+    def test_a_watch_mode_warning_opens_one_issue_edited_in_place(self):
+        row = warn(cls="integrity")
+        actions = ri.plan("deploy", [row], None, [], repo=REPO, run_url="https://example.test/run/1")
         self.assertEqual([(a["op"], a["label"]) for a in actions], [("create", "check-warning")])
         self.assertEqual(actions[0]["title"], "Check warning: ctas.test_ctas_browser")
         self.assertIn("did not block", actions[0]["body"])
-        self.assertIn("advisory: it never blocks", actions[0]["body"])
-        self.assertIn("AssertionError: overflow 12px", actions[0]["body"])
         mark = ri.parse_marker(actions[0]["body"])
         self.assertEqual((mark["kind"], mark["key"], mark["scope"]), ("check-warning", "ctas.test_ctas_browser", "deploy"))
         existing = [{"number": 7, "title": "t", "body": actions[0]["body"], "last_marker": None}]
-        self.assertEqual(ri.plan("deploy", [warn()], None, existing), [])
-        changed = ri.plan("deploy", [warn(parts=["StatusPageTests.test_fits"])], None, existing)
-        self.assertEqual([(a["op"], a["number"]) for a in changed], [("comment", 7)])
+        self.assertEqual(ri.plan("deploy", [row], None, existing), [])
+        changed = ri.plan("deploy", [warn(parts=["StatusPageTests.test_fits"], cls="integrity")], None, existing)
+        self.assertEqual([(a["op"], a["number"]) for a in changed], [("edit", 7)])
+
+    def test_digest_add_items_merge_and_the_lost_runner_kind_renders(self):
+        item = ri.digest_item("lost-runner", "ctas:123", "run 123 of ctas-cloud.yml died with a lost runner", detail="phase publish", run_url="https://example.test/run/123")
+        actions = ri.digest_actions([item], [])
+        self.assertEqual([(a["op"], a["label"]) for a in actions], [("create", "daily-digest")])
+        self.assertIn("### Runs that died with a lost runner", actions[0]["body"])
+        self.assertIn("phase publish", actions[0]["body"])
+        merged = ri.merge_digest_items(ri.parse_digest(actions[0]["body"])["items"], [ri.digest_item("advisory", "deploy:x", "x failed")])
+        self.assertEqual([r["kind"] for r in merged], ["advisory", "lost-runner"])
 
     def test_a_pass_closes_the_warning_in_the_same_scope_only(self):
         open_in_deploy = [issue(9, "check-warning", "ctas.test_ctas_browser", "deploy")]
@@ -108,16 +142,21 @@ class PlanTests(unittest.TestCase):
 
         secret = "ghp_" + "x" * 36
         ri.apply([{"op": "create", "label": "check-warning", "title": "Check warning: a", "body": f"leak {secret} and v4lue-secret"},
-                  {"op": "comment", "label": "check-warning", "number": 2, "body": "b"},
-                  {"op": "close", "label": "fallback-active", "number": 3, "body": "c"}], "o/r", ["v4lue-secret"], runner=runner)
+                  {"op": "edit", "label": "check-warning", "number": 2, "body": "b"},
+                  {"op": "close", "label": "fallback-active", "number": 3, "body": "c"},
+                  {"op": "close", "label": "daily-digest", "number": 4, "body": ""}], "o/r", ["v4lue-secret"], runner=runner)
         flat = json.dumps(calls)
         self.assertNotIn(secret, flat)
         self.assertNotIn("v4lue-secret", flat)
         ops = [argv[1:3] for argv in calls]
-        self.assertEqual(ops.count(["label", "create"]), 3)
+        self.assertEqual(ops.count(["label", "create"]), len(ri.LABELS))
         self.assertIn(["issue", "create"], ops)
-        self.assertIn(["issue", "comment"], ops)
-        self.assertIn(["issue", "close"], ops)
+        self.assertIn(["issue", "edit"], ops)
+        self.assertNotIn(["issue", "comment"], ops)
+        closes = [argv for argv in calls if argv[1:3] == ["issue", "close"]]
+        self.assertEqual(len(closes), 2)
+        self.assertIn("--comment", closes[0])
+        self.assertNotIn("--comment", closes[1])                        # a digest closes silently
 
     def test_every_label_description_fits_githubs_100_character_limit(self):
         # 2026-11-08: check-warning's 123-character description made "gh label create" fail
@@ -157,9 +196,9 @@ class PlanTests(unittest.TestCase):
         body = f"Release check failed\n\n```\nremote said ghp_abc1234 refused; key Zq9xW2vB7nM4kL1pQ8rT\n```\n\n{mark}\n"
         results = [{"id": "ctas.export", "outcome": "warn", "class": "advisory", "parts": [],
                     "output_tail": ["remote said ghp_abc1234 refused", "x-access-token:abc"]}]
-        planned = ri.plan("ctas-publish", results, None, [])
+        planned = ri.plan("ctas-publish", results, None, [])           # today's digest, with the leaky tail
         ri.apply([{"op": "create", "label": "check-warning", "title": "Check warning: ctas.export", "body": body},
-                  {"op": "comment", "label": "check-warning", "number": 2, "body": planned[0]["body"]},
+                  {"op": "edit", "label": "daily-digest", "number": 2, "body": planned[0]["body"]},
                   {"op": "create", "label": "release-blocked", "title": "Release blocked: ghp_abc1234", "body": "ok"}],
                  "o/r", ["Zq9xW2vB7nM4kL1pQ8rT"], runner=runner)
         flat = json.dumps(calls)
@@ -168,8 +207,9 @@ class PlanTests(unittest.TestCase):
         posted = [argv[argv.index("--body") + 1] for argv in calls if "--body" in argv]
         self.assertTrue(posted[0].startswith(ri.WITHHELD))
         self.assertIn(mark, posted[0])                                   # the next run still finds the issue
-        self.assertEqual(ri.parse_marker(posted[1])["key"], "ctas.export")
         self.assertTrue(posted[1].startswith(ri.WITHHELD))
+        digest = ri.parse_digest(posted[1])                              # the digest keeps its items, without details
+        self.assertEqual([(r["key"], r["detail"]) for r in digest["items"]], [("ctas-publish:ctas.export", "")])
         titles = [argv[argv.index("--title") + 1] for argv in calls if "--title" in argv]
         self.assertIn("title withheld", titles[1])
         self.assertEqual(posted[2], "ok")                                # clean bodies are posted as they are

@@ -841,6 +841,8 @@ class BrowserTests(unittest.TestCase):
         link = self.page.locator("[data-comparison-open]")
         self.assertEqual(link.count(), 1)
         link.click()
+        # the panel opens on the click's handler; wait for the toggle rather than reading `open` at once
+        panel.evaluate("el => new Promise(r => { if (el.open) return r(); const t = setTimeout(r, 5000); el.addEventListener('toggle', () => { clearTimeout(t); r(); }, { once: true }); })")
         self.assertTrue(panel.evaluate("el => el.open"))
         self.assertEqual(panel.locator("[data-comparison-row]").count(), total)
         self.assertIn("selection, not a measurement" if any(item["selections"] for item in block["properties"]) else "nothing averaged", panel.inner_text())
@@ -1123,6 +1125,7 @@ class BrowserTests(unittest.TestCase):
         self.assertEqual(layers.count(), 4)
         self.assertEqual([layers.nth(i).get_attribute("data-sky-layer") for i in range(4)], ["dss2", "ls-dr10", "ps1", "2mass"])
         layers.nth(1).click()
+        self.page.wait_for_function("() => (window.__aladinCalls || []).some(c => c[0] === 'layer' && c[1] === 'CDS/P/DESI-Legacy-Surveys/DR10/color')", timeout=10000)
         self.assertEqual(self.page.evaluate("() => window.__aladinCalls.filter(c => c[0] === 'layer').pop()[1]"), "CDS/P/DESI-Legacy-Surveys/DR10/color")
         self.assertEqual(layers.nth(1).get_attribute("aria-pressed"), "true")
         self.assertIn("pinned 3.6.1", self.page.locator("[data-aladin-status]").inner_text())

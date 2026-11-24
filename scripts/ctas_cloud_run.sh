@@ -135,6 +135,7 @@ DISK_FLOOR_MB=${CTAS_DISK_FLOOR_MB:-768}     # ... or below this free disk under
 PUBLISH_MIN_FREE_MB=${CTAS_PUBLISH_MIN_FREE_MB:-6144}  # refuse to start the release below this
 SWAP_GB=${CTAS_SWAP_GB:-8}
 SAMPLE_SECONDS=${CTAS_SAMPLE_SECONDS:-30}
+TELEMETRY_PUSH_SECONDS=${CTAS_TELEMETRY_PUSH_SECONDS:-300}  # publish phase: push the samples this often
 # Two light-curve fit workers unless the repository variable says otherwise (the workflow
 # passes an empty string when it is unset); the default was one per CPU, up to four.
 LIGHTCURVE_WORKERS_SET=${CTAS_LIGHTCURVE_WORKERS:+1}
@@ -199,10 +200,15 @@ sampler() {  # every SAMPLE_SECONDS: one line to the job log and resources.log
       "$(awk -v v="${work:-0}" 'BEGIN{print v/1024}')" "${mnt:+ /mnt $(awk -v v="$mnt" 'BEGIN{printf "%.1fG", v/1024}')}" "${psi:--}" "$top")
     printf '%s\n' "$line" | tee -a "$RES_LOG"
     printf '%s %s %s %s %s %s %s %s\n' "$now" "$phase" "${used:-0}" "${avail:-0}" "${swap:-0}" "${root:-0}" "${work:-0}" "${headroom:-0}" >>"$RES_TSV"
-    # Under pressure (headroom under 4 GB or under 3 GB of disk) push the newest samples,
-    # at most every 10 minutes, so the next run can tell what this one died of.
-    if { [ "${headroom:-99999}" -lt 4096 ] || [ "${root:-99999}" -lt 3072 ] || [ "${work:-99999}" -lt 3072 ]; } \
-       && [ $((now - last_push)) -ge 600 ]; then
+    # Push the newest samples to the run-reports branch so the next run can tell what this
+    # one died of: every TELEMETRY_PUSH_SECONDS (5 min) while the release is being built,
+    # the phase every lost runner so far died in (2026-11-24: 15 deaths in four days, none
+    # under enough pressure for the old rule, so none left a trace), and under pressure
+    # (headroom under 4 GB or under 3 GB of disk) in any phase. One push is a few seconds
+    # and a few KB: about ten pushes per cycle.
+    if { [ "$phase" = publish ] && [ $((now - last_push)) -ge "$TELEMETRY_PUSH_SECONDS" ]; } \
+       || { { [ "${headroom:-99999}" -lt 4096 ] || [ "${root:-99999}" -lt 3072 ] || [ "${work:-99999}" -lt 3072 ]; } \
+            && [ $((now - last_push)) -ge "$TELEMETRY_PUSH_SECONDS" ]; }; then
       last_push=$now
       push_telemetry
     fi
@@ -346,7 +352,7 @@ report_lost_runs() {
       if printf '%s\n' "$telemetry" | head -1 | grep -q "^run $id "; then
         printf '%s\n' "$telemetry" | grep '  res  ' | tail -4 | sed 's/^/WARN  last telemetry of the dead run: /'
       else
-        printf 'WARN  no telemetry of the dead run was pushed (it was not under memory or disk pressure, or it predates the runner guard)\n'
+        printf 'WARN  no telemetry of the dead run was pushed (it died outside the release build, or within five minutes of its last push)\n'
       fi
     } >"$log"
     say "WARN  $note: $url${why:+ ($why)}"
@@ -359,6 +365,11 @@ report_lost_runs() {
       say "WARN  could not push a report for run $id"
     fi
     [ -n "${GITHUB_STEP_SUMMARY:-}" ] && printf '\n**%s**: [run %s](%s)%s\n' "$note" "$id" "$url" "${why:+ — $why}" >>"$GITHUB_STEP_SUMMARY"
+    # One line in the day's digest issue (scripts/release_issues.py); the watchdog alerts on a streak.
+    GH_TOKEN="$DEPLOY_TOKEN" timeout 60 python3 "$SITE/scripts/release_issues.py" digest-add --kind lost-runner --key "ctas-cloud:$id" \
+      --title "run $id of ctas-cloud.yml died with a lost runner (started ${created})" \
+      --detail "$(grep 'last telemetry of the dead run' "$log" | tail -1 | cut -c1-300)" --run-url "$url" \
+      --secret-env "$SECRET_ENV" --secret-file "$BACKEND/.env" >/dev/null 2>&1 || true
   done
 }
 

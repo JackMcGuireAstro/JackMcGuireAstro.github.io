@@ -471,6 +471,7 @@ UNBOUND_RESILIENCE_PATHS = {
     "scripts/release_commit.py": "reads which commit produced a published release; used by the cloud runners and the deploy",
     "scripts/deploy_checks.sh": "the deploy's check groups; the deploy validates, it does not build CTAS releases",
     "scripts/deploy_candidates.sh": "the deploy's choice of site code; the deploy validates, it does not build CTAS releases",
+    "scripts/deploy_unchanged.py": "the deploy's reading of the live release manifest (which product it need not re-check); never builds or reads release inputs",
     "scripts/test_release_checks.py": "tests of the classification engine; run by the deploy, not by the publisher",
     "scripts/test_run_report.py": "tests of the report sanitizer; run by the deploy, not by the publisher",
     "scripts/test_release_issues.py": "tests of the issue planner; run by the deploy, not by the publisher",

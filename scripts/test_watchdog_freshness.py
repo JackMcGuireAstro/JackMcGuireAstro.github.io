@@ -510,11 +510,79 @@ class RenderAndCliTests(unittest.TestCase):
                        '--ctas-state-max-age-hours "$CTAS_STATE_MAX_AGE_HOURS"', '--token-warn-days "$TOKEN_WARN_DAYS"'):
             self.assertIn(needed, workflow)
         self.assertIn("WATCHDOG_NOTIFY_WEBHOOK: ${{ secrets.WATCHDOG_NOTIFY_WEBHOOK }}", workflow)
+        # Early warnings are digest lines, never an issue of their own (2026-11-24).
+        self.assertIn("release_issues.py digest-add --kind early", workflow)
+        self.assertNotIn("WATCHDOG_LABEL: freshness-early", workflow)
+        for needed in ('--site-lag-hard-minutes "$SITE_LAG_HARD_MINUTES"', '--site-deploy-recent-minutes "$SITE_DEPLOY_RECENT_MINUTES"',
+                       'WATCHDOG_COOLDOWN_HOURS: "6"'):
+            self.assertIn(needed, workflow)
         helper = (ROOT / "scripts/watchdog_issue.sh").read_text()
-        for needed in ("gh issue create", "gh issue comment", "gh issue close", "watchdog-fingerprint",
-                       "WATCHDOG_NOTIFY_WEBHOOK", 'notify "opened"', 'notify "changed"', 'notify "recovered"'):
+        for needed in ("gh issue create", "gh issue edit", "gh issue comment", "gh issue close", "watchdog-fingerprint",
+                       "WATCHDOG_NOTIFY_WEBHOOK", 'notify "opened"', 'notify "worse"', 'notify "recovered"', "COOLDOWN_HOURS"):
             self.assertIn(needed, helper)
         self.assertEqual(subprocess.run(["/bin/bash", "-n", str(ROOT / "scripts/watchdog_issue.sh")]).returncode, 0)
+
+    def test_issue_helper_edits_in_place_comments_only_when_worse_and_closes_after_the_cooldown(self):
+        """The helper against a fake `gh` that keeps one issue in a JSON file: one create, one
+        comment (deploy-stale joined a runs-failing alert), silent edits, recovery held for the
+        cooldown, a relapse clearing it, one close."""
+        import os
+        import shutil
+        with tempfile.TemporaryDirectory(prefix="watchdog-issue-") as folder:
+            folder = Path(folder)
+            (folder / "bin").mkdir()
+            fake = folder / "bin" / "gh"
+            fake.write_text(STATEFUL_GH)
+            fake.chmod(0o755)
+            env = {**os.environ, "PATH": f"{folder / 'bin'}{os.pathsep}{os.environ['PATH']}", "SIM_DIR": str(folder),
+                   "GITHUB_REPOSITORY": "o/r"}
+            if shutil.which("jq") is None:
+                self.skipTest("jq is not installed")
+
+            def run(ok, codes, cooldown="6"):
+                alerts = [{"code": code, "message": "m"} for code in codes]
+                (folder / "r.json").write_text(json.dumps({"ok": ok, "fingerprint": "|".join(sorted(codes)) or "ok",
+                                                            "alerts": alerts, "summary": "Do this first: x"}))
+                (folder / "r.md").write_text("# report\n")
+                result = subprocess.run(["/bin/bash", str(ROOT / "scripts/watchdog_issue.sh"), "r.json", "r.md"], cwd=folder,
+                                        env={**env, "WATCHDOG_COOLDOWN_HOURS": cooldown}, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                return result.stdout
+
+            def calls(kind):
+                return (folder / "calls.log").read_text().count(f"gh issue {kind}")
+
+            self.assertIn("opened", run(False, ["worldsindex-runs-failing"]))
+            self.assertIn("updated in place", run(False, ["worldsindex-runs-failing"]))
+            self.assertIn("got worse", run(False, ["worldsindex-runs-failing", "deploy-stale"]))
+            self.assertIn("updated in place", run(False, ["deploy-stale"]))
+            self.assertIn("marked recovering", run(True, []))
+            self.assertIn("relapsed", run(False, ["deploy-stale"]))
+            self.assertIn("marked recovering", run(True, []))
+            self.assertIn("recovering since", run(True, []))                   # inside the cooldown: still open
+            self.assertIn("closed issue", run(True, [], cooldown="0"))
+            self.assertEqual((calls("create"), calls("comment"), calls("close")), (1, 1, 1))
+            self.assertGreaterEqual(calls("edit"), 5)
+
+
+STATEFUL_GH = r'''#!/bin/bash
+# fake gh: state in $SIM_DIR/issue.json ({"number":N,"body":...,"comments":[...]} or absent)
+S=$SIM_DIR/issue.json; echo "gh $*" >> $SIM_DIR/calls.log
+case "$1 $2" in
+  "label create") exit 0;;
+  "issue list") [ -f $S ] && python3 -c "import json;print(json.load(open('$S'))['number'])" || true; exit 0;;
+  "issue view") python3 -c "
+import json,sys,subprocess; d=json.load(open('$S'))
+jq=sys.argv[1]; print(subprocess.run(['jq','-r',jq],input=json.dumps(d),capture_output=True,text=True).stdout.strip())" "${@: -1}"; exit 0;;
+  "issue create") f=; for ((i=1;i<=$#;i++)); do [ "${!i}" = --body-file ] && { j=$((i+1)); f=${!j}; }; done
+     python3 -c "import json;json.dump({'number':42,'body':open('$f').read(),'comments':[]},open('$S','w'))"; echo https://x/issues/42; exit 0;;
+  "issue edit") f=; for ((i=1;i<=$#;i++)); do [ "${!i}" = --body-file ] && { j=$((i+1)); f=${!j}; }; done
+     python3 -c "import json;d=json.load(open('$S'));d['body']=open('$f').read();json.dump(d,open('$S','w'))"; exit 0;;
+  "issue comment") f=; for ((i=1;i<=$#;i++)); do [ "${!i}" = --body-file ] && { j=$((i+1)); f=${!j}; }; done
+     python3 -c "import json;d=json.load(open('$S'));d['comments'].append({'body':open('$f').read()});json.dump(d,open('$S','w'))"; exit 0;;
+  "issue close") rm -f $S; exit 0;;
+esac; exit 1
+'''
 
 
 class LiveSiteTests(unittest.TestCase):
@@ -670,27 +738,47 @@ class LiveSiteTests(unittest.TestCase):
 
 
 FAKE_GH = r'''#!/usr/bin/env python3
-"""Stand-in for the GitHub CLI: records every call under FAKE_DIR, answers from the environment."""
-import os, shutil, sys
+"""Stand-in for the GitHub CLI: records every call under FAKE_DIR; the open issue (if any) lives
+in FAKE_DIR/issue.json {number, body, comments} so edits and comments can be read back. An issue
+from before the edit-in-place helper can be seeded with FAKE_OPEN_ISSUE (number) and FAKE_BODY."""
+import json, os, subprocess, sys
 from pathlib import Path
 out = Path(os.environ["FAKE_DIR"])
+state = out / "issue.json"
 args = sys.argv[1:]
 with open(out / "gh-calls.log", "a") as log:
     log.write(" ".join(args[:2]) + "\n")
+def load():
+    if state.exists():
+        return json.loads(state.read_text())
+    if os.environ.get("FAKE_OPEN_ISSUE"):
+        return {"number": int(os.environ["FAKE_OPEN_ISSUE"]), "body": os.environ.get("FAKE_BODY", ""), "comments": []}
+    return None
+def save(issue):
+    state.write_text(json.dumps(issue))
+def body_file():
+    return Path(args[args.index("--body-file") + 1]).read_text()
 if args[:2] == ["label", "create"]:
     sys.exit(0)
+issue = load()
 if args[:2] == ["issue", "list"]:
-    print(os.environ.get("FAKE_OPEN_ISSUE", ""))
+    print(issue["number"] if issue else "")
 elif args[:2] == ["issue", "create"]:
     (out / "created-title.txt").write_text(args[args.index("--title") + 1])
-    shutil.copy(args[args.index("--body-file") + 1], out / "created-body.md")
+    (out / "created-body.md").write_text(body_file())
+    save({"number": 77, "body": body_file(), "comments": []})
     print("https://github.com/owner/repo/issues/77")
 elif args[:2] == ["issue", "view"]:
-    print(os.environ.get("FAKE_LAST", "none 2026-10-16T00:00:00Z"))
+    print(subprocess.run(["jq", "-r", args[-1]], input=json.dumps(issue), capture_output=True, text=True).stdout.strip())
+elif args[:2] == ["issue", "edit"]:
+    issue["body"] = body_file(); save(issue)
+    (out / "edited-body.md").write_text(issue["body"])
 elif args[:2] == ["issue", "comment"]:
-    shutil.copy(args[args.index("--body-file") + 1], out / "comment-body.md")
+    issue["comments"].append({"body": body_file()}); save(issue)
+    (out / "comment-body.md").write_text(body_file())
 elif args[:2] == ["issue", "close"]:
-    (out / "closed.md").write_text(args[args.index("--comment") + 1])
+    (out / "closed.md").write_text(args[args.index("--comment") + 1] if "--comment" in args else "")
+    state.unlink(missing_ok=True)
 else:
     print("unexpected gh call: %r" % args, file=sys.stderr); sys.exit(2)
 '''
@@ -755,7 +843,7 @@ class IssueHelperTests(unittest.TestCase):
         self.assertEqual((self.tmp / "created-title.txt").read_text(), "Publisher alert: WorldsIndex")
         body = (self.tmp / "created-body.md").read_text()
         self.assertTrue(body.startswith("**Do this first:** Open the newest failed run of worldsindex-cloud.yml"), body[:100])
-        self.assertIn("<!-- watchdog-fingerprint: worldsindex-runs-failing-after-publish -->", body)
+        self.assertIn("<!-- watchdog-fingerprint: worldsindex-runs-failing-after-publish top: worldsindex-runs-failing-after-publish recovered: none -->", body)
         posted = json.loads((self.tmp / "curl-body.txt").read_text())
         self.assertTrue(posted["text"].startswith("Publisher watchdog: opened (WorldsIndex)\nDo this first: Open the newest failed run"))
         self.assertIn("https://github.com/owner/repo/issues/77", posted["text"])
@@ -769,6 +857,7 @@ class IssueHelperTests(unittest.TestCase):
         self.assertIn("Title: Publisher watchdog: opened (WorldsIndex)", args)
         self.assertTrue((self.tmp / "curl-body.txt").read_text().startswith("Do this first: "))
         self.assertNotIn("Content-Type: application/json", args)
+        (self.tmp / "issue.json").unlink()                                # as if no issue were open
         out = self.run_helper(self.alerting_report(), WATCHDOG_NOTIFY_WEBHOOK="https://example.test/hook",
                               WATCHDOG_NOTIFY_FORMAT="text", FAKE_CURL_EXIT="22")
         self.assertIn("webhook notification failed (opened); the issue is the record", out)
@@ -782,59 +871,63 @@ class IssueHelperTests(unittest.TestCase):
         self.run_helper(report)
         self.assertEqual((self.tmp / "created-title.txt").read_text(), "Public site is not deploying (also: CTAS, deployment)")
 
-    def test_quiet_case_touches_nothing_and_recovery_closes_and_notifies(self):
+    def test_quiet_case_touches_nothing_and_recovery_is_held_for_the_cooldown_then_closes(self):
         out = self.run_helper(self.quiet_report(), WATCHDOG_NOTIFY_WEBHOOK="https://ntfy.sh/topic")
         self.assertIn("both publishers current; no open alert issue", out)
         self.assertEqual(self.calls(), ["label", "create", "issue", "list"])
         self.assertFalse((self.tmp / "curl-args.txt").exists())
-        out = self.run_helper(self.quiet_report(), WATCHDOG_NOTIFY_WEBHOOK="https://ntfy.sh/topic", FAKE_OPEN_ISSUE="77")
-        self.assertIn("closed issue #77 (recovered)", out)
-        self.assertTrue((self.tmp / "closed.md").read_text().startswith("Recovered: both publishers are current again."))
+        # An open issue and a current report: marked recovering, not closed (an edit, no e-mail).
+        self.run_helper(self.alerting_report())
+        out = self.run_helper(self.quiet_report(), WATCHDOG_NOTIFY_WEBHOOK="https://ntfy.sh/topic")
+        self.assertIn("marked recovering", out)
+        self.assertIn("**Recovering** since", (self.tmp / "edited-body.md").read_text())
+        self.assertFalse((self.tmp / "closed.md").exists())
+        self.assertFalse((self.tmp / "curl-args.txt").exists())
+        out = self.run_helper(self.quiet_report(), WATCHDOG_NOTIFY_WEBHOOK="https://ntfy.sh/topic")
+        self.assertIn("recovering since", out)                              # still inside the cooldown
+        # After the cooldown: one close, one notification.
+        out = self.run_helper(self.quiet_report(), WATCHDOG_NOTIFY_WEBHOOK="https://ntfy.sh/topic", WATCHDOG_COOLDOWN_HOURS="0")
+        self.assertIn("closed issue #77 (recovered", out)
+        self.assertTrue((self.tmp / "closed.md").read_text().startswith("Recovered: both publishers are current again"))
         self.assertIn("Title: Publisher watchdog: recovered (ok)", (self.tmp / "curl-args.txt").read_text())
         self.assertIn("https://github.com/owner/repo/issues/77", (self.tmp / "curl-body.txt").read_text())
 
-    def test_the_early_issue_has_its_own_label_title_and_recovery_text(self):
-        now = at("2026-11-14T12:30:00Z")
-        report = watchdog.evaluate(ctas_status("2026-11-14T10:00:00Z"), None, worlds_manifest("2026-11-14T09:50:00Z"), None,
-                                   deploy(created="2026-11-14T10:05:00Z"), now=now)
-        early_env = {"WATCHDOG_LABEL": "freshness-early", "WATCHDOG_TITLE_PREFIX": "Early warning",
-                     "WATCHDOG_RECOVERED_TEXT": "CTAS is publishing on time again"}
-        (self.tmp / "report.json").write_text(json.dumps(watchdog.early_report(report)))
-        (self.tmp / "report.md").write_text(watchdog.render_early_markdown(report, "https://example.test", "@owner"))
-        result = subprocess.run(["/bin/bash", str(ROOT / "scripts/watchdog_issue.sh"), "report.json", "report.md"],
-                                cwd=self.tmp, env={**self.env, **early_env}, text=True, capture_output=True)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual((self.tmp / "created-title.txt").read_text(), "Early warning: CTAS")
-        self.assertIn("<!-- watchdog-fingerprint: ctas-early -->", (self.tmp / "created-body.md").read_text())
-        fresh = watchdog.evaluate(ctas_status("2026-11-14T12:20:00Z"), None, worlds_manifest("2026-11-14T12:00:00Z"), None,
-                                  deploy(created="2026-11-14T12:05:00Z"), now=now)
-        (self.tmp / "report.json").write_text(json.dumps(watchdog.early_report(fresh)))
-        (self.tmp / "report.md").write_text(watchdog.render_early_markdown(fresh, "https://example.test"))
-        result = subprocess.run(["/bin/bash", str(ROOT / "scripts/watchdog_issue.sh"), "report.json", "report.md"],
-                                cwd=self.tmp, env={**self.env, **early_env, "FAKE_OPEN_ISSUE": "78"}, text=True, capture_output=True)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertTrue((self.tmp / "closed.md").read_text().startswith("Recovered: CTAS is publishing on time again."))
+    def test_an_issue_from_before_the_edit_in_place_helper_is_read_and_closed_the_same_way(self):
+        old_body = "old body\n<!-- watchdog-fingerprint: worldsindex-runs-failing-after-publish -->\n"
+        out = self.run_helper(self.quiet_report(), FAKE_OPEN_ISSUE="78", FAKE_BODY=old_body, WATCHDOG_COOLDOWN_HOURS="0")
+        self.assertIn("marked recovering", out)                               # first current check: recovering
+        out = self.run_helper(self.quiet_report(), WATCHDOG_COOLDOWN_HOURS="0")
+        self.assertIn("closed issue #78", out)
 
-    def test_open_issue_is_updated_only_when_the_picture_changes_or_a_reminder_is_due(self):
-        # The helper measures the last update's age against the real clock.
-        recent = watchdog.iso(dt.datetime.now(UTC) - dt.timedelta(hours=1))
-        long_ago = watchdog.iso(dt.datetime.now(UTC) - dt.timedelta(hours=13))
-        out = self.run_helper(self.alerting_report(), FAKE_OPEN_ISSUE="77",
-                              FAKE_LAST=f"worldsindex-runs-failing-after-publish {recent}",
-                              WATCHDOG_NOTIFY_WEBHOOK="https://ntfy.sh/topic")
-        self.assertIn("issue #77 unchanged", out)
+    def test_early_warnings_no_longer_open_an_issue_of_their_own(self):
+        # 2026-11-24: 15 of 100 issues in two weeks were early warnings; they are digest lines now,
+        # and the alert issue's body carries them while one is open (the workflow appends early.md).
+        workflow = (ROOT / ".github/workflows/freshness-watchdog.yml").read_text()
+        self.assertNotIn("WATCHDOG_LABEL: freshness-early", workflow)
+        self.assertIn("cat early.md; } >> report.md", workflow)
+        self.assertIn("digest-add --kind early", workflow)
+
+    def test_open_issue_is_edited_in_place_and_commented_only_when_it_gets_worse(self):
+        self.run_helper(self.alerting_report())
+        out = self.run_helper(self.alerting_report(), WATCHDOG_NOTIFY_WEBHOOK="https://ntfy.sh/topic")
+        self.assertIn("issue #77 updated in place", out)
         self.assertFalse((self.tmp / "comment-body.md").exists())
         self.assertFalse((self.tmp / "curl-args.txt").exists())
-        out = self.run_helper(self.alerting_report(), FAKE_OPEN_ISSUE="77", FAKE_LAST=f"ctas-stale {recent}",
-                              WATCHDOG_NOTIFY_WEBHOOK="https://ntfy.sh/topic")
-        self.assertIn("updated issue #77 (ctas-stale -> worldsindex-runs-failing-after-publish", out)
-        self.assertTrue((self.tmp / "comment-body.md").read_text().startswith("**Do this first:**"))
-        self.assertIn("Title: Publisher watchdog: changed (WorldsIndex)", (self.tmp / "curl-args.txt").read_text())
-        (self.tmp / "curl-args.txt").unlink()
-        out = self.run_helper(self.alerting_report(), FAKE_OPEN_ISSUE="77",
-                              FAKE_LAST=f"worldsindex-runs-failing-after-publish {long_ago}",
-                              WATCHDOG_NOTIFY_WEBHOOK="https://ntfy.sh/topic")
-        self.assertIn("updated issue #77", out)  # a reminder: a comment, but no new notification
+        self.assertIn("_Last checked", (self.tmp / "edited-body.md").read_text())
+        # A more severe code (deploy-stale) joins: one comment and one notification.
+        now = at("2026-10-21T18:00:00Z")
+        worse = watchdog.evaluate(ctas_status("2026-10-20T01:00:00Z"), None, worlds_manifest("2026-10-21T17:30:00Z"), None,
+                                  deploy("failure", created="2026-10-21T17:00:00Z", history=[("success", "2026-10-20T01:10:00Z")]),
+                                  now=now, ctas_branch=ctas_status("2026-10-21T17:45:00Z"), ctas_max_age_hours=40)
+        out = self.run_helper(worse, WATCHDOG_NOTIFY_WEBHOOK="https://ntfy.sh/topic")
+        self.assertIn("got worse", out)
+        self.assertTrue((self.tmp / "comment-body.md").read_text().startswith("Worse: **deploy-stale**"))
+        self.assertIn("Title: Publisher watchdog: worse", (self.tmp / "curl-args.txt").read_text())
+        (self.tmp / "curl-args.txt").unlink(); (self.tmp / "comment-body.md").unlink()
+        # Back to the less severe picture: an edit, nothing else.
+        out = self.run_helper(self.alerting_report(), WATCHDOG_NOTIFY_WEBHOOK="https://ntfy.sh/topic")
+        self.assertIn("updated in place", out)
+        self.assertFalse((self.tmp / "comment-body.md").exists())
         self.assertFalse((self.tmp / "curl-args.txt").exists())
 
 
@@ -911,13 +1004,13 @@ class EarlyWarningTests(unittest.TestCase):
             self.assertIn("summary", early)
             self.assertTrue((folder / "e.md").read_text().startswith("**Early warning**"))
 
-    def test_the_workflow_keeps_the_early_issue_and_reads_the_annotations(self):
+    def test_the_workflow_feeds_early_warnings_to_the_digest_and_reads_the_annotations(self):
         workflow = (ROOT / ".github/workflows/freshness-watchdog.yml").read_text()
         for needed in ('CTAS_EARLY_AGE_HOURS: "2"', 'CTAS_MAX_AGE_HOURS: "4"', '--ctas-early-age-hours "$CTAS_EARLY_AGE_HOURS"',
-                       "--early-report early.json --early-markdown early.md", "WATCHDOG_LABEL: freshness-early",
-                       "check-runs/$job/annotations", ".annotations = $notes[0]", "checks: read",
-                       "bash ../scripts/watchdog_issue.sh ../early.json ../early.md"):
+                       "--early-report early.json --early-markdown early.md", 'digest-add --kind early --key "watchdog:$code"',
+                       "check-runs/$job/annotations", ".annotations = $notes[0]", "checks: read"):
             self.assertIn(needed, workflow)
+        self.assertNotIn("bash ../scripts/watchdog_issue.sh ../early.json ../early.md", workflow)
         ctas = (ROOT / ".github/workflows/ctas-cloud.yml").read_text()
         self.assertIn("checks: read", ctas)
 

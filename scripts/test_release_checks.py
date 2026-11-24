@@ -949,6 +949,96 @@ CHECK_TIMEOUT_SECONDS=1 check ctas.test_ctas_chunks quick; echo "function=$?"
         self.assertIn('CHECK_TIMEOUT_SECONDS="${CHECK_TIMEOUT_SECONDS:-900}"', (ROOT / "scripts/deploy_candidates.sh").read_text())
 
 
+    def test_a_failed_advisory_check_runs_once_more_and_a_blocking_one_never_does(self):
+        """2026-11-24: one advisory browser check opened 81 issues in two weeks by flaking."""
+        with tempfile.TemporaryDirectory(prefix="release-checks-retry-") as folder:
+            script = f"""
+set -uo pipefail
+RELEASE_CHECKS={ROOT / 'scripts/release_checks.py'}
+CHECK_SCOPE=deploy
+CHECK_RESULTS={folder}/results.jsonl
+CHECK_DIR={folder}/out
+CHECK_RETRY_ADVISORY=1
+. {ROOT / 'scripts/release_checks.sh'}
+flaky() {{ if [ -e {folder}/once ]; then echo second-run; return 0; fi; touch {folder}/once; echo first-run; return 1; }}
+check browser.tools flaky; echo "flaky=$?"
+check browser.tonight false; echo "twice=$?"
+check ctas.front-syntax false; echo "blocking=$?"
+CHECK_RETRY_ADVISORY=0 check browser.research false; echo "off=$?"
+"""
+            done = subprocess.run(["/bin/bash", "-c", script], cwd=ROOT, text=True, capture_output=True)
+            for needle in ("flaky=0", "twice=0", "blocking=3", "off=0"):
+                self.assertIn(needle, done.stdout, done.stdout + done.stderr)
+            rows = {json.loads(line)["id"]: json.loads(line) for line in Path(folder, "results.jsonl").read_text().splitlines()}
+            self.assertEqual(rows["browser.tools"]["outcome"], "pass")
+            log = Path(folder, "out", "browser.tools.log").read_text()
+            self.assertIn("RETRY  browser.tools failed (exit 1); advisory, so it runs once more", log)
+            self.assertIn("second-run", log)
+            self.assertIn("passed on the second run", log)
+            self.assertEqual(rows["browser.tonight"]["outcome"], "warn")
+            self.assertIn("failed twice", Path(folder, "out", "browser.tonight.log").read_text())
+            self.assertEqual(rows["ctas.front-syntax"]["outcome"], "block")
+            self.assertNotIn("RETRY", Path(folder, "out", "ctas.front-syntax.log").read_text())
+            self.assertNotIn("RETRY", Path(folder, "out", "browser.research.log").read_text())
+        self.assertIn("CHECK_RETRY_ADVISORY=${CHECK_RETRY_ADVISORY:-1}", (ROOT / "scripts/deploy_checks.sh").read_text())
+
+    def test_a_product_unchanged_since_the_live_deployment_has_its_checks_recorded_as_skipped(self):
+        """2026-11-24: deploys took 20-51 minutes, most of it re-checking the product that had not
+        changed; a WorldsIndex release now skips the CTAS groups and the other way round."""
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import deploy_unchanged as du
+        live = {"schema": "jmastro.release-manifest@1", "site_commit": "a" * 40,
+                "ctas": {"data_commit": "c" * 40}, "worldsindex": {"data_commit": "w" * 40}}
+        self.assertEqual(du.unchanged(live, "a" * 40, "c" * 40, "x" * 40)[0], ["ctas"])
+        self.assertEqual(du.unchanged(live, "a" * 40, "y" * 40, "w" * 40)[0], ["worldsindex"])
+        self.assertEqual(du.unchanged(live, "a" * 40, "c" * 40, "w" * 40)[0], ["ctas", "worldsindex"])
+        self.assertEqual(du.unchanged(live, "b" * 40, "c" * 40, "w" * 40)[0], [])        # main moved: everything runs
+        self.assertEqual(du.unchanged(live, "a" * 40, "y" * 40, "x" * 40)[0], [])        # both releases newer
+        self.assertEqual(du.unchanged({}, "a" * 40, "c" * 40, "w" * 40)[0], [])          # no manifest (first deploy, 404)
+        self.assertEqual(du.unchanged(live, "a" * 40, "c" * 40, "w" * 40, enabled=False)[0], [])
+        self.assertEqual(du.unchanged(live, "a" * 40, "", "")[0], [])
+        with tempfile.TemporaryDirectory(prefix="release-checks-unchanged-") as folder:
+            Path(folder, "live.json").write_text(json.dumps(live))
+            out = subprocess.run([sys.executable, str(ROOT / "scripts/deploy_unchanged.py"), "--live", f"{folder}/live.json",
+                                  "--site-commit", "a" * 40, "--ctas-commit", "c" * 40, "--worldsindex-commit", "n" * 40],
+                                 capture_output=True, text=True, check=True).stdout
+            self.assertIn("CHECK_UNCHANGED=ctas\n", out)
+            self.assertIn("CHECK_UNCHANGED_WHY=live deployment of main aaaaaaaaaa with the same ctas-data cccccccccc", out)
+            script = f"""
+set -uo pipefail
+RELEASE_CHECKS={ROOT / 'scripts/release_checks.py'}
+CHECK_SCOPE=deploy
+CHECK_RESULTS={folder}/results.jsonl
+CHECK_DIR={folder}/out
+CHECK_UNCHANGED=ctas
+CHECK_UNCHANGED_WHY="live deployment of main aaaaaaaaaa"
+. {ROOT / 'scripts/release_checks.sh'}
+CHECK_PRODUCT=ctas check ctas.test_ctas_static false; echo "ctas=$?"
+CHECK_PRODUCT=worldsindex check worldsindex.test_worldsindex_static true; echo "wi=$?"
+CHECK_PRODUCT=both check browser.tonight true; echo "both=$?"
+CHECK_PRODUCT= check site.whitespace true; echo "site=$?"
+CHECK_UNCHANGED=ctas,worldsindex CHECK_PRODUCT=both check browser.visitor false; echo "both2=$?"
+"""
+            done = subprocess.run(["/bin/bash", "-c", script], cwd=ROOT, text=True, capture_output=True)
+            for needle in ("ctas=0", "wi=0", "both=0", "site=0", "both2=0"):
+                self.assertIn(needle, done.stdout, done.stdout + done.stderr)
+            rows = {json.loads(line)["id"]: json.loads(line) for line in Path(folder, "results.jsonl").read_text().splitlines()}
+            self.assertEqual(rows["ctas.test_ctas_static"]["outcome"], "skip")
+            self.assertIn("ctas unchanged since the live deployment (live deployment of main aaaaaaaaaa)", rows["ctas.test_ctas_static"]["reason"])
+            self.assertEqual(rows["worldsindex.test_worldsindex_static"]["outcome"], "pass")
+            self.assertEqual(rows["browser.tonight"]["outcome"], "pass")           # only CTAS is unchanged
+            self.assertEqual(rows["site.whitespace"]["outcome"], "pass")
+            self.assertEqual(rows["browser.visitor"]["outcome"], "skip")            # both unchanged
+        deploy = (ROOT / "scripts/deploy_checks.sh").read_text()
+        for group, product in (("group_ctas_static", "ctas"), ("group_ctas_schemas", "ctas"), ("group_worldsindex_static", "worldsindex"),
+                               ("group_worldsindex_interop", "worldsindex"), ("group_tonight", "both")):
+            body = deploy[deploy.index(group + "() {"):]
+            self.assertTrue(body.splitlines()[1].strip().startswith(f"CHECK_PRODUCT={product}"), group)
+        self.assertIn("CHECK_UNCHANGED= CHECK_TIMEOUT_SECONDS", (ROOT / "scripts/deploy_candidates.sh").read_text())
+        workflow = (ROOT / ".github/workflows/worldsindex-release.yml").read_text()
+        self.assertIn("scripts/deploy_unchanged.py --live live-manifest.json", workflow)
+        self.assertIn("DEPLOY_SKIP_UNCHANGED: ${{ vars.DEPLOY_SKIP_UNCHANGED || '1' }}", workflow)
+
 # ============================================================================ the one fallback attempt
 FAKE_PUBLISHER = r'''#!/bin/bash
 # A stand-in publisher: VERSION decides whether its release check blocks.

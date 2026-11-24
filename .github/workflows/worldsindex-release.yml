@@ -135,6 +135,23 @@ jobs:
           npm install --no-save --silent --prefix .. axe-core@4.14.0 @duckdb/duckdb-wasm@1.32.0 esbuild@0.25.10 >/dev/null
       # Watch-mode pass counts: the publishers' (published with each release) and the
       # deploy's own (history/deploy.json on the run-reports branch).
+      # Nothing is re-checked that the live deployment already checked on identical bytes:
+      # when main's commit equals the live site's, a product whose data commit also equals
+      # the live one has its groups recorded as skipped (release_checks.sh CHECK_UNCHANGED).
+      # A WorldsIndex release then skips the CTAS groups and the other way round; a landing
+      # on main checks everything. Repository variable DEPLOY_SKIP_UNCHANGED=0 turns it off.
+      - name: What changed since the live deployment
+        env:
+          SITE_URL: https://jackmcguireastro.github.io
+          CTAS_DATA_COMMIT: ${{ steps.overlay.outputs.ctas_commit }}
+          WORLDSINDEX_DATA_COMMIT: ${{ steps.overlay.outputs.worldsindex_commit }}
+          DEPLOY_SKIP_UNCHANGED: ${{ vars.DEPLOY_SKIP_UNCHANGED || '1' }}
+        run: |
+          curl -fsS -m 20 "$SITE_URL/release/manifest.json?t=$(date +%s)" > live-manifest.json || echo '{}' > live-manifest.json
+          python3 scripts/deploy_unchanged.py --live live-manifest.json --site-commit "$(git rev-parse HEAD)" \
+            --ctas-commit "$CTAS_DATA_COMMIT" --worldsindex-commit "$WORLDSINDEX_DATA_COMMIT" \
+            --enabled "$DEPLOY_SKIP_UNCHANGED" | tee -a "$GITHUB_ENV" "$GITHUB_STEP_SUMMARY"
+          rm -f live-manifest.json
       - name: Check history of the newer checks
         run: |
           history="$RUNNER_TEMP/deploy-history.json"

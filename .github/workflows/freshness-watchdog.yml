@@ -6,9 +6,11 @@ name: Publisher freshness watchdog
 # runs in the cloud, independent of the Mac, reads the public status files and the
 # recent run results once an hour and maintains one issue labelled
 # `freshness-watchdog`: opened when a publisher stalls or its runs keep failing (with
-# an @mention, so it reaches email), updated when the picture changes or every 12
-# hours while it persists, closed automatically on recovery. It changes nothing on
-# the site. See scripts/watchdog_freshness.py for the checks.
+# an @mention, so it reaches email), edited in place while it persists (a comment only
+# when it gets worse), closed automatically 6 h after recovery. Early warnings (CTAS a
+# little late, a lost runner) go to the daily digest issue instead of an issue of their
+# own (2026-11-24; scripts/release_issues.py digest-add). It changes nothing on the
+# site. See scripts/watchdog_freshness.py for the checks.
 #
 # Tune the limits below rather than the script. Both publishers now run in the cloud:
 # CTAS about every 30 minutes (each run starts the next) and WorldsIndex hourly, both
@@ -41,8 +43,8 @@ jobs:
       SITE_URL: https://jackmcguireastro.github.io
       WATCHDOG_MENTION: "@JackMcGuireAstro"
       CTAS_MAX_AGE_HOURS: "4"
-      # Early warning: a separate, self-closing issue (label freshness-early) when CTAS has
-      # not published for this long, or a cloud run's runner was lost in the last 24 h.
+      # Early warning (a line in the daily digest, and in the alert issue while one is open)
+      # when CTAS has not published for this long, or a cloud run's runner was lost in 24 h.
       CTAS_EARLY_AGE_HOURS: "2"
       WORLDSINDEX_MAX_AGE_HOURS: "6"
       CROSS_CHECK_FRESH_HOURS: "2"
@@ -59,9 +61,14 @@ jobs:
       # The CTAS_STATE_TOKEN key: warn this many days before the expiry the marker records.
       TOKEN_WARN_DAYS: "10"
       # The public site: a deploy-stale alert when it lags its data branch by more than this
-      # (the deploy stopped while the publishers kept publishing; RESILIENCE.md).
+      # while no deploy succeeded in SITE_DEPLOY_RECENT_MINUTES, or by more than
+      # SITE_LAG_HARD_MINUTES at all (deploys take 20-51 min, median 26, measured 2026-11-24;
+      # the deploy stopped while the publishers kept publishing; RESILIENCE.md).
       SITE_LAG_MINUTES: "60"
-      WATCHDOG_REMIND_HOURS: "12"
+      SITE_LAG_HARD_MINUTES: "180"
+      SITE_DEPLOY_RECENT_MINUTES: "120"
+      # An alert issue closes this many hours after the condition cleared (no relapse).
+      WATCHDOG_COOLDOWN_HOURS: "6"
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -123,8 +130,11 @@ jobs:
             --token-warn-days "$TOKEN_WARN_DAYS" \
             --raw-base "https://raw.githubusercontent.com/$GITHUB_REPOSITORY" \
             --deploy-jobs-json deploy-jobs.json --site-lag-minutes "$SITE_LAG_MINUTES" \
+            --site-lag-hard-minutes "$SITE_LAG_HARD_MINUTES" --site-deploy-recent-minutes "$SITE_DEPLOY_RECENT_MINUTES" \
             --report report.json --markdown report.md \
             --early-report early.json --early-markdown early.md
+          # Early warnings ride along in the alert issue's body while one is open.
+          if [ "$(jq -r '.ok' early.json)" = "false" ]; then { echo; cat early.md; } >> report.md; fi
           cat report.md >> "$GITHUB_STEP_SUMMARY"
       - name: Open, update or close the alert issue
         env:
@@ -132,13 +142,14 @@ jobs:
           # summary when the issue opens, changes or closes; see CTAS-AUTOMATION.md.
           WATCHDOG_NOTIFY_WEBHOOK: ${{ secrets.WATCHDOG_NOTIFY_WEBHOOK }}
         run: bash scripts/watchdog_issue.sh report.json report.md
-      - name: Open, update or close the early-warning issue
-        env:
-          WATCHDOG_NOTIFY_WEBHOOK: ${{ secrets.WATCHDOG_NOTIFY_WEBHOOK }}
-          WATCHDOG_LABEL: freshness-early
-          WATCHDOG_TITLE_PREFIX: Early warning
-          WATCHDOG_RECOVERED_TEXT: CTAS is publishing on time again
-          WATCHDOG_LABEL_TEXT: Opened automatically when CTAS is late or a cloud runner was lost
+      - name: Early warnings into the daily digest
         run: |
-          mkdir -p early && cd early
-          bash ../scripts/watchdog_issue.sh ../early.json ../early.md
+          jq -c '.alerts[]' early.json | while read -r row; do
+            code=$(printf '%s' "$row" | jq -r '.code'); message=$(printf '%s' "$row" | jq -r '.message')
+            python3 scripts/release_issues.py digest-add --kind early --key "watchdog:$code" \
+              --title "$(printf '%s' "$message" | cut -c1-180)" --detail "$(printf '%s' "$row" | jq -r '.action // ""' | cut -c1-300)"
+          done
+          # An early-warning issue from before 2026-11-24 that is still open: close it quietly.
+          for n in $(gh issue list --repo "$GITHUB_REPOSITORY" --label freshness-early --state open --limit 5 --json number --jq '.[].number'); do
+            gh issue close "$n" --repo "$GITHUB_REPOSITORY" >/dev/null && echo "closed old early-warning issue #$n (early warnings now go to the daily digest)"
+          done

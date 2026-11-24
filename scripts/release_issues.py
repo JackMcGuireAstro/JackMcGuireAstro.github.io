@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
 """Keep the release-check GitHub issues in step with what a run found.
 
-Three labels, each issue keyed by a hidden marker so every run can find its own issue
-without keeping state:
+Four labels, each issue keyed by a hidden marker so every run can find its own issue
+without keeping state. Issues are edited in place, never commented: every comment is an
+e-mail to the owner (2026-11-24: 81 of 100 issues in two weeks were one advisory browser
+check opening and closing itself, each with its comments).
 
 * ``check-warning``   one issue per check id (``<!-- check-warning: <id> scope=<scope> -->``):
-                      opened when a check fails without blocking (advisory, or an
-                      integrity check still in watch mode), commented when what fails
-                      changes, closed automatically when the same check passes again in
-                      the same scope.
+                      opened when an INTEGRITY check still in watch mode fails (it will
+                      block once promoted), edited when what fails changes, closed
+                      automatically when the same check passes again in the same scope.
+                      An ADVISORY failure never opens an issue: it goes to the daily digest.
+* ``daily-digest``    at most one issue per UTC day ("Daily digest <date>"), created by the
+                      first informational finding of the day and edited by the rest:
+                      advisory check failures, lost runners, fallbacks inside a landing
+                      window, early warnings, notes. Its items are kept in a JSON marker in
+                      the body, so every run can merge its own in without state. The
+                      previous day's digest is closed (without a comment) when a new one
+                      opens or when a run finds it older than a day.
 * ``fallback-active`` one issue per scope (ctas-publish, worldsindex-publish, deploy): "CTAS
                       published with fallback code", "WorldsIndex published with fallback
                       code", "Site deployed with fallback code": the run published or
@@ -25,10 +34,13 @@ function (``plan``); ``apply`` runs the GitHub CLI with the workflow token in GH
 
     release_issues.py sync --scope ctas-publish --results checks.jsonl [--decision decision.json]
                            [--repo OWNER/NAME] [--run-url URL] [--mention @name] [--dry-run]
+    release_issues.py digest-add --kind lost-runner --key <id> --title "..." [--detail "..."]
+                           [--scope ctas-publish] [--run-url URL] [--repo OWNER/NAME] [--dry-run]
 """
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import hashlib
 import json
 import os
@@ -45,7 +57,11 @@ LABELS = {
     "check-warning": ("FBCA04", "A release check failed without blocking (advisory or watch mode); closes when it passes again"),
     "fallback-active": ("D93F0B", "A publisher or the deploy is running older code because the current code failed a blocking check"),
     "release-blocked": ("B60205", "Nothing was published or deployed: a blocking failure that the fallback code could not get past"),
+    "daily-digest": ("0E8A16", "One issue a day for what is worth knowing but not acting on: advisory failures, lost runners"),
 }
+DIGEST_LABEL = "daily-digest"
+DIGEST_MARKER = re.compile(r"<!-- daily-digest: (\{.*?\}) -->", re.DOTALL)
+DIGEST_KINDS = ("advisory", "lost-runner", "fallback", "early", "note")
 # GitHub refuses a label whose description is longer than 100 characters (HTTP 422), and then
 # every "gh issue create --label" for it fails with "could not add label: ... not found".
 LABEL_DESCRIPTION_MAX = 100
@@ -106,6 +122,7 @@ def plan(scope: str, results: list[dict], decision: dict | None, open_issues: li
     Returns [{op: create|comment|close, label, number?, title?, body}].
     """
     actions = []
+    digest_items = []
     run = f" ([run]({run_url}))" if run_url else ""
     by_key = {}
     for issue in open_issues:
@@ -123,10 +140,16 @@ def plan(scope: str, results: list[dict], decision: dict | None, open_issues: li
             continue
         seen.add(check_id)
         issue = by_key.get(("check-warning", check_id))
-        if outcome == "warn":
+        if outcome == "warn" and result.get("class") == "advisory":
+            # Never an issue of its own: one line in the day's digest (and an old-style
+            # advisory issue that is still open is left to close when the check passes).
+            tail = [line for line in (result.get("output_tail") or []) if line.strip()][-3:]
+            digest_items.append(digest_item("advisory", f"{scope}:{check_id}", f"`{check_id}` failed in the {SCOPE_TITLES.get(scope, scope)} (advisory)",
+                                            detail="; ".join(parts_text(result).splitlines()[:5]) or " / ".join(tail)[:300],
+                                            scope=scope, run_url=run_url))
+        elif outcome == "warn":
             fp = fingerprint(check_id, result.get("class"), sorted(p["part"] for p in result.get("parts") or []))
-            why = ("advisory: it never blocks a release or a deploy" if result.get("class") == "advisory"
-                   else f"{result.get('class')}, still in watch mode ({result.get('reason')}); it will block once promoted")
+            why = f"{result.get('class')}, still in watch mode ({result.get('reason')}); it will block once promoted"
             body = (f"Release check `{check_id}` failed in the {SCOPE_TITLES.get(scope, scope)}{run} and did not block: {why}.\n\n"
                     + (f"Failing parts:\n\n{parts_text(result)}\n" if result.get("parts") else "")
                     + tail_block(result)
@@ -135,14 +158,14 @@ def plan(scope: str, results: list[dict], decision: dict | None, open_issues: li
             if issue is None:
                 actions.append({"op": "create", "label": "check-warning", "title": f"Check warning: {check_id}", "body": body})
             elif issue["marker"].get("fp") != fp:
-                actions.append({"op": "comment", "label": "check-warning", "number": issue["number"], "body": "What fails changed.\n\n" + body})
+                actions.append({"op": "edit", "label": "check-warning", "number": issue["number"], "body": "What fails changed.\n\n" + body})
         elif outcome == "pass" and issue is not None and (issue["marker"].get("scope") in (None, scope)):
             actions.append({"op": "close", "label": "check-warning", "number": issue["number"],
                             "body": f"`{check_id}` passes again in the {SCOPE_TITLES.get(scope, scope)}{run}. Closing.\n\n"
                                     + marker("check-warning", check_id, scope, "closed") + "\n"})
 
     if decision is None:
-        return actions
+        return actions + digest_actions(digest_items, open_issues)
     action = decision.get("action")
     fallback_issue = by_key.get(("fallback-active", scope))
     blocked_issue = by_key.get(("release-blocked", scope))
@@ -153,7 +176,10 @@ def plan(scope: str, results: list[dict], decision: dict | None, open_issues: li
     compare = compare_url(repo, good, main)
     who = f" {mention}" if mention else ""
     if action == "use-fallback" and decision.get("landing_window"):
-        pass  # right after a CTAS code landing: expected until the next CTAS release (RESILIENCE.md)
+        # right after a CTAS code landing: expected until the next CTAS release (RESILIENCE.md)
+        digest_items.append(digest_item("fallback", f"{scope}:landing-window", f"The {SCOPE_TITLES.get(scope, scope)} used the previous release's code (landing window)",
+                                        detail=f"current `{(main or '')[:12]}`, used `{(good or '')[:12]}`; expected until the next CTAS release re-certifies main",
+                                        scope=scope, run_url=run_url))
     elif action == "use-fallback":
         fp = fingerprint(main, good, decision.get("blocking"))
         verb = "deployed" if scope == "deploy" else "published"
@@ -169,7 +195,7 @@ def plan(scope: str, results: list[dict], decision: dict | None, open_issues: li
             actions.append({"op": "create", "label": "fallback-active",
                             "title": f"{FALLBACK_TITLES.get(scope, scope)} ({(good or '')[:7]})", "body": body})
         elif fallback_issue["marker"].get("fp") != fp:
-            actions.append({"op": "comment", "label": "fallback-active", "number": fallback_issue["number"], "body": body})
+            actions.append({"op": "edit", "label": "fallback-active", "number": fallback_issue["number"], "body": body})
     elif action == "proceed" and fallback_issue is not None:
         actions.append({"op": "close", "label": "fallback-active", "number": fallback_issue["number"],
                         "body": f"The {SCOPE_TITLES.get(scope, scope)} succeeded with main's code `{(main or '')[:12]}`{run}. Closing.\n\n"
@@ -189,13 +215,91 @@ def plan(scope: str, results: list[dict], decision: dict | None, open_issues: li
             actions.append({"op": "create", "label": "release-blocked",
                             "title": f"Release blocked: {SCOPE_TITLES.get(scope, scope)}: {ids}"[:200], "body": body})
         elif blocked_issue["marker"].get("fp") != fp:
-            actions.append({"op": "comment", "label": "release-blocked", "number": blocked_issue["number"], "body": body})
+            actions.append({"op": "edit", "label": "release-blocked", "number": blocked_issue["number"], "body": body})
     elif action in ("proceed", "use-fallback") and blocked_issue is not None:
         actions.append({"op": "close", "label": "release-blocked", "number": blocked_issue["number"],
                         "body": f"The {SCOPE_TITLES.get(scope, scope)} {'deployed' if scope == 'deploy' else 'published'} again{run}"
                                 + (" (with fallback code)" if action == "use-fallback" else "") + ". Closing.\n\n"
                                 + marker("release-blocked", scope, None, "closed") + "\n"})
-    return actions
+    return actions + digest_actions(digest_items, open_issues)
+
+
+# ----------------------------------------------------------------------------- daily digest
+def today(now: dt.datetime | None = None) -> str:
+    return (now or dt.datetime.now(dt.timezone.utc)).strftime("%Y-%m-%d")
+
+
+def digest_item(kind: str, key: str, title: str, *, detail: str = "", scope: str | None = None,
+                run_url: str | None = None, now: dt.datetime | None = None) -> dict:
+    """One informational finding. ``key`` identifies the finding across runs (repeats are counted)."""
+    when = (now or dt.datetime.now(dt.timezone.utc)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return {"kind": kind if kind in DIGEST_KINDS else "note", "key": key, "title": title[:200], "detail": (detail or "")[:400],
+            "scope": scope, "run_url": run_url, "first_seen": when, "last_seen": when, "count": 1}
+
+
+def parse_digest(body: str | None) -> dict | None:
+    found = list(DIGEST_MARKER.finditer(body or ""))
+    if not found:
+        return None
+    try:
+        data = json.loads(found[-1].group(1))
+    except ValueError:
+        return None
+    return data if isinstance(data, dict) and isinstance(data.get("items"), list) else None
+
+
+def merge_digest_items(existing: list[dict], new: list[dict]) -> list[dict]:
+    merged = {row["key"]: dict(row) for row in existing if isinstance(row, dict) and row.get("key")}
+    for row in new:
+        old = merged.get(row["key"])
+        if old is None:
+            merged[row["key"]] = dict(row)
+        else:
+            old["count"] = int(old.get("count") or 1) + 1
+            old["last_seen"] = row["last_seen"]
+            old["run_url"] = row.get("run_url") or old.get("run_url")
+            old["detail"] = row.get("detail") or old.get("detail")
+    return sorted(merged.values(), key=lambda r: (DIGEST_KINDS.index(r.get("kind", "note")) if r.get("kind") in DIGEST_KINDS else 9, r["first_seen"]))
+
+
+def render_digest(date: str, items: list[dict]) -> str:
+    names = {"advisory": "Advisory checks that failed (never blocking)", "lost-runner": "Runs that died with a lost runner",
+             "fallback": "Fallbacks", "early": "Early warnings", "note": "Notes"}
+    out = [f"What happened on {date} (UTC) that is worth knowing but needs no action. Updated in place by each run; "
+           "nothing here blocked a release or a deploy. Hard problems open their own issue.\n"]
+    for kind in DIGEST_KINDS:
+        rows = [r for r in items if r.get("kind") == kind]
+        if not rows:
+            continue
+        out.append(f"### {names[kind]}\n")
+        for r in rows:
+            times = f"{r['count']}× between {r['first_seen'][11:16]} and {r['last_seen'][11:16]}" if int(r.get("count") or 1) > 1 else f"at {r['first_seen'][11:16]}"
+            link = f" ([run]({r['run_url']}))" if r.get("run_url") else ""
+            out.append(f"- {r['title']} — {times}{link}" + (f"\n  - {r['detail']}" if r.get("detail") else ""))
+        out.append("")
+    out.append(f"<!-- daily-digest: {json.dumps({'date': date, 'items': items}, sort_keys=True)} -->\n")
+    return "\n".join(out)
+
+
+def digest_actions(items: list[dict], open_issues: list[dict], now: dt.datetime | None = None) -> list[dict]:
+    """Create today's digest with ``items``, or merge them into it; close older digests."""
+    date = today(now)
+    digests = [issue for issue in open_issues if issue.get("label") == DIGEST_LABEL or parse_digest(issue.get("body"))]
+    actions = []
+    current = None
+    for issue in digests:
+        data = parse_digest(issue.get("body")) or {}
+        if data.get("date") == date and current is None:
+            current = (issue, data)
+        else:
+            actions.append({"op": "close", "label": DIGEST_LABEL, "number": issue["number"], "body": ""})
+    if not items:
+        return actions
+    if current is None:
+        return actions + [{"op": "create", "label": DIGEST_LABEL, "title": f"Daily digest {date}", "body": render_digest(date, merge_digest_items([], items))}]
+    issue, data = current
+    merged = merge_digest_items(data.get("items") or [], items)
+    return actions + [{"op": "edit", "label": DIGEST_LABEL, "number": issue["number"], "body": render_digest(date, merged)}]
 
 
 # ----------------------------------------------------------------------------- GitHub CLI
@@ -212,16 +316,19 @@ def open_issues(repo: str, runner: Callable = subprocess.run) -> list[dict]:
         listing = json.loads(gh(["issue", "list", "--repo", repo, "--label", label, "--state", "open",
                                  "--limit", "100", "--json", "number,title,body"], runner) or "[]")
         for issue in listing:
+            # Issues are edited in place, so the body carries the newest marker; the comments
+            # are read only for issues from before 2026-11-24, whose updates were comments.
             mark = parse_marker(issue.get("body"))
-            try:
-                view = json.loads(gh(["issue", "view", str(issue["number"]), "--repo", repo, "--json", "comments"], runner) or "{}")
-                for comment in reversed(view.get("comments") or []):
-                    newer = parse_marker(comment.get("body"))
-                    if newer:
-                        mark = newer
-                        break
-            except (RuntimeError, ValueError):
-                pass
+            if mark and label != DIGEST_LABEL:
+                try:
+                    view = json.loads(gh(["issue", "view", str(issue["number"]), "--repo", repo, "--json", "comments"], runner) or "{}")
+                    for comment in reversed(view.get("comments") or []):
+                        newer = parse_marker(comment.get("body"))
+                        if newer:
+                            mark = newer
+                            break
+                except (RuntimeError, ValueError):
+                    pass
             issues.append({**issue, "label": label, "last_marker": mark})
     return issues
 
@@ -236,6 +343,14 @@ def public_body(body: str, secrets: list[str]) -> str:
     clean = sanitize(body, secrets)[:60000]
     if not leaks(clean, secrets):
         return clean
+    data = parse_digest(body)
+    if data is not None:
+        # A digest keeps its state in the marker: post it again with every detail dropped and
+        # the titles sanitized; if a credential shape still survives, the day's list is lost.
+        bare = {"date": data.get("date"), "items": [{**row, "detail": "", "title": sanitize(str(row.get("title", "")), secrets)}
+                                                    for row in data["items"]]}
+        marker_text = f"<!-- daily-digest: {json.dumps(bare, sort_keys=True)} -->\n"
+        return WITHHELD + ("\n\n" + marker_text if not leaks(marker_text, secrets) else "\n")
     found = list(MARKER.finditer(body or ""))
     return WITHHELD + ("\n\n" + found[-1].group(0) + "\n" if found else "\n")
 
@@ -266,9 +381,12 @@ def apply(actions: list[dict], repo: str, secrets: list[str], runner: Callable =
                 print(f"opened {url.strip()} ({action['label']})")
             elif action["op"] == "comment":
                 gh(["issue", "comment", str(action["number"]), "--repo", repo, "--body", body], runner)
-                print(f"updated #{action['number']} ({action['label']})")
+                print(f"commented on #{action['number']} ({action['label']})")
+            elif action["op"] == "edit":
+                gh(["issue", "edit", str(action["number"]), "--repo", repo, "--body", body], runner)
+                print(f"updated #{action['number']} in place ({action['label']})")
             elif action["op"] == "close":
-                gh(["issue", "close", str(action["number"]), "--repo", repo, "--comment", body], runner)
+                gh(["issue", "close", str(action["number"]), "--repo", repo] + (["--comment", body] if body.strip() else []), runner)
                 print(f"closed #{action['number']} ({action['label']})")
         except RuntimeError as error:
             failures.append(f"{action['op']} {action.get('number') or action['label']}: {error}")
@@ -289,7 +407,20 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--secret-env", default="")
     p.add_argument("--secret-file", action="append", default=[])
     p.add_argument("--dry-run", action="store_true", help="print the planned actions; call nothing")
+    d = sub.add_parser("digest-add", help="add one informational finding to today's digest issue")
+    d.add_argument("--kind", required=True, choices=DIGEST_KINDS)
+    d.add_argument("--key", required=True, help="identifies the finding across runs (repeats are counted, not repeated)")
+    d.add_argument("--title", required=True)
+    d.add_argument("--detail", default="")
+    d.add_argument("--scope", default=None)
+    d.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY"))
+    d.add_argument("--run-url")
+    d.add_argument("--secret-env", default="")
+    d.add_argument("--secret-file", action="append", default=[])
+    d.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
+    if args.command == "digest-add":
+        return main_digest_add(args)
     results = [row for path in args.results for row in read_jsonl(path)]
     decision = None
     if args.decision and Path(args.decision).is_file():
@@ -314,6 +445,29 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if not actions:
         print("release-check issues: nothing to change")
+    return 0
+
+
+def main_digest_add(args) -> int:
+    run_url = args.run_url
+    if not run_url and os.environ.get("GITHUB_RUN_ID") and args.repo:
+        run_url = f"{os.environ.get('GITHUB_SERVER_URL', 'https://github.com')}/{args.repo}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+    secrets = collect_secrets(args.secret_env, args.secret_file)
+    item = digest_item(args.kind, args.key, args.title, detail=args.detail, scope=args.scope, run_url=run_url)
+    if args.dry_run:
+        for action in digest_actions([item], []):
+            print(json.dumps({**action, "body": public_body(action["body"], secrets)[:400]}, sort_keys=True))
+        return 0
+    if not args.repo:
+        print("no repository named (GITHUB_REPOSITORY); digest not updated", file=sys.stderr)
+        return 0
+    try:
+        listing = json.loads(gh(["issue", "list", "--repo", args.repo, "--label", DIGEST_LABEL, "--state", "open",
+                                 "--limit", "20", "--json", "number,title,body"]) or "[]")
+        issues = [{**issue, "label": DIGEST_LABEL} for issue in listing]
+        apply(digest_actions([item], issues), args.repo, secrets)
+    except (RuntimeError, OSError, ValueError) as error:
+        print(f"WARN  could not update the daily digest: {sanitize(str(error), secrets)}", file=sys.stderr)
     return 0
 
 

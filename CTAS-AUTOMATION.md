@@ -79,6 +79,26 @@ Resilience (2026-10-22, RESILIENCE.md). What changed in plain words:
 * A failed or fallback run writes a sanitized report to the `run-reports` branch:
   `https://raw.githubusercontent.com/JackMcGuireAstro/JackMcGuireAstro.github.io/run-reports/reports/ctas-cloud/latest.json`.
 
+## Landing code changes
+
+Rules learnt the hard way (October–November 2026):
+
+- **Land in batches, once.** Every change to certificate-bound code (`BOUND_CODE_PATHS` in
+  `scripts/export_ctas_snapshot.py`) is followed by a window in which the deploy serves the
+  previous release's code until the next CTAS release re-certifies main. One landing a
+  week costs one window; five landings in an evening cost five.
+- **Never start a cycle by hand while one is running or queued.** `ctas-cloud.yml` runs
+  one cycle at a time (`concurrency: ctas-cloud`, `cancel-in-progress: false`): a dispatch
+  while a cycle runs is queued, and a second dispatch replaces the queued one (it shows as
+  "cancelled"; nothing running is cancelled). Since every cycle checks out `main` when it
+  starts, the next chained cycle (at most ~50 minutes away) picks the change up without a
+  dispatch. A landing script dispatches only when `gh run list --workflow ctas-cloud.yml
+  --status in_progress` and `--status queued` are both empty, and says so otherwise.
+- **Test in a clean worktree, never the clone's working tree;** nothing lands on
+  fixture-only testing; every new check runs against a full real release first.
+- **Never put swap on the runner's system disk** (2026-11-20: 15 lost runners in four
+  days); `/mnt` only, or fewer light-curve workers.
+
 ## Architecture
 
 ```text
@@ -433,8 +453,9 @@ keeps serving the last snapshot meanwhile. `.github/workflows/freshness-watchdog
 therefore runs hourly in GitHub Actions, independent of this Mac, reads the live
 `ctas/data/status.json` and `worldsindex/data/manifest.json`, and maintains one
 issue labelled `freshness-watchdog`: opened (with an @mention) when a publisher has
-stalled, updated when the picture changes or every 12 hours while it persists,
-closed automatically on recovery. Its strongest signal is the cross-check: if
+stalled, edited in place each hour while it persists (a comment, which is an e-mail,
+only when a more severe alert joins), closed automatically once the condition has been
+clear for six hours. Its strongest signal is the cross-check: if
 WorldsIndex published within two hours but CTAS has not for three, the cloud runs
 work and this publisher is stuck. Absolute limits are 4 h for CTAS and 6 h for
 WorldsIndex (both publishers run in the cloud now). Limits live in the workflow's
@@ -454,12 +475,37 @@ marker is not part of the certified snapshot: `status.json` stays exactly as the
 exporter writes it, the certificate binds an explicit file set, and the WorldsIndex
 static test leaves the marker out of its manifest comparison.
 
+### What is an alert and what is a digest line (2026-11-24)
+
+Every GitHub issue, comment and close is an e-mail to the owner. In the two weeks before
+2026-11-24, 81 of 100 issues were one advisory browser check opening and closing itself,
+28 were "Public site is not deploying" raised on slow but working deploys, and 15 were
+early warnings. So:
+
+- **Hard alerts** (a publisher stalled, its runs failing, the state not saved, the key
+  rejected, the site not deploying) open one issue per outage. The issue is edited in
+  place; a comment is added only when the picture gets worse (a more severe alert code
+  joined); it closes six hours after recovery (`WATCHDOG_COOLDOWN_HOURS`), so a condition
+  that comes and goes produces one open and one close, not a burst.
+- **Everything informational** goes to the daily digest: one issue titled "Daily digest
+  <date>" (label `daily-digest`), created by the day's first finding and edited by the
+  rest (`scripts/release_issues.py digest-add`): advisory check failures (never an issue
+  of their own any more), lost runners, fallbacks inside a landing window, early warnings
+  (CTAS late by 2 h, a lost runner in the last 24 h). Repeats are counted, not repeated.
+  The previous day's digest closes when the next one opens. A quiet day has no digest.
+- **Watch-mode integrity warnings** (a newer integrity check still counting passes) keep
+  their own `check-warning` issue, edited in place, because they will block once promoted.
+- **Advisory browser checks are retried once** in the deploy before they are recorded
+  (`CHECK_RETRY_ADVISORY`, `scripts/release_checks.sh`); a blocking check is never retried.
+- **Slow deploys are not an outage**: the site may trail the data branches by up to 180
+  minutes while a deploy succeeded within the last 120 (deploys take 20–51 min, median 26).
+
 ### Where the alert arrives
 
 The issue (label `freshness-watchdog`) @-mentions the owner, which GitHub turns into an
 email; issue #5 (October 2026) showed that an email alone can go unseen for 40 hours.
 Optionally the same summary is also POSTed to one webhook when the issue opens, when
-the set of alerts changes, and when it closes (`scripts/watchdog_issue.sh`): plain text
+it gets worse, and when it closes (`scripts/watchdog_issue.sh`): plain text
 with a `Title` header for an ntfy.sh topic (the ntfy app on a phone shows it as a push
 notification), JSON `{"text", "content"}` for a Slack or Discord incoming webhook. Set
 it once from a checkout, and remove it the same way:

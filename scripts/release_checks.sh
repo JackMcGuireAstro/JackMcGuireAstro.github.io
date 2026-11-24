@@ -29,12 +29,34 @@
 #                       time is stopped and recorded as failed, so an integrity check that
 #                       hangs blocks like one that fails (2026-11-15: a static suite that ran
 #                       out of memory hung a deploy for 48 minutes).
+#   CHECK_UNCHANGED     products whose inputs (site code and data release) are identical to
+#                       the live deployment's, comma-separated: ctas, worldsindex (the deploy
+#                       sets it from the live release/manifest.json). A check run under
+#                       CHECK_PRODUCT=ctas|worldsindex|both is then recorded as skipped: the
+#                       same checks on the same bytes passed when that deployment went live
+#                       (2026-11-24: deploys took 20-51 min, most of it re-checking the
+#                       product that had not changed). CHECK_UNCHANGED_WHY names the deployment.
+#   CHECK_RETRY_ADVISORY=1 run a failed ADVISORY check once more before recording it, and
+#                       record a pass when the second run passes (the output keeps both runs).
+#                       Browser suites flake on timing (2026-11-24: one advisory browser check
+#                       opened 81 issues in two weeks); a blocking check is never retried.
+
+unchanged_product() {  # unchanged_product ctas|worldsindex|both: is it in CHECK_UNCHANGED?
+  case "$1" in
+    both) unchanged_product ctas && unchanged_product worldsindex ;;
+    *) case ",${CHECK_UNCHANGED:-}," in *",$1,"*) return 0 ;; esac; return 1 ;;
+  esac
+}
 
 check() {
   local id=$1 out rc=0 started arg
   shift
   mkdir -p "$CHECK_DIR"
   out="$CHECK_DIR/$id.log"
+  if [ -n "${CHECK_PRODUCT:-}" ] && unchanged_product "$CHECK_PRODUCT"; then
+    record_check "$id" 0 "" --skip "$CHECK_PRODUCT unchanged since the live deployment${CHECK_UNCHANGED_WHY:+ ($CHECK_UNCHANGED_WHY)}: same code, same data, already checked"
+    return $?
+  fi
   if [ "${CHECK_ONLY_BLOCKING:-0}" = "1" ] && ! python3 "$RELEASE_CHECKS" blocking --id "$id" 2>/dev/null; then
     record_check "$id" 0 "" --skip "advisory: not run for a fallback candidate"
     return $?
@@ -63,6 +85,17 @@ check() {
     esac
   else
     "$@" >"$out" 2>&1 || rc=$?
+  fi
+  if [ "$rc" -ne 0 ] && [ "${CHECK_RETRY_ADVISORY:-0}" = "1" ] && ! python3 "$RELEASE_CHECKS" blocking --id "$id" 2>/dev/null; then
+    printf '\nRETRY  %s failed (exit %s); advisory, so it runs once more\n' "$id" "$rc" >>"$out"
+    rc=0
+    if [ -n "${CHECK_TIMEOUT_SECONDS:-}" ] && command -v timeout >/dev/null 2>&1 && ! declare -F "$1" >/dev/null; then
+      timeout --foreground --kill-after=30 "$CHECK_TIMEOUT_SECONDS" "$@" >>"$out" 2>&1 || rc=$?
+    else
+      "$@" >>"$out" 2>&1 || rc=$?
+    fi
+    if [ "$rc" -eq 0 ]; then printf '\nRETRY  %s passed on the second run (a flake, not a defect)\n' "$id" >>"$out"
+    else printf '\nRETRY  %s failed twice (exit %s)\n' "$id" "$rc" >>"$out"; fi
   fi
   [ -z "${CHECK_LOG:-}" ] || cat "$out" >>"$CHECK_LOG"
   [ "${CHECK_ECHO:-0}" != "1" ] || tail -n "${CHECK_ECHO_LINES:-200}" "$out"

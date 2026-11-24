@@ -79,7 +79,7 @@ if [ "$chosen" = none ]; then
     # 15 minutes per check (CHECK_TIMEOUT_SECONDS, scripts/release_checks.sh): an older
     # candidate's suite that hangs is recorded as failed instead of holding the deploy.
     CHECK_RESULTS="$results" CHECK_DIR="$TEMP/deploy-checks-$label" CHECK_SKIP_MISSING=1 CHECK_ONLY_BLOCKING=1 \
-      CHECK_TIMEOUT_SECONDS="${CHECK_TIMEOUT_SECONDS:-900}" CHECK_ECHO_LINES=40 bash "$HERE/deploy_checks.sh" all "$tree"
+      CHECK_UNCHANGED= CHECK_TIMEOUT_SECONDS="${CHECK_TIMEOUT_SECONDS:-900}" CHECK_ECHO_LINES=40 bash "$HERE/deploy_checks.sh" all "$tree"
     echo "::endgroup::"
     echo "candidate $label ${commit:0:10} validated in $(( $(date +%s) - started ))s"
     candidates+=("$label=$commit=$results")
