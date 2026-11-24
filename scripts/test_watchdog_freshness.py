@@ -580,6 +580,15 @@ class LiveSiteTests(unittest.TestCase):
         self.assertNotIn("deploy-stale", [row["code"] for row in report["alerts"]])
         self.assertTrue(any("slow, not stopped" in note for note in report["notes"]), report["notes"])
         self.assertIn("deploy-stale", [row["code"] for row in slow("2026-10-21T14:50:00Z")["alerts"]])  # 185 min
+        # A deploy that started 100 min ago still counts as recent (deploys take up to 80 min);
+        # one from 130 min ago does not.
+        def since(started, live):
+            runs_ = [dict(working[0], createdAt=started)]
+            return [row["code"] for row in watchdog.evaluate(
+                ctas_status(live), None, worlds_manifest("2026-10-21T17:20:00Z"), None, runs_, now=at(self.NOW),
+                ctas_branch=ctas_status("2026-10-21T17:55:00Z"))["alerts"]]
+        self.assertNotIn("deploy-stale", since("2026-10-21T16:20:00Z", "2026-10-21T16:25:00Z"))
+        self.assertIn("deploy-stale", since("2026-10-21T15:50:00Z", "2026-10-21T16:25:00Z"))
         self.assertFalse(watchdog.evaluate(ctas_status("2026-10-21T17:30:00Z"), None, worlds_manifest("2026-10-21T17:20:00Z"), None,
                                            None, now=at(self.NOW))["site"]["ctas"]["known"])
 

@@ -109,10 +109,13 @@ DEFAULT_THRESHOLDS = {
     "worldsindex_retirement_held_max_hours": 24.0,
     # The public site: an alert when it lags a fresh data branch by more than this.
     "site_lag_minutes": 60.0,
-    # ...but while a deploy succeeded within site_lag_minutes the deploys are working, only
+    # ...but while a deploy succeeded recently (site_deploy_recent_minutes) the deploys are working, only
     # slow (25-60 min each while CTAS publishes every ~45 min): a note, not an alert, until
     # the lag passes this hard limit (2026-11-20: deploy-stale was firing on slowness alone).
     "site_lag_hard_minutes": 180.0,
+    # A deploy counts as recent while it started within this many minutes (2026-11-24: a
+    # deploy takes 25-80 min, so a 60 min window still alerted on slow, working deploys).
+    "site_deploy_recent_minutes": 120.0,
     # Early warning (item 8): CTAS older than this, below the hard limits above.
     "ctas_early_age_hours": 2.0,
 }
@@ -648,7 +651,7 @@ def evaluate(ctas_status, ctas_error, worldsindex_manifest, worldsindex_error, d
     lagging = [(name, row) for name, row in site.items() if isinstance(row, dict) and row.get("known")
                and (row.get("lag_minutes") or 0) > limits["site_lag_minutes"]]
     last_success = parse_utc(deployment.get("last_success_at"))
-    deploying = last_success is not None and (now - last_success).total_seconds() / 60 <= limits["site_lag_minutes"]
+    deploying = last_success is not None and (now - last_success).total_seconds() / 60 <= limits["site_deploy_recent_minutes"]
     if lagging and deploying and all((row.get("lag_minutes") or 0) <= limits["site_lag_hard_minutes"] for _, row in lagging):
         notes.append("The public site trails the data by " + ", ".join(
             f"{row['lag_minutes']:g} min ({'CTAS' if name == 'ctas' else 'WorldsIndex'})" for name, row in lagging)

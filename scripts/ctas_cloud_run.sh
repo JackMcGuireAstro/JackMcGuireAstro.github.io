@@ -137,6 +137,7 @@ SWAP_GB=${CTAS_SWAP_GB:-8}
 SAMPLE_SECONDS=${CTAS_SAMPLE_SECONDS:-30}
 # Two light-curve fit workers unless the repository variable says otherwise (the workflow
 # passes an empty string when it is unset); the default was one per CPU, up to four.
+LIGHTCURVE_WORKERS_SET=${CTAS_LIGHTCURVE_WORKERS:+1}
 export CTAS_LIGHTCURVE_WORKERS="${CTAS_LIGHTCURVE_WORKERS:-2}"
 rm -f -- "$RES_TSV" "$PHASES_TSV" "$GUARD_HIT"
 
@@ -242,24 +243,25 @@ resource_summary() {  # one "phase <name> took Ns (...)" line per phase (scripts
   fi
 }
 
-add_swap() {  # more swap: on the runner's spare disk (/mnt) when it has one, otherwise on the
-  # system disk when that has room to spare. 2026-11-19: a runner without a separate /mnt got
-  # no swap, and the export ran into the memory ceiling (run 44512725679).
+add_swap() {  # more swap on the runner's spare disk (/mnt), never on the system disk
+  # 2026-11-23: swap on the system disk (bc4298e4, for runners without a separate /mnt) was
+  # followed by 15 "hosted runner lost communication" deaths in four days (one in the four
+  # days before): paging on the disk the runner agent and the database share starves the
+  # agent. Reverted. A runner without /mnt swap instead builds the release with one
+  # light-curve worker (lighter, slower), unless CTAS_LIGHTCURVE_WORKERS was set by hand,
+  # and the memory guard still stops it cleanly if that is not enough.
   [ "${SWAP_GB:-0}" -gt 0 ] 2>/dev/null || return 0
-  command -v sudo >/dev/null && sudo -n true 2>/dev/null || { say "swap: no sudo; unchanged"; return 0; }
-  local file=/mnt/ctas-swap where=/mnt free margin=4
-  if ! { [ -d /mnt ] && [ "$(stat -c %d /mnt)" != "$(stat -c %d /)" ]; }; then
-    # The system disk also holds the database (about 3x its size at the peak of a cycle), so
-    # it must keep a wide margin: SWAP_GB plus 40 GB free, or no swap.
-    file=/ctas-swap where=/ margin=40
-  fi
-  free=$(free_mb "$where")
-  [ "${free:-0}" -ge $(( (SWAP_GB + margin) * 1024 )) ] || { say "swap: only ${free:-0} MB free on $where; unchanged"; return 0; }
+  command -v sudo >/dev/null && sudo -n true 2>/dev/null || { say "swap: no sudo; unchanged"; NO_EXTRA_SWAP=1; return 0; }
+  local file=/mnt/ctas-swap free
+  [ -d /mnt ] && [ "$(stat -c %d /mnt)" != "$(stat -c %d /)" ] || { say "swap: /mnt is not a separate disk; unchanged"; NO_EXTRA_SWAP=1; return 0; }
+  free=$(free_mb /mnt)
+  [ "${free:-0}" -ge $(( (SWAP_GB + 4) * 1024 )) ] || { say "swap: only ${free:-0} MB free on /mnt; unchanged"; NO_EXTRA_SWAP=1; return 0; }
   if sudo -n fallocate -l "${SWAP_GB}G" "$file" && sudo -n chmod 600 "$file" && sudo -n mkswap -q "$file" >/dev/null && sudo -n swapon "$file"; then
-    say "swap: added ${SWAP_GB} GB on $where ($(awk '/^SwapTotal:/ {printf "%.1f", $2/1048576}' /proc/meminfo) GB in all)"
+    say "swap: added ${SWAP_GB} GB on /mnt ($(awk '/^SwapTotal:/ {printf "%.1f", $2/1048576}' /proc/meminfo) GB in all)"
   else
     sudo -n rm -f "$file" 2>/dev/null
     say "swap: could not add ${SWAP_GB} GB; unchanged"
+    NO_EXTRA_SWAP=1
   fi
 }
 protect_agent() {  # the runner's own processes are never the kernel's OOM choice
@@ -383,7 +385,12 @@ set_phase setup
 start_sampler
 add_swap
 protect_agent
-say "light-curve workers: $CTAS_LIGHTCURVE_WORKERS"
+if [ "${NO_EXTRA_SWAP:-0}" = 1 ] && [ -z "${LIGHTCURVE_WORKERS_SET:-}" ]; then
+  export CTAS_LIGHTCURVE_WORKERS=1
+  say "light-curve workers: 1 (no extra swap on this runner)"
+else
+  say "light-curve workers: $CTAS_LIGHTCURVE_WORKERS"
+fi
 report_lost_runs
 
 # ------------------------------------------------------------------ 1. restore
