@@ -1,0 +1,1455 @@
+{
+  "claim_boundary": "Entries describe changes between two public CTAS releases, read from the retained provider rows. A new event is a new public record, not a new discovery; a new classification is a provider's assertion, not CTAS's; a source-state change describes CTAS's own ability to query a provider, not the provider's service.",
+  "entries": [
+    {
+      "base_commit": "d00d556483d1ec2812aeb01edd422e28a1bd8260",
+      "candidate_count": 20367,
+      "catalog_content_checksum_sha256": "0488771f95d0cd34d60580e0c857576fda6aa38fb4dd93ca69c099f88fbb15c6",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "9cb4d94554207bbd0d6d5ebc4f9f43bed61d8c506976d3568889a2a4ab58a97d",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20367,
+      "previous_catalog_content_checksum_sha256": "d05a5ee75a109751e2d5935de6b073c6dc2a5431337b7c825a0990865c17135a",
+      "published_at": "2026-11-28T11:32:20Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 2,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "2 sources went degraded: IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "ab1d31633374e40811e85baee7f2d82a80d00758",
+      "candidate_count": 20367,
+      "catalog_content_checksum_sha256": "d05a5ee75a109751e2d5935de6b073c6dc2a5431337b7c825a0990865c17135a",
+      "classification_change_count": 2,
+      "classification_changes": [
+        {
+          "classification": "SN",
+          "event_id": "28241f57-62a5-401c-8b1a-cbcc82b7717b",
+          "kind": "new",
+          "name": "SN2026afvu",
+          "previous_classification": null
+        },
+        {
+          "classification": "SN II",
+          "event_id": "93f3cd71-3cf8-422c-a1be-92c5c15cc287",
+          "kind": "new",
+          "name": "SN2026ajfh",
+          "previous_classification": null
+        }
+      ],
+      "coverage_milestones": [
+        {
+          "kind": "dataBearingSourceEvaluations",
+          "text": "CTAS passed 59,000 source evaluations that returned retained data (58,977 to 59,018).",
+          "value": 59000
+        }
+      ],
+      "entry_id": "d0311eb4aac505394468213757a07a1d7d16c03fb8bf6393c3f1efc751c1fb38",
+      "new_event_count": 5,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ZTF",
+          "event_id": "ef81745c-3109-4675-82cb-001c5669cf95",
+          "event_type": "optical-transient",
+          "name": "AT2026akxp",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ZTF",
+          "event_id": "44fe403a-cad5-4ab2-b347-e2cfe18546fd",
+          "event_type": "optical-transient",
+          "name": "AT2026akxq",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ZTF",
+          "event_id": "883823b2-b400-4421-b145-cb981e0d7b67",
+          "event_type": "optical-transient",
+          "name": "AT2026akxr",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ZTF",
+          "event_id": "a4f45b6c-7ab9-4825-a59f-16fcc55ede04",
+          "event_type": "optical-transient",
+          "name": "AT2026akxs",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ZTF",
+          "event_id": "ab10b163-b88e-4b09-94a4-bbeab86fd612",
+          "event_type": "optical-transient",
+          "name": "AT2026akxt",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 20362,
+      "previous_catalog_content_checksum_sha256": "292da8f9e54186435521e7acb37cea00eb6d2029280f5d2676bf2cb9a54b9463",
+      "published_at": "2026-11-28T10:41:25Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 2,
+      "renames": [
+        {
+          "event_id": "28241f57-62a5-401c-8b1a-cbcc82b7717b",
+          "name": "SN2026afvu",
+          "previous_name": "AT2026afvu"
+        },
+        {
+          "event_id": "93f3cd71-3cf8-422c-a1be-92c5c15cc287",
+          "name": "SN2026ajfh",
+          "previous_name": "AT2026ajfh"
+        }
+      ],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 1,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "5 new public records (5 from ZTF): AT2026akxp, AT2026akxq, AT2026akxr, AT2026akxs, AT2026akxt.",
+        "2 new classifications: SN2026afvu is now reported as SN; SN2026ajfh is now reported as SN II.",
+        "2 renames (same event id): AT2026afvu is now SN2026afvu; AT2026ajfh is now SN2026ajfh.",
+        "1 source went degraded: WISeREP Public Spectra (scheduled to provider-failure).",
+        "CTAS passed 59,000 source evaluations that returned retained data (58,977 to 59,018)."
+      ]
+    },
+    {
+      "base_commit": "bd04696e60357d51e93c4f1f611ec015bb3d510c",
+      "candidate_count": 20362,
+      "catalog_content_checksum_sha256": "292da8f9e54186435521e7acb37cea00eb6d2029280f5d2676bf2cb9a54b9463",
+      "classification_change_count": 1,
+      "classification_changes": [
+        {
+          "classification": "SN Ia",
+          "event_id": "2eae4b55-4cb2-4527-a714-3a15de4769ad",
+          "kind": "new",
+          "name": "SN2026aksh",
+          "previous_classification": null
+        }
+      ],
+      "coverage_milestones": [],
+      "entry_id": "83c1a779165eb019bea765c0ca2845ffa7f0524c6aadd2b5fb0980fd24ce56e3",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20362,
+      "previous_catalog_content_checksum_sha256": "22db3797e1c2fdb8978fbfc7c18fc10431eaffa6e7e61a5af539f800c3d3ac38",
+      "published_at": "2026-11-28T09:40:29Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 1,
+      "renames": [
+        {
+          "event_id": "2eae4b55-4cb2-4527-a714-3a15de4769ad",
+          "name": "SN2026aksh",
+          "previous_name": "AT2026aksh"
+        }
+      ],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 4,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "IAU Transient Name Server",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "tns",
+          "state": "active-returning-data"
+        },
+        {
+          "direction": "recovered",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "tns-public-reports",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "wiserep",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "ZTF Public Data-Release Light Curves at IRSA",
+          "previous_state": "provider-failure",
+          "source_key": "ztf-irsa",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "1 new classification: SN2026aksh is now reported as SN Ia.",
+        "1 rename (same event id): AT2026aksh is now SN2026aksh.",
+        "4 sources recovered: IAU Transient Name Server (temporarily-unavailable to active-returning-data); TNS Public Object Details and Spectra (provider-failure to scheduled); WISeREP Public Spectra (provider-failure to scheduled); ZTF Public Data-Release Light Curves at IRSA (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "1c37020b154638fae1b05a6e8d345797fe1b5b42",
+      "candidate_count": 20362,
+      "catalog_content_checksum_sha256": "22db3797e1c2fdb8978fbfc7c18fc10431eaffa6e7e61a5af539f800c3d3ac38",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "f7659bfaa3f7cfb91b78a74a819df970366ff40c00b9baa9e8a5cec05a5cd5cb",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20362,
+      "previous_catalog_content_checksum_sha256": "2d2d21bd81049acca4003c3de4736a9a8679c40d2ac0545f403330ebeb1c0f92",
+      "published_at": "2026-11-28T08:33:14Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 5,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "Mikulski Archive for Space Telescopes",
+          "previous_state": "provider-failure",
+          "source_key": "mast",
+          "state": "scheduled"
+        },
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "ZTF Public Data-Release Light Curves at IRSA",
+          "previous_state": "scheduled",
+          "source_key": "ztf-irsa",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "4 sources went degraded: IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure); WISeREP Public Spectra (scheduled to provider-failure); ZTF Public Data-Release Light Curves at IRSA (scheduled to provider-failure).",
+        "1 source recovered: Mikulski Archive for Space Telescopes (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "72f0dede3bd44eff5ae89569dfc34b452d1721c1",
+      "candidate_count": 20362,
+      "catalog_content_checksum_sha256": "2d2d21bd81049acca4003c3de4736a9a8679c40d2ac0545f403330ebeb1c0f92",
+      "classification_change_count": 1,
+      "classification_changes": [
+        {
+          "classification": "AGN",
+          "event_id": "4dd96941-b22d-47de-995e-012afa1eef69",
+          "kind": "new",
+          "name": "AT2026aitg",
+          "previous_classification": null
+        }
+      ],
+      "coverage_milestones": [],
+      "entry_id": "531932ed1e20be30cea1e22b586c5f7ad912a36dfa9b0898c752dc914ab11c1b",
+      "new_event_count": 2,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ZTF",
+          "event_id": "8f96ab5e-4f6a-40de-b198-4472dc69f968",
+          "event_type": "optical-transient",
+          "name": "AT2026akxn",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ZTF",
+          "event_id": "cd7beb80-86e4-4b27-9cd3-658595b237c2",
+          "event_type": "optical-transient",
+          "name": "AT2026akxo",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 20360,
+      "previous_catalog_content_checksum_sha256": "27d2c1ef8bf5fb61e76a5f86f56dacc7eda7416a4d7321407a0bb7d1bc474c21",
+      "published_at": "2026-11-28T07:43:43Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 1,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "Lasair",
+          "previous_state": "provider-failure",
+          "source_key": "rubin-lasair",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "2 new public records (2 from ZTF): AT2026akxn, AT2026akxo.",
+        "1 new classification: AT2026aitg is now reported as AGN.",
+        "1 source recovered: Lasair (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "2251a3a4239585178428496aca8b0bf9242e30ae",
+      "candidate_count": 20360,
+      "catalog_content_checksum_sha256": "27d2c1ef8bf5fb61e76a5f86f56dacc7eda7416a4d7321407a0bb7d1bc474c21",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "41e50d49d45d38fbb6924fe13909aef474baac6a13ba33af0acf3b89e282ebbd",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20360,
+      "previous_catalog_content_checksum_sha256": "c143543d8fa21c5ec9d0d8d5344bdc533469dd06e90ab71aca96172ca66e983e",
+      "published_at": "2026-11-28T06:54:03Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 1,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "Mikulski Archive for Space Telescopes",
+          "previous_state": "scheduled",
+          "source_key": "mast",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "1 source went degraded: Mikulski Archive for Space Telescopes (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "acde2fb874fa574abdb8c302c2c2a505bdb1b5b9",
+      "candidate_count": 20360,
+      "catalog_content_checksum_sha256": "c143543d8fa21c5ec9d0d8d5344bdc533469dd06e90ab71aca96172ca66e983e",
+      "classification_change_count": 1,
+      "classification_changes": [
+        {
+          "classification": "SN Ia",
+          "event_id": "25c60594-5f16-4c99-8185-ba35def12013",
+          "kind": "new",
+          "name": "SN2026aidv",
+          "previous_classification": null
+        }
+      ],
+      "coverage_milestones": [],
+      "entry_id": "4af71a8c526cab71ff0a04b807334dba6adcad3d627b04d4130486585c637915",
+      "new_event_count": 1,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ATLAS",
+          "event_id": "a7e1ce53-0be0-4470-a010-640c1c2f3ff2",
+          "event_type": "optical-transient",
+          "name": "AT2026akxm",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 20359,
+      "previous_catalog_content_checksum_sha256": "b85ac98b8f6b258110f38a548802eb32d9a74dd52a9f607dfff6102ef0dc91c8",
+      "published_at": "2026-11-28T06:04:04Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 1,
+      "renames": [
+        {
+          "event_id": "25c60594-5f16-4c99-8185-ba35def12013",
+          "name": "SN2026aidv",
+          "previous_name": "AT2026aidv"
+        }
+      ],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 3,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "ATLAS",
+          "previous_state": "provider-failure",
+          "source_key": "atlas",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "NASA/IPAC Extragalactic Database",
+          "previous_state": "provider-failure",
+          "source_key": "ned",
+          "state": "scheduled"
+        },
+        {
+          "direction": "degraded",
+          "name": "Lasair",
+          "previous_state": "scheduled",
+          "source_key": "rubin-lasair",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "1 new public record (1 from ATLAS): AT2026akxm.",
+        "1 new classification: SN2026aidv is now reported as SN Ia.",
+        "1 rename (same event id): AT2026aidv is now SN2026aidv.",
+        "1 source went degraded: Lasair (scheduled to provider-failure).",
+        "2 sources recovered: ATLAS (provider-failure to scheduled); NASA/IPAC Extragalactic Database (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "7a6ea5fa06c697b2218f2672179678d508536f3e",
+      "candidate_count": 20359,
+      "catalog_content_checksum_sha256": "b85ac98b8f6b258110f38a548802eb32d9a74dd52a9f607dfff6102ef0dc91c8",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "3c516f5b4c9c564fac69b01762c001b74f37652d972de39bd00943b7a97a459f",
+      "new_event_count": 1,
+      "new_events": [
+        {
+          "classification": "SN Ia",
+          "discovery_survey": "GOTO",
+          "event_id": "5fdd61ea-b933-435e-853b-bde6921ca0bf",
+          "event_type": "optical-transient",
+          "name": "SN2026akmx",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 20358,
+      "previous_catalog_content_checksum_sha256": "0154d351332e387a7258d2a67c40c40dee2239d7f9c993a54a3ae91998c34a35",
+      "published_at": "2026-11-28T05:14:10Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 2,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "ATLAS",
+          "previous_state": "scheduled",
+          "source_key": "atlas",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "NASA/IPAC Extragalactic Database",
+          "previous_state": "scheduled",
+          "source_key": "ned",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "1 new public record (1 from GOTO): SN2026akmx.",
+        "2 sources went degraded: ATLAS (scheduled to provider-failure); NASA/IPAC Extragalactic Database (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "75074d1446b2d5f115ed121abd0d1ca7377716a0",
+      "candidate_count": 20358,
+      "catalog_content_checksum_sha256": "0154d351332e387a7258d2a67c40c40dee2239d7f9c993a54a3ae91998c34a35",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "dee676e2ab06ad0a97e3e477db8504bc82c981137b488bd3e8edab7d18727dd6",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20358,
+      "previous_catalog_content_checksum_sha256": "13e315e8e372c08fd6f370cde079c1306cc3d2422a2f39d82837ff2d03071616",
+      "published_at": "2026-11-28T04:24:57Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 6,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "ATLAS",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "atlas",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "Mikulski Archive for Space Telescopes",
+          "previous_state": "provider-failure",
+          "source_key": "mast",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "Lasair",
+          "previous_state": "provider-failure",
+          "source_key": "rubin-lasair",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "IAU Transient Name Server",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "tns",
+          "state": "active-returning-data"
+        },
+        {
+          "direction": "recovered",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "tns-public-reports",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "wiserep",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "6 sources recovered: ATLAS (temporarily-unavailable to scheduled); Mikulski Archive for Space Telescopes (provider-failure to scheduled); Lasair (provider-failure to scheduled); IAU Transient Name Server (temporarily-unavailable to active-returning-data); TNS Public Object Details and Spectra (provider-failure to scheduled); and 1 more."
+      ]
+    },
+    {
+      "base_commit": "f94179c6ec63d6bd888948f6a51ff100561f3911",
+      "candidate_count": 20358,
+      "catalog_content_checksum_sha256": "13e315e8e372c08fd6f370cde079c1306cc3d2422a2f39d82837ff2d03071616",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "70b4edcf0ab9485b980fb863da2a4a1830515323f9a6ade08f148e277f8adc5a",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20358,
+      "previous_catalog_content_checksum_sha256": "1c83e9dfd0c7a8330936b88e94db077b8955f4f558d576ceddcabc70ae71441f",
+      "published_at": "2026-11-28T03:32:06Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 5,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "ATLAS",
+          "previous_state": "scheduled",
+          "source_key": "atlas",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "Mikulski Archive for Space Telescopes",
+          "previous_state": "scheduled",
+          "source_key": "mast",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "5 sources went degraded: ATLAS (scheduled to temporarily-unavailable); Mikulski Archive for Space Telescopes (scheduled to provider-failure); IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure); WISeREP Public Spectra (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "d4aa6ee1f38873955bc6c3288676f1e01498265a",
+      "candidate_count": 20358,
+      "catalog_content_checksum_sha256": "1c83e9dfd0c7a8330936b88e94db077b8955f4f558d576ceddcabc70ae71441f",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "69d61c334837d39eb8320692e56f71205c04f76622cadeca1407b6b6131c3e2d",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20358,
+      "previous_catalog_content_checksum_sha256": "8a58f5ff0d9af15f9a9d126877f663a735392129be8e4f01942153b1fc0ed49c",
+      "published_at": "2026-11-28T02:42:20Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 1,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "Lasair",
+          "previous_state": "scheduled",
+          "source_key": "rubin-lasair",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "1 source went degraded: Lasair (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "e00e69550be4b060733e85b45416edcbf542c1f3",
+      "candidate_count": 20358,
+      "catalog_content_checksum_sha256": "8a58f5ff0d9af15f9a9d126877f663a735392129be8e4f01942153b1fc0ed49c",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "315d1bb0c9c486371d3e6133248d0674445d5e6b4768e0ffe9017233fac126e4",
+      "new_event_count": 3,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": null,
+          "event_id": "265bbaa7-627a-4ed3-ae3e-296a11c7ff5a",
+          "event_type": "optical-transient",
+          "name": "AT2026akxj",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": null,
+          "event_id": "cb20b85a-8f6f-4c7c-b139-df2db40051ed",
+          "event_type": "optical-transient",
+          "name": "AT2026akxk",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "periodic-like",
+          "discovery_survey": "Vera C. Rubin Observatory",
+          "event_id": "878054d4-f85d-4591-93db-d5510a0989da",
+          "event_type": "optical-transient",
+          "name": "LSST diaObject 313791827794198596",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 20355,
+      "previous_catalog_content_checksum_sha256": "2d704c4a47c46b593c9ab2422af3fb40945d246cac825a7c3e8c0fe3d8093c25",
+      "published_at": "2026-11-28T01:49:33Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 5,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "Mikulski Archive for Space Telescopes",
+          "previous_state": "provider-failure",
+          "source_key": "mast",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "Lasair",
+          "previous_state": "provider-failure",
+          "source_key": "rubin-lasair",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "IAU Transient Name Server",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "tns",
+          "state": "active-returning-data"
+        },
+        {
+          "direction": "recovered",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "tns-public-reports",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "wiserep",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "3 new public records (2 from survey not recorded, 1 from Vera C. Rubin Observatory): AT2026akxj, AT2026akxk, LSST diaObject 313791827794198596.",
+        "5 sources recovered: Mikulski Archive for Space Telescopes (provider-failure to scheduled); Lasair (provider-failure to scheduled); IAU Transient Name Server (temporarily-unavailable to active-returning-data); TNS Public Object Details and Spectra (provider-failure to scheduled); WISeREP Public Spectra (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "0459aa0577d6a86b9986c2002e3959fdd0edcd14",
+      "candidate_count": 20355,
+      "catalog_content_checksum_sha256": "2d704c4a47c46b593c9ab2422af3fb40945d246cac825a7c3e8c0fe3d8093c25",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "60e96cf36d97fef7ab5b1e98cc6c4eb842dda393f792f98fe1eeefd701cc91a4",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20355,
+      "previous_catalog_content_checksum_sha256": "7db18e5ae26da1354dda626d57dff4fe13cc72a945971be8c7076a32192c694c",
+      "published_at": "2026-11-28T00:40:39Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 4,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "Mikulski Archive for Space Telescopes",
+          "previous_state": "scheduled",
+          "source_key": "mast",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "4 sources went degraded: Mikulski Archive for Space Telescopes (scheduled to provider-failure); IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure); WISeREP Public Spectra (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "9ca62e4ae4c2778caace60c0b86f6bccb1925336",
+      "candidate_count": 20355,
+      "catalog_content_checksum_sha256": "7db18e5ae26da1354dda626d57dff4fe13cc72a945971be8c7076a32192c694c",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "886059e7f358b330e84284d98284a478c1ee34550329b864b183acd01d41a222",
+      "new_event_count": 1,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "SGLF",
+          "event_id": "4e6e92d6-690d-4f54-8013-b3b7d72577bd",
+          "event_type": "optical-transient",
+          "name": "AT2026akxi",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 20354,
+      "previous_catalog_content_checksum_sha256": "977367af15bc4043206c6933995b6b9ecaef4fa2442565cf6b5c6241ce8836b2",
+      "published_at": "2026-11-27T23:48:52Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 5,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "Fink ZTF Science-Module Scores",
+          "previous_state": "provider-failure",
+          "source_key": "fink-science-scores",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "Mikulski Archive for Space Telescopes",
+          "previous_state": "provider-failure",
+          "source_key": "mast",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "IAU Transient Name Server",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "tns",
+          "state": "active-returning-data"
+        },
+        {
+          "direction": "recovered",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "tns-public-reports",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "wiserep",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "1 new public record (1 from SGLF): AT2026akxi.",
+        "5 sources recovered: Fink ZTF Science-Module Scores (provider-failure to scheduled); Mikulski Archive for Space Telescopes (provider-failure to scheduled); IAU Transient Name Server (temporarily-unavailable to active-returning-data); TNS Public Object Details and Spectra (provider-failure to scheduled); WISeREP Public Spectra (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "b3cc3972ab2f1ed552ec3cb92ec4142d37e0af9e",
+      "candidate_count": 20354,
+      "catalog_content_checksum_sha256": "977367af15bc4043206c6933995b6b9ecaef4fa2442565cf6b5c6241ce8836b2",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "881448c268e747dc0662eeaeaf94f02352c751c4f8d9111508a3038dea860c33",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20354,
+      "previous_catalog_content_checksum_sha256": "d8731558a5cf2dea25fd7ed5b02eaddeacfe9b6ad5957fdffd07237f26d86db4",
+      "published_at": "2026-11-27T22:39:05Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 3,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "3 sources went degraded: IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure); WISeREP Public Spectra (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "400f8e14e435b26fed68134fb2c1f819ce6c93a2",
+      "candidate_count": 20354,
+      "catalog_content_checksum_sha256": "d8731558a5cf2dea25fd7ed5b02eaddeacfe9b6ad5957fdffd07237f26d86db4",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "78152cd40ece34df5b4c3fb8b835611a80a706dcf3050a29fce160f485f36454",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20354,
+      "previous_catalog_content_checksum_sha256": "71d9df4881a2121f216ede220904370facf5d52267f74f8d5c8addd3b933f977",
+      "published_at": "2026-11-27T21:47:21Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 6,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "Fink ZTF Science-Module Scores",
+          "previous_state": "scheduled",
+          "source_key": "fink-science-scores",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "Mikulski Archive for Space Telescopes",
+          "previous_state": "scheduled",
+          "source_key": "mast",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "Lasair",
+          "previous_state": "scheduled",
+          "source_key": "rubin-lasair",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "recovered",
+          "name": "IAU Transient Name Server",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "tns",
+          "state": "active-returning-data"
+        },
+        {
+          "direction": "recovered",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "tns-public-reports",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "wiserep",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "3 sources went degraded: Fink ZTF Science-Module Scores (scheduled to provider-failure); Mikulski Archive for Space Telescopes (scheduled to provider-failure); Lasair (scheduled to provider-failure).",
+        "3 sources recovered: IAU Transient Name Server (temporarily-unavailable to active-returning-data); TNS Public Object Details and Spectra (provider-failure to scheduled); WISeREP Public Spectra (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "b28bbba46ca3d995a817715fa43fc5ebd3963153",
+      "candidate_count": 20354,
+      "catalog_content_checksum_sha256": "71d9df4881a2121f216ede220904370facf5d52267f74f8d5c8addd3b933f977",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "566e3ed3c23ff3dd000590be25bdccac47217a8d621c563b9c435214e09fd5e9",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20354,
+      "previous_catalog_content_checksum_sha256": "76c1cdade3a965719b696fd10c27ceea4c30ed6b3e38e8a4e6608c63e4454923",
+      "published_at": "2026-11-27T20:38:28Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 4,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "Lasair",
+          "previous_state": "provider-failure",
+          "source_key": "rubin-lasair",
+          "state": "scheduled"
+        },
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "3 sources went degraded: IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure); WISeREP Public Spectra (scheduled to provider-failure).",
+        "1 source recovered: Lasair (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "67895b6b323ee3887745013830c945fbb9e68259",
+      "candidate_count": 20354,
+      "catalog_content_checksum_sha256": "76c1cdade3a965719b696fd10c27ceea4c30ed6b3e38e8a4e6608c63e4454923",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "1b5a7996bb69f27e3c3d1f3938236bf56af43d673dafd58b2fcf47a9b9c6c44f",
+      "new_event_count": 5,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ZTF",
+          "event_id": "cabeb345-6a37-4bd6-a353-6522f7877c30",
+          "event_type": "optical-transient",
+          "name": "AT2026akwz",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ZTF",
+          "event_id": "90d99364-59cd-4a04-8e53-602e396554fc",
+          "event_type": "optical-transient",
+          "name": "AT2026akxa",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ZTF",
+          "event_id": "947ea17e-0313-4713-9cf1-8bdca5f87728",
+          "event_type": "optical-transient",
+          "name": "AT2026akxb",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ZTF",
+          "event_id": "12d82a1a-56e1-49da-bea4-ad5facda910e",
+          "event_type": "optical-transient",
+          "name": "AT2026akxc",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "ZTF",
+          "event_id": "4dc6b6da-03cb-4dd3-9dac-5fa5b0d95075",
+          "event_type": "optical-transient",
+          "name": "AT2026akxd",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 20349,
+      "previous_catalog_content_checksum_sha256": "d52fd9ee3b523e16b357856fa9983d81ff0fd5552c9c1b64757cc6e4830091a1",
+      "published_at": "2026-11-27T19:46:31Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 1,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "Lasair",
+          "previous_state": "scheduled",
+          "source_key": "rubin-lasair",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "5 new public records (5 from ZTF): AT2026akwz, AT2026akxa, AT2026akxb, AT2026akxc, AT2026akxd.",
+        "1 source went degraded: Lasair (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "16af19580cf351b5aae1aa817eea4efc336bf954",
+      "candidate_count": 20349,
+      "catalog_content_checksum_sha256": "d52fd9ee3b523e16b357856fa9983d81ff0fd5552c9c1b64757cc6e4830091a1",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "b949d351a51df96854f84b2061d62e5bf5daac1566083588dc69b908e5819c98",
+      "new_event_count": 3,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": null,
+          "event_id": "28241f57-62a5-401c-8b1a-cbcc82b7717b",
+          "event_type": "optical-transient",
+          "name": "AT2026afvu",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": null,
+          "event_id": "4dd96941-b22d-47de-995e-012afa1eef69",
+          "event_type": "optical-transient",
+          "name": "AT2026aitg",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "Unclassified",
+          "discovery_survey": null,
+          "event_id": "93f3cd71-3cf8-422c-a1be-92c5c15cc287",
+          "event_type": "optical-transient",
+          "name": "AT2026ajfh",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 20346,
+      "previous_catalog_content_checksum_sha256": "6ecf8208a0de42e08cdbeb49ead6f9aeb3f0dfd05f647822e6e5c2cf47960224",
+      "published_at": "2026-11-27T18:55:19Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 1,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "Mikulski Archive for Space Telescopes",
+          "previous_state": "provider-failure",
+          "source_key": "mast",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "3 new public records (3 from survey not recorded): AT2026afvu, AT2026aitg, AT2026ajfh.",
+        "1 source recovered: Mikulski Archive for Space Telescopes (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "6123be552c05d82a610bba9b1ec6fb4edf03a054",
+      "candidate_count": 20346,
+      "catalog_content_checksum_sha256": "6ecf8208a0de42e08cdbeb49ead6f9aeb3f0dfd05f647822e6e5c2cf47960224",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "9276078eacc030bd7ab5faf64a782a559bd4246893631589b31de9e54a7a2a7a",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20346,
+      "previous_catalog_content_checksum_sha256": "353deb46ec0f64d915740ffad9b6b3c62570ceb569e97e5080043fd082a70577",
+      "published_at": "2026-11-27T18:04:40Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 4,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "Mikulski Archive for Space Telescopes",
+          "previous_state": "scheduled",
+          "source_key": "mast",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "recovered",
+          "name": "Lasair",
+          "previous_state": "provider-failure",
+          "source_key": "rubin-lasair",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "tns-public-reports",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "wiserep",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "1 source went degraded: Mikulski Archive for Space Telescopes (scheduled to provider-failure).",
+        "3 sources recovered: Lasair (provider-failure to scheduled); TNS Public Object Details and Spectra (provider-failure to scheduled); WISeREP Public Spectra (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "21af4aa4ea9aef7b717313cd17501319a71f91e7",
+      "candidate_count": 20346,
+      "catalog_content_checksum_sha256": "353deb46ec0f64d915740ffad9b6b3c62570ceb569e97e5080043fd082a70577",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "b2e043ae602f05cd1a645a98f22f853867eadb95511f2aee95eb0265ed0d7e10",
+      "new_event_count": 2,
+      "new_events": [
+        {
+          "classification": "Unclassified",
+          "discovery_survey": "Shadow",
+          "event_id": "510e28b7-1260-4582-be95-70b8057b5089",
+          "event_type": "optical-transient",
+          "name": "AT2026akwy",
+          "primary_messenger": "electromagnetic"
+        },
+        {
+          "classification": "SN IIn",
+          "discovery_survey": "ZTF",
+          "event_id": "8ba92c4f-7d44-480d-8b72-bf14309c00bc",
+          "event_type": "optical-transient",
+          "name": "SN2026pjf",
+          "primary_messenger": "electromagnetic"
+        }
+      ],
+      "previous_candidate_count": 20344,
+      "previous_catalog_content_checksum_sha256": "324a6763ee4ecb7b145ad534dbb42cb8bf0e0cfba9a579a5c9516eadc2d17be5",
+      "published_at": "2026-11-27T17:13:42Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 2,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "Mikulski Archive for Space Telescopes",
+          "previous_state": "provider-failure",
+          "source_key": "mast",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "IAU Transient Name Server",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "tns",
+          "state": "active-returning-data"
+        }
+      ],
+      "summary": [
+        "2 new public records (1 from Shadow, 1 from ZTF): AT2026akwy, SN2026pjf.",
+        "2 sources recovered: Mikulski Archive for Space Telescopes (provider-failure to scheduled); IAU Transient Name Server (temporarily-unavailable to active-returning-data)."
+      ]
+    },
+    {
+      "base_commit": "599743990edf87c05f0ee8b5ed399a46dd2d337d",
+      "candidate_count": 20344,
+      "catalog_content_checksum_sha256": "324a6763ee4ecb7b145ad534dbb42cb8bf0e0cfba9a579a5c9516eadc2d17be5",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "63eee9764816ae3cb616d5f99d37b235196e9762476c77766fba2e5f010da440",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20344,
+      "previous_catalog_content_checksum_sha256": "214bf63b049aaa275442d18d32b09ac89b65d84691dd697aa9cef036fe824ed3",
+      "published_at": "2026-11-27T16:25:12Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 5,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "Mikulski Archive for Space Telescopes",
+          "previous_state": "scheduled",
+          "source_key": "mast",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "Lasair",
+          "previous_state": "scheduled",
+          "source_key": "rubin-lasair",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "5 sources went degraded: Mikulski Archive for Space Telescopes (scheduled to provider-failure); Lasair (scheduled to provider-failure); IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure); WISeREP Public Spectra (scheduled to provider-failure)."
+      ]
+    },
+    {
+      "base_commit": "87276968e283cf860fafc6922e7f578f64877301",
+      "candidate_count": 20344,
+      "catalog_content_checksum_sha256": "214bf63b049aaa275442d18d32b09ac89b65d84691dd697aa9cef036fe824ed3",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "7d50a2c5f3ca068c5d37c32988f5980a33e0d22b96c59635ff983ffd78e28cdf",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20344,
+      "previous_catalog_content_checksum_sha256": "6f108245d741f5d21a391dd6837cfa33165942f5210fac8d7eb7a3cf3220c8bc",
+      "published_at": "2026-11-27T15:20:33Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 3,
+      "source_state_changes": [
+        {
+          "direction": "recovered",
+          "name": "IAU Transient Name Server",
+          "previous_state": "temporarily-unavailable",
+          "source_key": "tns",
+          "state": "active-returning-data"
+        },
+        {
+          "direction": "recovered",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "tns-public-reports",
+          "state": "scheduled"
+        },
+        {
+          "direction": "recovered",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "provider-failure",
+          "source_key": "wiserep",
+          "state": "scheduled"
+        }
+      ],
+      "summary": [
+        "3 sources recovered: IAU Transient Name Server (temporarily-unavailable to active-returning-data); TNS Public Object Details and Spectra (provider-failure to scheduled); WISeREP Public Spectra (provider-failure to scheduled)."
+      ]
+    },
+    {
+      "base_commit": "8369c5a448e70929c207d68a18934e218bfc2837",
+      "candidate_count": 20344,
+      "catalog_content_checksum_sha256": "6f108245d741f5d21a391dd6837cfa33165942f5210fac8d7eb7a3cf3220c8bc",
+      "classification_change_count": 0,
+      "classification_changes": [],
+      "coverage_milestones": [],
+      "entry_id": "d393a8fe7fece00748c35616ced20a5a9a9ddcf538ba4368e884d00e0ed174fc",
+      "new_event_count": 0,
+      "new_events": [],
+      "previous_candidate_count": 20344,
+      "previous_catalog_content_checksum_sha256": "869e944c470502c144e1c5dc4ccd67957a9accd19f5326a988e17b533072c736",
+      "published_at": "2026-11-27T14:25:31Z",
+      "removed_event_count": 0,
+      "removed_events": [],
+      "rename_count": 0,
+      "renames": [],
+      "retraction_count": 0,
+      "retractions": [],
+      "source_state_change_count": 3,
+      "source_state_changes": [
+        {
+          "direction": "degraded",
+          "name": "IAU Transient Name Server",
+          "previous_state": "active-returning-data",
+          "source_key": "tns",
+          "state": "temporarily-unavailable"
+        },
+        {
+          "direction": "degraded",
+          "name": "TNS Public Object Details and Spectra",
+          "previous_state": "scheduled",
+          "source_key": "tns-public-reports",
+          "state": "provider-failure"
+        },
+        {
+          "direction": "degraded",
+          "name": "WISeREP Public Spectra",
+          "previous_state": "scheduled",
+          "source_key": "wiserep",
+          "state": "provider-failure"
+        }
+      ],
+      "summary": [
+        "3 sources went degraded: IAU Transient Name Server (active-returning-data to temporarily-unavailable); TNS Public Object Details and Spectra (scheduled to provider-failure); WISeREP Public Spectra (scheduled to provider-failure)."
+      ]
+    }
+  ],
+  "entry_count": 24,
+  "generated_at": "2026-11-28T11:32:20Z",
+  "schema": "ctas.public-release-changelog@1.0.0",
+  "statement": "What changed between consecutive public CTAS releases, in plain words, derived from the previous release's published files (the exporter's --release-base-ref). Newest first, at most 24 entries; each list is capped at 200 rows and carries its full count."
+}
