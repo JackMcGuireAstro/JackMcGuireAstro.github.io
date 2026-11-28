@@ -1,0 +1,85 @@
+{
+  "check_counts": {
+    "block": 1,
+    "pass": 0,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [
+    {
+      "class": "integrity",
+      "id": "ctas.restore",
+      "mode": "block",
+      "outcome": "block",
+      "output_tail": [
+        "ctas_cloud_state restore: gh release download failed: read tcp 10.0.129.208:51162->185.199.111.133:443: read: connection reset by peer",
+        "restored static-inputs.tar.gz"
+      ],
+      "parts": [],
+      "scope": "ctas-publish"
+    }
+  ],
+  "commit": "271b1d97370fe051f8372891f0bb1f0fa56d6ee4",
+  "decision": {
+    "action": "block",
+    "blocking": [
+      "ctas.restore"
+    ],
+    "blocking_detail": "restored static-inputs.tar.gz",
+    "code_fallback": null,
+    "decided_at": "2026-11-16T18:26:19Z",
+    "explanation": "ctas.restore never fall back (secrets, export safety, restore safety, or builder code site code cannot change)",
+    "fallback": false,
+    "main_commit": "271b1d97370fe051f8372891f0bb1f0fa56d6ee4",
+    "reason": "not-fallback-eligible",
+    "release_commit": null,
+    "schema": "release-decision@1",
+    "scope": "ctas-publish",
+    "warnings": []
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "integrity",
+    "id": "ctas.restore",
+    "mode": "block",
+    "outcome": "block",
+    "output_tail": [
+      "ctas_cloud_state restore: gh release download failed: read tcp 10.0.129.208:51162->185.199.111.133:443: read: connection reset by peer",
+      "restored static-inputs.tar.gz"
+    ],
+    "parts": [],
+    "reason": "baseline check (ran on real releases before the check history); no history readable",
+    "scope": "ctas-publish"
+  },
+  "failing_checks": [
+    "ctas.restore"
+  ],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: 18:26:19  FAIL  could not restore the state",
+    "runner.log: 18:26:19  phase  setup took 3s (peak memory used 1.1 of 15.3 GiB, min available 14.2 GiB, peak swap 0.0 GiB, min headroom 17.2 GiB, min free disk / 87.1 GiB, work 87.1 GiB; 1 samples)",
+    "runner.log: 18:26:19  phase  restore took 19s (no sample)"
+  ],
+  "note": null,
+  "outcome": "blocked",
+  "phases": [
+    {
+      "log": "runner.log",
+      "phase": "setup",
+      "seconds": 3
+    },
+    {
+      "log": "runner.log",
+      "phase": "restore",
+      "seconds": 19
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "43928511575",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/43928511575",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-11-16T18:26:25Z"
+}

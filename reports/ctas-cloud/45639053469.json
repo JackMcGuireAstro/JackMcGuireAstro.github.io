@@ -1,0 +1,242 @@
+{
+  "check_counts": {
+    "block": 0,
+    "pass": 80,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [],
+  "commit": "9503d474ed29ae86cf42ff3ab6befeda606c9068",
+  "decision": {
+    "action": "proceed",
+    "blocking": [],
+    "blocking_detail": null,
+    "code_fallback": null,
+    "decided_at": "2026-11-25T15:40:08Z",
+    "explanation": "every check passed",
+    "fallback": false,
+    "main_commit": "9503d474ed29ae86cf42ff3ab6befeda606c9068",
+    "reason": "no-blocking-failure",
+    "release_commit": null,
+    "schema": "release-decision@1",
+    "scope": "ctas-publish",
+    "warnings": []
+  },
+  "event": "workflow_dispatch",
+  "failing_check": null,
+  "failing_checks": [],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: 15:44:12  FAIL  could not save the database; the previous state is kept",
+    "runner.log: 15:44:12  phase  setup took 2s (peak memory used 1.0 of 15.6 GiB, min available 14.6 GiB, peak swap 0.0 GiB, min headroom 17.6 GiB, min free disk / 83.8 GiB, work 83.8 GiB; 1 samples)",
+    "runner.log: 15:44:12  phase  restore took 56s (peak memory used 1.2 of 15.6 GiB, min available 14.5 GiB, peak swap 0.0 GiB, min headroom 17.5 GiB, min free disk / 81.1 GiB, work 81.1 GiB; 1 samples)",
+    "runner.log: 15:44:12  phase  collect took 937s (peak memory used 1.5 of 15.6 GiB, min available 14.1 GiB, peak swap 0.0 GiB, min headroom 17.1 GiB, min free disk / 76.6 GiB, work 76.6 GiB; 32 samples)",
+    "runner.log: 15:44:12  phase  publish took 1740s (peak memory used 12.6 of 15.6 GiB, min available 3.0 GiB, peak swap 2.3 GiB, min headroom 5.4 GiB, min free disk / 73.2 GiB, work 73.2 GiB; 57 samples)",
+    "runner.log: 15:44:12  phase  retention took 67s (peak memory used 0.8 of 15.6 GiB, min available 14.8 GiB, peak swap 0.2 GiB, min headroom 17.6 GiB, min free disk / 73.3 GiB, work 73.3 GiB; 3 samples)",
+    "runner.log: 15:44:12  phase  save took 177s (peak memory used 1.1 of 15.6 GiB, min available 14.5 GiB, peak swap 0.2 GiB, min headroom 17.4 GiB, min free disk / 72.7 GiB, work 72.7 GiB; 6 samples)",
+    "publish.log: 2026-11-25 15:11:46 UTC  phase  freeze-database took 0s",
+    "publish.log: 2026-11-25 15:30:41 UTC  phase  export took 1135s",
+    "publish.log: 2026-11-25 15:32:48 UTC  phase  link-check took 127s",
+    "publish.log: 2026-11-25 15:33:02 UTC  phase  bind-link-health took 14s",
+    "publish.log: 2026-11-25 15:33:15 UTC  phase  validate-detail-pages-and-retirement took 13s",
+    "publish.log: 2026-11-25 15:34:47 UTC  phase  test_ctas_static.py took 92s",
+    "publish.log: 2026-11-25 15:34:48 UTC  phase  test_ctas_links.py took 1s",
+    "publish.log: 2026-11-25 15:34:48 UTC  phase  test_ctas_identity.py took 0s",
+    "publish.log: 2026-11-25 15:34:50 UTC  phase  test_ctas_astro_evidence.py took 2s",
+    "publish.log: 2026-11-25 15:34:51 UTC  phase  test_ctas_browser.py took 0s",
+    "publish.log: 2026-11-25 15:34:51 UTC  phase  test_ctas_chunks.py took 0s",
+    "publish.log: 2026-11-25 15:34:59 UTC  phase  test_ctas_publisher_recovery.py took 8s",
+    "publish.log: 2026-11-25 15:35:34 UTC  phase  test_ctas_interop.py took 35s",
+    "publish.log: 2026-11-25 15:35:34 UTC  phase  test_ctas_changelog.py took 0s",
+    "publish.log: 2026-11-25 15:35:35 UTC  phase  test_ctas_feed.py took 1s",
+    "publish.log: 2026-11-25 15:35:50 UTC  phase  test_ctas_screens.py took 15s",
+    "publish.log: 2026-11-25 15:36:11 UTC  phase  test_ctas_comparison.py took 21s",
+    "publish.log: 2026-11-25 15:36:37 UTC  phase  test_ctas_lightcurve_science.py took 26s",
+    "publish.log: 2026-11-25 15:37:00 UTC  phase  test_ctas_host_association.py took 23s",
+    "publish.log: 2026-11-25 15:37:15 UTC  phase  test_ctas_multimessenger.py took 15s",
+    "publish.log: 2026-11-25 15:37:24 UTC  phase  test_ctas_observer.py took 9s",
+    "publish.log: 2026-11-25 15:38:33 UTC  phase  validate_ctas_schemas.py took 69s",
+    "publish.log: 2026-11-25 15:38:51 UTC  phase  test_ctas_ingest_provenance.py took 18s",
+    "publish.log: 2026-11-25 15:38:51 UTC  phase  javascript-tests took 0s",
+    "publish.log: 2026-11-25 15:38:53 UTC  phase  release-integrity-checks took 2s",
+    "publish.log: 2026-11-25 15:39:01 UTC  phase  upload-bulk-assets took 8s",
+    "publish.log: 2026-11-25 15:40:08 UTC  phase  publish-data-branch took 67s"
+  ],
+  "note": null,
+  "outcome": "failed",
+  "phases": [
+    {
+      "log": "runner.log",
+      "phase": "setup",
+      "seconds": 2
+    },
+    {
+      "log": "runner.log",
+      "phase": "restore",
+      "seconds": 56
+    },
+    {
+      "log": "runner.log",
+      "phase": "collect",
+      "seconds": 937
+    },
+    {
+      "log": "runner.log",
+      "phase": "publish",
+      "seconds": 1740
+    },
+    {
+      "log": "runner.log",
+      "phase": "retention",
+      "seconds": 67
+    },
+    {
+      "log": "runner.log",
+      "phase": "save",
+      "seconds": 177
+    },
+    {
+      "log": "publish.log",
+      "phase": "freeze-database",
+      "seconds": 0
+    },
+    {
+      "log": "publish.log",
+      "phase": "export",
+      "seconds": 1135
+    },
+    {
+      "log": "publish.log",
+      "phase": "link-check",
+      "seconds": 127
+    },
+    {
+      "log": "publish.log",
+      "phase": "bind-link-health",
+      "seconds": 14
+    },
+    {
+      "log": "publish.log",
+      "phase": "validate-detail-pages-and-retirement",
+      "seconds": 13
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_static.py",
+      "seconds": 92
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_links.py",
+      "seconds": 1
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_identity.py",
+      "seconds": 0
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_astro_evidence.py",
+      "seconds": 2
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_browser.py",
+      "seconds": 0
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_chunks.py",
+      "seconds": 0
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_publisher_recovery.py",
+      "seconds": 8
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_interop.py",
+      "seconds": 35
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_changelog.py",
+      "seconds": 0
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_feed.py",
+      "seconds": 1
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_screens.py",
+      "seconds": 15
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_comparison.py",
+      "seconds": 21
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_lightcurve_science.py",
+      "seconds": 26
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_host_association.py",
+      "seconds": 23
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_multimessenger.py",
+      "seconds": 15
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_observer.py",
+      "seconds": 9
+    },
+    {
+      "log": "publish.log",
+      "phase": "validate_ctas_schemas.py",
+      "seconds": 69
+    },
+    {
+      "log": "publish.log",
+      "phase": "test_ctas_ingest_provenance.py",
+      "seconds": 18
+    },
+    {
+      "log": "publish.log",
+      "phase": "javascript-tests",
+      "seconds": 0
+    },
+    {
+      "log": "publish.log",
+      "phase": "release-integrity-checks",
+      "seconds": 2
+    },
+    {
+      "log": "publish.log",
+      "phase": "upload-bulk-assets",
+      "seconds": 8
+    },
+    {
+      "log": "publish.log",
+      "phase": "publish-data-branch",
+      "seconds": 67
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "45639053469",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/45639053469",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-11-25T15:44:12Z"
+}

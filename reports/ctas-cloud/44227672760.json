@@ -1,0 +1,122 @@
+{
+  "check_counts": {
+    "block": 1,
+    "pass": 1,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [
+    {
+      "class": "integrity",
+      "id": "ctas.export",
+      "mode": "block",
+      "outcome": "block",
+      "output_tail": [
+        "/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/publish_ctas.sh: line 209:  4706 Segmentation fault      (core dumped) GIT_ALTERNATE_OBJECT_DIRECTORIES=\"$DATA_STORE/objects\" \"$@\""
+      ],
+      "parts": [],
+      "scope": "ctas-publish"
+    }
+  ],
+  "commit": "271b1d97370fe051f8372891f0bb1f0fa56d6ee4",
+  "decision": {
+    "action": "block",
+    "blocking": [
+      "ctas.export"
+    ],
+    "blocking_detail": "/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/publish_ctas.sh: line 209:  4706 Segmentation fault      (core dumped) GIT_ALTERNATE_OBJECT_DIRECTORIES=\"$DATA_STORE/objects\" \"$@\"",
+    "code_fallback": null,
+    "decided_at": "2026-11-18T03:35:36Z",
+    "explanation": "ctas.export failed with the same code that produced the published release: the data or the environment changed",
+    "fallback": false,
+    "main_commit": "271b1d97370fe051f8372891f0bb1f0fa56d6ee4",
+    "reason": "release-commit-is-current",
+    "release_commit": "271b1d97370fe051f8372891f0bb1f0fa56d6ee4",
+    "schema": "release-decision@1",
+    "scope": "ctas-publish",
+    "warnings": []
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "integrity",
+    "id": "ctas.export",
+    "mode": "block",
+    "outcome": "block",
+    "output_tail": [
+      "/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/site/scripts/publish_ctas.sh: line 209:  4706 Segmentation fault      (core dumped) GIT_ALTERNATE_OBJECT_DIRECTORIES=\"$DATA_STORE/objects\" \"$@\""
+    ],
+    "parts": [],
+    "reason": "promoted 2026-10-24T01:59:11Z",
+    "scope": "ctas-publish"
+  },
+  "failing_checks": [
+    "ctas.export"
+  ],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: FAIL  check ctas.export failed: integrity, blocking [promoted 2026-10-24T01:59:11Z]",
+    "runner.log: FAIL  export failed; nothing committed",
+    "runner.log: 03:38:49  phase  setup took 3s (peak memory used 1.1 of 15.3 GiB, min available 14.2 GiB, peak swap 0.0 GiB, min headroom 17.2 GiB, min free disk / 87.1 GiB, work 87.1 GiB; 1 samples)",
+    "runner.log: 03:38:49  phase  restore took 50s (peak memory used 1.2 of 15.3 GiB, min available 14.1 GiB, peak swap 0.0 GiB, min headroom 17.1 GiB, min free disk / 83.5 GiB, work 83.5 GiB; 1 samples)",
+    "runner.log: 03:38:49  phase  collect took 933s (peak memory used 1.5 of 15.3 GiB, min available 13.8 GiB, peak swap 0.0 GiB, min headroom 16.8 GiB, min free disk / 78.7 GiB, work 78.7 GiB; 31 samples)",
+    "runner.log: 03:38:49  phase  publish took 879s (peak memory used 10.1 of 15.3 GiB, min available 5.2 GiB, peak swap 0.0 GiB, min headroom 8.2 GiB, min free disk / 68.2 GiB, work 68.2 GiB; 30 samples)",
+    "runner.log: 03:38:49  phase  retention took 89s (peak memory used 1.0 of 15.3 GiB, min available 14.3 GiB, peak swap 0.0 GiB, min headroom 17.3 GiB, min free disk / 76.2 GiB, work 76.2 GiB; 3 samples)",
+    "runner.log: 03:38:49  phase  save took 102s (peak memory used 1.3 of 15.3 GiB, min available 14.0 GiB, peak swap 0.0 GiB, min headroom 17.0 GiB, min free disk / 75.5 GiB, work 75.5 GiB; 3 samples)",
+    "runner.log: 03:38:49  phase  deploy took 2s (no sample)",
+    "publish.log: 2026-11-18 03:21:23 UTC  phase  freeze-database took 0s",
+    "publish.log: FAIL  check ctas.export failed: integrity, blocking [promoted 2026-10-24T01:59:11Z]",
+    "publish.log: 2026-11-18 03:35:36 UTC  FAIL  export failed; nothing committed"
+  ],
+  "note": null,
+  "outcome": "blocked",
+  "phases": [
+    {
+      "log": "runner.log",
+      "phase": "setup",
+      "seconds": 3
+    },
+    {
+      "log": "runner.log",
+      "phase": "restore",
+      "seconds": 50
+    },
+    {
+      "log": "runner.log",
+      "phase": "collect",
+      "seconds": 933
+    },
+    {
+      "log": "runner.log",
+      "phase": "publish",
+      "seconds": 879
+    },
+    {
+      "log": "runner.log",
+      "phase": "retention",
+      "seconds": 89
+    },
+    {
+      "log": "runner.log",
+      "phase": "save",
+      "seconds": 102
+    },
+    {
+      "log": "runner.log",
+      "phase": "deploy",
+      "seconds": 2
+    },
+    {
+      "log": "publish.log",
+      "phase": "freeze-database",
+      "seconds": 0
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "44227672760",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/44227672760",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-11-18T03:38:49Z"
+}

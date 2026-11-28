@@ -1,0 +1,108 @@
+{
+  "check_counts": {
+    "block": 0,
+    "pass": 6,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [],
+  "commit": "db989ec080ce6ea4451b22f1af24692ad6d5d857",
+  "decision": {
+    "action": "block",
+    "blocking": [],
+    "explanation": "the runner guard stopped the release (memory ceiling: 484 MB of memory and swap left (floor 1536 MB) (publisher)); the database was still saved and the published release is unchanged. See the phase lines and logs/resources.log.",
+    "main_commit": "db989ec080ce6ea4451b22f1af24692ad6d5d857",
+    "reason": "memory-ceiling"
+  },
+  "event": "workflow_dispatch",
+  "failing_check": null,
+  "failing_checks": [],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: 07:26:41  FAIL  memory ceiling: 484 MB of memory and swap left (floor 1536 MB); stopping the publisher cleanly",
+    "runner.log: 07:31:44  phase  setup took 8s (peak memory used 1.1 of 15.6 GiB, min available 14.5 GiB, peak swap 0.0 GiB, min headroom 17.5 GiB, min free disk / 83.9 GiB, work 83.9 GiB; 1 samples)",
+    "runner.log: 07:31:44  phase  restore took 60s (peak memory used 1.4 of 15.6 GiB, min available 14.2 GiB, peak swap 0.0 GiB, min headroom 17.2 GiB, min free disk / 76.2 GiB, work 76.2 GiB; 2 samples)",
+    "runner.log: 07:31:44  phase  collect took 940s (peak memory used 1.7 of 15.6 GiB, min available 13.9 GiB, peak swap 0.0 GiB, min headroom 16.9 GiB, min free disk / 75.7 GiB, work 75.7 GiB; 31 samples)",
+    "runner.log: 07:31:44  phase  publish took 1680s (peak memory used 15.5 of 15.6 GiB, min available 0.1 GiB, peak swap 1.9 GiB, min headroom 2.4 GiB, min free disk / 72.7 GiB, work 72.7 GiB; 56 samples)",
+    "runner.log: 07:31:44  phase  retention took 163s (peak memory used 0.8 of 15.6 GiB, min available 14.8 GiB, peak swap 0.2 GiB, min headroom 17.6 GiB, min free disk / 72.8 GiB, work 72.8 GiB; 5 samples)",
+    "runner.log: 07:31:44  phase  save took 137s (peak memory used 1.4 of 15.6 GiB, min available 14.2 GiB, peak swap 0.2 GiB, min headroom 17.0 GiB, min free disk / 72.2 GiB, work 72.2 GiB; 5 samples)",
+    "runner.log: 07:31:44  phase  deploy took 2s (no sample)",
+    "publish.log: 2026-11-15 07:00:08 UTC  phase  freeze-database took 0s",
+    "publish.log: 2026-11-15 07:21:35 UTC  phase  export took 1287s",
+    "publish.log: 2026-11-15 07:24:00 UTC  phase  link-check took 145s",
+    "publish.log: 2026-11-15 07:24:18 UTC  phase  bind-link-health took 18s",
+    "publish.log: 2026-11-15 07:24:36 UTC  phase  validate-detail-pages-and-retirement took 18s"
+  ],
+  "note": null,
+  "outcome": "failed",
+  "phases": [
+    {
+      "log": "runner.log",
+      "phase": "setup",
+      "seconds": 8
+    },
+    {
+      "log": "runner.log",
+      "phase": "restore",
+      "seconds": 60
+    },
+    {
+      "log": "runner.log",
+      "phase": "collect",
+      "seconds": 940
+    },
+    {
+      "log": "runner.log",
+      "phase": "publish",
+      "seconds": 1680
+    },
+    {
+      "log": "runner.log",
+      "phase": "retention",
+      "seconds": 163
+    },
+    {
+      "log": "runner.log",
+      "phase": "save",
+      "seconds": 137
+    },
+    {
+      "log": "runner.log",
+      "phase": "deploy",
+      "seconds": 2
+    },
+    {
+      "log": "publish.log",
+      "phase": "freeze-database",
+      "seconds": 0
+    },
+    {
+      "log": "publish.log",
+      "phase": "export",
+      "seconds": 1287
+    },
+    {
+      "log": "publish.log",
+      "phase": "link-check",
+      "seconds": 145
+    },
+    {
+      "log": "publish.log",
+      "phase": "bind-link-health",
+      "seconds": 18
+    },
+    {
+      "log": "publish.log",
+      "phase": "validate-detail-pages-and-retirement",
+      "seconds": 18
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "43686541013",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/43686541013",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-11-15T07:31:44Z"
+}

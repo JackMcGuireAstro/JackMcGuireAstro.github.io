@@ -1,0 +1,83 @@
+{
+  "check_counts": {
+    "block": 1,
+    "pass": 0,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [
+    {
+      "class": "integrity",
+      "id": "ctas.restore",
+      "mode": "block",
+      "outcome": "block",
+      "output_tail": [
+        "ctas_cloud_state restore: gh api repos/JackMcGuireAstro/ctas-state/releases/tags/state failed: gh: Server Error (HTTP 502)"
+      ],
+      "parts": [],
+      "scope": "ctas-publish"
+    }
+  ],
+  "commit": "9503d474ed29ae86cf42ff3ab6befeda606c9068",
+  "decision": {
+    "action": "block",
+    "blocking": [
+      "ctas.restore"
+    ],
+    "blocking_detail": "ctas_cloud_state restore: gh api repos/JackMcGuireAstro/ctas-state/releases/tags/state failed: gh: Server Error (HTTP 502)",
+    "code_fallback": null,
+    "decided_at": "2026-11-25T06:30:32Z",
+    "explanation": "ctas.restore never fall back (secrets, export safety, restore safety, or builder code site code cannot change)",
+    "fallback": false,
+    "main_commit": "9503d474ed29ae86cf42ff3ab6befeda606c9068",
+    "reason": "not-fallback-eligible",
+    "release_commit": null,
+    "schema": "release-decision@1",
+    "scope": "ctas-publish",
+    "warnings": []
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "integrity",
+    "id": "ctas.restore",
+    "mode": "block",
+    "outcome": "block",
+    "output_tail": [
+      "ctas_cloud_state restore: gh api repos/JackMcGuireAstro/ctas-state/releases/tags/state failed: gh: Server Error (HTTP 502)"
+    ],
+    "parts": [],
+    "reason": "baseline check (ran on real releases before the check history); no history readable",
+    "scope": "ctas-publish"
+  },
+  "failing_checks": [
+    "ctas.restore"
+  ],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: 06:30:32  FAIL  could not restore the state",
+    "runner.log: 06:30:32  phase  setup took 1s (peak memory used 1.1 of 15.6 GiB, min available 14.5 GiB, peak swap 0.0 GiB, min headroom 17.5 GiB, min free disk / 83.8 GiB, work 83.8 GiB; 1 samples)",
+    "runner.log: 06:30:32  phase  restore took 1s (no sample)"
+  ],
+  "note": null,
+  "outcome": "blocked",
+  "phases": [
+    {
+      "log": "runner.log",
+      "phase": "setup",
+      "seconds": 1
+    },
+    {
+      "log": "runner.log",
+      "phase": "restore",
+      "seconds": 1
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "45560973745",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/45560973745",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-11-25T06:30:36Z"
+}

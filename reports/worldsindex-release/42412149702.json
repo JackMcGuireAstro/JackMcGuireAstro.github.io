@@ -1,0 +1,117 @@
+{
+  "check_counts": {
+    "block": 0,
+    "pass": 92,
+    "skip": 0,
+    "warn": 1
+  },
+  "checks": [
+    {
+      "class": "advisory",
+      "id": "ctas.schemas",
+      "mode": "block",
+      "outcome": "warn",
+      "parts": [
+        "candidate-chunk.schema.json 56 file(s)"
+      ],
+      "scope": "deploy"
+    }
+  ],
+  "commit": "01cd04d923f3e27b210ee389d3f4ab660d22c40d",
+  "decision": {
+    "action": "block",
+    "blocking": [],
+    "candidates": [
+      {
+        "blocking": [],
+        "commit": "01cd04d923f3e27b210ee389d3f4ab660d22c40d",
+        "label": "main",
+        "status": "passed",
+        "warnings": [
+          "ctas.schemas"
+        ]
+      }
+    ],
+    "decided_at": "2026-11-07T21:21:10Z",
+    "explanation": "validated, but the Pages deploy ended success and the live check failure",
+    "fallback": false,
+    "fallback_label": null,
+    "landing_window": false,
+    "main_commit": "01cd04d923f3e27b210ee389d3f4ab660d22c40d",
+    "reason": "deploy-failed",
+    "release_commit": null,
+    "schema": "release-decision@1",
+    "scope": "deploy"
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "advisory",
+    "id": "ctas.schemas",
+    "mode": "block",
+    "outcome": "warn",
+    "output_tail": [
+      "1 schema check(s) failed after 93.9 s",
+      "ok    metaschema (JSON Schema 2020-12)        31 schema(s)",
+      "ok    status.schema.json                       1 file(s)",
+      "ok    live-summary.schema.json                 1 file(s)",
+      "ok    catalog-index.schema.json                1 file(s)",
+      "ok    catalog-page-manifest.schema.json        1 file(s)",
+      "ok    candidate-chunk-manifest.schema.json     1 file(s)",
+      "ok    alias-index.schema.json                  1 file(s)",
+      "ok    source-universe.schema.json              1 file(s)",
+      "ok    source-matrix-patterns.schema.json       1 file(s)",
+      "ok    research-manifest.schema.json            1 file(s)",
+      "ok    release-history.schema.json              1 file(s)",
+      "ok    certification.schema.json                1 file(s)",
+      "ok    bulk-downloads.schema.json               1 file(s)",
+      "ok    datalink-manifest.schema.json            1 file(s)",
+      "ok    provenance.schema.json                   1 file(s)",
+      "ok    changelog.schema.json                    1 file(s)",
+      "ok    source-accounting.schema.json            1 file(s)",
+      "ok    feeds-index.schema.json                  1 file(s)",
+      "ok    population-anomaly.schema.json           1 file(s)",
+      "ok    link-health.schema.json                  1 file(s)",
+      "ok    cloud-run.schema.json                    1 file(s)",
+      "ok    check-history.schema.json                1 file(s)",
+      "ok    observatories.schema.json                1 file(s)",
+      "ok    catalog-page.schema.json                15 file(s)",
+      "chunk sampling rule: 56 of 4096 chunk roots (28.0 MiB): buckets ending in hex 0 (one in sixteen, 256 eligible) in bucket order up to 24 MiB, plus the largest root (dd2.json); 7 parts descriptor(s) and 57 part file(s) in full",
+      "FAIL  candidate-chunk.schema.json             56 file(s)",
+      "      Schema validation errors were encountered.",
+      "        /home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/ctas/data/candidate-chunks/140.json::$: {'bucket': '140', 'candidate_count': 5, 'candidates': [{'astro_evidence': {'analysisRuns': [{'analysisRunId': 'de7cdd30-b438-4316-a7bf-13832948bca1', 'analysisType': 'light-curve-inference', 'createdAt': '2026-09-07T01:45:48.328531Z', 'inputChecksumSha256': 'a0ad21980599dca194edc0559c2",
+      "        Underlying errors caused this.",
+      "      ",
+      "        Best Match:",
+      "          $: 'parts' is a required property",
+      "        Best Deep Match:",
+      "          $.candidates[3]: 'designations' is a required property",
+      "      ",
+      "        3 other errors were produced. Use '--verbose' to see all errors.",
+      "ok    candidate-chunk.schema.json              7 file(s)",
+      "ok    candidate-json-part.schema.json         57 file(s)",
+      "ok    delivery.schema.json                     1 file(s)",
+      "ok    feeds (Atom and JSON Feed 1.1)         428 file(s)"
+    ],
+    "parts": [
+      "candidate-chunk.schema.json 56 file(s)"
+    ],
+    "reason": "no failure blocks (advisory parts, or schema files in watch mode)",
+    "scope": "deploy"
+  },
+  "failing_checks": [],
+  "failing_phase": null,
+  "lines": [],
+  "note": "jobs: validate=success deploy=success verify-live=failure; deployed code: main 01cd04d923",
+  "outcome": "failed",
+  "phases": [],
+  "run_attempt": "1",
+  "run_id": "42412149702",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/42412149702",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [
+    "ctas.schemas"
+  ],
+  "workflow": "worldsindex-release.yml",
+  "written_at": "2026-11-07T21:28:57Z"
+}

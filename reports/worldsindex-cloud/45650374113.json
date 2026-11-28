@@ -1,0 +1,45 @@
+{
+  "check_counts": {
+    "block": 0,
+    "pass": 22,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [],
+  "commit": "9503d474ed29ae86cf42ff3ab6befeda606c9068",
+  "decision": {
+    "action": "proceed",
+    "blocking": [],
+    "blocking_detail": null,
+    "code_fallback": null,
+    "decided_at": "2026-11-25T16:13:19Z",
+    "explanation": "every check passed",
+    "fallback": false,
+    "main_commit": "9503d474ed29ae86cf42ff3ab6befeda606c9068",
+    "reason": "no-blocking-failure",
+    "release_commit": null,
+    "schema": "release-decision@1",
+    "scope": "worldsindex-publish",
+    "warnings": []
+  },
+  "event": "workflow_dispatch",
+  "failing_check": null,
+  "failing_checks": [],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: WARN  upload of worldsindex-measurements.parquet (7668147 bytes) to release worldsindex-data-latest failed; the previous asset stays until the next cycle",
+    "runner.log: 16:14:21  FAIL  could not save the working data (exit 1); the previous state is kept: worldsindex_cloud_state save: gh api -X failed: unexpected end of JSON input",
+    "publish.log: 2026-11-25 16:13:01 UTC  WARN  upload of worldsindex-measurements.parquet (7668147 bytes) to release worldsindex-data-latest failed; the previous asset stays until the next cycle"
+  ],
+  "note": null,
+  "outcome": "failed",
+  "phases": [],
+  "run_attempt": "1",
+  "run_id": "45650374113",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/45650374113",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "worldsindex-cloud.yml",
+  "written_at": "2026-11-25T16:14:21Z"
+}

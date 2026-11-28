@@ -1,0 +1,87 @@
+{
+  "check_counts": {
+    "block": 0,
+    "pass": 2,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [],
+  "commit": "bc4298e45ee08ffa5b8760b4e6e9df39f25629b1",
+  "decision": {
+    "action": "block",
+    "blocking": [],
+    "blocking_detail": null,
+    "code_fallback": null,
+    "decided_at": "2026-11-24T02:48:13Z",
+    "explanation": "the run failed outside the classified checks (exit 1); fallback does not apply",
+    "fallback": false,
+    "main_commit": "bc4298e45ee08ffa5b8760b4e6e9df39f25629b1",
+    "reason": "error-outside-checks",
+    "release_commit": null,
+    "schema": "release-decision@1",
+    "scope": "ctas-publish",
+    "warnings": []
+  },
+  "event": "workflow_dispatch",
+  "failing_check": null,
+  "failing_checks": [],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: FAIL  could not read the published ctas-data release: could not fetch ctas-data",
+    "runner.log: 02:50:04  phase  setup took 3s (peak memory used 1.1 of 15.3 GiB, min available 14.3 GiB, peak swap 0.0 GiB, min headroom 17.3 GiB, min free disk / 87.0 GiB, work 87.0 GiB; 1 samples)",
+    "runner.log: 02:50:04  phase  restore took 60s (peak memory used 1.4 of 15.3 GiB, min available 13.9 GiB, peak swap 0.0 GiB, min headroom 24.9 GiB, min free disk / 72.0 GiB, work 72.0 GiB; 2 samples)",
+    "runner.log: 02:50:04  phase  collect took 927s (peak memory used 1.6 of 15.3 GiB, min available 13.8 GiB, peak swap 0.0 GiB, min headroom 24.8 GiB, min free disk / 72.0 GiB, work 72.0 GiB; 30 samples)",
+    "runner.log: 02:50:04  phase  publish took 29s (peak memory used 1.0 of 15.3 GiB, min available 14.3 GiB, peak swap 0.0 GiB, min headroom 25.3 GiB, min free disk / 72.1 GiB, work 72.1 GiB; 1 samples)",
+    "runner.log: 02:50:04  phase  retention took 35s (peak memory used 1.0 of 15.3 GiB, min available 14.3 GiB, peak swap 0.0 GiB, min headroom 25.3 GiB, min free disk / 72.1 GiB, work 72.1 GiB; 2 samples)",
+    "runner.log: 02:50:04  phase  save took 75s (peak memory used 1.3 of 15.3 GiB, min available 14.0 GiB, peak swap 0.0 GiB, min headroom 25.0 GiB, min free disk / 71.4 GiB, work 71.4 GiB; 2 samples)",
+    "runner.log: 02:50:04  phase  deploy took 1s (no sample)",
+    "publish.log: 2026-11-24 02:48:13 UTC  FAIL  could not read the published ctas-data release: could not fetch ctas-data"
+  ],
+  "note": null,
+  "outcome": "failed",
+  "phases": [
+    {
+      "log": "runner.log",
+      "phase": "setup",
+      "seconds": 3
+    },
+    {
+      "log": "runner.log",
+      "phase": "restore",
+      "seconds": 60
+    },
+    {
+      "log": "runner.log",
+      "phase": "collect",
+      "seconds": 927
+    },
+    {
+      "log": "runner.log",
+      "phase": "publish",
+      "seconds": 29
+    },
+    {
+      "log": "runner.log",
+      "phase": "retention",
+      "seconds": 35
+    },
+    {
+      "log": "runner.log",
+      "phase": "save",
+      "seconds": 75
+    },
+    {
+      "log": "runner.log",
+      "phase": "deploy",
+      "seconds": 1
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "45312816894",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/45312816894",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-11-24T02:50:04Z"
+}

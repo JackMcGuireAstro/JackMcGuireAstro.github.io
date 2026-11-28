@@ -1,0 +1,108 @@
+{
+  "check_counts": {
+    "block": 0,
+    "pass": 6,
+    "skip": 0,
+    "warn": 0
+  },
+  "checks": [],
+  "commit": "db989ec080ce6ea4451b22f1af24692ad6d5d857",
+  "decision": {
+    "action": "block",
+    "blocking": [],
+    "explanation": "the runner guard stopped the release (memory ceiling: 386 MB of memory and swap left (floor 1536 MB) (publisher)); the database was still saved and the published release is unchanged. See the phase lines and logs/resources.log.",
+    "main_commit": "db989ec080ce6ea4451b22f1af24692ad6d5d857",
+    "reason": "memory-ceiling"
+  },
+  "event": "workflow_dispatch",
+  "failing_check": null,
+  "failing_checks": [],
+  "failing_phase": "before the first phase",
+  "lines": [
+    "runner.log: 09:55:03  FAIL  memory ceiling: 386 MB of memory and swap left (floor 1536 MB); stopping the publisher cleanly",
+    "runner.log: 09:58:32  phase  setup took 1s (peak memory used 1.1 of 15.6 GiB, min available 14.5 GiB, peak swap 0.0 GiB, min headroom 17.5 GiB, min free disk / 83.9 GiB, work 83.9 GiB; 1 samples)",
+    "runner.log: 09:58:32  phase  restore took 55s (peak memory used 1.1 of 15.6 GiB, min available 14.5 GiB, peak swap 0.0 GiB, min headroom 17.5 GiB, min free disk / 81.0 GiB, work 81.0 GiB; 1 samples)",
+    "runner.log: 09:58:32  phase  collect took 936s (peak memory used 1.5 of 15.6 GiB, min available 14.1 GiB, peak swap 0.0 GiB, min headroom 17.1 GiB, min free disk / 75.7 GiB, work 75.7 GiB; 32 samples)",
+    "runner.log: 09:58:32  phase  publish took 1138s (peak memory used 13.1 of 15.6 GiB, min available 2.5 GiB, peak swap 2.3 GiB, min headroom 5.4 GiB, min free disk / 72.8 GiB, work 72.8 GiB; 37 samples)",
+    "runner.log: 09:58:32  phase  retention took 98s (peak memory used 0.8 of 15.6 GiB, min available 14.8 GiB, peak swap 0.2 GiB, min headroom 17.7 GiB, min free disk / 72.8 GiB, work 72.8 GiB; 4 samples)",
+    "runner.log: 09:58:32  phase  save took 108s (peak memory used 1.5 of 15.6 GiB, min available 14.1 GiB, peak swap 0.2 GiB, min headroom 16.9 GiB, min free disk / 72.2 GiB, work 72.2 GiB; 3 samples)",
+    "runner.log: 09:58:32  phase  deploy took 2s (no sample)",
+    "publish.log: 2026-11-15 09:37:27 UTC  phase  freeze-database took 0s",
+    "publish.log: 2026-11-15 09:51:19 UTC  phase  export took 832s",
+    "publish.log: 2026-11-15 09:53:03 UTC  phase  link-check took 104s",
+    "publish.log: 2026-11-15 09:53:12 UTC  phase  bind-link-health took 9s",
+    "publish.log: 2026-11-15 09:53:23 UTC  phase  validate-detail-pages-and-retirement took 11s"
+  ],
+  "note": null,
+  "outcome": "failed",
+  "phases": [
+    {
+      "log": "runner.log",
+      "phase": "setup",
+      "seconds": 1
+    },
+    {
+      "log": "runner.log",
+      "phase": "restore",
+      "seconds": 55
+    },
+    {
+      "log": "runner.log",
+      "phase": "collect",
+      "seconds": 936
+    },
+    {
+      "log": "runner.log",
+      "phase": "publish",
+      "seconds": 1138
+    },
+    {
+      "log": "runner.log",
+      "phase": "retention",
+      "seconds": 98
+    },
+    {
+      "log": "runner.log",
+      "phase": "save",
+      "seconds": 108
+    },
+    {
+      "log": "runner.log",
+      "phase": "deploy",
+      "seconds": 2
+    },
+    {
+      "log": "publish.log",
+      "phase": "freeze-database",
+      "seconds": 0
+    },
+    {
+      "log": "publish.log",
+      "phase": "export",
+      "seconds": 832
+    },
+    {
+      "log": "publish.log",
+      "phase": "link-check",
+      "seconds": 104
+    },
+    {
+      "log": "publish.log",
+      "phase": "bind-link-health",
+      "seconds": 9
+    },
+    {
+      "log": "publish.log",
+      "phase": "validate-detail-pages-and-retirement",
+      "seconds": 11
+    }
+  ],
+  "run_attempt": "1",
+  "run_id": "43698635392",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/43698635392",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [],
+  "workflow": "ctas-cloud.yml",
+  "written_at": "2026-11-15T09:58:32Z"
+}

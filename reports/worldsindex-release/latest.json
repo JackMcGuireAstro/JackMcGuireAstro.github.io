@@ -1,0 +1,215 @@
+{
+  "check_counts": {
+    "block": 6,
+    "pass": 90,
+    "skip": 0,
+    "warn": 3
+  },
+  "checks": [
+    {
+      "class": "always_block",
+      "id": "worldsindex.checksums",
+      "mode": "block",
+      "outcome": "block",
+      "output_tail": [
+        "FAIL  the release's checksum document is unreadable: [Errno 2] No such file or directory: 'worldsindex/data/manifest.json'"
+      ],
+      "parts": [],
+      "scope": "deploy"
+    },
+    {
+      "class": "integrity",
+      "id": "worldsindex.test_worldsindex_static",
+      "mode": "block",
+      "outcome": "block",
+      "output_tail": [
+        "Traceback (most recent call last):",
+        "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_worldsindex_static.py\", line 520, in <module>",
+        "    main()",
+        "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_worldsindex_static.py\", line 63, in main",
+        "    manifest = json.loads((DATA / \"manifest.json\").read_text())",
+        "                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/pathlib.py\", line 1027, in read_text",
+        "    with self.open(mode='r', encoding=encoding, errors=errors) as f:",
+        "         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/pathlib.py\", line 1013, in open",
+        "    return io.open(self, mode, buffering, encoding, errors, newline)",
+        "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "FileNotFoundError: [Errno 2] No such file or directory: '/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/worldsindex/data/manifest.json'"
+      ],
+      "parts": [],
+      "scope": "deploy"
+    },
+    {
+      "class": "advisory",
+      "id": "worldsindex.test_worldsindex_interop",
+      "mode": "warn",
+      "outcome": "warn",
+      "output_tail": [
+        "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_worldsindex_interop.py\", line 431, in <module>",
+        "    sys.exit(main())",
+        "             ^^^^^^",
+        "  File \"/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/scripts/test_worldsindex_interop.py\", line 180, in main",
+        "    manifest = json.loads((data / \"manifest.json\").read_text())",
+        "                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/pathlib.py\", line 1027, in read_text",
+        "    with self.open(mode='r', encoding=encoding, errors=errors) as f:",
+        "         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/pathlib.py\", line 1013, in open",
+        "    return io.open(self, mode, buffering, encoding, errors, newline)",
+        "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "FileNotFoundError: [Errno 2] No such file or directory: '/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/worldsindex/data/manifest.json'",
+        "",
+        "RETRY  worldsindex.test_worldsindex_interop failed twice (exit 1)"
+      ],
+      "parts": [],
+      "scope": "deploy"
+    },
+    {
+      "class": "advisory",
+      "id": "worldsindex.schemas",
+      "mode": "block",
+      "outcome": "warn",
+      "output_tail": [
+        "FAIL  no release at /home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/worldsindex/data"
+      ],
+      "parts": [
+        "no release at /home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/worldsindex/data"
+      ],
+      "scope": "deploy"
+    },
+    {
+      "class": "always_block",
+      "id": "ctas.checksums",
+      "mode": "block",
+      "outcome": "block",
+      "output_tail": [
+        "FAIL  the release's checksum document is unreadable: [Errno 2] No such file or directory: 'ctas/data/certification.json'"
+      ],
+      "parts": [],
+      "scope": "deploy"
+    },
+    {
+      "class": "integrity",
+      "id": "ctas.test_ctas_static",
+      "mode": "block",
+      "outcome": "block",
+      "output_tail": [
+        "snapshot verification: verification-failed (3/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+        "snapshot verification: verification-failed (3/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+        "snapshot verification: verification-failed (3/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 41 checksum-bound files",
+        "snapshot verification: verified-static-snapshot (4/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+        "snapshot verification: verification-failed (2/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+        "snapshot verification: verification-failed (2/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+        "snapshot verification: verification-failed (2/4 checks)",
+        "bound ctas/data/link-health.json into the verification report of 3 checksum-bound files",
+        "snapshot verification: verification-failed (2/4 checks)"
+      ],
+      "parts": [
+        "CertificateAndArtifactTests.setUpClass"
+      ],
+      "scope": "deploy"
+    },
+    {
+      "class": "integrity",
+      "id": "ctas.chunk-origin",
+      "mode": "block",
+      "outcome": "block",
+      "output_tail": [
+        "FAIL  no ctas/data/candidate-chunks/manifest.json in the tree"
+      ],
+      "parts": [],
+      "scope": "deploy"
+    },
+    {
+      "class": "integrity",
+      "id": "ctas.schemas",
+      "mode": "block",
+      "outcome": "block",
+      "output_tail": [
+        "error: published files missing under /home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/ctas/data: status.json, live-summary.json, catalog-index.json, catalog-pages/manifest.json, candidate-chunks/manifest.json, alias-index.json, source-universe.json, source-matrix-patterns.json, research/manifest.json, release-history.json, certification.json",
+        "ok    metaschema (JSON Schema 2020-12)        32 schema(s)"
+      ],
+      "parts": [
+        "the validator failed without naming a schema file"
+      ],
+      "scope": "deploy"
+    },
+    {
+      "class": "advisory",
+      "id": "browser.release_pages",
+      "mode": "warn",
+      "outcome": "warn",
+      "output_tail": [
+        "                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/pathlib.py\", line 1027, in read_text",
+        "    with self.open(mode='r', encoding=encoding, errors=errors) as f:",
+        "         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "  File \"/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/pathlib.py\", line 1013, in open",
+        "    return io.open(self, mode, buffering, encoding, errors, newline)",
+        "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+        "FileNotFoundError: [Errno 2] No such file or directory: '/home/runner/work/JackMcGuireAstro.github.io/JackMcGuireAstro.github.io/ctas/data/catalog-index.json'",
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 11 tests in 81.297s",
+        "",
+        "FAILED (errors=3)",
+        "",
+        "RETRY  browser.release_pages failed twice (exit 1)"
+      ],
+      "parts": [],
+      "scope": "deploy"
+    }
+  ],
+  "commit": "130c06b32d0d7f84cb34aceed8c1b7cd08977a38",
+  "decision": {
+    "action": "block",
+    "blocking": [],
+    "explanation": "the validate job ended before choosing the site code",
+    "reason": "run-failed"
+  },
+  "event": "workflow_dispatch",
+  "failing_check": {
+    "class": "always_block",
+    "id": "worldsindex.checksums",
+    "mode": "block",
+    "outcome": "block",
+    "output_tail": [
+      "FAIL  the release's checksum document is unreadable: [Errno 2] No such file or directory: 'worldsindex/data/manifest.json'"
+    ],
+    "parts": [],
+    "reason": "always_block: never in watch mode",
+    "scope": "deploy"
+  },
+  "failing_checks": [
+    "worldsindex.checksums",
+    "worldsindex.test_worldsindex_static",
+    "ctas.checksums",
+    "ctas.test_ctas_static",
+    "ctas.chunk-origin",
+    "ctas.schemas"
+  ],
+  "failing_phase": null,
+  "lines": [],
+  "note": "jobs: validate=failure deploy=skipped verify-live=skipped; deployed code: none ",
+  "outcome": "blocked",
+  "phases": [],
+  "run_attempt": "1",
+  "run_id": "45999904116",
+  "run_url": "https://github.com/JackMcGuireAstro/JackMcGuireAstro.github.io/actions/runs/45999904116",
+  "sanitized": true,
+  "schema": "run-report@2",
+  "warning_checks": [
+    "worldsindex.test_worldsindex_interop",
+    "worldsindex.schemas",
+    "browser.release_pages"
+  ],
+  "workflow": "worldsindex-release.yml",
+  "written_at": "2026-11-27T12:56:13Z"
+}
